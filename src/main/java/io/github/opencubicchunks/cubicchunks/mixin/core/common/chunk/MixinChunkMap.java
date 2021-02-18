@@ -67,7 +67,6 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.AsyncSaveData;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicSectionStorage;
-import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicThreadedLevelLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.storage.CubeSerializer;
 import io.github.opencubicchunks.cubicchunks.world.storage.RegionCubeIO;
@@ -411,53 +410,36 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         return regionCubeIO.loadCubeNBT(cubePos);
     }
 
-    private void scheduleCubeUnload(long cubePos, ChunkHolder chunkHolderIn) {
-        CompletableFuture<CubeAccess> toSaveFuture = ((CubeHolder) chunkHolderIn).getCubeToSave();
-        toSaveFuture.thenAcceptAsync(cube -> {
-            CompletableFuture<CubeAccess> newToSaveFuture = ((CubeHolder) chunkHolderIn).getCubeToSave();
-            if (newToSaveFuture != toSaveFuture) {
-                this.scheduleCubeUnload(cubePos, chunkHolderIn);
-            } else {
-                if (this.pendingCubeUnloads.remove(cubePos, chunkHolderIn) && cube != null) {
-                    if (cube instanceof LevelCube levelCube) {
-                        levelCube.setLoaded(false);
-                        //TODO: reimplement forge event ChunkEvent#Unload.
-                        //net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Unload((Chunk)cube));
-                    }
-
-                    if (USE_ASYNC_SERIALIZATION) {
-                        this.cubeSaveAsync(cube);
-                    } else {
-                        this.cubeSave(cube);
-                    }
-                    if (this.cubeEntitiesInLevel.remove(cubePos) && cube instanceof LevelCube levelCube) {
-                        ((CubicServerLevel) this.level).onCubeUnloading(levelCube);
-                    }
-
-                    ((CubicThreadedLevelLightEngine) this.lightEngine).setCubeStatusEmpty(cube.getCubePos());
-                    this.lightEngine.tryScheduleUpdate();
-                    CubePos pos = CubePos.from(cubePos);
-
-                    for (int localX = 0; localX < CubeAccess.DIAMETER_IN_SECTIONS; localX++) {
-                        for (int localZ = 0; localZ < CubeAccess.DIAMETER_IN_SECTIONS; localZ++) {
-                            long chunkPos = pos.asChunkPos(localX, localZ).toLong();
-                            Ticket<?>[] tickets = ((DistanceManagerAccess) distanceManager).invokeGetTickets(chunkPos).stream().filter((ticket ->
-                                ticket.getType() == CubicTicketType.COLUMN && ((TicketAccess) ticket).getKey().equals(pos))).toArray(Ticket[]::new);
-                            for (Ticket<?> ticket : tickets) {
-                                ((DistanceManagerAccess) this.distanceManager).invokeRemoveTicket(chunkPos, ticket);
-                            }
-                        }
-                    }
-                }
-
-            }
-        }, this.cubeUnloadQueue::add).whenComplete((v, throwable) -> {
-            if (throwable != null) {
-                LOGGER.error("Failed to save cube " + ((CubeHolder) chunkHolderIn).getCubePos(), throwable);
-            }
-        });
+    // TODO: handle the names outside of dev - need a system for consistent copied lambda names
+    @Redirect(method = "cc$redirect$lambda$scheduleUnload$10",
+        at = @At(value = "INVOKE",
+        target = "Lnet/minecraft/server/level/ChunkMap;cubeSave(Lio/github/opencubicchunks/cubicchunks/world/level/chunk/CubeAccess;)Z"))
+    private boolean applyAsyncCubeSaving(ChunkMap chunkMap, CubeAccess cube) {
+        cubeSaveAsync(cube);
+        return false;
     }
 
+    @Inject(method = "cc$redirect$lambda$scheduleUnload$10", at = @At(
+        value = "INVOKE",
+        target = "Lnet/minecraft/server/level/progress/ChunkProgressListener;"
+            + "onCubeStatusChange(Lio/github/opencubicchunks/cubicchunks/world/level/CubePos;Lnet/minecraft/world/level/chunk/ChunkStatus;)V"
+    ))
+    private void removeColumnTicketsOnCubeUnload(ChunkHolder holder, CompletableFuture<?> future, long cubePos, CubeAccess cube, CallbackInfo ci) {
+        CubePos pos = CubePos.from(cubePos);
+
+        for (int localX = 0; localX < CubeAccess.DIAMETER_IN_SECTIONS; localX++) {
+            for (int localZ = 0; localZ < CubeAccess.DIAMETER_IN_SECTIONS; localZ++) {
+                long chunkPos = pos.asChunkPos(localX, localZ).toLong();
+                Ticket<?>[] tickets = ((DistanceManagerAccess) distanceManager).invokeGetTickets(chunkPos).stream().filter((ticket ->
+                    ticket.getType() == CubicTicketType.COLUMN && ((TicketAccess) ticket).getKey().equals(pos))).toArray(Ticket[]::new);
+                for (Ticket<?> ticket : tickets) {
+                    ((DistanceManagerAccess) this.distanceManager).invokeRemoveTicket(chunkPos, ticket);
+                }
+            }
+        }
+    }
+
+    // used from ASM
     // markPositionReplaceable
     @Override public void markCubePositionReplaceable(CubePos cubePos) {
         this.cubeTypeCache.put(cubePos.asLong(), (byte) -1);

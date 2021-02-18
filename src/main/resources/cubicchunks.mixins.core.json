@@ -53,6 +53,7 @@
         "common.MixinMinecraftServer",
         "common.MixinServerChunkCache",
         "common.network.MixinFriendlyByteBuf",
+        "common.progress.MixinChunkProgressListener",
         "common.progress.MixinLoggerChunkProgressListener",
         "common.server.MixinPlayerList",
         "common.ticket.MixinChunkMapDistanceManager",
