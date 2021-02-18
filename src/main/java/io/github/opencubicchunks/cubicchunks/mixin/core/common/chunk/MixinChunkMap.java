@@ -17,8 +17,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -126,6 +128,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Group;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
@@ -148,6 +151,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     private final LongSet cubesToDrop = new LongOpenHashSet();
     private final LongSet cubeEntitiesInLevel = new LongOpenHashSet();
+    // used from ASM
     private final Long2ObjectLinkedOpenHashMap<ChunkHolder> pendingCubeUnloads = new Long2ObjectLinkedOpenHashMap<>();
 
     // worldgenMailbox
@@ -158,6 +162,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     private final AtomicInteger tickingGeneratedCubes = new AtomicInteger();
 
     private final Long2ByteMap cubeTypeCache = new Long2ByteOpenHashMap();
+    // used from ASM
     private final Queue<Runnable> cubeUnloadQueue = Queues.newConcurrentLinkedQueue();
 
     private ServerChunkCache serverChunkCache;
@@ -169,8 +174,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     private int incomingVerticalViewDistance;
 
     @Shadow @Final private ThreadedLevelLightEngine lightEngine;
-
-    @Shadow private boolean modified;
 
     @Shadow @Final private ChunkMap.DistanceManager distanceManager;
 
@@ -257,52 +260,52 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     //     return loadedChunks.isEmpty() && loadedCubes.isEmpty();
     // }
 
+    @Redirect(
+        method = "saveAllCubes",
+        at = @At(
+            value = "INVOKE",
+            ordinal = 2, // TODO: use INVOKE:LAST when mixin is updated to support it here
+            target = "Ljava/util/stream/Stream;filter(Ljava/util/function/Predicate;)Ljava/util/stream/Stream;"
+        ),
+        slice = @Slice(
+            to = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;processCubeUnloads(Ljava/util/function/BooleanSupplier;)V")
+        )
+    )
+    private Stream<CompletableFuture<Boolean>> mapToAsyncCubeSaveFuture(Stream<CubeAccess> stream, Predicate<?> predicate) {
+        return stream.map(cube -> USE_ASYNC_SERIALIZATION ? cubeSaveAsync(cube) : CompletableFuture.completedFuture(cubeSave(cube)));
+    }
+
+    @Redirect(
+        method = "saveAllCubes",
+        at = @At(
+            value = "INVOKE", // TODO: use INVOKE:ONE when mixin is updated to support it here
+            target = "Ljava/util/stream/Stream;forEach(Ljava/util/function/Consumer;)V"
+        ),
+        slice = @Slice(
+            to = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;processCubeUnloads(Ljava/util/function/BooleanSupplier;)V")
+        )
+    )
+    private void joinAllAsyncSave(Stream<CompletableFuture<Boolean>> stream, Consumer<?> markSavedAny) {
+        List<CompletableFuture<Boolean>> saveFutures = stream.distinct().toList();
+        for (CompletableFuture<Boolean> future : saveFutures) {
+            if (future.join()) {
+                markSavedAny.accept(null);
+            }
+        }
+    }
+
     @Inject(method = "saveAllChunks", at = @At("HEAD"))
     protected void save(boolean flush, CallbackInfo ci) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;
         }
-        if (flush) {
-            List<ChunkHolder> list = this.visibleCubeMap.values().stream()
-                .filter(ChunkHolder::wasAccessibleSinceLastSave)
-                .peek(ChunkHolder::refreshAccessibility)
-                .collect(Collectors.toList());
-            MutableBoolean savedAny = new MutableBoolean();
+        saveAllCubes(flush);
+    }
 
-            do {
-                savedAny.setFalse();
-                @SuppressWarnings("unchecked") final CompletableFuture<Boolean>[] saveFutures = list.stream().map((cubeHolder) -> {
-                        CompletableFuture<CubeAccess> cubeFuture;
-                        do {
-                            cubeFuture = ((CubeHolder) cubeHolder).getCubeToSave();
-                            this.mainThreadExecutor.managedBlock(cubeFuture::isDone);
-                        } while (cubeFuture != ((CubeHolder) cubeHolder).getCubeToSave());
-
-                        return cubeFuture.join();
-                    }).filter((cube) -> cube instanceof ImposterProtoCube || cube instanceof LevelCube)
-                    .map(cube1 -> USE_ASYNC_SERIALIZATION ? cubeSaveAsync(cube1) : CompletableFuture.completedFuture(cubeSave(cube1)))
-                    .distinct().toArray(CompletableFuture[]::new);
-                for (CompletableFuture<Boolean> future : saveFutures) {
-                    if (future.join()) {
-                        savedAny.setTrue();
-                    }
-                }
-
-            } while (savedAny.isTrue());
-
-            this.processCubeUnloads(() -> true);
-            regionCubeIO.flush();
-            LOGGER.info("Cube Storage ({}): All cubes are saved", this.storageName);
-        } else {
-            this.visibleCubeMap.values().stream().filter(ChunkHolder::wasAccessibleSinceLastSave).forEach((cubeHolder) -> {
-                CubeAccess cube = ((CubeHolder) cubeHolder).getCubeToSave().getNow(null);
-                if (cube instanceof ImposterProtoCube || cube instanceof LevelCube) {
-                    this.cubeSave(cube);
-                    cubeHolder.refreshAccessibility();
-                }
-            });
-        }
-
+    // used from ASM
+    private void flushCubeWorker() {
+        regionCubeIO.flush();
+        LOGGER.info("Cube Storage ({}): All cubes are saved", this.storageName);
     }
 
     @Override public void setServerChunkCache(ServerChunkCache cache) {
@@ -344,7 +347,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                 //TODO: FORGE EVENT : reimplement ChunkDataEvent#Save
 //                net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkDataEvent.Save(p_219229_1_, p_219229_1_.getWorldForge() != null ?
 //                p_219229_1_.getWorldForge() : this.level, compoundnbt));
-                regionCubeIO.saveCubeNBT(cubePos, cubeNbt);
+                this.writeCube(cubePos, cubeNbt);
                 this.markCubePosition(cubePos, status.getChunkType());
                 return true;
             } catch (Exception exception) {
@@ -408,6 +411,11 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     // Called from ASM
     private CompoundTag readCubeNBT(CubePos cubePos) throws IOException {
         return regionCubeIO.loadCubeNBT(cubePos);
+    }
+
+    // used from ASM
+    private void writeCube(CubePos pos, CompoundTag tag) {
+        regionCubeIO.saveCubeNBT(pos, tag);
     }
 
     // TODO: handle the names outside of dev - need a system for consistent copied lambda names
