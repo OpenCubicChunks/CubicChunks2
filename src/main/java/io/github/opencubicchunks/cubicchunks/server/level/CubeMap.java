@@ -40,6 +40,9 @@ public interface CubeMap {
     // implemented by ASM
     void saveAllCubes(boolean flush);
 
+    // implemented by ASM
+    boolean cubeSave(CubeAccess cube);
+
     void setServerChunkCache(ServerChunkCache cache);
 
     // used from ASM

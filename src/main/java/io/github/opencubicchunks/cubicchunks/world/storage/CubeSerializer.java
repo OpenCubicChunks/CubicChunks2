@@ -241,7 +241,12 @@ public class CubeSerializer {
         }
     }
 
-    public static CompoundTag write(ServerLevel serverLevel, CubeAccess cube, AsyncSaveData data) {
+    // used from ASM
+    public static CompoundTag write(ServerLevel serverLevel, CubeAccess cube) {
+        return write(serverLevel, cube, null);
+    }
+
+    public static CompoundTag write(ServerLevel serverLevel, CubeAccess cube, @Nullable AsyncSaveData data) {
         CubePos pos = cube.getCubePos();
 
         CompoundTag root = new CompoundTag();
