@@ -22,7 +22,6 @@ import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
@@ -120,7 +119,6 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureMana
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -247,10 +245,9 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Inject(method = "tick(Ljava/util/function/BooleanSupplier;)V",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;processUnloads(Ljava/util/function/BooleanSupplier;)V"))
     protected void onTickScheduleUnloads(BooleanSupplier hasMoreTime, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
-            return;
+        if (((CubicLevelHeightAccessor) this.level).isCubic()) {
+            this.processCubeUnloads(hasMoreTime);
         }
-        this.processCubeUnloads(hasMoreTime);
     }
 
     // Forge dimension stuff gone in 1.16, TODO when forge readds dimension code
@@ -312,51 +309,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         serverChunkCache = cache;
     }
 
-    // save()
-    private boolean cubeSave(CubeAccess cube) {
-        ((CubicSectionStorage) this.poiManager).flush(cube.getCubePos());
-        if (!cube.isDirty()) {
-            return false;
-        } else {
-            cube.setDirty(false);
-            CubePos cubePos = cube.getCubePos();
-
-            try {
-                ChunkStatus status = cube.getCubeStatus();
-                if (status.getChunkType() != ChunkStatus.ChunkType.LEVELCHUNK) {
-                    if (isExistingCubeFull(cubePos)) {
-                        return false;
-                    }
-                    if (status == ChunkStatus.EMPTY && cube.getAllStarts().values().stream().noneMatch(StructureStart::isValid)) {
-                        return false;
-                    }
-                }
-
-                if (status.getChunkType() != ChunkStatus.ChunkType.LEVELCHUNK) {
-                    CompoundTag compoundnbt = regionCubeIO.loadCubeNBT(cubePos);
-                    if (compoundnbt != null && CubeSerializer.getChunkStatus(compoundnbt) == ChunkStatus.ChunkType.LEVELCHUNK) {
-                        return false;
-                    }
-
-                    if (status == ChunkStatus.EMPTY && cube.getAllStarts().values().stream().noneMatch(StructureStart::isValid)) {
-                        return false;
-                    }
-                }
-
-                CompoundTag cubeNbt = CubeSerializer.write(this.level, cube, null);
-                //TODO: FORGE EVENT : reimplement ChunkDataEvent#Save
-//                net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkDataEvent.Save(p_219229_1_, p_219229_1_.getWorldForge() != null ?
-//                p_219229_1_.getWorldForge() : this.level, compoundnbt));
-                this.writeCube(cubePos, cubeNbt);
-                this.markCubePosition(cubePos, status.getChunkType());
-                return true;
-            } catch (Exception exception) {
-                LOGGER.error("Failed to save chunk {},{},{}", cubePos.getX(), cubePos.getY(), cubePos.getZ(), exception);
-                return false;
-            }
-        }
-    }
-
+    // TODO: async
     private CompletableFuture<Boolean> cubeSaveAsync(CubeAccess cube) {
         ((CubicSectionStorage) this.poiManager).flush(cube.getCubePos());
         if (!cube.isDirty()) {
@@ -548,6 +501,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         return Iterables.unmodifiableIterable(this.visibleCubeMap.values());
     }
 
+    // This can't be ASM, the changes for column load order are too invasive
     @Override
     public CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> scheduleCube(ChunkHolder cubeHolder, ChunkStatus chunkStatusIn) {
         CubePos cubePos = ((CubeHolder) cubeHolder).getCubePos();
