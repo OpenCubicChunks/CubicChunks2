@@ -15,12 +15,14 @@ public class MixinBlockBlobFeature {
 
     private int storedY;
 
-    @Inject(at = @At(value = "HEAD"), method = "place")
+    @Inject(at = @At(value = "HEAD"), method = "place", cancellable = true)
     private void storeMinCubeY(FeaturePlaceContext<BlockStateConfiguration> featurePlaceContext, CallbackInfoReturnable<Boolean> cir) {
+        cir.setReturnValue(false);
         storedY = featurePlaceContext.origin().getY();
     }
 
-    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/WorldGenLevel;isEmptyBlock(Lnet/minecraft/core/BlockPos;)Z", ordinal = 0), method = "place", cancellable = true)
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/WorldGenLevel;isEmptyBlock(Lnet/minecraft/core/BlockPos;)Z", ordinal = 0, shift = At.Shift.BEFORE),
+        method = "place", cancellable = true)
     private void checkIfInCubeBounds(FeaturePlaceContext<BlockStateConfiguration> featurePlaceContext, CallbackInfoReturnable<Boolean> cir) {
         if (!((CubicLevelHeightAccessor) featurePlaceContext.level()).isCubic()) {
             return;
