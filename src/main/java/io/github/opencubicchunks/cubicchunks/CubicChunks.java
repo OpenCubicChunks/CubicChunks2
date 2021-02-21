@@ -9,6 +9,7 @@ import io.github.opencubicchunks.cubicchunks.meta.EarlyConfig;
 import io.github.opencubicchunks.cubicchunks.network.PacketDispatcher;
 import io.github.opencubicchunks.cubicchunks.server.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.server.GenDataCommand;
+import io.github.opencubicchunks.cubicchunks.server.VerticalSettingsReloadListener;
 import io.github.opencubicchunks.cubicchunks.world.biome.StripedBiomeSource;
 import io.github.opencubicchunks.cubicchunks.world.gen.feature.CCFeatures;
 import io.github.opencubicchunks.cubicchunks.world.gen.placement.CCPlacement;
@@ -83,6 +84,8 @@ public class CubicChunks implements ModInitializer {
             GenDataCommand.dataGenCommand(dispatcher);
             LOGGER.info("BYG: \"Server Starting\" Event Complete!");
         });
+
+        VerticalSettingsReloadListener.registerVerticalSettingsReloadListener();
     }
 
     //TODO: Implement a file for this.
@@ -93,8 +96,6 @@ public class CubicChunks implements ModInitializer {
         public void markDirty() {
 
         }
-
-
 
         public static class Client {
             public int verticalViewDistance = 8;
