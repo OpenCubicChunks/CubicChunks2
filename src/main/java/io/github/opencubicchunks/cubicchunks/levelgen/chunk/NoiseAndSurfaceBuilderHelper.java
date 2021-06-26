@@ -42,13 +42,15 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
     private final BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
 
     private boolean needsExtraHeight;
+    private boolean needsExtraDown;
 
-    public NoiseAndSurfaceBuilderHelper(CubeAccess delegate, CubeAccess delegateAbove) {
+    public NoiseAndSurfaceBuilderHelper(CubeAccess delegate, CubeAccess delegateAbove, CubeAccess delegateBelow) {
         super(delegate.getCubePos().asChunkPos(), UpgradeData.EMPTY, null, ((CubeProtoTickList<Block>) delegate.getBlockTicks()), ((CubeProtoTickList<Fluid>) delegate.getLiquidTicks()),
             new HeightAccessor(delegate));
-        this.delegates = new ChunkAccess[2];
-        this.delegates[0] = delegate;
-        this.delegates[1] = delegateAbove;
+        this.delegates = new ChunkAccess[3];
+        this.delegates[0] = delegateBelow;
+        this.delegates[1] = delegate;
+        this.delegates[2] = delegateAbove;
         this.heightmaps = Maps.newEnumMap(Heightmap.Types.class);
         isCubic = ((CubicLevelHeightAccessor) delegate).isCubic();
         generates2DChunks = ((CubicLevelHeightAccessor) delegate).generates2DChunks();
@@ -60,11 +62,15 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
         this.needsExtraHeight = needsExtraHeight;
     }
 
+    public void setNeedsExtraHeightDown(boolean needsExtraHeightDown) {
+        this.needsExtraDown = needsExtraHeightDown;
+    }
+
     public void moveColumn(int newColumnX, int newColumnZ) {
         this.columnX = newColumnX;
         this.columnZ = newColumnZ;
 
-        for (int relativeSectionY = 0; relativeSectionY < CubeAccess.DIAMETER_IN_SECTIONS * 2; relativeSectionY++) {
+        for (int relativeSectionY = 0; relativeSectionY < CubeAccess.DIAMETER_IN_SECTIONS * 3; relativeSectionY++) {
             int sectionY = relativeSectionY + ((CubeAccess) delegates[0]).getCubePos().asSectionPos().getY();
             CubeAccess delegateCube = (CubeAccess) getDelegateFromSectionY(sectionY);
             assert delegateCube != null;
@@ -73,7 +79,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
     }
 
     public void applySections() {
-        for (int relativeSectionY = 0; relativeSectionY < CubeAccess.DIAMETER_IN_SECTIONS * 2; relativeSectionY++) {
+        for (int relativeSectionY = 0; relativeSectionY < CubeAccess.DIAMETER_IN_SECTIONS * 3; relativeSectionY++) {
             int sectionY = relativeSectionY + ((CubeAccess) delegates[0]).getCubePos().asSectionPos().getY();
             int idx = getSectionIndex(Coords.sectionToMinBlock(sectionY));
             CubeAccess delegateCube = (CubeAccess) getDelegateFromSectionY(sectionY);
@@ -105,9 +111,9 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
         int blockX = Coords.localToBlock(((CubeAccess) delegates[0]).getCubePos().getX(), x) + (columnX * 16);
         int blockZ = Coords.localToBlock(((CubeAccess) delegates[0]).getCubePos().getZ(), z) + (columnZ * 16);
 
-        CubeAccess cube1 = (CubeAccess) delegates[1];
+        CubeAccess cube1 = (CubeAccess) delegates[this.delegates.length - 1];
         int localHeight = cube1.getCubeLocalHeight(type, blockX, blockZ);
-        return localHeight < cube1.getCubePos().minCubeY() ? ((CubeAccess) delegates[0]).getCubeLocalHeight(type, blockX, blockZ) : localHeight;
+        return localHeight < cube1.getCubePos().minCubeY() ? ((CubeAccess) delegates[1]).getCubeLocalHeight(type, blockX, blockZ) : localHeight;
     }
 
     @Override public LevelChunkSection getOrCreateSection(int sectionIndex) {
@@ -128,7 +134,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
     }
 
     @Override public int getMinBuildHeight() {
-        return ((CubeAccess) delegates[0]).getCubePos().minCubeY();
+        return ((CubeAccess) delegates[1]).getCubePos().minCubeY() - (this.needsExtraDown ? 8 : 0);
     }
 
     @Override public int getSectionYFromSectionIndex(int sectionIndex) {
@@ -239,7 +245,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
     /********Helpers********/
     @Nullable public ChunkAccess getDelegateCube(int cubeY) {
         int minCubeY = ((CubeAccess) delegates[0]).getCubePos().getY();
-        int maxCubeY = ((CubeAccess) delegates[1]).getCubePos().getY();
+        int maxCubeY = ((CubeAccess) delegates[delegates.length - 1]).getCubePos().getY();
 
         if (cubeY < minCubeY) {
             throw StopGeneratingThrowable.INSTANCE;
@@ -255,7 +261,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
         if (y < minY) {
             return -1;
         }
-        if (y > ((CubeAccess) delegates[1]).getCubePos().getY()) {
+        if (y > ((CubeAccess) delegates[delegates.length - 1]).getCubePos().getY()) {
             return -1;
         }
         return y - minY;
@@ -290,7 +296,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
 
         private HeightAccessor(ChunkAccess cube) {
             this.minBuildHeight = ((CubeAccess) cube).getCubePos().minCubeY();
-            this.height = CubeAccess.DIAMETER_IN_BLOCKS * 2;
+            this.height = CubeAccess.DIAMETER_IN_BLOCKS * 3;
             isCubic = ((CubicLevelHeightAccessor) cube).isCubic();
             generates2DChunks = ((CubicLevelHeightAccessor) cube).generates2DChunks();
             worldStyle = ((CubicLevelHeightAccessor) cube).worldStyle();

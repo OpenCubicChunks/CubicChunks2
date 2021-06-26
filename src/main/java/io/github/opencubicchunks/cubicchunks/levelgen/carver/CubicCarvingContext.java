@@ -15,11 +15,11 @@ public class CubicCarvingContext extends CarvingContext {
 
 
     @Override public int getMinGenY() {
-        return chunk.getMinBuildHeight();
+        return chunk.getMinBuildHeight() - 2;
     }
 
     @Override public int getGenDepth() {
-        return chunk.getHeight();
+        return chunk.getHeight() + 2;
     }
 
     public int getOriginalMinGenY() {

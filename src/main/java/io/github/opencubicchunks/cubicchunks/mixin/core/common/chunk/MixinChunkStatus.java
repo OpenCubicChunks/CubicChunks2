@@ -202,6 +202,7 @@ public class MixinChunkStatus {
             int cubeY = cubePos.getY();
 
             ProtoCube cubeAbove = new ProtoCube(CubePos.of(cubePos.getX(), cubeY + 1, cubePos.getZ()), UpgradeData.EMPTY, cubeWorldGenRegion);
+            ProtoCube cubeBelow = new ProtoCube(CubePos.of(cubePos.getX(), cubeY - 1, cubePos.getZ()), UpgradeData.EMPTY, cubeWorldGenRegion);
 
             CompletableFuture<ChunkAccess> chainedNoiseFutures = null;
 
@@ -214,7 +215,7 @@ public class MixinChunkStatus {
 
                     ChunkPos pos = chunk.getPos();
 
-                    NoiseAndSurfaceBuilderHelper cubeAccessWrapper = new NoiseAndSurfaceBuilderHelper((CubeAccess) chunk, cubeAbove);
+                    NoiseAndSurfaceBuilderHelper cubeAccessWrapper = new NoiseAndSurfaceBuilderHelper((CubeAccess) chunk, cubeAbove, cubeBelow);
                     cubeAccessWrapper.moveColumn(columnX, columnZ);
 
                     if (chainedNoiseFutures == null) {
@@ -245,12 +246,12 @@ public class MixinChunkStatus {
             cubeAccessWrapper.applySections();
 
             // Exit early and don't waste time on empty sections.
-            if (areSectionsEmpty(cubeY, pos, ((NoiseAndSurfaceBuilderHelper) chunkAccess).getDelegateByIndex(0))) {
-                return chunkAccess;
-            }
+//            if (areSectionsEmpty(cubeY, pos, ((NoiseAndSurfaceBuilderHelper) chunkAccess).getDelegateByIndex(1))) {
+//                return chunkAccess;
+//            }
             generator.buildSurfaceAndBedrock(cubeWorldGenRegion, chunkAccess);
-            cubeAccessWrapper.setNeedsExtraHeight(false);
-
+//            cubeAccessWrapper.setNeedsExtraHeight(false);
+//            cubeAccessWrapper.setNeedsExtraHeightDown(true);
             // Carvers
             generator.applyCarvers(level.getSeed(), level.getBiomeManager(), cubeAccessWrapper, GenerationStep.Carving.AIR);
             generator.applyCarvers(level.getSeed(), level.getBiomeManager(), cubeAccessWrapper, GenerationStep.Carving.LIQUID);
