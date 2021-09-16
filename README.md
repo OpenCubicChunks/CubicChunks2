@@ -1,3 +1,3 @@
-# 1.15-CubicChunksPort
+# 1.17-CubicChunksPort
 
-A port for CubicChunks in 1.15
+A port for CubicChunks to 1.17
