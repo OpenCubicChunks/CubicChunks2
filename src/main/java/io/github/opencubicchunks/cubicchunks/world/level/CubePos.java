@@ -95,10 +95,10 @@ public class CubePos extends Vec3i {
             Coords.sectionToCube(sectionPos.getZ()));
     }
 
-    public static CubePos from(Entity p_218157_0_) {
-        return new CubePos(blockToCube(Mth.floor(p_218157_0_.getX())),
-            blockToCube(Mth.floor(p_218157_0_.getY())),
-            blockToCube(Mth.floor(p_218157_0_.getZ())));
+    public static CubePos from(Entity entity) {
+        return new CubePos(blockToCube(Mth.floor(entity.getX())),
+            blockToCube(Mth.floor(entity.getY())),
+            blockToCube(Mth.floor(entity.getZ())));
     }
 
 

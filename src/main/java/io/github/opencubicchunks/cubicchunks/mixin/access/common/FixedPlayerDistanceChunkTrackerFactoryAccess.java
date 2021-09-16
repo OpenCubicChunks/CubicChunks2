@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 public interface FixedPlayerDistanceChunkTrackerFactoryAccess {
 
     @Invoker("<init>")
-    static DistanceManager.FixedPlayerDistanceChunkTracker construct(DistanceManager ticketManager, int p_i50684_2_) {
+    static DistanceManager.FixedPlayerDistanceChunkTracker construct(DistanceManager ticketManager, int i) {
         throw new Error("Mixin did not apply.");
     }
 }

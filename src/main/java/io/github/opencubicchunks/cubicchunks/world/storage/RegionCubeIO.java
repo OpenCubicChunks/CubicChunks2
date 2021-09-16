@@ -119,10 +119,9 @@ public class RegionCubeIO {
         }
     }
 
-
     public CompletableFuture<Void> saveCubeNBT(CubePos cubePos, CompoundTag cubeNBT) {
         return this.submitCubeTask(() -> {
-            SaveEntry entry = this.pendingCubeWrites.computeIfAbsent(cubePos, (p_235977_1_) -> new SaveEntry(cubeNBT));
+            SaveEntry entry = this.pendingCubeWrites.computeIfAbsent(cubePos, (pos) -> new SaveEntry(cubeNBT));
             entry.data = cubeNBT;
             return Either.left(entry.result);
         }).thenCompose(Function.identity());
@@ -313,8 +312,8 @@ public class RegionCubeIO {
         private CompoundTag data;
         private final CompletableFuture<Void> result = new CompletableFuture<>();
 
-        SaveEntry(CompoundTag p_i231891_1_) {
-            this.data = p_i231891_1_;
+        SaveEntry(CompoundTag dataTag) {
+            this.data = dataTag;
         }
     }
 
