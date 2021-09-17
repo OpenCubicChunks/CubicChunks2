@@ -295,7 +295,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
 
     @Nullable
     @Override
-    public LevelCube getCubeIfComplete() {
+    public LevelCube getTickingCube() {
         CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> completablefuture = this.tickingChunkFuture;
         Either<LevelCube, ChunkHolder.ChunkLoadingFailure> either = completablefuture.getNow(null);
         return either == null ? null : either.left().orElse(null);
@@ -433,7 +433,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
             }
             return;
         }
-        LevelCube cube = getCubeIfComplete();
+        LevelCube cube = getTickingCube();
         if (cube == null) {
             return;
         }
@@ -487,7 +487,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
         if (cubePos == null) {
             return;
         }
-        LevelCube cube = getCubeIfComplete();
+        LevelCube cube = getTickingCube();
         if (cube != null) {
             cube.setUnsaved(true);
             if (lightType == LightLayer.SKY) {

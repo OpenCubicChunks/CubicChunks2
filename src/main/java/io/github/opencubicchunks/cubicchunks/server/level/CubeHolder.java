@@ -35,9 +35,9 @@ public interface CubeHolder {
         return cubeLevel < 33 ? ChunkStatus.FULL : CubeStatus.getStatus(cubeLevel - 33);
     }
 
-    // getChunkIfComplete, TODO: rename to getTickingCube
+    // getTickingChunk
     @Nullable
-    LevelCube getCubeIfComplete();
+    LevelCube getTickingCube();
 
     CubePos getCubePos();
 

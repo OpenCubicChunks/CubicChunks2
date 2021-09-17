@@ -1221,7 +1221,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             if (load && !wasLoaded) {
                 ChunkHolder chunkholder = ((CubeMap) this).getVisibleCubeIfPresent(cubePosIn.asLong());
                 if (chunkholder != null) {
-                    LevelCube cube = ((CubeHolder) chunkholder).getCubeIfComplete();
+                    LevelCube cube = ((CubeHolder) chunkholder).getTickingCube();
                     if (cube != null) {
                         this.playerLoadedCube(player, packetCache, cube);
                         for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {
