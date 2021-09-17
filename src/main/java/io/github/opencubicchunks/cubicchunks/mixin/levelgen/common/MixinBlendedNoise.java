@@ -3,16 +3,16 @@ package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.levelgen.synth.BlendedNoise;
 import net.minecraft.world.level.levelgen.synth.PerlinNoise;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(BlendedNoise.class)
 public class MixinBlendedNoise {
-    // TODO: @Final
-    @Shadow private PerlinNoise mainNoise;
-    @Shadow private PerlinNoise minLimitNoise;
-    @Shadow private PerlinNoise maxLimitNoise;
+    @Final @Shadow private PerlinNoise mainNoise;
+    @Final @Shadow private PerlinNoise minLimitNoise;
+    @Final @Shadow private PerlinNoise maxLimitNoise;
 
     /**
      * @reason optimization: the main noise is often clamped, causing only one of the min limit or max limit to be actually used
