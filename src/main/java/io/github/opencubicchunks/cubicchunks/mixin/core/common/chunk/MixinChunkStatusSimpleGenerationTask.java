@@ -29,7 +29,7 @@ public interface MixinChunkStatusSimpleGenerationTask {
      * @author Batrteks2x
      * @reason inject is not supported, SectionPrimer check
      */
-    @Overwrite(remap = false) //TODO: REMOVE "remap=false" WHEN INTERMEDIARY IS FIXED!
+    @Overwrite
     default CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> doWork(
         ChunkStatus status, Executor executor, ServerLevel level, ChunkGenerator generator,
         StructureManager structureManager, ThreadedLevelLightEngine lightEngine,
