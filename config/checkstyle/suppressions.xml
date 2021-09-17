@@ -6,7 +6,7 @@
 
 <suppressions>
     <!-- suppress for time measurement code -->
-    <suppress checks="InnerAssignment" files="DebugVisualization.java"/>
+    <suppress checks="InnerAssignment" files="DebugVisualization.java|Int3HashSet.java"/>
     <!-- class transformers will often repeat the same class name string literal -->
     <suppress checks="MultipleStringLiterals" files=".*Transformer\.java"/>
     <!-- implementations of ChunkAccess, getHeight for heightmap and world height are semantically not overloads but have the same name -->
@@ -34,5 +34,9 @@
     <suppress checks="StaticVariableName" files=".*Mixin.*\.java"/>
     <!-- Mixins may have an underscore to separate target from functionality -->
     <suppress checks="TypeName" files=".*Mixin.*\.java"/>
-    <suppress checks="DeclarationOrder" files="MixinNaturalSpawner.java"/>
+    <suppress checks="DeclarationOrder" files="MixinNaturalSpawner.java|Int3HashSet.java"/>
+    <suppress checks="HiddenField" files="Int3HashSet.java"/>
+    <suppress checks="NoFinalizer" files="Int3HashSet.java"/>
+    <suppress checks="EmptyForIteratorPad" files="Int3HashSet.java|Int3HashSetTest.java"/>
+    <suppress checks="ModifiedControlVariable" files="Int3HashSetTest.java"/>
 </suppressions>
