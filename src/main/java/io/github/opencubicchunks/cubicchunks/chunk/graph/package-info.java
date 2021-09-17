@@ -1,7 +1,0 @@
-@ParametersAreNonnullByDefault
-@MethodsReturnNonnullByDefault
-package io.github.opencubicchunks.cubicchunks.chunk.graph;
-
-import javax.annotation.ParametersAreNonnullByDefault;
-
-import io.github.opencubicchunks.cubicchunks.annotation.MethodsReturnNonnullByDefault;

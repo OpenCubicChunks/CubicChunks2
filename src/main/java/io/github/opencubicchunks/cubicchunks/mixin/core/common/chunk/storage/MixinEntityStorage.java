@@ -10,10 +10,10 @@ import java.util.concurrent.Executor;
 import com.google.common.collect.ImmutableList;
 import com.mojang.datafixers.DataFixer;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
-import io.github.opencubicchunks.cubicchunks.chunk.ImposterChunkPos;
-import io.github.opencubicchunks.cubicchunks.chunk.storage.CubicEntityStorage;
-import io.github.opencubicchunks.cubicchunks.chunk.util.CubePos;
-import io.github.opencubicchunks.cubicchunks.server.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
+import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicEntityStorage;
 import io.github.opencubicchunks.cubicchunks.world.storage.RegionCubeIO;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.SharedConstants;
@@ -89,13 +89,11 @@ public abstract class MixinEntityStorage implements CubicEntityStorage {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;
         }
-
         ci.cancel();
 
         if (!(dataList.getPos() instanceof ImposterChunkPos)) {
             throw new IllegalStateException(dataList.getPos().getClass().getSimpleName() + " was not an instanceOf " + ImposterChunkPos.class.getSimpleName());
         }
-
         CubePos cubePos = ((ImposterChunkPos) dataList.getPos()).toCubePos();
         if (dataList.isEmpty()) {
             if (this.emptyChunks.add(cubePos.asLong())) {

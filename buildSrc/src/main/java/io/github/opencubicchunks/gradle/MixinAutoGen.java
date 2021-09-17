@@ -1,13 +1,14 @@
 package io.github.opencubicchunks.gradle;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
+import javax.annotation.Nonnull;
+
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.plugins.JavaPluginConvention;
-
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 
 public class MixinAutoGen implements Plugin<Project> {
 
@@ -15,7 +16,7 @@ public class MixinAutoGen implements Plugin<Project> {
         MixinGenExtension extension = new MixinGenExtension();
         target.getExtensions().add("mixinGen", extension);
         Task generateMixinConfigs = target.getTasks().create("generateMixinConfigs");
-        generateMixinConfigs.setGroup("mixin");
+        generateMixinConfigs.setGroup("filegen");
         generateMixinConfigs.doLast(task -> {
             JavaPluginConvention convention = Utils.getJavaPluginConvention(target);
             try {

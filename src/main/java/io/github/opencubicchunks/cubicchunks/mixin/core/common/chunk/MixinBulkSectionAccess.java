@@ -1,9 +1,9 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk;
 
-import io.github.opencubicchunks.cubicchunks.chunk.IBigCube;
-import io.github.opencubicchunks.cubicchunks.server.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.CubeWorldGenRegion;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -35,16 +35,16 @@ public class MixinBulkSectionAccess {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;
         }
-        ChunkAccess chunkAccess = ((CubeWorldGenRegion) this.level).getCube(blockPos);
-        int sectionIDX = Coords.blockToIndex(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+        ChunkAccess cube = ((CubeWorldGenRegion) this.level).getCube(blockPos);
+        int sectionIdx = Coords.blockToIndex(blockPos.getX(), blockPos.getY(), blockPos.getZ());
 
-        if (sectionIDX >= 0 && sectionIDX < IBigCube.SECTION_COUNT) {
+        if (sectionIdx >= 0 && sectionIdx < CubeAccess.SECTION_COUNT) {
             long sectionLong = SectionPos.asLong(blockPos);
             if (this.lastSection == null || this.lastSectionKey != sectionLong) {
                 this.lastSection = this.acquiredSections.computeIfAbsent(sectionLong, (lx) -> {
-                    LevelChunkSection levelChunkSection = chunkAccess.getOrCreateSection(sectionIDX);
-                    levelChunkSection.acquire();
-                    return levelChunkSection;
+                    LevelChunkSection section = cube.getOrCreateSection(sectionIdx);
+                    section.acquire();
+                    return section;
                 });
                 this.lastSectionKey = sectionLong;
             }

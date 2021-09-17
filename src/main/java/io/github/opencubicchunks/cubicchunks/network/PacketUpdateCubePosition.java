@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.network;
 
-import io.github.opencubicchunks.cubicchunks.chunk.IClientCubeProvider;
+import io.github.opencubicchunks.cubicchunks.client.multiplayer.ClientCubeCache;
 import net.minecraft.core.SectionPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
@@ -24,9 +24,9 @@ public class PacketUpdateCubePosition {
     }
 
     public static class Handler {
-        public static void handle(PacketUpdateCubePosition packet, Level worldIn) {
-            ChunkSource chunkProvider = worldIn.getChunkSource();
-            ((IClientCubeProvider) chunkProvider).setCenter(packet.pos.getX(), packet.pos.getY(), packet.pos.getZ());
+        public static void handle(PacketUpdateCubePosition packet, Level level) {
+            ChunkSource chunkSource = level.getChunkSource();
+            ((ClientCubeCache) chunkSource).updateViewCenter(packet.pos.getX(), packet.pos.getY(), packet.pos.getZ());
         }
     }
 }

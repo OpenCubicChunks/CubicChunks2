@@ -2,9 +2,9 @@ package io.github.opencubicchunks.cubicchunks.network;
 
 import java.util.Map;
 
-import io.github.opencubicchunks.cubicchunks.chunk.LightHeightmapGetter;
-import io.github.opencubicchunks.cubicchunks.chunk.heightmap.ClientLightSurfaceTracker;
-import io.github.opencubicchunks.cubicchunks.chunk.heightmap.LightSurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientLightSurfaceTracker;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerWrapper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -48,9 +48,9 @@ public class PacketHeightmap {
     }
 
     public static class Handler {
-        public static void handle(PacketHeightmap packet, Level worldIn) {
-            ChunkSource chunkProvider = worldIn.getChunkSource();
-            LevelChunk chunk = chunkProvider.getChunk(packet.pos.x, packet.pos.z, false);
+        public static void handle(PacketHeightmap packet, Level level) {
+            ChunkSource chunkSource = level.getChunkSource();
+            LevelChunk chunk = chunkSource.getChunk(packet.pos.x, packet.pos.z, false);
             if (chunk == null) {
                 // CubicChunks.LOGGER.error("Chunk doesn't exist when receiving heightmap");
                 return;

@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk;
 
-import io.github.opencubicchunks.cubicchunks.server.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.storage.CubeProtoTickList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelHeightAccessor;
@@ -24,7 +24,6 @@ public class MixinProtoTickList<T> {
         if (!((CubicLevelHeightAccessor) accessor).isCubic() || accessor instanceof CubeProtoTickList.CubeProtoTickListHeightAccess) {
             return accessor.getSectionsCount();
         }
-
         return 0;
     }
 
@@ -38,7 +37,6 @@ public class MixinProtoTickList<T> {
         if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic() || this.levelHeightAccessor instanceof CubeProtoTickList.CubeProtoTickListHeightAccess) {
             return;
         }
-
         ci.cancel();
         //ChunkAccess.getOrCreateOffsetList(this.toBeTicked, this.levelHeightAccessor.getSectionIndex(blockPos.getY())).add(ProtoChunk
         // .packOffsetCoordinates(blockPos));

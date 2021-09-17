@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.Queue;
 
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
-import io.github.opencubicchunks.cubicchunks.chunk.ImposterChunkPos;
-import io.github.opencubicchunks.cubicchunks.chunk.storage.CubicEntityStorage;
-import io.github.opencubicchunks.cubicchunks.chunk.util.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.entity.ChunkEntityStateEventHandler;
-import io.github.opencubicchunks.cubicchunks.world.entity.ChunkEntityStateEventSource;
-import io.github.opencubicchunks.cubicchunks.world.entity.IsCubicEntityContext;
+import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventHandler;
+import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventSource;
+import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
+import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
+import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicEntityStorage;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ChunkHolder;
@@ -33,7 +33,6 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(PersistentEntitySectionManager.class)
 public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess> implements IsCubicEntityContext, ChunkEntityStateEventSource {
-
 
     @Shadow @Final private Long2ObjectMap<Object> chunkLoadStatuses;
     @Shadow @Final private EntityPersistentStorage<T> permanentStorage;
@@ -87,11 +86,10 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
             CubicChunks.LOGGER.error("Failed to read cube {}", cubePos, throwable);
             return null;
         });
-
     }
 
     @Redirect(method = "storeChunkSections", at = @At(value = "NEW", target = "net/minecraft/world/level/ChunkPos"))
-    private ChunkPos useImposterChunkPos(long pos) {
+    private ChunkPos storeCubePosAsChunkPos(long pos) {
         if (isCubic) {
             return new ImposterChunkPos(CubePos.from(pos));
         } else {
@@ -99,23 +97,22 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
         }
     }
 
+    // TODO: should we keep track of columns
     @Inject(method = "isPositionTicking(Lnet/minecraft/world/level/ChunkPos;)Z", at = @At("HEAD"), cancellable = true)
-    private void returnFalseIfCubic(ChunkPos chunkPos, CallbackInfoReturnable<Boolean> cir) {
+    private void isColumnPositionTicking(ChunkPos chunkPos, CallbackInfoReturnable<Boolean> cir) {
         if (chunkPos instanceof ImposterChunkPos) {
             return;
         }
-
         if (isCubic) {
             cir.setReturnValue(false);
         }
     }
 
     @Inject(method = "isPositionTicking(Lnet/minecraft/core/BlockPos;)Z", at = @At("HEAD"), cancellable = true)
-    private void useCubePos(BlockPos blockPos, CallbackInfoReturnable<Boolean> cir) {
+    private void isCubePositionTicking(BlockPos blockPos, CallbackInfoReturnable<Boolean> cir) {
         if (!isCubic) {
             return;
         }
-
         cir.setReturnValue(this.chunkVisibility.get(CubePos.asLong(blockPos)).isTicking());
     }
 

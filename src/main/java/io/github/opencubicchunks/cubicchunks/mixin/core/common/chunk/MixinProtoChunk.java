@@ -1,12 +1,12 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk;
 
-import io.github.opencubicchunks.cubicchunks.chunk.CubeMap;
-import io.github.opencubicchunks.cubicchunks.chunk.CubeMapGetter;
-import io.github.opencubicchunks.cubicchunks.chunk.IBigCube;
-import io.github.opencubicchunks.cubicchunks.chunk.LightHeightmapGetter;
-import io.github.opencubicchunks.cubicchunks.chunk.cube.CubePrimer;
-import io.github.opencubicchunks.cubicchunks.chunk.heightmap.LightSurfaceTrackerWrapper;
-import io.github.opencubicchunks.cubicchunks.server.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMap;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMapGetter;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerWrapper;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -30,14 +30,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ProtoChunk.class)
-public abstract class MixinProtoChunk implements LightHeightmapGetter, LevelHeightAccessor, CubeMapGetter, CubicLevelHeightAccessor {
+public abstract class MixinProtoChunk implements LightHeightmapGetter, LevelHeightAccessor, ColumnCubeMapGetter, CubicLevelHeightAccessor {
 
     private boolean isCubic;
     private boolean generates2DChunks;
     private WorldStyle worldStyle;
 
     private LightSurfaceTrackerWrapper lightHeightmap;
-    private CubeMap cubeMap;
+    private ColumnCubeMap columnCubeMap;
 
     @Shadow @Final private LevelHeightAccessor levelHeightAccessor;
 
@@ -52,17 +52,17 @@ public abstract class MixinProtoChunk implements LightHeightmapGetter, LevelHeig
     }
 
     @Override
-    public CubeMap getCubeMap() {
+    public ColumnCubeMap getCubeMap() {
         // TODO actually init this properly instead of doing lazy init here
-        if (cubeMap == null) {
-            cubeMap = new CubeMap();
+        if (columnCubeMap == null) {
+            columnCubeMap = new ColumnCubeMap();
         }
-        return cubeMap;
+        return columnCubeMap;
     }
 
     @Inject(method = "<init>(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/level/chunk/UpgradeData;[Lnet/minecraft/world/level/chunk/LevelChunkSection;"
         + "Lnet/minecraft/world/level/chunk/ProtoTickList;Lnet/minecraft/world/level/chunk/ProtoTickList;Lnet/minecraft/world/level/LevelHeightAccessor;)V", at = @At("RETURN"))
-    private void setCubic(ChunkPos chunkPos, UpgradeData upgradeData, LevelChunkSection[] levelChunkSections, ProtoTickList<Block> protoTickList, ProtoTickList<Fluid> protoTickList2,
+    private void setCubic(ChunkPos chunkPos, UpgradeData upgradeData, LevelChunkSection[] levelChunkSections, ProtoTickList<Block> blockTicks, ProtoTickList<Fluid> fluidTicks,
                           LevelHeightAccessor heightAccessor, CallbackInfo ci) {
         isCubic = ((CubicLevelHeightAccessor) heightAccessor).isCubic();
         generates2DChunks = ((CubicLevelHeightAccessor) heightAccessor).generates2DChunks();
@@ -77,11 +77,9 @@ public abstract class MixinProtoChunk implements LightHeightmapGetter, LevelHeig
         if (!((CubicLevelHeightAccessor) accessor).isCubic()) {
             return levelHeightAccessor.getSectionsCount();
         }
-
-        if (accessor instanceof CubePrimer.FakeSectionCount) {
+        if (accessor instanceof ProtoCube.FakeSectionCount) {
             return accessor.getSectionsCount();
         }
-
         if (accessor instanceof Level) {
             if (((CubicLevelHeightAccessor) accessor).generates2DChunks()) {
                 int height = ((Level) accessor).dimensionType().height();
@@ -97,24 +95,23 @@ public abstract class MixinProtoChunk implements LightHeightmapGetter, LevelHeig
         if (accessor.getMaxBuildHeight() > 2048) {
             return 16;
         }
-
-        return Math.min(IBigCube.SECTION_COUNT * 2, accessor.getSectionsCount()); // TODO: properly handle ProtoChunk
+        return Math.min(CubeAccess.SECTION_COUNT * 2, accessor.getSectionsCount()); // TODO: properly handle ProtoChunk
     }
 
     @Inject(method = "getHeight()I", at = @At("HEAD"), cancellable = true)
     private void setHeight(CallbackInfoReturnable<Integer> cir) {
-        if (this.levelHeightAccessor instanceof Level) {
+        if (this.levelHeightAccessor instanceof Level level) {
             if (this.generates2DChunks()) {
-                cir.setReturnValue(((Level) levelHeightAccessor).dimensionType().height());
+                cir.setReturnValue(level.dimensionType().height());
             }
         }
     }
 
     @Inject(method = "getMinBuildHeight", at = @At("HEAD"), cancellable = true)
     private void setMinHeight(CallbackInfoReturnable<Integer> cir) {
-        if (this.levelHeightAccessor instanceof Level) {
+        if (this.levelHeightAccessor instanceof Level level) {
             if (this.generates2DChunks()) {
-                cir.setReturnValue(((Level) levelHeightAccessor).dimensionType().minY());
+                cir.setReturnValue(level.dimensionType().minY());
             }
         }
     }

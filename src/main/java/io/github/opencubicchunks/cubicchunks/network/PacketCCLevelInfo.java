@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.network;
 
-import io.github.opencubicchunks.cubicchunks.server.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
 
@@ -21,8 +21,8 @@ public class PacketCCLevelInfo {
     }
 
     public static class Handler {
-        public static void handle(PacketCCLevelInfo packet, Level worldIn) {
-            ((CubicLevelHeightAccessor) worldIn).setWorldStyle(CubicLevelHeightAccessor.WorldStyle.valueOf(packet.worldStyle.toUpperCase()));
+        public static void handle(PacketCCLevelInfo packet, Level level) {
+            ((CubicLevelHeightAccessor) level).setWorldStyle(CubicLevelHeightAccessor.WorldStyle.valueOf(packet.worldStyle.toUpperCase()));
         }
     }
 }

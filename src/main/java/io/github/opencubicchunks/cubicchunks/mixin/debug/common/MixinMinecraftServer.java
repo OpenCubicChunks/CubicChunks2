@@ -4,8 +4,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
-import io.github.opencubicchunks.cubicchunks.chunk.util.CubePos;
-import io.github.opencubicchunks.cubicchunks.server.IServerChunkProvider;
+import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
+import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
@@ -49,8 +49,8 @@ public abstract class MixinMinecraftServer {
         count++;
     }
 
-    private void addCube(IServerChunkProvider serverChunkProvider, CubePos pos) {
-        serverChunkProvider.addCubeRegionTicket(TicketType.START, pos, 1, Unit.INSTANCE);
+    private void addCube(ServerCubeCache serverCubeCache, CubePos pos) {
+        serverCubeCache.addCubeRegionTicket(TicketType.START, pos, 1, Unit.INSTANCE);
         count++;
     }
 
@@ -59,21 +59,20 @@ public abstract class MixinMinecraftServer {
      * @reason Custom chunk loading order for debugging
      */
     @Inject(method = "prepareLevels", at = @At("HEAD"), cancellable = true)
-    private void prepareLevels(ChunkProgressListener worldGenerationProgressListener, CallbackInfo ci) {
+    private void prepareLevels(ChunkProgressListener progressListener, CallbackInfo ci) {
         if (!DEBUG_LOAD_ORDER_ENABLED) {
             return;
         }
-
         ci.cancel();
         ServerLevel serverLevel = this.overworld();
         CubicChunks.LOGGER.info("Preparing start region for dimension {}", serverLevel.dimension().location());
         BlockPos blockPos = serverLevel.getSharedSpawnPos();
-        worldGenerationProgressListener.updateSpawnPos(new ChunkPos(blockPos));
+        progressListener.updateSpawnPos(new ChunkPos(blockPos));
         ServerChunkCache serverChunkCache = serverLevel.getChunkSource();
         serverChunkCache.getLightEngine().setTaskPerBatch(500);
         this.nextTickTime = Util.getMillis();
 
-        IServerChunkProvider prov = (IServerChunkProvider) serverChunkCache;
+        ServerCubeCache prov = (ServerCubeCache) serverChunkCache;
         addChunk(serverChunkCache, new ChunkPos(0, 0));
         addCube(prov, CubePos.of(0, 0, 0));
 
@@ -108,7 +107,7 @@ public abstract class MixinMinecraftServer {
                 if (!levelIter.hasNext()) {
                     this.nextTickTime = Util.getMillis() + 10L;
                     this.waitUntilNextTick();
-                    worldGenerationProgressListener.stop();
+                    progressListener.stop();
                     serverChunkCache.getLightEngine().setTaskPerBatch(5);
                     this.updateMobSpawningFlags();
                     return;

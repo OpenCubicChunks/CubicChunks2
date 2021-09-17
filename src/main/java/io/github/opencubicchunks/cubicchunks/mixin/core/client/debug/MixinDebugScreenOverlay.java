@@ -2,9 +2,11 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.client.debug;
 
 import java.util.List;
 
-import io.github.opencubicchunks.cubicchunks.chunk.LightHeightmapGetter;
-import io.github.opencubicchunks.cubicchunks.chunk.heightmap.LightSurfaceTrackerWrapper;
-import io.github.opencubicchunks.cubicchunks.server.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.utils.Coords;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerWrapper;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
@@ -29,6 +31,22 @@ public abstract class MixinDebugScreenOverlay {
     @Shadow @Final private Minecraft minecraft;
 
     @Shadow protected abstract LevelChunk getServerChunk();
+
+    @SuppressWarnings("rawtypes")
+    @Inject(method = "getGameInformation",
+        at = @At(value = "INVOKE", target = "Ljava/util/List;add(Ljava/lang/Object;)Z", ordinal = 6),
+        locals = LocalCapture.CAPTURE_FAILSOFT
+    )
+    private void onAddChunkInfo(CallbackInfoReturnable<List> cir, /*IntegratedServer integratedserver, Connection networkmanager, float f, float f1,*/
+                                String s, BlockPos blockpos, Entity entity, Direction direction, String s1, /*ChunkPos chunkpos,*/ Level world, LongSet longset,
+                                List debugScreenList/*, String s2*/) {
+        //noinspection unchecked
+        // TODO: use Coords class
+        debugScreenList.add(String.format("Cube:  %d %d %d in %d %d %d",
+            blockpos.getX() & (CubeAccess.DIAMETER_IN_BLOCKS - 1), blockpos.getY() & (CubeAccess.DIAMETER_IN_BLOCKS - 1), blockpos.getZ() & (CubeAccess.DIAMETER_IN_BLOCKS - 1),
+            Coords.blockToCube(blockpos.getX()), Coords.blockToCube(blockpos.getY()), Coords.blockToCube(blockpos.getZ()))
+        );
+    }
 
     @Inject(method = "getGameInformation",
         at = @At(value = "INVOKE",
@@ -55,9 +73,9 @@ public abstract class MixinDebugScreenOverlay {
         // No cubic check here because it's a vanilla feature that was removed anyway
         if (this.minecraft.getSingleplayerServer() != null) {
             if (serverChunk != null) {
-                LevelLightEngine lightingProvider = level.getChunkSource().getLightEngine();
-                list.add("Server Light: (" + lightingProvider.getLayerListener(LightLayer.SKY).getLightValue(pos) + " sky, "
-                    + lightingProvider.getLayerListener(LightLayer.BLOCK).getLightValue(pos) + " block)");
+                LevelLightEngine lightEngine = level.getChunkSource().getLightEngine();
+                list.add("Server Light: (" + lightEngine.getLayerListener(LightLayer.SKY).getLightValue(pos) + " sky, "
+                    + lightEngine.getLayerListener(LightLayer.BLOCK).getLightValue(pos) + " block)");
             } else {
                 list.add("Server Light: (?? sky, ?? block)");
             }

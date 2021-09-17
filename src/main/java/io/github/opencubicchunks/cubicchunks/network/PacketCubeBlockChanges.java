@@ -1,8 +1,8 @@
 package io.github.opencubicchunks.cubicchunks.network;
 
 
-import io.github.opencubicchunks.cubicchunks.chunk.IBigCube;
 import io.github.opencubicchunks.cubicchunks.utils.BufferUtils;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import it.unimi.dsi.fastutil.shorts.ShortList;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -17,7 +17,6 @@ public class PacketCubeBlockChanges {
     private final short[] localAddresses;
     private final BlockState[] blockStates;
     private final SectionPos sectionPos;
-
 
     public PacketCubeBlockChanges(FriendlyByteBuf in) {
         this.sectionPos = SectionPos.of(
@@ -35,7 +34,7 @@ public class PacketCubeBlockChanges {
         }
     }
 
-    public PacketCubeBlockChanges(IBigCube cube, SectionPos sectionPos, ShortList localAddresses) {
+    public PacketCubeBlockChanges(CubeAccess cube, SectionPos sectionPos, ShortList localAddresses) {
         this.sectionPos = sectionPos;
         this.localAddresses = localAddresses.toShortArray();
         this.blockStates = new BlockState[localAddresses.size()];
@@ -63,10 +62,10 @@ public class PacketCubeBlockChanges {
     }
 
     public static class Handler {
-        public static void handle(PacketCubeBlockChanges packet, Level world) {
-            ClientLevel worldClient = (ClientLevel) world;
+        public static void handle(PacketCubeBlockChanges packet, Level level) {
+            ClientLevel clientLevel = (ClientLevel) level;
             for (int i = 0; i < packet.localAddresses.length; i++) {
-                worldClient.setKnownState(packet.getPos(i), packet.blockStates[i]);
+                clientLevel.setKnownState(packet.getPos(i), packet.blockStates[i]);
             }
         }
     }

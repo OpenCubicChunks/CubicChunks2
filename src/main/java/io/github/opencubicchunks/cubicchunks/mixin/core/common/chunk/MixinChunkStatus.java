@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk;
 
-import static io.github.opencubicchunks.cubicchunks.chunk.util.Utils.*;
+import static io.github.opencubicchunks.cubicchunks.utils.Utils.*;
 import static net.minecraft.core.Registry.BIOME_REGISTRY;
 
 import java.util.List;
@@ -9,20 +9,20 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import com.mojang.datafixers.util.Either;
-import io.github.opencubicchunks.cubicchunks.chunk.IBigCube;
-import io.github.opencubicchunks.cubicchunks.chunk.ICubeGenerator;
-import io.github.opencubicchunks.cubicchunks.chunk.NoiseAndSurfaceBuilderHelper;
-import io.github.opencubicchunks.cubicchunks.chunk.biome.ColumnBiomeContainer;
-import io.github.opencubicchunks.cubicchunks.chunk.cube.CubePrimer;
-import io.github.opencubicchunks.cubicchunks.chunk.util.CCWorldGenUtils;
-import io.github.opencubicchunks.cubicchunks.chunk.util.CubePos;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkManagerAccess;
+import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
+import io.github.opencubicchunks.cubicchunks.levelgen.chunk.CubeGenerator;
+import io.github.opencubicchunks.cubicchunks.levelgen.chunk.NoiseAndSurfaceBuilderHelper;
+import io.github.opencubicchunks.cubicchunks.levelgen.util.CubicWorldGenUtils;
+import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkMapAccess;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.StructureFeatureManagerAccess;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ThreadedLevelLightEngineAccess;
-import io.github.opencubicchunks.cubicchunks.server.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.CubeWorldGenRegion;
-import io.github.opencubicchunks.cubicchunks.world.server.IServerWorldLightManager;
+import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnBiomeContainer;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
+import io.github.opencubicchunks.cubicchunks.world.server.CubicThreadedLevelLightEngine;
 import net.minecraft.core.Registry;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
@@ -63,11 +63,6 @@ public class MixinChunkStatus {
     // lambda$static$15 == FULL (loading worker)
 
     @SuppressWarnings({ "UnresolvedMixinReference", "target" })
-
-    //(Lnet/minecraft/world/chunk/ChunkStatus;Lnet/minecraft/world/server/ServerWorld;Lnet/minecraft/world/gen/feature/template/TemplateManager;
-    // Lnet/minecraft/world/server/ServerWorldLightManager;Ljava/util/function/Function;Lnet/minecraft/world/chunk/IChunk;
-    // Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable;)V
-
     @Inject(
         method = "lambda$static$0(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;"
             + "Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;Lnet/minecraft/server/level/ThreadedLevelLightEngine;Ljava/util/function/Function;"
@@ -75,15 +70,14 @@ public class MixinChunkStatus {
         at = @At("HEAD")
     )
     private static void noopLoadingWorker(
-        ChunkStatus status, ServerLevel world, StructureManager templateManager,
-        ThreadedLevelLightEngine lightManager,
+        ChunkStatus status, ServerLevel level, StructureManager structureManager,
+        ThreadedLevelLightEngine lightEngine,
         Function<ChunkAccess, CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> func,
         ChunkAccess chunk,
         CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> ci) {
 
-
-        if (chunk instanceof CubePrimer && !chunk.getStatus().isOrAfter(status)) {
-            ((CubePrimer) chunk).updateCubeStatus(status);
+        if (chunk instanceof ProtoCube && !chunk.getStatus().isOrAfter(status)) {
+            ((ProtoCube) chunk).updateCubeStatus(status);
         }
     }
 
@@ -99,20 +93,19 @@ public class MixinChunkStatus {
         at = @At("HEAD"), cancellable = true
     )
     private static void generateStructureStatus(
-        ChunkStatus status, Executor executor, ServerLevel world, ChunkGenerator generator,
-        StructureManager templateManager, ThreadedLevelLightEngine lightManager,
+        ChunkStatus status, Executor executor, ServerLevel level, ChunkGenerator generator,
+        StructureManager structureManager, ThreadedLevelLightEngine lightEngine,
         Function<ChunkAccess, CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> func,
         List<ChunkAccess> chunks, ChunkAccess chunk,
         CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
 
-        if (((CubicLevelHeightAccessor) world).generates2DChunks()) {
-            if (!(chunk instanceof IBigCube)) {
+        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
+            if (!(chunk instanceof CubeAccess)) {
                 return;
             }
-
-            if (!((IBigCube) chunk).getCubeStatus().isOrAfter(status)) {
-                if (chunk instanceof CubePrimer) {
-                    ((CubePrimer) chunk).updateCubeStatus(status);
+            if (!((CubeAccess) chunk).getCubeStatus().isOrAfter(status)) {
+                if (chunk instanceof ProtoCube) {
+                    ((ProtoCube) chunk).updateCubeStatus(status);
                 }
             }
             cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
@@ -120,19 +113,18 @@ public class MixinChunkStatus {
         }
 
         cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
-        if (!(chunk instanceof IBigCube)) {
+        if (!(chunk instanceof CubeAccess)) {
             //vanilla
             return;
         }
         //cc
-        if (!((IBigCube) chunk).getCubeStatus().isOrAfter(status)) {
-            if (world.getServer().getWorldData().worldGenSettings().generateFeatures()) { // check if structures are enabled
+        if (!((CubeAccess) chunk).getCubeStatus().isOrAfter(status)) {
+            if (level.getServer().getWorldData().worldGenSettings().generateFeatures()) { // check if structures are enabled
                 // structureFeatureManager ==  getStructureManager?
-                generator.createStructures(world.registryAccess(), world.structureFeatureManager(), chunk, templateManager, world.getSeed());
+                generator.createStructures(level.registryAccess(), level.structureFeatureManager(), chunk, structureManager, level.getSeed());
             }
-
-            if (chunk instanceof CubePrimer) {
-                ((CubePrimer) chunk).updateCubeStatus(status);
+            if (chunk instanceof ProtoCube) {
+                ((ProtoCube) chunk).updateCubeStatus(status);
             }
         }
     }
@@ -143,16 +135,13 @@ public class MixinChunkStatus {
             + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
         at = @At("HEAD"), cancellable = true
     )
-    private static void cubicChunksStructureReferences(ChunkStatus status, ServerLevel world, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk,
-                                                       CallbackInfo ci) {
-
-        if (((CubicLevelHeightAccessor) world).generates2DChunks()) {
+    private static void cubicChunksStructureReferences(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
+        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
             return;
         }
-
         ci.cancel();
-        if (chunk instanceof IBigCube) {
-            generator.createReferences(new CubeWorldGenRegion(world, unsafeCast(neighbors), status, chunk, -1), world.structureFeatureManager(), chunk);
+        if (chunk instanceof CubeAccess) {
+            generator.createReferences(new CubeWorldGenRegion(level, unsafeCast(neighbors), status, chunk, -1), level.structureFeatureManager(), chunk);
         }
     }
 
@@ -162,29 +151,25 @@ public class MixinChunkStatus {
             + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
         at = @At("HEAD"), cancellable = true
     )
-    private static void cubicChunksBiome(ChunkStatus status, ServerLevel world, ChunkGenerator chunkGenerator, List<ChunkAccess> neighbors, ChunkAccess chunkAccess, CallbackInfo ci) {
-        if (((CubicLevelHeightAccessor) world).generates2DChunks()) {
-            if (chunkAccess instanceof IBigCube) {
-                return;
-            }
+    private static void cubicChunksBiome(ChunkStatus status, ServerLevel level, ChunkGenerator chunkGenerator, List<ChunkAccess> neighbors, ChunkAccess chunkAccess, CallbackInfo ci) {
+        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
             return;
         }
-
-        if (chunkAccess instanceof CubePrimer) {
+        if (chunkAccess instanceof ProtoCube) {
             ci.cancel();
-            CubePrimer cube = ((CubePrimer) chunkAccess);
+            ProtoCube cube = ((ProtoCube) chunkAccess);
             cube.setHeightToCubeBounds(true);
-            for (int columnX = 0; columnX < IBigCube.DIAMETER_IN_SECTIONS; columnX++) {
-                for (int columnZ = 0; columnZ < IBigCube.DIAMETER_IN_SECTIONS; columnZ++) {
+            for (int columnX = 0; columnX < CubeAccess.DIAMETER_IN_SECTIONS; columnX++) {
+                for (int columnZ = 0; columnZ < CubeAccess.DIAMETER_IN_SECTIONS; columnZ++) {
                     cube.moveColumns(columnX, columnZ);
-                    chunkGenerator.createBiomes(world.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY), chunkAccess);
+                    chunkGenerator.createBiomes(level.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY), chunkAccess);
                 }
             }
             cube.setHeightToCubeBounds(false);
             return;
         }
         ci.cancel();
-        ColumnBiomeContainer biomeContainer = new ColumnBiomeContainer(world.registryAccess().registryOrThrow(BIOME_REGISTRY), world, world);
+        ColumnBiomeContainer biomeContainer = new ColumnBiomeContainer(level.registryAccess().registryOrThrow(BIOME_REGISTRY), level, level);
         ((ProtoChunk) chunkAccess).setBiomes(biomeContainer);
     }
 
@@ -198,54 +183,53 @@ public class MixinChunkStatus {
             + "Ljava/util/concurrent/CompletableFuture;",
         at = @At("HEAD"), cancellable = true
     )
-    private static void cubicChunksNoise(ChunkStatus status, Executor executor, ServerLevel world, ChunkGenerator generator, StructureManager structureFeatureManager,
+    private static void cubicChunksNoise(ChunkStatus status, Executor executor, ServerLevel level, ChunkGenerator generator, StructureManager structureManager,
                                          ThreadedLevelLightEngine lightEngine, Function<ChunkAccess, CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> function,
                                          List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> ci) {
 
-        if (((CubicLevelHeightAccessor) world).generates2DChunks()) {
-            if (chunk instanceof IBigCube) {
+        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
+            if (chunk instanceof CubeAccess) {
                 ci.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
             }
             return;
         }
 
         ci.cancel();
-        if (chunk instanceof IBigCube) {
-            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(world, unsafeCast(neighbors), status, chunk, 0);
+        if (chunk instanceof CubeAccess) {
+            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(level, unsafeCast(neighbors), status, chunk, 0);
 
-            CubePos cubePos = ((IBigCube) chunk).getCubePos();
+            CubePos cubePos = ((CubeAccess) chunk).getCubePos();
             int cubeY = cubePos.getY();
 
-            CubePrimer cubeAbove = new CubePrimer(CubePos.of(cubePos.getX(), cubeY + 1,
-                cubePos.getZ()), UpgradeData.EMPTY, cubeWorldGenRegion);
+            ProtoCube cubeAbove = new ProtoCube(CubePos.of(cubePos.getX(), cubeY + 1, cubePos.getZ()), UpgradeData.EMPTY, cubeWorldGenRegion);
 
             CompletableFuture<ChunkAccess> chainedNoiseFutures = null;
 
-            for (int columnX = 0; columnX < IBigCube.DIAMETER_IN_SECTIONS; columnX++) {
-                for (int columnZ = 0; columnZ < IBigCube.DIAMETER_IN_SECTIONS; columnZ++) {
+            for (int columnX = 0; columnX < CubeAccess.DIAMETER_IN_SECTIONS; columnX++) {
+                for (int columnZ = 0; columnZ < CubeAccess.DIAMETER_IN_SECTIONS; columnZ++) {
                     cubeAbove.moveColumns(columnX, columnZ);
-                    if (chunk instanceof CubePrimer) {
-                        ((CubePrimer) chunk).moveColumns(columnX, columnZ);
+                    if (chunk instanceof ProtoCube) {
+                        ((ProtoCube) chunk).moveColumns(columnX, columnZ);
                     }
 
                     ChunkPos pos = chunk.getPos();
 
-                    NoiseAndSurfaceBuilderHelper cubeAccessWrapper = new NoiseAndSurfaceBuilderHelper((IBigCube) chunk, cubeAbove);
+                    NoiseAndSurfaceBuilderHelper cubeAccessWrapper = new NoiseAndSurfaceBuilderHelper((CubeAccess) chunk, cubeAbove);
                     cubeAccessWrapper.moveColumn(columnX, columnZ);
 
                     if (chainedNoiseFutures == null) {
-                        chainedNoiseFutures = getNoiseSurfaceCarverFuture(executor, world, generator, cubeWorldGenRegion, cubeY, pos, cubeAccessWrapper);
+                        chainedNoiseFutures = getNoiseSurfaceCarverFuture(executor, level, generator, cubeWorldGenRegion, cubeY, pos, cubeAccessWrapper);
                     } else {
                         // Wait for first completion stage to complete before getting the next future, as it calls supplyAsync internally
                         chainedNoiseFutures =
-                            chainedNoiseFutures.thenCompose(futureIn -> getNoiseSurfaceCarverFuture(executor, world, generator, cubeWorldGenRegion, cubeY, pos, cubeAccessWrapper));
+                            chainedNoiseFutures.thenCompose(futureIn -> getNoiseSurfaceCarverFuture(executor, level, generator, cubeWorldGenRegion, cubeY, pos, cubeAccessWrapper));
                     }
                 }
             }
             assert chainedNoiseFutures != null;
             ci.setReturnValue(chainedNoiseFutures.thenApply(ignored -> {
-                if (chunk instanceof CubePrimer) {
-                    ((CubePrimer) chunk).updateCubeStatus(status);
+                if (chunk instanceof ProtoCube) {
+                    ((ProtoCube) chunk).updateCubeStatus(status);
                 }
 
                 return Either.left(chunk);
@@ -255,38 +239,35 @@ public class MixinChunkStatus {
         }
     }
 
-    private static CompletableFuture<ChunkAccess> getNoiseSurfaceCarverFuture(Executor executor, ServerLevel world, ChunkGenerator generator, CubeWorldGenRegion cubeWorldGenRegion,
+    private static CompletableFuture<ChunkAccess> getNoiseSurfaceCarverFuture(Executor executor, ServerLevel level, ChunkGenerator generator, CubeWorldGenRegion cubeWorldGenRegion,
                                                                               int cubeY, ChunkPos pos, NoiseAndSurfaceBuilderHelper cubeAccessWrapper) {
-        return generator.fillFromNoise(executor, world.structureFeatureManager().forWorldGenRegion(cubeWorldGenRegion), cubeAccessWrapper).thenApply(chunkAccess -> {
+        return generator.fillFromNoise(executor, level.structureFeatureManager().forWorldGenRegion(cubeWorldGenRegion), cubeAccessWrapper).thenApply(chunkAccess -> {
             cubeAccessWrapper.applySections();
 
             // Exit early and don't waste time on empty sections.
             if (areSectionsEmpty(cubeY, pos, ((NoiseAndSurfaceBuilderHelper) chunkAccess).getDelegateByIndex(0))) {
                 return chunkAccess;
             }
-
             generator.buildSurfaceAndBedrock(cubeWorldGenRegion, chunkAccess);
-
-
             cubeAccessWrapper.setNeedsExtraHeight(false);
 
             // Carvers
-            generator.applyCarvers(world.getSeed(), world.getBiomeManager(), cubeAccessWrapper, GenerationStep.Carving.AIR);
-            generator.applyCarvers(world.getSeed(), world.getBiomeManager(), cubeAccessWrapper, GenerationStep.Carving.LIQUID);
+            generator.applyCarvers(level.getSeed(), level.getBiomeManager(), cubeAccessWrapper, GenerationStep.Carving.AIR);
+            generator.applyCarvers(level.getSeed(), level.getBiomeManager(), cubeAccessWrapper, GenerationStep.Carving.LIQUID);
             return chunkAccess;
         });
     }
 
-    private static boolean areSectionsEmpty(int cubeY, ChunkPos pos, IBigCube cube) {
+    private static boolean areSectionsEmpty(int cubeY, ChunkPos pos, CubeAccess cube) {
         int emptySections = 0;
-        for (int yScan = 0; yScan < IBigCube.DIAMETER_IN_SECTIONS; yScan++) {
+        for (int yScan = 0; yScan < CubeAccess.DIAMETER_IN_SECTIONS; yScan++) {
             int sectionY = Coords.cubeToSection(cubeY, yScan);
             int sectionIndex = Coords.sectionToIndex(pos.x, sectionY, pos.z);
             LevelChunkSection cubeSection = cube.getCubeSections()[sectionIndex];
             if (LevelChunkSection.isEmpty(cubeSection)) {
                 emptySections++;
             }
-            if (emptySections == IBigCube.DIAMETER_IN_SECTIONS) {
+            if (emptySections == CubeAccess.DIAMETER_IN_SECTIONS) {
                 return true;
             }
         }
@@ -299,10 +280,8 @@ public class MixinChunkStatus {
             + "Ljava/util/List;Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
         at = @At("HEAD"), cancellable = true
     )
-    private static void cubicChunksSurface(ChunkStatus status, ServerLevel world, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk,
-                                           CallbackInfo ci) {
-
-        if (((CubicLevelHeightAccessor) world).generates2DChunks()) {
+    private static void cubicChunksSurface(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
+        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
             return;
         }
         ci.cancel();
@@ -317,13 +296,10 @@ public class MixinChunkStatus {
             + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
         at = @At("HEAD"), cancellable = true
     )
-    private static void cubicChunksCarvers(ChunkStatus status, ServerLevel world, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk,
-                                           CallbackInfo ci) {
-
-        if (((CubicLevelHeightAccessor) world).generates2DChunks()) {
+    private static void cubicChunksCarvers(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
+        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
             return;
         }
-
         ci.cancel();
 //        if (chunk instanceof IBigCube) {
 //            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(world, unsafeCast(neighbors), chunk);
@@ -352,13 +328,10 @@ public class MixinChunkStatus {
             + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
         at = @At("HEAD"), cancellable = true
     )
-    private static void cubicChunksLiquidCarvers(ChunkStatus status, ServerLevel world, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk,
-                                                 CallbackInfo ci) {
-
-        if (((CubicLevelHeightAccessor) world).generates2DChunks()) {
+    private static void cubicChunksLiquidCarvers(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
+        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
             return;
         }
-
         ci.cancel();
 //        if (chunk instanceof IBigCube) {
 //            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(world, unsafeCast(neighbors), chunk);
@@ -391,63 +364,59 @@ public class MixinChunkStatus {
         at = @At(value = "HEAD"), cancellable = true
     )
     private static void featuresSetStatus(
-        ChunkStatus status, Executor executor, ServerLevel world, ChunkGenerator generator,
-        StructureManager templateManager, ThreadedLevelLightEngine lightManager,
+        ChunkStatus status, Executor executor, ServerLevel level, ChunkGenerator generator,
+        StructureManager structureManager, ThreadedLevelLightEngine lightEngine,
         Function<ChunkAccess, CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> func,
         List<ChunkAccess> chunks, ChunkAccess chunk,
         CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
 
-        if (((CubicLevelHeightAccessor) world).generates2DChunks()) {
-            if (!(chunk instanceof CubePrimer)) {
+        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
+            if (!(chunk instanceof ProtoCube protoCube)) {
                 return;
             }
-
-            CubePrimer cubePrimer = (CubePrimer) chunk;
-            if (!cubePrimer.getCubeStatus().isOrAfter(status)) {
-                cubePrimer.updateCubeStatus(status);
+            if (!protoCube.getCubeStatus().isOrAfter(status)) {
+                protoCube.updateCubeStatus(status);
             }
             cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
             return;
         }
-
-        if (!(chunk instanceof CubePrimer)) {
+        if (!(chunk instanceof ProtoCube protoCube)) {
             // cancel column population for now
             ((ProtoChunk) chunk).setStatus(status);
             cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
             return;
         }
-        CubePrimer cubePrimer = (CubePrimer) chunk;
-        cubePrimer.setCubeLightManager(lightManager);
-        if (!cubePrimer.getCubeStatus().isOrAfter(status)) {
+        protoCube.setCubeLightEngine(lightEngine);
+        if (!protoCube.getCubeStatus().isOrAfter(status)) {
             // TODO: reimplement heightmaps
             //Heightmap.updateChunkHeightmaps(chunk, EnumSet
             //        .of(Heightmap.Type.MOTION_BLOCKING, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, Heightmap.Type.OCEAN_FLOOR,
             //        Heightmap.Type.WORLD_SURFACE));
 
-            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(world, unsafeCast(chunks), status, chunk, 1);
+            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(level, unsafeCast(chunks), status, chunk, 1);
             StructureFeatureManager structureFeatureManager =
-                new StructureFeatureManager(cubeWorldGenRegion, ((StructureFeatureManagerAccess) world.structureFeatureManager()).getWorldGenSettings());
+                new StructureFeatureManager(cubeWorldGenRegion, ((StructureFeatureManagerAccess) level.structureFeatureManager()).getWorldGenSettings());
 
 //            if (cubePrimer.getCubePos().getY() >= 0)
-            cubePrimer.applyFeatureStates();
-            ((ICubeGenerator) generator).decorate(cubeWorldGenRegion, structureFeatureManager, (CubePrimer) chunk);
-            cubePrimer.updateCubeStatus(status);
+            protoCube.applyFeatureStates();
+            ((CubeGenerator) generator).decorate(cubeWorldGenRegion, structureFeatureManager, (ProtoCube) chunk);
+            protoCube.updateCubeStatus(status);
         }
         cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
     }
 
     @Inject(method = "lightChunk", at = @At("HEAD"), cancellable = true)
-    private static void lightChunkCC(ChunkStatus status, ThreadedLevelLightEngine lightManager, ChunkAccess chunk,
+    private static void lightChunkCC(ChunkStatus status, ThreadedLevelLightEngine lightEngine, ChunkAccess chunk,
                                      CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
 
         if (!((CubicLevelHeightAccessor) chunk).isCubic()) {
             return;
         }
 
-        if (!(chunk instanceof CubePrimer)) {
+        if (!(chunk instanceof ProtoCube)) {
             ChunkPos pos = chunk.getPos();
-            ((ThreadedLevelLightEngineAccess) lightManager).invokeAddTask(pos.x, pos.z, ThreadedLevelLightEngine.TaskType.PRE_UPDATE, () -> {
-                ((ChunkManagerAccess) ((ThreadedLevelLightEngineAccess) lightManager).getChunkMap()).invokeReleaseLightTicket(pos);
+            ((ThreadedLevelLightEngineAccess) lightEngine).invokeAddTask(pos.x, pos.z, ThreadedLevelLightEngine.TaskType.PRE_UPDATE, () -> {
+                ((ChunkMapAccess) ((ThreadedLevelLightEngineAccess) lightEngine).getChunkMap()).invokeReleaseLightTicket(pos);
             });
             if (!chunk.getStatus().isOrAfter(status)) {
                 ((ProtoChunk) chunk).setStatus(status);
@@ -455,11 +424,11 @@ public class MixinChunkStatus {
             cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
             return;
         }
-        boolean flag = ((CubePrimer) chunk).getCubeStatus().isOrAfter(status) && ((CubePrimer) chunk).hasCubeLight();
+        boolean flag = ((ProtoCube) chunk).getCubeStatus().isOrAfter(status) && ((ProtoCube) chunk).hasCubeLight();
         if (!chunk.getStatus().isOrAfter(status)) {
-            ((CubePrimer) chunk).updateCubeStatus(status);
+            ((ProtoCube) chunk).updateCubeStatus(status);
         }
-        cir.setReturnValue(unsafeCast(((IServerWorldLightManager) lightManager).lightCube((IBigCube) chunk, flag).thenApply(Either::left)));
+        cir.setReturnValue(unsafeCast(((CubicThreadedLevelLightEngine) lightEngine).lightCube((CubeAccess) chunk, flag).thenApply(Either::left)));
     }
 
     //lambda$static$12
@@ -470,26 +439,21 @@ public class MixinChunkStatus {
         at = @At("HEAD"), cancellable = true
     )
     //TODO: Expose the above and bottom cubes via neighbors or thing else. Check if chunk generator overrides "spawnOriginalMobs" and redirect to our spawner instead.
-    private static void cubicChunksSpawnMobs(ChunkStatus status, ServerLevel world, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk,
-                                             CallbackInfo ci) {
-
-        if (!((CubicLevelHeightAccessor) world).isCubic()) {
+    private static void cubicChunksSpawnMobs(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
+        if (!((CubicLevelHeightAccessor) level).isCubic()) {
             return;
         }
-
-
         ci.cancel();
-        if (chunk instanceof IBigCube) {
-            int cubeY = ((IBigCube) chunk).getCubePos().getY();
+        if (chunk instanceof CubeAccess) {
+            int cubeY = ((CubeAccess) chunk).getCubePos().getY();
 
-            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(world, unsafeCast(neighbors), status, chunk, -1);
-            for (int columnX = 0; columnX < IBigCube.DIAMETER_IN_SECTIONS; columnX++) {
-                for (int columnZ = 0; columnZ < IBigCube.DIAMETER_IN_SECTIONS; columnZ++) {
+            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(level, unsafeCast(neighbors), status, chunk, -1);
+            for (int columnX = 0; columnX < CubeAccess.DIAMETER_IN_SECTIONS; columnX++) {
+                for (int columnZ = 0; columnZ < CubeAccess.DIAMETER_IN_SECTIONS; columnZ++) {
                     cubeWorldGenRegion.moveCenterCubeChunkPos(columnX, columnZ);
-                    if (CCWorldGenUtils.areSectionsEmpty(cubeY, chunk.getPos(), (IBigCube) chunk)) {
+                    if (CubicWorldGenUtils.areSectionsEmpty(cubeY, chunk.getPos(), (CubeAccess) chunk)) {
                         continue;
                     }
-
                     generator.spawnOriginalMobs(cubeWorldGenRegion);
                 }
             }

@@ -60,16 +60,16 @@ public class MainTransformer {
         ), "getCubeStatus");
         methods.put(new ClassMethod(
             getObjectType("net/minecraft/class_3898"), // ChunkMap
-            getMethod("java.util.concurrent.CompletableFuture method_31417(net.minecraft.class_3193)") // prepareAccessibleChunks(ChunkHolder)
-        ), "unpackCubeTicks");
+            getMethod("java.util.concurrent.CompletableFuture method_31417(net.minecraft.class_3193)") // prepareAccessibleChunk(ChunkHolder)
+        ), "prepareAccessibleCube");
         methods.put(new ClassMethod(
             getObjectType("net/minecraft/class_3898"), // ChunkMap
             getMethod("java.util.concurrent.CompletableFuture method_17235(net.minecraft.class_3193)") // prepareTickingChunk(ChunkHolder)
-        ), "postProcessCube");
+        ), "prepareTickingCube");
         methods.put(new ClassMethod(
             getObjectType("net/minecraft/class_3898"), // ChunkMap
-            getMethod("java.util.concurrent.CompletableFuture method_17247(net.minecraft.class_1923)") // getEntityTickingRangeFuture(ChunkPos)
-        ), "getCubeEntityTickingRangeFuture");
+            getMethod("java.util.concurrent.CompletableFuture method_17247(net.minecraft.class_1923)") // prepareEntityTickingChunk(ChunkPos)
+        ), "prepareEntityTickingCube");
         methods.put(new ClassMethod(
             getObjectType("net/minecraft/class_3898"), // ChunkMap
             getMethod("java.util.concurrent.CompletableFuture method_20576(net.minecraft.class_2818)") // packTicks(LevelChunk)
@@ -91,11 +91,11 @@ public class MainTransformer {
 
         Map<Type, Type> types = new HashMap<>();
         types.put(getObjectType("net/minecraft/class_1923"), // ChunkPos
-            getObjectType("io/github/opencubicchunks/cubicchunks/chunk/util/CubePos"));
+            getObjectType("io/github/opencubicchunks/cubicchunks/world/level/CubePos"));
         types.put(getObjectType("net/minecraft/class_2818"), // LevelChunk
-            getObjectType("io/github/opencubicchunks/cubicchunks/chunk/cube/BigCube"));
+            getObjectType("io/github/opencubicchunks/cubicchunks/world/level/chunk/LevelCube"));
         types.put(getObjectType("net/minecraft/class_3193$1"), // ChunkHolder$1
-            getObjectType("io/github/opencubicchunks/cubicchunks/chunk/ICubeHolder$CubeLoadingError"));
+            getObjectType("io/github/opencubicchunks/cubicchunks/server/level/CubeHolder$CubeLoadingError"));
 
         vanillaToCubic.forEach((old, newName) -> cloneAndApplyRedirects(targetClass, old, newName, methods, fields, types));
     }
@@ -172,10 +172,10 @@ public class MainTransformer {
         Map<Type, Type> typeRedirects = new HashMap<>();
         // TODO: create target constructor in ChunkHolder with CubePos
         typeRedirects.put(getObjectType("net/minecraft/class_1923"), // ChunkPos
-            getObjectType("io/github/opencubicchunks/cubicchunks/chunk/util/CubePos"));
+            getObjectType("io/github/opencubicchunks/cubicchunks/world/level/CubePos"));
         // TODO: generate that class at runtime? transform and duplicate?
         typeRedirects.put(getObjectType("net/minecraft/class_3900"), // ChunkTaskPriorityQueueSorter
-            getObjectType("io/github/opencubicchunks/cubicchunks/chunk/ticket/CubeTaskPriorityQueueSorter"));
+            getObjectType("io/github/opencubicchunks/cubicchunks/server/level/CubeTaskPriorityQueueSorter"));
 
         vanillaToCubic.forEach((old, newName) -> {
             MethodNode newMethod = cloneAndApplyRedirects(targetClass, old, newName, methodRedirects, fieldRedirects, typeRedirects);
@@ -269,7 +269,7 @@ public class MainTransformer {
         Map<Type, Type> typeRedirects = new HashMap<>();
 
         typeRedirects.put(getObjectType("net/minecraft/class_1923"), // ChunkPos
-            getObjectType("io/github/opencubicchunks/cubicchunks/chunk/util/CubePos"));
+            getObjectType("io/github/opencubicchunks/cubicchunks/world/level/CubePos"));
 
         typeRedirects.put(getObjectType("net/minecraft/class_1948$class_5260"), // ChunkGetter
             getObjectType("io/github/opencubicchunks/cubicchunks/world/CubicNaturalSpawner$CubeGetter"));

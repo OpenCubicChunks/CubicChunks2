@@ -1,0 +1,7 @@
+@ParametersAreNonnullByDefault
+@MethodsReturnNonnullByDefault
+package io.github.opencubicchunks.cubicchunks.client.multiplayer;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
+import io.github.opencubicchunks.cubicchunks.annotation.MethodsReturnNonnullByDefault;
