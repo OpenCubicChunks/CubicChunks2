@@ -7,7 +7,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.chunk.ChunkStatus;
 
-public interface CubicLevelAccessor extends CubicLevelHeightAccessor { //TODO: maybe rename this class? I think this name is reserved by the API
+public interface CubicLevelAccessor extends CubicLevelHeightAccessor {
     CubeAccess getCube(int cubeX, int cubeY, int cubeZ);
 
     default CubeAccess getCube(CubePos cubePos) {

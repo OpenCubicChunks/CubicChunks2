@@ -170,7 +170,6 @@ public class MainTransformer {
         );
 
         Map<Type, Type> typeRedirects = new HashMap<>();
-        // TODO: create target constructor in ChunkHolder with CubePos
         typeRedirects.put(getObjectType("net/minecraft/class_1923"), // ChunkPos
             getObjectType("io/github/opencubicchunks/cubicchunks/world/level/CubePos"));
         // TODO: generate that class at runtime? transform and duplicate?

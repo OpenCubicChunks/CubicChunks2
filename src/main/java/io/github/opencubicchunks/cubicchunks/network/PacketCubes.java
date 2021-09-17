@@ -160,10 +160,6 @@ public class PacketCubes {
                 ((ClientCubeCache) clientLevel.getChunkSource()).replaceWithPacketData(
                     x, y, z, cubeBiomeContainer, dataReader, new CompoundTag(), cubeExists.get(i));
 
-                // TODO: full cube info
-                //            if (cube != null /*&&fullCube*/) {
-                //                world.addEntitiesToChunk(cube.getColumn());
-                //            }
                 for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {
                     for (int dy = 0; dy < CubeAccess.DIAMETER_IN_SECTIONS; dy++) {
                         for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {

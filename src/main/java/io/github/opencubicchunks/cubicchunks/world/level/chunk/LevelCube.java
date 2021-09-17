@@ -735,7 +735,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
             this.cubeBiomeContainer = biomes;
         }
 
-        // TODO: support partial updates
+        // TODO: support partial updates // TODO: is this still relevant?
         this.blockEntities.values().forEach(this::onBlockEntityRemove);
         this.blockEntities.clear();
 

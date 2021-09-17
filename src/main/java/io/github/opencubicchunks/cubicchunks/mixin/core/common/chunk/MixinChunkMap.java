@@ -407,7 +407,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         cubeSavingFutures.entrySet().removeIf(entry -> entry.getValue().isDone());
     }
 
-    // TODO: is this used from ASM?
+    // Called from ASM
     private CompoundTag readCubeNBT(CubePos cubePos) throws IOException {
         return regionCubeIO.loadCubeNBT(cubePos);
     }
@@ -802,7 +802,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     cube = ((ImposterProtoCube) prevCube).getCube();
                 } else {
                     cube = new LevelCube(this.level, (ProtoCube) prevCube, (bigCube) -> {
-                        //TODO: Verify this is ok
                         postLoadProtoChunk(this.level, ((ProtoCube) prevCube).getCubeEntities());
                     });
                     ((CubeHolder) holder).replaceProtoCube(new ImposterProtoCube(cube, level));
@@ -875,7 +874,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         return postProcessedFuture;
     }
 
-    // TODO: change the actual ChunkSerializer to handle columns?
     @Redirect(method = "save", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;write(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/nbt/CompoundTag;)V"))
     private void writeColumn(ChunkMap chunkManager, ChunkPos chunkPos, CompoundTag chunkNBT) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {

@@ -111,7 +111,6 @@ public class CubeSerializer {
                 if (sectionNBT.contains("BlockLight", 7)) {
                     lightEngine.queueSectionData(LightLayer.BLOCK, sectionPos, new DataLayer(sectionNBT.getByteArray("BlockLight")), true);
                 }
-                //TODO: reimplement
                 if (serverLevel.dimensionType().hasSkyLight() && sectionNBT.contains("SkyLight", 7)) {
                     lightEngine.queueSectionData(LightLayer.SKY, sectionPos, new DataLayer(sectionNBT.getByteArray("SkyLight")), true);
                 }

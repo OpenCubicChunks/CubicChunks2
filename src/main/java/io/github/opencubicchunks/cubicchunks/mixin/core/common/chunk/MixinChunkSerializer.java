@@ -61,7 +61,6 @@ public abstract class MixinChunkSerializer {
         long inhabitedTime = level.getLong("InhabitedTime");
         ChunkStatus.ChunkType statusType = getChunkTypeFromTag(compound);
         ChunkAccess newChunk;
-        //TODO: Double Check that this is proper
         ColumnBiomeContainer biomeContainerIn = new ColumnBiomeContainer(serverLevel.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY), serverLevel, serverLevel);
         if (statusType == ChunkStatus.ChunkType.LEVELCHUNK) {
             newChunk = new LevelChunk(serverLevel.getLevel(), pos, biomeContainerIn, UpgradeData.EMPTY,

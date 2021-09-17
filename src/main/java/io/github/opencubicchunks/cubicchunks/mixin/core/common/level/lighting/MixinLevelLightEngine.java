@@ -29,7 +29,7 @@ public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, Li
 
     @Shadow @Final @Nullable private LayerLightEngine<?, ?> skyEngine;
 
-    // TODO: make these abstract
+    // these can't be abstract because they need to be called as super.method()
     @Shadow public void checkBlock(BlockPos pos) {
         throw new Error("Mixin failed to apply correctly");
     }
@@ -39,9 +39,11 @@ public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, Li
     }
 
     @Shadow public void updateSectionStatus(SectionPos pos, boolean isEmpty) {
+        throw new Error("Mixin failed to apply correctly");
     }
 
     @Shadow public void onBlockEmissionIncrease(BlockPos blockPos, int lightValue) {
+        throw new Error("Mixin failed to apply correctly");
     }
 
     @Override
