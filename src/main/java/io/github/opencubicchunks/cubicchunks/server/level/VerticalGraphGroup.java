@@ -9,10 +9,8 @@ public class VerticalGraphGroup extends CubeTracker {
     public final Long2ByteMap cubesInRange = new Long2ByteOpenHashMap();
     protected final int range;
 
-    // TODO: remove thid field
-    private final CubicDistanceManager cubicDistanceManager;
     private final CubicPlayerTicketTracker ticketTracker;
-    private Horizontal horizontal;
+    private final Horizontal horizontal;
 
     public VerticalGraphGroup(CubicDistanceManager cubicDistanceManager, int i, CubicPlayerTicketTracker ticketTracker) {
         super(i + 2, 16, 256, 0, 1, 0);
@@ -20,7 +18,6 @@ public class VerticalGraphGroup extends CubeTracker {
         this.horizontal = new Horizontal(cubicDistanceManager, i);
         this.range = i;
         this.cubesInRange.defaultReturnValue((byte) (i + 2));
-        this.cubicDistanceManager = cubicDistanceManager;
     }
 
     @Override

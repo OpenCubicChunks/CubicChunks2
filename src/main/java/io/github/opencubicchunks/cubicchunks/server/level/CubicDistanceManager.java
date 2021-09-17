@@ -12,7 +12,6 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 import net.minecraft.server.level.ChunkHolder;
-import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.Ticket;
 import net.minecraft.server.level.TicketType;
@@ -22,11 +21,6 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 
 public interface CubicDistanceManager {
     int PLAYER_CUBE_TICKET_LEVEL = 33 + CubeStatus.getDistance(ChunkStatus.FULL) - 2;
-
-    // TODO: remove these 2?
-    boolean processUpdates(ChunkMap chunkManager);
-
-    boolean runAllUpdatesForChunks(ChunkMap chunkMap);
 
     // addTicket
     <T> void addCubeTicket(TicketType<T> type, CubePos pos, int level, T value);
