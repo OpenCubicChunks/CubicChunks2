@@ -7,7 +7,9 @@ import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.annotation.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.world.level.Level;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LevelHeightAccessor;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
@@ -19,62 +21,19 @@ public final class SpawnPlaceFinder {
         throw new Error();
     }
 
-    /*
-        public static BlockPos getRandomizedSpawnPoint(World level) {
-            //TODO: uses getTopSolidOrLiquidBlock() ... not good
-            BlockPos ret = level.getSpawnPoint();
-
-            CubicChunks.LOGGER.trace("Finding spawnpoint starting from {}", ret);
-
-            boolean isAdventure = level.getWorldInfo().getGameType() == GameType.ADVENTURE;
-            int spawnFuzz;
-            if (level instanceof ServerWorld) {
-                spawnFuzz = level.getWorldType().getSpawnFuzz((ServerWorld) level,
-                        Objects.requireNonNull(level.getServer()));
-            } else {
-                spawnFuzz = 1;
-            }
-            int border = MathHelper.floor(level.getWorldBorder().getClosestDistance(ret.getX(), ret.getZ()));
-            if (border < spawnFuzz) {
-                spawnFuzz = border;
-            }
-
-            if (!level.provider.isNether() && !isAdventure && spawnFuzz != 0) {
-                if (spawnFuzz < 2) {
-                    spawnFuzz = 2;
-                }
-                int spawnFuzzHalf = spawnFuzz / 2;
-                CubicChunks.LOGGER.trace("Running bisect with spawn fizz {}", spawnFuzz);
-                ret = getTopBlockBisect(level, ret.add(
-                        level.rand.nextInt(spawnFuzzHalf) - spawnFuzz,
-                        0,
-                        level.rand.nextInt(spawnFuzzHalf) - spawnFuzz
-                ));
-                if (ret == null) {
-                    ret = level.getSpawnPoint();
-                    CubicChunks.LOGGER.trace("No spawnpoint place found starting at {}, spawning at {}", ret, ret);
-                } else {
-                    ret = ret.up();
-                }
-            }
-
-            return ret;
-        }
-    */
     @Nullable
-    public static BlockPos getTopBlockBisect(Level level, BlockPos pos, boolean checkValid) {
+    public static BlockPos getTopBlockBisect(BlockGetter level, BlockPos pos, boolean checkValid) {
         BlockPos minPos, maxPos;
         if (findNonEmpty(level, pos) == null) {
             CubicChunks.LOGGER.debug("Starting bisect with empty space at init {}", pos);
             maxPos = pos;
             minPos = findMinPos(level, pos);
-            CubicChunks.LOGGER.debug("Found minPos {} and maxPos {}", minPos, maxPos);
         } else {
             CubicChunks.LOGGER.debug("Starting bisect without empty space at init {}", pos);
             minPos = pos;
             maxPos = findMaxPos(level, pos);
-            CubicChunks.LOGGER.debug("Found minPos {} and maxPos {}", minPos, maxPos);
         }
+        CubicChunks.LOGGER.debug("Found minPos {} and maxPos {}", minPos, maxPos);
         if (minPos == null || maxPos == null) {
             CubicChunks.LOGGER.error("No suitable spawn found, using original input {} (min={}, max={})", pos, minPos, maxPos);
             return null;
@@ -88,7 +47,7 @@ public final class SpawnPlaceFinder {
     }
 
     @Nullable
-    private static BlockPos bisect(Level level, BlockPos min, BlockPos max) {
+    private static BlockPos bisect(BlockGetter level, BlockPos min, BlockPos max) {
         while (min.getY() < max.getY() - 1) {
             CubicChunks.LOGGER.debug("Bisect step with min={}, max={}", min, max);
             BlockPos middle = middleY(min, max);
@@ -110,7 +69,7 @@ public final class SpawnPlaceFinder {
     }
 
     @Nullable
-    private static BlockPos findMinPos(Level level, BlockPos pos) {
+    private static BlockPos findMinPos(BlockGetter level, BlockPos pos) {
         // go down twice as much each time until we hit filled space
         double dy = 16;
         while (findNonEmpty(level, inWorldUp(level, pos, -dy)) == null) {
@@ -124,7 +83,7 @@ public final class SpawnPlaceFinder {
     }
 
     @Nullable
-    private static BlockPos findMaxPos(Level level, BlockPos pos) {
+    private static BlockPos findMaxPos(BlockGetter level, BlockPos pos) {
         // go up twice as much each time until we hit empty space
         double dy = 16;
         while (findNonEmpty(level, inWorldUp(level, pos, dy)) != null) {
@@ -138,7 +97,7 @@ public final class SpawnPlaceFinder {
     }
 
     @Nullable
-    private static BlockPos findNonEmpty(Level level, BlockPos pos) {
+    private static BlockPos findNonEmpty(BlockGetter level, BlockPos pos) {
         pos = pos.below(MIN_FREE_SPACE_SPAWN);
         for (int i = 0; i < MIN_FREE_SPACE_SPAWN * 2; i++, pos = pos.above()) {
             if (!level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) {
@@ -148,10 +107,9 @@ public final class SpawnPlaceFinder {
         return null;
     }
 
-    // TODO: change to LevelHeightAccessor and actually use it
-    private static BlockPos inWorldUp(Level level, BlockPos original, double up) {
+    private static BlockPos inWorldUp(LevelHeightAccessor level, BlockPos original, double up) {
         int y = (int) (original.getY() + up);
-        //y = MathHelper.clamp(y, ((ICubicWorld) level).getMinHeight(), ((ICubicWorld) level).getMaxHeight());
+        y = Mth.clamp(y, level.getMinBuildHeight(), level.getMaxBuildHeight());
         return new BlockPos(original.getX(), y, original.getZ());
     }
 }
