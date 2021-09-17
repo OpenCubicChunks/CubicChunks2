@@ -1,3 +1,4 @@
+import io.github.opencubicchunks.gradle.GeneratePackageInfo
 import org.gradle.internal.os.OperatingSystem
 
 buildscript {
@@ -24,6 +25,18 @@ mcGitVersion {
     snapshot = true
     mcVersion = "${project.minecraft_version}"
     setCommitVersion '570c0cbf0cdc15b8348a862a519d3399a943af9', '0.0'
+}
+
+task generatePackageInfo {
+    setGroup('filegen')
+    doFirst {
+        GeneratePackageInfo.generateFiles(sourceSets.main)
+    }
+}
+
+task genAll {
+    setGroup('filegen')
+    dependsOn(generatePackageInfo, generateMixinConfigs)
 }
 
 java {
