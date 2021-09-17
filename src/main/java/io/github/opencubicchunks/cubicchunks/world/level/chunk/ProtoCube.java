@@ -88,8 +88,6 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
     private final Map<GenerationStep.Carving, BitSet> carvingMasks;
     private final Map<BlockPos, BlockState> featuresStateMap = new HashMap<>();
 
-    // TODO: merge these into one
-    private volatile boolean isDirty;
     private volatile boolean modified = true;
 
     private final List<BlockPos> lightPositions = Lists.newArrayList();
@@ -517,7 +515,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
     @Override
     public void setStartForFeature(StructureFeature<?> structureFeature, StructureStart<?> structureStart) {
         this.structureStarts.put(structureFeature, structureStart);
-        this.isDirty = true;
+        this.modified = true;
     }
 
     @Override
@@ -537,7 +535,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
         this.structuresRefences.computeIfAbsent(structureFeature, (structureFeaturex) -> {
             return new LongOpenHashSet();
         }).add(l);
-        this.isDirty = true;
+        this.modified = true;
     }
 
     public Map<StructureFeature<?>, LongSet> getAllReferences() {
@@ -556,7 +554,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
     public void setAllReferences(Map<StructureFeature<?>, LongSet> map) {
         this.structuresRefences.clear();
         this.structuresRefences.putAll(map);
-        this.isDirty = true;
+        this.modified = true;
     }
 
     @Override public BlockState getBlockState(BlockPos pos) {
@@ -650,7 +648,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
     public void setAllStarts(Map<StructureFeature<?>, StructureStart<?>> map) {
         this.structureStarts.clear();
         this.structureStarts.putAll(map);
-        this.isDirty = true;
+        this.modified = true;
     }
 
     @Override public Collection<Map.Entry<Heightmap.Types, Heightmap>> getHeightmaps() {
