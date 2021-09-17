@@ -2,9 +2,10 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.client.debug;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerWrapper;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -30,7 +31,7 @@ public abstract class MixinDebugScreenOverlay {
 
     @Shadow @Final private Minecraft minecraft;
 
-    @Shadow protected abstract LevelChunk getServerChunk();
+    @Nullable @Shadow protected abstract LevelChunk getServerChunk();
 
     @SuppressWarnings("rawtypes")
     @Inject(method = "getGameInformation",
@@ -39,11 +40,9 @@ public abstract class MixinDebugScreenOverlay {
     )
     private void onAddChunkInfo(CallbackInfoReturnable<List> cir, /*IntegratedServer integratedserver, Connection networkmanager, float f, float f1,*/
                                 String s, BlockPos blockpos, Entity entity, Direction direction, String s1, /*ChunkPos chunkpos,*/ Level world, LongSet longset,
-                                List debugScreenList/*, String s2*/) {
-        //noinspection unchecked
-        // TODO: use Coords class
+                                List<String> debugScreenList/*, String s2*/) {
         debugScreenList.add(String.format("Cube:  %d %d %d in %d %d %d",
-            blockpos.getX() & (CubeAccess.DIAMETER_IN_BLOCKS - 1), blockpos.getY() & (CubeAccess.DIAMETER_IN_BLOCKS - 1), blockpos.getZ() & (CubeAccess.DIAMETER_IN_BLOCKS - 1),
+            Coords.blockToLocal(blockpos.getX()), Coords.blockToLocal(blockpos.getY()), Coords.blockToLocal(blockpos.getZ()),
             Coords.blockToCube(blockpos.getX()), Coords.blockToCube(blockpos.getY()), Coords.blockToCube(blockpos.getZ()))
         );
     }
