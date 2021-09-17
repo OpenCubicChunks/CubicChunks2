@@ -1008,10 +1008,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
 
     @Override
     public void markPosForPostprocessing(BlockPos blockPos) {
-        // TODO: why?
-        if (System.currentTimeMillis() % 15000 == 0) {
-            LogManager.getLogger().warn("Trying to mark a block for PostProcessing @ {}, but this operation is not supported.", blockPos);
-        }
+        LogManager.getLogger().warn("Trying to mark a block for PostProcessing @ {}, but this operation is not supported.", blockPos);
     }
 
     @Override public int getHeight() {
