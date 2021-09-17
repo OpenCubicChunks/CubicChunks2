@@ -1,0 +1,11 @@
+# Bartosz Skrzypczak 9/15/21, 4:06 AM Method and field renames, some formatting cleanup
+82a3a28ed9125c99b6b0b6b627ba17e448885751
+# Bartosz Skrzypczak 9/14/21, 11:42 PM Class renames part 2, code changes
+73a1102ff9e85b54ff2491fcd98ce37fb4c5c7f6
+# Bartosz Skrzypczak 9/14/21, 11:40 PM Class renames part 1, no code changes
+887db99f1ce95bc8dfc8c8395894a08ca9370242
+# Bartosz Skrzypczak 9/14/21, 12:28 AM Move worldgen code to levelgen package
+328c0d20cf224d47616876d088866278464a61ec
+
+# Barteks2x 11/22/20, 2:43 PM Apply code reformat, add checkstyle, checkstyle fixes and include formatter settings files for intellij
+373b95fe3a524b241c1e6e1302a356b7af3d06b2
