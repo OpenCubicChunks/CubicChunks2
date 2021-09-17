@@ -59,8 +59,7 @@ public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S 
         //TODO: implement invokeEnableLightSources for CubePos in SkyLightStorage
         for (int x = 0; x < CubeAccess.DIAMETER_IN_SECTIONS; x++) {
             for (int z = 0; z < CubeAccess.DIAMETER_IN_SECTIONS; z++) {
-                // TODO: avoid creating new objects here
-                ((LayerLightSectionStorageAccess) this.storage).invokeSetColumnEnabled(new ChunkPos(chunkPos.x + x, chunkPos.z + z).toLong(), enable);
+                ((LayerLightSectionStorageAccess) this.storage).invokeSetColumnEnabled(ChunkPos.asLong(chunkPos.x + x, chunkPos.z + z), enable);
             }
         }
     }
