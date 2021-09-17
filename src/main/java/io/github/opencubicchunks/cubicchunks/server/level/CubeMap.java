@@ -35,6 +35,12 @@ public interface CubeMap {
 
     void setServerChunkCache(ServerChunkCache cache);
 
+    // used from ASM
+    void markCubePositionReplaceable(CubePos cubePos);
+
+    // used from ASM
+    byte markCubePosition(CubePos cubePos, ChunkStatus.ChunkType status);
+
     LongSet getCubesToDrop();
 
     // getUpdatingChunkIfPresent

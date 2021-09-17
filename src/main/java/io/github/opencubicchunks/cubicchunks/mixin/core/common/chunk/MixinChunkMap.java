@@ -481,14 +481,13 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         });
     }
 
-    // TODO: add to interface
     // markPositionReplaceable
-    private void markCubePositionReplaceable(CubePos cubePos) {
+    @Override public void markCubePositionReplaceable(CubePos cubePos) {
         this.cubeTypeCache.put(cubePos.asLong(), (byte) -1);
     }
 
     // markPosition
-    private byte markCubePosition(CubePos cubePos, ChunkStatus.ChunkType status) {
+    @Override public byte markCubePosition(CubePos cubePos, ChunkStatus.ChunkType status) {
         return this.cubeTypeCache.put(cubePos.asLong(), (byte) (status == ChunkStatus.ChunkType.PROTOCHUNK ? -1 : 1));
     }
 
@@ -514,17 +513,14 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         value = "INVOKE",
         target = "Lnet/minecraft/server/level/progress/ChunkProgressListener;onStatusChange(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/level/chunk/ChunkStatus;)V")
     )
-    // TODO: no longer relevant
-    @Group(name = "MixinChunkManager.on_func_219244_a_StatusChange", min = 1, max = 1)
     private void changeCubeStatus(ChunkHolder chunkHolderIn, ChunkStatus chunkStatusIn,
                                   CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;
         }
-        if (((CubeHolder) chunkHolderIn).getCubePos() != null) {
-            ((CubeProgressListener) progressListener).onCubeStatusChange(
-                ((CubeHolder) chunkHolderIn).getCubePos(),
-                chunkStatusIn);
+        CubePos cubePos = ((CubeHolder) chunkHolderIn).getCubePos();
+        if (cubePos != null) {
+            ((CubeProgressListener) progressListener).onCubeStatusChange(cubePos, chunkStatusIn);
         }
     }
 
