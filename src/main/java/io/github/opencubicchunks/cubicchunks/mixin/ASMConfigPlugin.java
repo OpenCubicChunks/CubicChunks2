@@ -46,6 +46,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         String chunkMap = map.mapClassName("intermediary", "net.minecraft.class_3898");
         String chunkHolder = map.mapClassName("intermediary", "net.minecraft.class_3193");
         String naturalSpawner = map.mapClassName("intermediary", "net.minecraft.class_1948");
+        String dynamicGraphMinFixedPoint = map.mapClassName("intermediary", "net.minecraft.class_3554");
 
         if (targetClassName.equals(chunkMapDistanceManager)) {
             MainTransformer.transformProxyTicketManager(targetClass);
@@ -55,6 +56,8 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             MainTransformer.transformChunkHolder(targetClass);
         } else if (targetClassName.equals(naturalSpawner)) {
             MainTransformer.transformNaturalSpawner(targetClass);
+        } else if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
+            MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
         } else {
             return;
         }

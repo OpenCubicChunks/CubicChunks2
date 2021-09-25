@@ -26,10 +26,12 @@ import org.objectweb.asm.commons.MethodRemapper;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class MainTransformer {
@@ -374,6 +376,72 @@ public class MainTransformer {
         });
     }
 
+    public static void transformDynamicGraphMinFixedPoint(ClassNode targetClass) {
+        // Change computedLevels and queues to be of type Object, as we use different types for the 3-int light engine
+        changeFieldTypeToObject(targetClass, new ClassField(
+                "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
+                "field_15784", // computedLevels
+                "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"));
+        changeFieldTypeToObject(targetClass, new ClassField(
+                "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
+                "field_15785", // queues
+                "[Lit/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet;"));
+    }
+
+    /**
+     * Change a field's type to Object, and make all field accesses in the class cast the field to its original type.
+     *
+     * <p>Used to allow us to assign a different type to fields when replacing methods with CC equivalents,
+     * rather than adding a new field or cloning the class.</p>
+     *
+     * Note: should also only be used for non-static private fields,
+     * as static field accesses and field accesses in other classes are not updated.
+     *
+     * @param targetClass The class containing the field
+     * @param field The field to change the type of
+     */
+    private static void changeFieldTypeToObject(ClassNode targetClass, ClassField field) {
+        var objectTypeDescriptor = getObjectType("java/lang/Object").getDescriptor();
+
+        var remappedField = remapField(field);
+
+        // Find the field in the class
+        var fieldNode = targetClass.fields.stream()
+                .filter(x -> remappedField.name.equals(x.name) && remappedField.desc.getDescriptor().equals(x.desc))
+                .findAny().orElseThrow(() -> new IllegalStateException("Target field " + remappedField + " not found"));
+
+        // Change its type to object
+        fieldNode.desc = objectTypeDescriptor;
+
+        // Find all usages of the field in the class (i.e. GETFIELD and PUTFIELD instructions)
+        // and update their types to object, adding a cast to the original type after all GETFIELDs
+        targetClass.methods.forEach(methodNode -> {
+            methodNode.instructions.forEach(i -> {
+                if (i.getType() == AbstractInsnNode.FIELD_INSN) {
+                    var instruction = ((FieldInsnNode) i);
+                    if (fieldNode.name.equals(instruction.name)) {
+                        if (instruction.getOpcode() == PUTFIELD) {
+                            instruction.desc = objectTypeDescriptor;
+                        } else if (instruction.getOpcode() == GETFIELD) {
+                            instruction.desc = objectTypeDescriptor;
+                            // Cast to original type
+                            methodNode.instructions.insert(instruction, new TypeInsnNode(CHECKCAST, field.desc.getInternalName()));
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    /**
+     * Create a static accessor method for a given method we created on a class.
+     *
+     * e.g. if we had created a method {@code public boolean bar(int, int)} on a class {@code Foo},
+     * this method would create a method {@code public static boolean bar(Foo, int, int)}.
+     *
+     * @param node class of the method
+     * @param newMethod method to create a static accessor for
+     */
     private static void makeStaticSyntheticAccessor(ClassNode node, MethodNode newMethod) {
         Type[] params = Type.getArgumentTypes(newMethod.desc);
         Type[] newParams = new Type[params.length + 1];
@@ -394,6 +462,17 @@ public class MainTransformer {
         node.methods.add(newNode);
     }
 
+    /**
+     * Create a clone of a method with substituted methods, fields, and types. Generally used for creating 3d equivalents of 2d methods.
+     *
+     * @param node the class containing the method to be cloned
+     * @param existingMethodIn the method to be cloned
+     * @param newName name for the newly-cloned method
+     * @param methodRedirectsIn map of method substitutions
+     * @param fieldRedirectsIn map of field substitutions
+     * @param typeRedirectsIn map of type substitutions
+     * @return the cloned method
+     */
     private static MethodNode cloneAndApplyRedirects(ClassNode node, ClassMethod existingMethodIn, String newName,
                                                      Map<ClassMethod, String> methodRedirectsIn, Map<ClassField, String> fieldRedirectsIn, Map<Type, Type> typeRedirectsIn) {
         LOGGER.info("Transforming " + node.name + ": Cloning method " + existingMethodIn.method.getName() + " " + existingMethodIn.method.getDescriptor() + " "
