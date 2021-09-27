@@ -1,0 +1,30 @@
+{
+    "net/minecraft/world/level/lighting/BlockLightEngine": {
+        "methods" : [
+            {
+                "name": "getLightEmission",
+                "descriptor": "(J)I",
+                "transformed_methods": {
+
+                },
+                "expanded_variables": [1],
+                "patterns": [
+                    "block_pos_unpack"
+                ]
+            },
+            {
+                "name" : "checkNeighborsAfterUpdate",
+                "descriptor" : "(JIZ)V",
+                "transformed_methods" : {
+                    "net/minecraft/core/SectionPos#blockToSection": "(III)J",
+                    "net/minecraft/world/level/lighting/BlockLightEngine#checkNeighbor": "(IIIIIIIZ)V"
+                },
+                "expanded_variables" : [1, 11],
+                "patterns": [
+                    "block_pos_offset",
+                    "expanded_method_remapping"
+                ]
+            }
+        ]
+    }
+}
