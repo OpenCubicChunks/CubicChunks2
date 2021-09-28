@@ -3,6 +3,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.patterns;
 import java.util.Map;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LocalVariableMapper;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LongPosTransformer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import org.objectweb.asm.Opcodes;
@@ -12,7 +13,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class BlockPosOffsetPattern extends BytecodePackedUsePattern {
-    protected BlockPosOffsetPattern(Map<String, String> transformedMethods) {
+    protected BlockPosOffsetPattern(Map<String, LongPosTransformer.MethodRemappingInfo> transformedMethods) {
         super(transformedMethods);
     }
 

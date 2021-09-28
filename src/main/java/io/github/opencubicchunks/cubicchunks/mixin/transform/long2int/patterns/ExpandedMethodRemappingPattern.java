@@ -3,12 +3,13 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.patterns;
 import java.util.Map;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LocalVariableMapper;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LongPosTransformer;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class ExpandedMethodRemappingPattern extends BytecodePackedUsePattern {
-    protected ExpandedMethodRemappingPattern(Map<String, String> transformedMethods) {
+    protected ExpandedMethodRemappingPattern(Map<String, LongPosTransformer.MethodRemappingInfo> transformedMethods) {
         super(transformedMethods);
     }
 

@@ -4,9 +4,12 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LocalVaria
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.lighting.BlockLightEngine;
+import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
@@ -24,6 +27,13 @@ public class BlockPosUnpackingPattern implements BytecodePattern {
 
         if(first.getOpcode() != Opcodes.LLOAD) return false;
         VarInsnNode loadInstruction = (VarInsnNode) first;
+
+        int j = 1;
+        while(second instanceof LabelNode || second instanceof LineNumberNode){
+            j++;
+            if(index + j >= instructions.size()) return false;
+            second = instructions.get(index + j);
+        }
 
         if(second.getOpcode() != Opcodes.INVOKESTATIC) return false;
         MethodInsnNode methodCall = (MethodInsnNode) second;

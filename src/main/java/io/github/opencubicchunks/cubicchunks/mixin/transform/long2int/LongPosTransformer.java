@@ -1,7 +1,10 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.long2int;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,20 +15,23 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.patterns.BytecodePattern;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.patterns.Patterns;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.lighting.BlockLightEngine;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class LongPosTransformer {
     private static final String REMAP_PATH = "/remaps.json";
     private static final Map<String, ClassTransformationInfo> transforms = new HashMap<>();
+    private static final boolean SAVE_RESULTS = false;
+    private static final Path SAVE_PATH = Path.of("run", "method-remapping-output");
     private static boolean loaded = false;
 
     public static void transform(ClassNode classNode){
@@ -54,12 +60,49 @@ public class LongPosTransformer {
         }
 
         classNode.methods.addAll(newMethods);
+
+        if(SAVE_RESULTS){
+            Path saveTo = SAVE_PATH.resolve(Path.of(classNode.name + ".class"));
+
+            try {
+                if(!saveTo.toFile().exists()){
+                    saveTo.toFile().getParentFile().mkdirs();
+                    Files.createFile(saveTo);
+                }
+
+                FileOutputStream fout = new FileOutputStream(saveTo.toAbsolutePath().toString());
+                byte[] bytes;
+                ClassWriter classWriter = new ClassWriter(0);
+                classNode.accept(classWriter);
+                fout.write(bytes = classWriter.toByteArray());
+                fout.close();
+                System.out.println("Saved class at " + saveTo.toAbsolutePath());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static boolean shouldClassBeTransformed(ClassNode classNode){
+        if(!loaded){
+            try {
+                loadTransformInfo();
+            }catch (IOException e){
+                throw new IllegalStateException("Failed to load remapping info", e);
+            }
+            loaded = true;
+        }
+        return transforms.containsKey(classNode.name);
     }
 
     private static MethodNode transformMethod(MethodNode method, MethodTransformationInfo transform) {
         MethodNode newMethod = transform.copy ? copy(method) : method;
 
         newMethod.desc = modifyDescriptor(method, transform.expandedVariables);
+
+        if(transform.rename != null){
+            newMethod.name = transform.rename;
+        }
 
         LocalVariableMapper variableMapper = new LocalVariableMapper();
         for(int expandedVariable : transform.expandedVariables){
@@ -68,7 +111,20 @@ public class LongPosTransformer {
 
         newMethod.instructions = modifyCode(newMethod.instructions, variableMapper, transform);
 
-        newMethod.localVariables = null;
+        List<LocalVariableNode> localVariables = new ArrayList<>();
+        for(LocalVariableNode var : newMethod.localVariables){
+            int mapped = variableMapper.mapLocalVariable(var.index);
+            boolean isExpanded = variableMapper.isATransformedLong(var.index);
+            if(isExpanded){
+                localVariables.add(new LocalVariableNode(var.name + "_x", "I", null, var.start, var.end, mapped));
+                localVariables.add(new LocalVariableNode(var.name + "_y", "I", null, var.start, var.end, mapped + 1));
+                localVariables.add(new LocalVariableNode(var.name + "_z", "I", null, var.start, var.end, mapped + 2));
+            }else{
+                localVariables.add(new LocalVariableNode(var.name, var.desc, var.signature, var.start, var.end, mapped));
+            }
+        }
+
+        newMethod.localVariables = localVariables;
         newMethod.parameters = null;
 
         return newMethod;
@@ -149,7 +205,6 @@ public class LongPosTransformer {
 
     private static MethodNode copy(MethodNode method) {
         ClassNode classNode = new ClassNode();
-        //MethodNode other = new MethodNode();
         method.accept(classNode);
         return classNode.methods.get(0);
     }
@@ -190,10 +245,11 @@ public class LongPosTransformer {
 
     public static class MethodTransformationInfo{
         private final String name; //The methods name
+        private final String rename;
         private final String desc; //The methods descriptor
         private final List<Integer> expandedVariables = new ArrayList<>(); //Indices into the local variable array that point to longs that should be transformed into triple ints
         private final List<String> patterns = new ArrayList<>(); //Patterns that should be used
-        private final Map<String, String> remappedMethods = new HashMap<>(); //Methods which will be assumed to have been transformed so as to use a certain descriptor
+        private final Map<String, MethodRemappingInfo> remappedMethods = new HashMap<>(); //Methods which will be assumed to have been transformed so as to use a certain descriptor
         private final boolean copy;
 
         public MethodTransformationInfo(JsonElement jsonElement){
@@ -203,7 +259,16 @@ public class LongPosTransformer {
 
             methodInfo.get("expanded_variables").getAsJsonArray().forEach((e) -> expandedVariables.add(e.getAsInt()));
             methodInfo.get("patterns").getAsJsonArray().forEach((e) -> patterns.add(e.getAsString()));
-            methodInfo.get("transformed_methods").getAsJsonObject().entrySet().forEach((entry) -> remappedMethods.put(entry.getKey(), entry.getValue().getAsString()));
+            methodInfo.get("transformed_methods").getAsJsonObject().entrySet().forEach((entry) -> {
+                if(entry.getValue().isJsonObject()){
+                    JsonObject remapInfo = entry.getValue().getAsJsonObject();
+                    JsonElement descriptorRemap = remapInfo.get("descriptor");
+                    JsonElement renameRemap = remapInfo.get("rename");
+                    remappedMethods.put(entry.getKey(), new MethodRemappingInfo(descriptorRemap.getAsString(), renameRemap == null ? name : renameRemap.getAsString()));
+                }else{
+                    remappedMethods.put(entry.getKey(), new MethodRemappingInfo(entry.getValue().getAsString(), null));
+                }
+            });
 
             boolean copy = true;
             JsonElement copyElement = methodInfo.get("copy");
@@ -212,6 +277,18 @@ public class LongPosTransformer {
             }
 
             this.copy = copy;
+
+            String rename = null;
+            JsonElement renameElement = methodInfo.get("rename");
+            if(renameElement != null){
+                rename = renameElement.getAsString();
+            }
+
+            this.rename = rename;
         }
+    }
+
+    public static record MethodRemappingInfo(String desc, String rename){
+
     }
 }

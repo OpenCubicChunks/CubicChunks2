@@ -9,8 +9,11 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LongPosTransformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.lighting.BlockLightEngine;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -47,6 +50,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         String chunkHolder = map.mapClassName("intermediary", "net.minecraft.class_3193");
         String naturalSpawner = map.mapClassName("intermediary", "net.minecraft.class_1948");
         String dynamicGraphMinFixedPoint = map.mapClassName("intermediary", "net.minecraft.class_3554");
+        String blockLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3552");
 
         if (targetClassName.equals(chunkMapDistanceManager)) {
             MainTransformer.transformProxyTicketManager(targetClass);
@@ -58,6 +62,8 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             MainTransformer.transformNaturalSpawner(targetClass);
         } else if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
             MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
+        }else if(LongPosTransformer.shouldClassBeTransformed(targetClass)){
+            LongPosTransformer.transform(targetClass);
         } else {
             return;
         }

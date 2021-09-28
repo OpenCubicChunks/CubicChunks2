@@ -3,6 +3,8 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.patterns;
 import java.util.Map;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LocalVariableMapper;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LongPosTransformer;
+import net.minecraft.core.SectionPos;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -10,7 +12,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class AsLongExpansionPattern extends BytecodePackedUsePattern{
-    protected AsLongExpansionPattern(Map<String, String> transformedMethods) {
+    protected AsLongExpansionPattern(Map<String, LongPosTransformer.MethodRemappingInfo> transformedMethods) {
         super(transformedMethods);
     }
 
@@ -25,7 +27,7 @@ public class AsLongExpansionPattern extends BytecodePackedUsePattern{
         if(second.getOpcode() != Opcodes.INVOKEVIRTUAL) return false;
 
         MethodInsnNode methodCall = (MethodInsnNode) second;
-        return methodCall.owner.equals("net/minecraft/util/math/BlockPos") && methodCall.name.equals("asLong");
+        return methodCall.owner.equals("net/minecraft/core/BlockPos") && methodCall.name.equals("asLong");
     }
 
     @Override
@@ -37,7 +39,7 @@ public class AsLongExpansionPattern extends BytecodePackedUsePattern{
     protected InsnList forX(InsnList instructions, LocalVariableMapper mapper, int index) {
         InsnList code = new InsnList();
         code.add(new VarInsnNode(Opcodes.ALOAD, ((VarInsnNode) instructions.get(index)).var));
-        code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/util/math/BlockPos", "getX", "()I"));
+        code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/core/BlockPos", "getX", "()I"));
 
         return code;
     }
@@ -46,7 +48,7 @@ public class AsLongExpansionPattern extends BytecodePackedUsePattern{
     protected InsnList forY(InsnList instructions, LocalVariableMapper mapper, int index) {
         InsnList code = new InsnList();
         code.add(new VarInsnNode(Opcodes.ALOAD, ((VarInsnNode) instructions.get(index)).var));
-        code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/util/math/BlockPos", "getY", "()I"));
+        code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/core/BlockPos", "getY", "()I"));
 
         return code;
     }
@@ -55,7 +57,7 @@ public class AsLongExpansionPattern extends BytecodePackedUsePattern{
     protected InsnList forZ(InsnList instructions, LocalVariableMapper mapper, int index) {
         InsnList code = new InsnList();
         code.add(new VarInsnNode(Opcodes.ALOAD, ((VarInsnNode) instructions.get(index)).var));
-        code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/util/math/BlockPos", "getZ", "()I"));
+        code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/minecraft/core/BlockPos", "getZ", "()I"));
 
         return code;
     }

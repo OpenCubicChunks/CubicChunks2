@@ -1,8 +1,11 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.patterns;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LocalVariableMapper;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LongPosTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.OpcodeUtil;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -11,10 +14,16 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public abstract class BytecodePackedUsePattern implements BytecodePattern{
-    private final Map<String, String> transformedMethods;
+    private final Map<String, LongPosTransformer.MethodRemappingInfo> transformedMethods;
+    protected final Set<String> safeNames = new HashSet<>();
 
-    protected BytecodePackedUsePattern(Map<String, String> transformedMethods) {
+    protected BytecodePackedUsePattern(Map<String, LongPosTransformer.MethodRemappingInfo> transformedMethods) {
         this.transformedMethods = transformedMethods;
+        for(Map.Entry<String, LongPosTransformer.MethodRemappingInfo> entry : transformedMethods.entrySet()){
+            if(entry.getValue().rename() != null){
+                safeNames.add(entry.getValue().rename());
+            }
+        }
     }
 
     @Override
@@ -32,7 +41,6 @@ public abstract class BytecodePackedUsePattern implements BytecodePattern{
                 searchIndex++;
             }
             AbstractInsnNode consumerInstruction = instructions.get(searchIndex);
-            System.out.println("Consumer: " + consumerInstruction);
             if(consumerInstruction.getOpcode() == Opcodes.LSTORE && searchIndex - patternLength == index){
                 int localVar = ((VarInsnNode) consumerInstruction).var;
                 InsnList newInstructions = new InsnList();
@@ -52,14 +60,20 @@ public abstract class BytecodePackedUsePattern implements BytecodePattern{
                 instructions.insertBefore(instructions.get(index), newInstructions);
             }else if(consumerInstruction instanceof MethodInsnNode methodCall){
                 String methodName = methodCall.owner + "#" + methodCall.name;
-                if(transformedMethods.containsKey(methodName)){
-                    System.err.println("Remapping method " + methodName);
+                boolean isSafe = safeNames.contains(methodCall.name);
+                if(isSafe || transformedMethods.containsKey(methodName)){
                     InsnList newInstructions = new InsnList();
                     newInstructions.add(forX(instructions, variableMapper, index));
                     newInstructions.add(forY(instructions, variableMapper, index));
                     newInstructions.add(forZ(instructions, variableMapper, index));
 
-                    methodCall.desc = transformedMethods.get(methodName);
+                    if(!isSafe) {
+                        LongPosTransformer.MethodRemappingInfo info = transformedMethods.get(methodName);
+                        methodCall.desc = info.desc();
+                        if (info.rename() != null) {
+                            methodCall.name = info.rename();
+                        }
+                    }
                     for(int i = 0; i < patternLength; i++){
                         instructions.remove(instructions.get(index));
                     }
