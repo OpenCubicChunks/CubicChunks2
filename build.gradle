@@ -153,6 +153,7 @@ loom {
             "-Dcubicchunks.debug.loadorder=false",
             "-Dcubicchunks.debug.window=false",
             "-Dcubicchunks.debug.statusrenderer=false",
+            "-Dcubicchunks.debug.heightmaprenderer=false",
             "-Dcubicchunks.debug.biomes=false",
             "-ea"
     ]
