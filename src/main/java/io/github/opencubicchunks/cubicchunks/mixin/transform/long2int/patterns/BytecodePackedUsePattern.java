@@ -14,18 +14,6 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public abstract class BytecodePackedUsePattern implements BytecodePattern{
-    private final Map<String, LongPosTransformer.MethodRemappingInfo> transformedMethods;
-    protected final Set<String> safeNames = new HashSet<>();
-
-    protected BytecodePackedUsePattern(Map<String, LongPosTransformer.MethodRemappingInfo> transformedMethods) {
-        this.transformedMethods = transformedMethods;
-        for(Map.Entry<String, LongPosTransformer.MethodRemappingInfo> entry : transformedMethods.entrySet()){
-            if(entry.getValue().rename() != null){
-                safeNames.add(entry.getValue().rename());
-            }
-        }
-    }
-
     @Override
     public boolean apply(InsnList instructions, LocalVariableMapper variableMapper, int index) {
         if(matches(instructions, variableMapper, index)){
@@ -58,30 +46,8 @@ public abstract class BytecodePackedUsePattern implements BytecodePattern{
                     instructions.remove(instructions.get(index));
                 }
                 instructions.insertBefore(instructions.get(index), newInstructions);
-            }else if(consumerInstruction instanceof MethodInsnNode methodCall){
-                String methodName = methodCall.owner + "#" + methodCall.name;
-                boolean isSafe = safeNames.contains(methodCall.name);
-                if(isSafe || transformedMethods.containsKey(methodName)){
-                    InsnList newInstructions = new InsnList();
-                    newInstructions.add(forX(instructions, variableMapper, index));
-                    newInstructions.add(forY(instructions, variableMapper, index));
-                    newInstructions.add(forZ(instructions, variableMapper, index));
-
-                    if(!isSafe) {
-                        LongPosTransformer.MethodRemappingInfo info = transformedMethods.get(methodName);
-                        methodCall.desc = info.desc();
-                        if (info.rename() != null) {
-                            methodCall.name = info.rename();
-                        }
-                    }
-                    for(int i = 0; i < patternLength; i++){
-                        instructions.remove(instructions.get(index));
-                    }
-                    instructions.insertBefore(instructions.get(index), newInstructions);
-                }else{
-                    throw new IllegalStateException("Invalid Method Expansion: " + methodName + " " + methodCall.desc);
-                }
-            } else{
+            }
+            else{
                 throw new IllegalStateException("Unsupported Pattern Usage!");
             }
 

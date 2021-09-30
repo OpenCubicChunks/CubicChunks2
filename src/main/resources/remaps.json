@@ -1,106 +1,113 @@
 {
-    "net/minecraft/world/level/lighting/BlockLightEngine": {
-        "methods" : [
-            {
-                "name": "getLightEmission",
-                "descriptor": "(J)I",
-                "transformed_methods": {
+    "method_info": {
+        "net/minecraft/class_3554#method_15486 (JJI)I": {
+            "returns_pos": false,
+            "blockpos_args": [0, 1]
+        },
+        "net/minecraft/class_4076#method_18691 (J)J": {
+            "returns_pos": false,
+            "blockpos_args": [0],
+            "static": true
+        },
+        "net/minecraft/class_2338#method_10060 (JLnet/minecraft/class_2350;)J": {
+            "returns_pos": true,
+            "blockpos_args": [0],
+            "static": true
+        },
+        "net/minecraft/class_2338#method_10061 (J)I": {
+            "returns_pos": false,
+            "blockpos_args": [0],
+            "static": true
+        },
+        "net/minecraft/class_2338#method_10071 (J)I": {
+            "returns_pos": false,
+            "blockpos_args": [0],
+            "static": true
+        },
+        "net/minecraft/class_2338#method_10083 (J)I": {
+            "returns_pos": false,
+            "blockpos_args": [0],
+            "static": true
+        },
+        "net/minecraft/class_2338#method_10063 ()J": {
+            "returns_pos": true,
+            "blockpos_args": []
+        }
+    },
 
+    "class_info": {
+        "net/minecraft/class_3554": {
+            "superclasses": [
+                "net/minecraft/class_3196",
+                "net/minecraft/class_3204",
+                "net/minecraft/class_4079",
+                "net/minecraft/class_4153$class_4154",
+                "net/minecraft/class_3552",
+                "net/minecraft/class_3547",
+                "net/minecraft/class_3558",
+                "net/minecraft/class_3560",
+                "net/minecraft/class_3572",
+                "net/minecraft/class_3569"
+            ]
+        },
+
+        "net/minecraft/class_3552": {
+            "transform": [
+                {
+                    "owner": "net/minecraft/class_3565",
+                    "name": "method_15514",
+                    "descriptor": "(Lnet/minecraft/class_2338;I)V"
                 },
-                "expanded_variables": [1],
-                "patterns": [
-                    "block_pos_unpack"
-                ]
-            },
-            {
-                "name" : "checkNeighborsAfterUpdate",
-                "descriptor" : "(JIZ)V",
-                "transformed_methods" : {
-                    "net/minecraft/core/SectionPos#blockToSection": "(III)J",
-                    "net/minecraft/world/level/lighting/BlockLightEngine#checkNeighbor": "(IIIIIIIZ)V"
+                {
+                    "name": "method_15474",
+                    "descriptor": "(J)I"
                 },
-                "expanded_variables" : [1, 11],
-                "patterns": [
-                    "block_pos_offset",
-                    "expanded_method_remapping"
-                ]
-            },
-            {
-                "name": "computeLevelFromNeighbor",
-                "descriptor": "(JJI)I",
-                "transformed_methods": {
-                    "net/minecraft/world/level/lighting/BlockLightEngine#getLightEmission": "(III)I",
-                    "net/minecraft/world/level/lighting/BlockLightEngine#getStateAndOpacity": "(IIILorg/apache/commons/lang3/mutable/MutableInt;)Lnet/minecraft/world/level/block/state/BlockState;",
-                    "net/minecraft/world/level/lighting/BlockLightEngine#getShape": "(Lnet/minecraft/world/level/block/state/BlockState;IIILnet/minecraft/core/Direction;)Lnet/minecraft/world/phys/shapes/VoxelShape;"
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name":"method_15488",
+                    "descriptor": "(JJI)I"
                 },
-                "expanded_variables": [1, 3],
-                "patterns": [
-                    "check_invalid_pos",
-                    "block_pos_unpack",
-                    "expanded_method_remapping"
-                ]
-            },
-            {
-                "name": "getComputedLevel",
-                "descriptor": "(JJI)I",
-                "transformed_methods": {
-                    "net/minecraft/world/level/lighting/BlockLightEngine#computeLevelFromNeighbor": {"descriptor": "(IIIIIII)I"},
-                    "net/minecraft/core/SectionPos#blockToSection": "(III)J",
-                    "net/minecraft/world/level/lighting/BlockLightEngine#getLevel" : "(Lnet/minecraft/world/level/chunk/DataLayer;III)I"
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15487",
+                    "descriptor": "(JIZ)V"
                 },
-                "expanded_variables": [1, 3, 14],
-                "patterns": [
-                    "check_invalid_pos",
-                    "block_pos_offset",
-                    "packed_inequality",
-                    "expanded_method_remapping",
-                    "max_pos_expansion"
-                ]
-            },
-            {
-                "name": "onBlockEmissionIncrease",
-                "descriptor": "(Lnet/minecraft/core/BlockPos;I)V",
-                "rename": "onBlockEmissionIncrease3i",
-                "transformed_methods": {
-                    "net/minecraft/world/level/lighting/BlockLightEngine#checkEdge" : "(IIIIIIIZ)V"
-                },
-                "expanded_variables": [],
-                "patterns": [
-                    "as_long_expansion",
-                    "expanded_method_remapping",
-                    "max_pos_expansion"
-                ]
-            }
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15486",
+                    "descriptor": "(JJI)I"
+                }
+            ]
+        }
+    },
+
+    "unpacking": [
+        "net/minecraft/class_2338#method_10061 (J)I",
+        "net/minecraft/class_2338#method_10071 (J)I",
+        "net/minecraft/class_2338#method_10083 (J)I"
+    ],
+
+    "block_pos_unpacking": {
+        "vec3i": "net/minecraft/class_2382",
+        "as_long": "method_10063",
+        "get": [
+            "method_10263",
+            "method_10264",
+            "method_10260"
         ]
     },
-    "net/minecraft/world/level/lighting/LayerLightEngine": {
-        "methods": [
-            {
-                "name": "getStateAndOpacity",
-                "descriptor": "(JLorg/apache/commons/lang3/mutable/MutableInt;)Lnet/minecraft/world/level/block/state/BlockState;",
-                "transformed_methods": {
-                    "net/minecraft/core/BlockPos$MutableBlockPos#set": "(III)Lnet/minecraft/core/BlockPos$MutableBlockPos;"
-                },
-                "expanded_variables": [1],
-                "patterns": [
-                    "block_pos_unpack",
-                    "check_invalid_pos",
-                    "expanded_method_remapping"
-                ]
-            }
-        ]
-    },
-    "net/minecraft/core/SectionPos": {
-        "methods": [
-            {
-                "name": "blockToSection",
-                "descriptor": "(J)J",
-                "transformed_methods": {},
-                "expanded_variables": [0],
-                "patterns": [
-                    "block_pos_unpack"
-                ]
-            }
-        ]
+
+    "pattern_config": {
+        "block_pos_offset": {
+            "direction": "net/minecraft/class_2350",
+            "block_pos": "net/minecraft/class_2338",
+
+            "method_name": "method_10060",
+            "method_desc": "(JLnet/minecraft/class_2350;)J",
+
+            "step_x": "method_10148",
+            "step_y": "method_10164",
+            "step_z": "method_10165"
+        }
     }
 }

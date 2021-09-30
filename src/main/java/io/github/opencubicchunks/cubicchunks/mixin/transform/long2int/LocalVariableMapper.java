@@ -1,6 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.long2int;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class LocalVariableMapper {
@@ -30,6 +31,10 @@ public class LocalVariableMapper {
         }
         return false;
     }
+    public void generate(){
+        Collections.sort(transformedParameters);
+    }
+
 
     public int getLocalVariableOffset() {
         return transformedParameters.size();

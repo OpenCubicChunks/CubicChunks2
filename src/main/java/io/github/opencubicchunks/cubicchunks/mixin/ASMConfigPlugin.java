@@ -45,26 +45,36 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
 
     @Override public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
         MappingResolver map = FabricLoader.getInstance().getMappingResolver();
+        boolean modified = false;
         String chunkMapDistanceManager = map.mapClassName("intermediary", "net.minecraft.class_3898$class_3216");
         String chunkMap = map.mapClassName("intermediary", "net.minecraft.class_3898");
         String chunkHolder = map.mapClassName("intermediary", "net.minecraft.class_3193");
         String naturalSpawner = map.mapClassName("intermediary", "net.minecraft.class_1948");
         String dynamicGraphMinFixedPoint = map.mapClassName("intermediary", "net.minecraft.class_3554");
-        String blockLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3552");
 
         if (targetClassName.equals(chunkMapDistanceManager)) {
+            modified = true;
             MainTransformer.transformProxyTicketManager(targetClass);
         } else if (targetClassName.equals(chunkMap)) {
+            modified = true;
             MainTransformer.transformChunkManager(targetClass);
         } else if (targetClassName.equals(chunkHolder)) {
+            modified = true;
             MainTransformer.transformChunkHolder(targetClass);
         } else if (targetClassName.equals(naturalSpawner)) {
+            modified = true;
             MainTransformer.transformNaturalSpawner(targetClass);
         } else if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
+            modified = true;
             MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
-        }else if(LongPosTransformer.shouldClassBeTransformed(targetClass)){
-            LongPosTransformer.transform(targetClass);
-        } else {
+        }
+
+        if(LongPosTransformer.shouldModifyClass(targetClass, map)){
+            LongPosTransformer.modifyClass(targetClass);
+            modified = true;
+        }
+
+        if(!modified){
             return;
         }
 
