@@ -88,8 +88,9 @@ import com.mojang.math.Matrix4f;
 import com.mojang.math.Vector3f;
 import com.mojang.math.Vector4f;
 import io.github.opencubicchunks.cubicchunks.chunk.ICubeHolder;
+import io.github.opencubicchunks.cubicchunks.chunk.LightHeightmapGetter;
+import io.github.opencubicchunks.cubicchunks.chunk.heightmap.SurfaceTrackerSection;
 import io.github.opencubicchunks.cubicchunks.chunk.util.CubePos;
-import io.github.opencubicchunks.cubicchunks.debug.DebugVisualization.Vertex;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
 import it.unimi.dsi.fastutil.longs.Long2ByteLinkedOpenHashMap;
@@ -122,6 +123,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
 public class DebugVisualization {
+    private static final boolean HEIGHTMAP_VIEW_ENABLED = System.getProperty("cubicchunks.debug.heightmap", "false").equals("true");
 
     private static final String VERT_SHADER =
         "#version 330 core\n" +
@@ -393,8 +395,10 @@ public class DebugVisualization {
         // view
         modelView.multiply(Matrix4f.createTranslateMatrix(0, 0, -500));
         // model
-        modelView.multiply(Vector3f.XP.rotationDegrees(30));
-        modelView.multiply(Vector3f.YP.rotationDegrees((float) ((System.currentTimeMillis() * 0.04) % 360)));
+        if (!HEIGHTMAP_VIEW_ENABLED) {
+            modelView.multiply(Vector3f.XP.rotationDegrees(30));
+            modelView.multiply(Vector3f.YP.rotationDegrees((float) ((System.currentTimeMillis() * 0.04) % 360)));
+        }
 
         mvpMatrix.multiply(modelView);
         inverseMatrix.invert();
@@ -427,12 +431,70 @@ public class DebugVisualization {
 
         ChunkSource chunkProvider = world.getChunkSource();
         if (chunkProvider instanceof ServerChunkCache) {
-            Long2ByteLinkedOpenHashMap cubeMap = buildStatusMaps((ServerChunkCache) chunkProvider);
-            timer().buildStatusMap = System.nanoTime();
-            buildQuads(builder, playerX, playerY, playerZ, cubeMap);
-            timer().buildQuads = System.nanoTime();
+            if (HEIGHTMAP_VIEW_ENABLED) {
+                renderLightHeightmapDebug(world, player, builder);
+            } else {
+                Long2ByteLinkedOpenHashMap cubeMap = buildStatusMaps((ServerChunkCache) chunkProvider);
+                timer().buildStatusMap = System.nanoTime();
+                buildQuads(builder, playerX, playerY, playerZ, cubeMap);
+                timer().buildQuads = System.nanoTime();
+            }
         }
 
+    }
+
+    // TODO allow switching between other heightmaps too?
+    private static void renderLightHeightmapDebug(Level world, AbstractClientPlayer player, BufferBuilder builder) {
+        int chunkX = player == null ? 0 : Coords.blockToSection(player.getBlockX());
+        int chunkZ = player == null ? 0 : Coords.blockToSection(player.getBlockZ());
+        int cubeY = player == null ? 0 : Coords.blockToCube(player.getBlockY());
+        int minCubeY = cubeY - 64;
+        int maxCubeY = cubeY + 65;
+        var chunk = world.getChunkSource().getChunkForLighting(chunkX, chunkZ);
+        if (chunk == null) return;
+        var lightHeightmap = ((LightHeightmapGetter) chunk).getServerLightHeightmap();
+
+        var buffer = new ArrayList<Vertex>();
+
+        addTreeToBuffer(buffer, lightHeightmap.getSurfaceTracker(), minCubeY, maxCubeY);
+
+        for (Vertex v : buffer) {
+            vertex(builder, v.x, v.y, v.z, v.nx, v.ny, v.nz, v.rgba);
+        }
+    }
+
+    private static void addTreeToBuffer(List<Vertex> buffer, SurfaceTrackerSection node, int minCubeY, int maxCubeY) {
+        int scale = node.getScale();
+        int scaledY = node.getScaledY();
+        int bottomCubeY = SurfaceTrackerSection.scaledYBottomY(scaledY, scale);
+        int topCubeY = bottomCubeY + (1 << (scale * SurfaceTrackerSection.NODE_COUNT_BITS));
+        minCubeY = Math.max(minCubeY, bottomCubeY);
+        maxCubeY = Math.min(maxCubeY, topCubeY);
+        if (minCubeY >= maxCubeY) return;
+        // TODO should be checking whether scale0 sections have their cubes loaded
+        var isDirectlyLoaded = (scale == 0);
+        if (scale != 0) {
+            for (int i = 0; i < SurfaceTrackerSection.NODE_COUNT; i++) {
+                var child = node.getChild(i);
+                if (child != null) {
+                    isDirectlyLoaded = true;
+                    addTreeToBuffer(buffer, child, minCubeY, maxCubeY);
+                }
+            }
+        }
+        int color = isDirectlyLoaded ? 0xFFFFFFFF : 0xFF77FF77;
+        if ((scaledY & 1) == 1) color = darken(color, 15);
+        if ((scale & 1) == 1) color = darken(color, 8);
+        float x0 = -scale;
+        float x1 = x0 + 1;
+        float y0 = minCubeY;
+        float y1 = maxCubeY;
+        float z0 = 0;
+        x0 *= 7; x1 *= 7; y0 *= 7; y1 *= 7;
+        buffer.add(new Vertex(x0, y1, z0, 0, 0, -1, color));
+        buffer.add(new Vertex(x1, y1, z0, 0, 0, -1, color));
+        buffer.add(new Vertex(x1, y0, z0, 0, 0, -1, color));
+        buffer.add(new Vertex(x0, y0, z0, 0, 0, -1, color));
     }
 
     private static Long2ByteLinkedOpenHashMap buildStatusMaps(ServerChunkCache chunkProvider) {

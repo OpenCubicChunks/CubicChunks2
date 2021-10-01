@@ -195,6 +195,7 @@ public class SurfaceTrackerSection {
 
     public CompoundTag getSaveTag() {
         CompoundTag tag = new CompoundTag();
+        // TODO reevaluate all heights before saving? or at least we need to reevaluate heights before going from directly loaded to indirectly (i.e. when children or cube unloads)
         tag.putLongArray("heights", this.heights.getRaw());
         tag.putInt("scaledY", this.scaledY);
         tag.putByte("scale", this.scale);
@@ -296,6 +297,7 @@ public class SurfaceTrackerSection {
         return Heightmap.Types.values()[heightmapType];
     }
 
+    // TODO is this direct or indirect loading? or both? I think only direct loading?
     @Nullable
     protected SurfaceTrackerSection loadNode(int newScaledY, int sectionScale, IBigCube newCube, boolean create) {
         // TODO: loading from disk
@@ -313,6 +315,7 @@ public class SurfaceTrackerSection {
         return (z & 0xF) * WIDTH_BLOCKS + (x & 0xF);
     }
 
+    // TODO this could probably be optimized
     public void clearDirtyPositions() {
         SurfaceTrackerSection parent = this;
 //        while (parent.getParent() != null) {
@@ -349,9 +352,10 @@ public class SurfaceTrackerSection {
         return (nodeScaledY << NODE_COUNT_BITS) + index;
     }
 
+    // public for debug
     /** Get the lowest cube y coordinate for a given scaledY and scale */
     @VisibleForTesting
-    static int scaledYBottomY(int scaledY, int scale) {
+    public static int scaledYBottomY(int scaledY, int scale) {
         if (scale == MAX_SCALE) {
             return -(1 << ((scale - 1) * NODE_COUNT_BITS));
         }
@@ -376,6 +380,7 @@ public class SurfaceTrackerSection {
         return absoluteY + 1 - scaledYBottomY(scaledY, scale) * IBigCube.DIAMETER_IN_BLOCKS;
     }
 
+    // Used only for sending server heightmap data to the client
     public void writeData(int mainX, int mainZ, BitStorage data, int minValue) {
         for (int dx = 0; dx < 16; dx++) {
             for (int dz = 0; dz < 16; dz++) {
@@ -389,6 +394,7 @@ public class SurfaceTrackerSection {
         }
     }
 
+    // TODO Can't use these since sections will usually remain indirectly loaded even after their cube is unloaded
     public CompoundTag writeCubeLocalHeightmap() {
         if (scale != 0) {
             throw new UnsupportedOperationException("This is not a cube local heightmap!");
@@ -400,5 +406,14 @@ public class SurfaceTrackerSection {
 
     public static SurfaceTrackerSection fromCubeSaveData(Heightmap.Types types, IBigCube cube, CompoundTag tag) {
         return new SurfaceTrackerSection(0, cube.getCubePos().getY(), null, cube, types, null, tag.getLongArray("heights"));
+    }
+
+    // For debug
+    public int getScale() {
+        return scale;
+    }
+
+    public int getScaledY() {
+        return scaledY;
     }
 }
