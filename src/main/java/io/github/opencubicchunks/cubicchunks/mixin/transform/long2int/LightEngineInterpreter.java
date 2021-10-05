@@ -24,10 +24,11 @@ import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.Interpreter;
 
 public class LightEngineInterpreter extends Interpreter<LightEngineValue> {
-    private final Map<LightEngineValue, Set<AbstractInsnNode>> consumers = new HashMap<>();
+    private final Map<String, MethodInfo> methodInfoMap;
 
-    protected LightEngineInterpreter(int api) {
-        super(api);
+    protected LightEngineInterpreter(Map<String, MethodInfo> methodInfo) {
+        super(ASM9);
+        this.methodInfoMap = methodInfo;
     }
 
     @Override
@@ -91,10 +92,7 @@ public class LightEngineInterpreter extends Interpreter<LightEngineValue> {
     @Override
     public LightEngineValue copyOperation(AbstractInsnNode insn, LightEngineValue value) throws AnalyzerException {
         if(insn instanceof VarInsnNode varInsn){
-            if(OpcodeUtil.isLocalVarStore(varInsn.getOpcode())){
-                consumeBy(value, insn);
-            }
-            return new LightEngineValue(value.getType(), insn, varInsn.var);
+            return new LightEngineValue(value.getType(), insn, varInsn.var, value.getPackedLongRef());
         }
         return value;
     }
@@ -238,6 +236,11 @@ public class LightEngineInterpreter extends Interpreter<LightEngineValue> {
             case AALOAD:
                 return new LightEngineValue(Type.getObjectType("java/lang/Object"), insn);
             case LCMP:
+                if(value1.isAPackedLong()){
+                    value2.setPackedLong();
+                }else if(value2.isAPackedLong()){
+                    value1.setPackedLong();
+                }
             case FCMPL:
             case FCMPG:
             case DCMPL:
@@ -280,8 +283,24 @@ public class LightEngineInterpreter extends Interpreter<LightEngineValue> {
             if(type.getSort() == Type.VOID) return null;
             return new LightEngineValue(type, insn);
         } else {
-            Type type = Type.getReturnType(((MethodInsnNode) insn).desc);
+            MethodInsnNode methodCall = (MethodInsnNode) insn;
+            Type type = Type.getReturnType(methodCall.desc);
+            String methodID = methodCall.owner + "#" + methodCall.name + " " + methodCall.desc;
+            MethodInfo methodInfo = methodInfoMap.get(methodID);
+            if(methodInfo != null){
+                for(int index: methodInfo.getExpandedIndices()){
+                    values.get(index).setPackedLong();
+                }
+
+                if(methodInfo.returnsPackedBlockPos()){
+                    LightEngineValue value = new LightEngineValue(type, insn);
+                    value.setPackedLong();
+                    return value;
+                }
+            }
+
             if(type.getSort() == Type.VOID) return null;
+
             return new LightEngineValue(type, insn);
         }
     }
@@ -298,19 +317,6 @@ public class LightEngineInterpreter extends Interpreter<LightEngineValue> {
 
     private void consumeBy(LightEngineValue value, AbstractInsnNode consumer){
         assert value != null;
-        consumers.computeIfAbsent(value, key -> new HashSet<>(2)).add(consumer);
-    }
-
-    public Set<AbstractInsnNode> getConsumersFor(LightEngineValue value){
-        assert value != null;
-        return consumers.get(value);
-    }
-
-    public Map<LightEngineValue, Set<AbstractInsnNode>> getConsumers() {
-        return consumers;
-    }
-
-    public void clearCache() {
-        consumers.clear();
+        value.consumeBy(consumer);
     }
 }

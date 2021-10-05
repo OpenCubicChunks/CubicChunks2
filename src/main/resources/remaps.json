@@ -12,7 +12,37 @@
         "net/minecraft/class_2338#method_10060 (JLnet/minecraft/class_2350;)J": {
             "returns_pos": true,
             "blockpos_args": [0],
-            "static": true
+            "static": true,
+
+            "expansion": [
+                [
+                    {
+                        "type": "INVOKEVIRTUAL",
+                        "owner": "net/minecraft/class_2350",
+                        "name": "method_10148",
+                        "descriptor": "()I"
+                    },
+                    "IADD"
+                ],
+                [
+                    {
+                        "type": "INVOKEVIRTUAL",
+                        "owner": "net/minecraft/class_2350",
+                        "name": "method_10164",
+                        "descriptor": "()I"
+                    },
+                    "IADD"
+                ],
+                [
+                    {
+                        "type": "INVOKEVIRTUAL",
+                        "owner": "net/minecraft/class_2350",
+                        "name": "method_10165",
+                        "descriptor": "()I"
+                    },
+                    "IADD"
+                ]
+            ]
         },
         "net/minecraft/class_2338#method_10061 (J)I": {
             "returns_pos": false,
@@ -31,7 +61,63 @@
         },
         "net/minecraft/class_2338#method_10063 ()J": {
             "returns_pos": true,
-            "blockpos_args": []
+            "blockpos_args": [],
+            "expansion": [
+                [
+                    {
+                        "type": "INVOKEVIRTUAL",
+                        "owner": "net/minecraft/class_2382",
+                        "name": "method_10061",
+                        "descriptor": "()I"
+                    }
+                ],
+                [
+                    {
+                        "type": "INVOKEVIRTUAL",
+                        "owner": "net/minecraft/class_2382",
+                        "name": "method_10071",
+                        "descriptor": "()I"
+                    }
+                ],
+                [
+                    {
+                        "type": "INVOKEVIRTUAL",
+                        "owner": "net/minecraft/class_2382",
+                        "name": "method_10083",
+                        "descriptor": "()I"
+                    }
+                ]
+            ]
+        },
+        "net/minecraft/class_2338#method_10096 (JIII)J": {
+            "returns_pos": true,
+            "blockpos_args": [0],
+            "sep_args": [
+                [1, 2, 3]
+            ],
+            "static": true,
+            "expansion": [
+                ["IADD"],
+                ["IADD"],
+                ["IADD"]
+            ]
+        },
+        "net/minecraft/class_2338#method_10091 (J)J": {
+            "returns_pos": true,
+            "blockpos_args": [0],
+            "static": true,
+            "expansion": [
+                [],
+                [
+                    {
+                        "type": "LDC",
+                        "constant_type": "int",
+                        "value": -16
+                    },
+                    "IAND"
+                ],
+                []
+            ]
         }
     },
 
@@ -78,6 +164,35 @@
                     "descriptor": "(JJI)I"
                 }
             ]
+        },
+        "net/minecraft/class_3572": {
+            "transform":[
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15488",
+                    "descriptor": "(JJI)I"
+                },
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15487",
+                    "descriptor": "(JIZ)V"
+                },
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15486",
+                    "descriptor": "(JJI)I"
+                },
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15491",
+                    "descriptor": "(J)V"
+                }
+            ]
+        },
+        "net/minecraft/class_2382": {
+            "superclasses": [
+                "net/minecraft/class_2338"
+            ]
         }
     },
 
@@ -97,17 +212,15 @@
         ]
     },
 
-    "pattern_config": {
-        "block_pos_offset": {
-            "direction": "net/minecraft/class_2350",
-            "block_pos": "net/minecraft/class_2338",
+    "block_pos_direction_offset": {
+        "direction": "net/minecraft/class_2350",
+        "block_pos": "net/minecraft/class_2338",
 
-            "method_name": "method_10060",
-            "method_desc": "(JLnet/minecraft/class_2350;)J",
+        "method_name": "method_10060",
+        "method_desc": "(JLnet/minecraft/class_2350;)J",
 
-            "step_x": "method_10148",
-            "step_y": "method_10164",
-            "step_z": "method_10165"
-        }
+        "step_x": "method_10148",
+        "step_y": "method_10164",
+        "step_z": "method_10165"
     }
 }
