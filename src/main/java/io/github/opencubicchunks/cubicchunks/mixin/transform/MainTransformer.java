@@ -14,6 +14,10 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LongPosTransformer;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.MethodInfo;
+import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 import net.minecraft.core.SectionPos;
@@ -24,6 +28,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Handle;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.MethodRemapper;
@@ -31,6 +36,7 @@ import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -386,10 +392,75 @@ public class MainTransformer {
                 "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
                 "field_15784", // computedLevels
                 "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"));
-        changeFieldTypeToObject(targetClass, new ClassField(
+
+        changeFixedPointQueuesTo3Int(targetClass);
+        /*changeFieldTypeToObject(targetClass, new ClassField(
                 "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
                 "field_15785", // queues
-                "[Lit/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet;"));
+                "[Lit/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet;"));*/
+    }
+
+    private static void changeFixedPointQueuesTo3Int(ClassNode targetClass) {
+        String oldType = "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet";
+        String newType = "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet";
+
+        ClassField targetField = remapField(new ClassField(
+            "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
+            "field_15785", // queues
+            "[Lit/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet;"));
+
+        FieldNode fieldNode = targetClass.fields.stream()
+            .filter(x -> targetField.name.equals(x.name) && targetField.desc.getDescriptor().equals(x.desc))
+            .findAny().orElseThrow(() -> new IllegalStateException("Target field " + targetField + " not found"));
+
+        fieldNode.desc = "[L" + newType + ";";
+
+        targetClass.methods.forEach((method) -> {
+            AbstractInsnNode[] instructions = method.instructions.toArray();
+
+            if(method.name.equals("<init>")){ //The hash sets get constructed in init
+                for(int i = 0; i < instructions.length; i++){
+                    AbstractInsnNode instruction = instructions[i];
+                    if(instruction.getOpcode() == NEW){
+                        TypeInsnNode newNode = (TypeInsnNode) instruction;
+                        if(newNode.desc.endsWith("$1")){ //Kinda dodgy but should be alright
+                            newNode.desc = newType;
+                        }
+                    }else if(instruction.getOpcode() == ANEWARRAY){
+                        TypeInsnNode newArrayNode = (TypeInsnNode) instruction;
+                        if(newArrayNode.desc.equals(oldType)){
+                            newArrayNode.desc = newType;
+                        }
+                    }else if(instruction.getOpcode() == INVOKESPECIAL){
+                        MethodInsnNode methodCall = (MethodInsnNode) instruction;
+                        if(methodCall.name.equals("<init>") && methodCall.owner.endsWith("$1")){
+                            methodCall.owner = newType;
+                            methodCall.desc = "()V";
+
+                            //Remove method call arguments
+                            for(int j = 1; j <= 4; j++)
+                                method.instructions.remove(instructions[i - j]);
+                        }
+                    }
+                }
+            }
+
+            for(int i = 0; i < instructions.length; i++){
+                AbstractInsnNode instruction = instructions[i];
+                if(instruction instanceof FieldInsnNode fieldInstruction){
+                    if(fieldInstruction.name.equals(targetField.name) &&
+                        fieldInstruction.desc.equals(targetField.desc.getDescriptor()) &&
+                        fieldInstruction.owner.equals(targetField.owner.getInternalName()))
+                    {
+                        fieldInstruction.desc = "[L" + newType + ";";
+                    }
+                }else if(instruction instanceof MethodInsnNode methodCall){
+                    if(methodCall.owner.equals(oldType)){
+                        methodCall.owner = newType;
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -405,6 +476,7 @@ public class MainTransformer {
      * @param field The field to change the type of
      */
     private static void changeFieldTypeToObject(ClassNode targetClass, ClassField field) {
+        (new Long2ByteOpenHashMap()).keySet()
         var objectTypeDescriptor = getObjectType("java/lang/Object").getDescriptor();
 
         var remappedField = remapField(field);

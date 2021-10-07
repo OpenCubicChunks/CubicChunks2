@@ -3,6 +3,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.long2int;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -21,11 +23,9 @@ import com.google.gson.JsonParser;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.bytecodegen.InstructionFactory;
 import net.fabricmc.loader.api.MappingResolver;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.Mth;
-import net.minecraft.world.inventory.tooltip.BundleTooltip;
-import net.minecraft.world.item.BundleItem;
-import net.minecraft.world.level.lighting.BlockLightEngine;
-import org.apache.logging.log4j.core.Logger;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
+import net.minecraft.world.level.lighting.LayerLightEngine;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -52,7 +52,7 @@ import org.objectweb.asm.tree.analysis.Value;
 public class LongPosTransformer {
     private static final String REMAP_PATH = "/remaps.json";
     private static final Map<String, MethodInfo> methodInfoLookup = new HashMap<>();
-    private static final Map<String, List<String>> transformsToApply = new HashMap<>();
+    private static final Map<String, List<TransformInfo>> transformsToApply = new HashMap<>();
     private static final String[] UNPACKING_METHODS = new String[3];
     private static boolean loaded = false;
 
@@ -60,20 +60,27 @@ public class LongPosTransformer {
     private static final Analyzer<LightEngineValue> analyzer = new Analyzer<>(interpreter);
     private static final List<String> errors = new ArrayList<>();
 
+    private static final List<String> allTransformedMethods = new ArrayList<>();
+
     public static Set<String> remappedMethods = new HashSet<>();
+    public static Set<String> newRemaps = new HashSet<>();
 
     public static void modifyClass(ClassNode classNode) {
         System.out.println("[LongPosTransformer]: Modifying " + classNode.name);
-        List<String> transforms = transformsToApply.get(classNode.name);
+        List<TransformInfo> transforms = transformsToApply.get(classNode.name);
 
         List<MethodNode> newMethods = new ArrayList<>();
 
         for (MethodNode methodNode : classNode.methods) {
             String methodNameAndDescriptor = methodNode.name + " " + methodNode.desc;
-            if (transforms.contains(methodNameAndDescriptor)) {
+            for(TransformInfo transform: transforms){
+                if(!transform.methodNameAndDescriptor().equals(methodNameAndDescriptor)) continue;
                 System.out.println("[LongPosTransformer]: Modifying " + methodNode.name);
 
-                MethodNode newMethod = modifyMethod(methodNode, classNode);
+                newRemaps.clear();
+                MethodNode newMethod = modifyMethod(methodNode, classNode, transform);
+
+                checkRemaps(classNode);
 
                 if (newMethod != null) {
                     newMethods.add(newMethod);
@@ -84,10 +91,7 @@ public class LongPosTransformer {
         classNode.methods.addAll(newMethods);
         saveClass(classNode, ""); //Saves class without computing frames so that if that fails there's still this
 
-        System.out.println("Current Remaps:");
-        for (String remap : remappedMethods) {
-            System.out.println("\t" + remap);
-        }
+        saveRemapInfo();
 
         if(errors.size() > 0){
             for(String error: errors){
@@ -95,6 +99,45 @@ public class LongPosTransformer {
             }
             throw new IllegalStateException("Modifying " + classNode.name + " caused (an) error(s)!");
         }
+    }
+
+    private static void checkRemaps(ClassNode classNode) {
+        remappedMethods.addAll(newRemaps);
+    }
+
+    private static void saveRemapInfo(){
+        allTransformedMethods.forEach(remappedMethods::remove);
+
+        Path path = Path.of("remapped.txt");
+
+        try {
+            if (!Files.exists(path)) {
+                Files.createFile(path);
+            }
+
+            FileOutputStream out = new FileOutputStream(path.toAbsolutePath().toString());
+            PrintStream print = new PrintStream(out);
+
+            for(String remappedMethod: remappedMethods){
+                print.println(remappedMethod);
+            }
+
+            print.close();
+        }catch (IOException e){
+            throw new IllegalStateException("Failed to create remapped.txt file", e);
+        }
+    }
+
+    private static void logRemap(MethodInsnNode methodCall){
+        logRemap(methodCall.owner, methodCall.name, methodCall.desc);
+    }
+
+    private static void logRemap(String owner, String name, String desc) {
+        newRemaps.add(methodID(owner, name, desc));
+    }
+
+    private static String methodID(String owner, String name, String desc) {
+        return owner + "#" + name + " " + desc;
     }
 
     public static byte[] saveClass(ClassNode classNode, String suffix){
@@ -125,7 +168,7 @@ public class LongPosTransformer {
         errors.add("Error in " + node.name + ", " + message);
     }
 
-    private static MethodNode modifyMethod(MethodNode methodNode, ClassNode classNode) {
+    private static MethodNode modifyMethod(MethodNode methodNode, ClassNode classNode, TransformInfo transformInfo) {
         String methodNameAndDescriptor = methodNode.name + " " + methodNode.desc;
         MethodNode newMethod = copy(methodNode);
 
@@ -137,6 +180,8 @@ public class LongPosTransformer {
                 }
             }
         }
+
+        interpreter.setLocalVarOverrides(transformInfo.overrides());
 
         try {
             analyzer.analyze(classNode.name, newMethod);
@@ -272,11 +317,11 @@ public class LongPosTransformer {
 
                     //Log transformation and change method call info
                     if (!newDescriptor.equals(methodCall.desc)) {
+                        logRemap(methodCall);
+
                         methodCall.owner = newOwner;
                         methodCall.name = newName;
                         methodCall.desc = newDescriptor;
-
-                        remappedMethods.add(methodID + " -> " + newOwner + "#" + newName + " " + newDescriptor);
                     }
                 }
             }else if(instruction.getOpcode() == Opcodes.LSTORE){
@@ -708,7 +753,7 @@ public class LongPosTransformer {
 
             JsonArray transformArray = entry.getValue().getAsJsonObject().getAsJsonArray("transform");
             if (transformArray != null) {
-                List<String> methodsToTransform = new ArrayList<>();
+                List<TransformInfo> methodsToTransform = new ArrayList<>();
                 for (JsonElement transform : transformArray) {
                     JsonObject transformInfo = transform.getAsJsonObject();
 
@@ -724,7 +769,18 @@ public class LongPosTransformer {
                     String actualName = map.mapMethodName("intermediary", owner.replace('/', '.'), name, descriptor);
                     String actualDescriptor = MethodInfo.mapDescriptor(descriptor, map);
 
-                    methodsToTransform.add(actualName + " " + actualDescriptor);
+                    List<Integer> overrides = new ArrayList<>();
+                    JsonElement overridesElement = transformInfo.get("override_locals");
+                    if(overridesElement != null){
+                        overridesElement.getAsJsonArray().forEach(e -> overrides.add(e.getAsInt()));
+                    }
+
+                    methodsToTransform.add(new TransformInfo(actualName + " " + actualDescriptor, overrides));
+                    String methodNameAndDescriptor = actualName + " " + actualDescriptor;
+                    allTransformedMethods.add(className + "#" + methodNameAndDescriptor);
+                    /*for(String superClass: superClasses){
+                        allTransformedMethods.add(superClass + "#" + methodNameAndDescriptor);
+                    }*/
                 }
                 transformsToApply.put(className, methodsToTransform);
             }
@@ -759,4 +815,6 @@ public class LongPosTransformer {
 
         loaded = true;
     }
+
+    private static final record MethodID(String owner, String name, String descriptor){ }
 }

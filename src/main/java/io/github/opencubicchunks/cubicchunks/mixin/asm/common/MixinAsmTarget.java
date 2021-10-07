@@ -16,8 +16,12 @@ import org.spongepowered.asm.mixin.Mixin;
     ChunkHolder.class,
     DynamicGraphMinFixedPoint.class,
     NaturalSpawner.class,
+
+    //Long Pos Transforms
     BlockLightEngine.class,
-    SkyLightEngine.class
+    SkyLightEngine.class,
+    LayerLightEngine.class,
+    SectionPos.class
 })
 public class MixinAsmTarget {
     // intentionally empty

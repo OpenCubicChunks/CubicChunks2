@@ -56,7 +56,7 @@ public class LinkedInt3HashSetTest {
         //Do random shit and see if it crashes
         Random random = new Random();
 
-        long seed = -6179321261534362552L;//random.nextLong();
+        long seed = random.nextLong();
         random.setSeed(seed);
 
         LinkedInt3HashSet set = new LinkedInt3HashSet();
@@ -64,7 +64,6 @@ public class LinkedInt3HashSetTest {
         System.out.println("Seed: " + seed);
 
         for(int i = 0; i < 100000; i++){
-            System.out.println("Go #" + i);
 
             int n = random.nextInt(4);
 

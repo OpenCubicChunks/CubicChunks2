@@ -118,6 +118,14 @@
                 ],
                 []
             ]
+        },
+        "net/minecraft/class_3560#method_15525 (JI)V": {
+            "returns_pos": false,
+            "blockpos_args": [0]
+        },
+        "net/minecraft/class_3554#method_15482 (JJIIIZ)V": {
+            "returns_pos": false,
+            "blockpos_args": [0, 1]
         }
     },
 
@@ -134,9 +142,18 @@
                 "net/minecraft/class_3560",
                 "net/minecraft/class_3572",
                 "net/minecraft/class_3569"
+            ],
+            "transform": [
+                {
+                    "name": "method_15478",
+                    "descriptor": "(JJIZ)V"
+                },
+                {
+                    "name": "method_15482",
+                    "descriptor": "(JJIIIZ)V"
+                }
             ]
         },
-
         "net/minecraft/class_3552": {
             "transform": [
                 {
@@ -189,9 +206,74 @@
                 }
             ]
         },
+        "net/minecraft/class_3558": {
+            "transform": [
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15491",
+                    "descriptor": "(J)V"
+                },
+                {
+                    "name": "method_20479",
+                    "descriptor": "(JLorg/apache/commons/lang3/mutable/MutableInt;)Lnet/minecraft/class_2680;"
+                },
+                {
+                    "name": "method_20710",
+                    "descriptor": "(Lnet/minecraft/class_2680;JLnet/minecraft/class_2350;)Lnet/minecraft/class_265;"
+                },
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15494",
+                    "descriptor": "(J)Z"
+                },
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15486",
+                    "descriptor": "(JJI)I",
+                    "override_locals": [1, 3]
+                },
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15480",
+                    "descriptor": "(J)I"
+                },
+                {
+                    "name": "method_15517",
+                    "descriptor": "(Lnet/minecraft/class_2804;J)I"
+                },
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15485",
+                    "descriptor": "(JI)V"
+                },
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name":"method_15488",
+                    "descriptor": "(JJI)I",
+                    "override_locals": [1, 3]
+                }
+            ],
+            "superclasses": [
+                "net/minecraft/class_3572",
+                "net/minecraft/class_3552"
+            ]
+        },
         "net/minecraft/class_2382": {
             "superclasses": [
                 "net/minecraft/class_2338"
+            ]
+        },
+        "net/minecraft/class_3569": {
+            "transform": [
+                {
+                    "owner": "net/minecraft/class_3560",
+                    "name": "method_15538",
+                    "descriptor": "(J)I"
+                },
+                {
+                    "name": "method_31931",
+                    "descriptor": "(JZ)I"
+                }
             ]
         }
     },

@@ -2,6 +2,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.long2int;
 
 import static org.objectweb.asm.Opcodes.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +26,7 @@ import org.objectweb.asm.tree.analysis.Interpreter;
 
 public class LightEngineInterpreter extends Interpreter<LightEngineValue> {
     private final Map<String, MethodInfo> methodInfoMap;
+    private List<Integer> localVarOverrides = new ArrayList<>();
 
     protected LightEngineInterpreter(Map<String, MethodInfo> methodInfo) {
         super(ASM9);
@@ -44,7 +46,11 @@ public class LightEngineInterpreter extends Interpreter<LightEngineValue> {
     @Override
     public LightEngineValue newParameterValue(boolean isInstanceMethod, int local, Type type) {
         if(type == Type.VOID_TYPE) return null;
-        return new LightEngineValue(type, local);
+        LightEngineValue value = new LightEngineValue(type, local);
+        if(localVarOverrides.contains(local)){
+            value.setPackedLong();
+        }
+        return value;
     }
 
     @Override
@@ -236,6 +242,14 @@ public class LightEngineInterpreter extends Interpreter<LightEngineValue> {
             case AALOAD:
                 return new LightEngineValue(Type.getObjectType("java/lang/Object"), insn);
             case LCMP:
+                if(isMaxLong(value1)){
+                    value1.setPackedLong();
+                }
+
+                if(isMaxLong(value2)){
+                    value2.setPackedLong();
+                }
+
                 if(value1.isAPackedLong()){
                     value2.setPackedLong();
                 }else if(value2.isAPackedLong()){
@@ -259,6 +273,18 @@ public class LightEngineInterpreter extends Interpreter<LightEngineValue> {
             default:
                 throw new AssertionError();
         }
+    }
+
+    private boolean isMaxLong(LightEngineValue value){
+        AbstractInsnNode source = value.getSource().iterator().next();
+
+        if(source instanceof LdcInsnNode constant){
+            if(constant.cst instanceof Long l){
+                return l == Long.MAX_VALUE;
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -318,5 +344,9 @@ public class LightEngineInterpreter extends Interpreter<LightEngineValue> {
     private void consumeBy(LightEngineValue value, AbstractInsnNode consumer){
         assert value != null;
         value.consumeBy(consumer);
+    }
+
+    public void setLocalVarOverrides(List<Integer> overrides) {
+        this.localVarOverrides = overrides;
     }
 }

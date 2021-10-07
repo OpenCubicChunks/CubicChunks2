@@ -1,6 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.utils;
 
 import io.netty.util.internal.PlatformDependent;
+import net.minecraft.core.BlockPos;
 
 /**
  * A fast hash-set implementation for 3-dimensional vectors with {@code int} components.
@@ -399,5 +400,19 @@ public class Int3HashSet implements AutoCloseable {
     @FunctionalInterface
     public interface XYZConsumer {
         void accept(int x, int y, int z);
+    }
+
+    //These methods probably won't be used by any CC code but should help ensure some compatibility if other mods access the light engine
+
+    public boolean add(long l){
+        return add(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
+    }
+
+    public boolean contains(long l){
+        return contains(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
+    }
+
+    public boolean remove(long l){
+        return remove(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
     }
 }
