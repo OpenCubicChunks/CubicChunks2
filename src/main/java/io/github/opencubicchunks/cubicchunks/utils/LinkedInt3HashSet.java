@@ -1,6 +1,10 @@
 package io.github.opencubicchunks.cubicchunks.utils;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 import io.netty.util.internal.PlatformDependent;
 import net.minecraft.core.BlockPos;
@@ -186,6 +190,7 @@ public class LinkedInt3HashSet implements AutoCloseable{
     }
 
     protected void resize() {
+        System.out.println("Resizing!");
         this.cachedIndex = -1; //Invalidate cached index
 
         long oldTableSize = this.tableSize;
@@ -218,12 +223,12 @@ public class LinkedInt3HashSet implements AutoCloseable{
                     PlatformDependent.putLong(newBucketAddr + BUCKET_VALUE_OFFSET, value);
 
                     PlatformDependent.putLong(newBucketAddr + PREV_VALUE_OFFSET, prevBucket);
-                    PlatformDependent.putLong(prevBucket + NEXT_VALUE_OFFSET, newBucketAddr);
 
                     if(prevBucket == 0){
                         this.first = newBucketAddr;
+                    }else{
+                        PlatformDependent.putLong(prevBucket + NEXT_VALUE_OFFSET, newBucketAddr);
                     }
-
                     this.last = newBucketAddr;
 
                     break;
@@ -231,7 +236,7 @@ public class LinkedInt3HashSet implements AutoCloseable{
             }
 
             prevBucket = newBucketAddr;
-            bucket = PlatformDependent.getInt(bucket + PREV_VALUE_OFFSET);
+            bucket = PlatformDependent.getLong(bucket + NEXT_VALUE_OFFSET);
         }
 
         //delete old table
@@ -320,20 +325,8 @@ public class LinkedInt3HashSet implements AutoCloseable{
             //the bucket that we found contains the position, so now we remove it from the set
             this.size--;
 
-            //Patch links
-            long prev = PlatformDependent.getLong(bucketAddr + PREV_VALUE_OFFSET);
-            long next = PlatformDependent.getLong(bucketAddr + NEXT_VALUE_OFFSET);
-
-            if(prev != 0) {
-                PlatformDependent.putLong(prev + NEXT_VALUE_OFFSET, next);
-            }
-
-            if(next != 0) {
-                PlatformDependent.putLong(next + PREV_VALUE_OFFSET, prev);
-            }
-
             if ((value & ~flag) == 0L) { //this position is the only position in the bucket, so we need to delete the bucket
-                this.usedBuckets--;
+                removeBucket(bucketAddr);
 
                 //shifting the buckets IS expensive, yes, but it'll only happen when the entire bucket is deleted, which won't happen on every removal
                 this.shiftBuckets(tableAddr, (hash + i) & mask, mask);
@@ -342,6 +335,26 @@ public class LinkedInt3HashSet implements AutoCloseable{
             }
 
             return true;
+        }
+    }
+
+    protected void removeBucket(long bucketAddr){
+        this.usedBuckets--;
+
+        patchRemoval(bucketAddr);
+        if(bucketAddr == this.first){
+            long newFirst = PlatformDependent.getLong(bucketAddr + NEXT_VALUE_OFFSET);
+            if(newFirst != 0){
+                PlatformDependent.putLong(newFirst + PREV_VALUE_OFFSET, 0);
+            }
+            this.first = newFirst;
+        }
+
+        if(bucketAddr == this.last){
+            long newLast = PlatformDependent.getLong(bucketAddr + PREV_VALUE_OFFSET);
+            if(newLast != 0)
+                PlatformDependent.putLong(newLast + NEXT_VALUE_OFFSET, 0);
+            this.last = newLast;
         }
     }
 
@@ -364,21 +377,6 @@ public class LinkedInt3HashSet implements AutoCloseable{
                 currAddr = tableAddr + pos * BUCKET_BYTES;
                 if ((currValue = PlatformDependent.getLong(currAddr + BUCKET_VALUE_OFFSET)) == 0L) { //curr points to an unset bucket
                     long ptr = tableAddr + last * BUCKET_BYTES;
-                    if(ptr == this.first){
-                        long newFirst = PlatformDependent.getLong(ptr + NEXT_VALUE_OFFSET);
-                        if(newFirst != 0){
-                            PlatformDependent.putLong(newFirst + PREV_VALUE_OFFSET, 0);
-                        }
-                        this.first = newFirst;
-                    }
-
-                    if(ptr == this.last){
-                        long newLast = PlatformDependent.getLong(ptr + PREV_VALUE_OFFSET);
-                        if(newLast != 0)
-                            PlatformDependent.putLong(newLast + NEXT_VALUE_OFFSET, 0);
-                        this.last = newLast;
-                    }
-
                     PlatformDependent.setMemory(ptr, BUCKET_BYTES, (byte) 0); //delete last bucket
                     return;
                 }
@@ -389,34 +387,57 @@ public class LinkedInt3HashSet implements AutoCloseable{
                     currZ = PlatformDependent.getInt(currAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET)) & mask;
 
                 if (last <= pos ? last >= slot || slot > pos : last >= slot && slot > pos) {
-                    currPrev = PlatformDependent.getInt(currAddr + PREV_VALUE_OFFSET);
-                    currNext = PlatformDependent.getInt(currAddr + NEXT_VALUE_OFFSET);
+                    currPrev = PlatformDependent.getLong(currAddr + PREV_VALUE_OFFSET);
+                    currNext = PlatformDependent.getLong(currAddr + NEXT_VALUE_OFFSET);
 
                     break;
                 }
             }
 
             long lastAddr = tableAddr + last * BUCKET_BYTES;
+
+            patchMove(currAddr, lastAddr);
+
             PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET, currX);
             PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET, currY);
             PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET, currZ);
             PlatformDependent.putLong(lastAddr + BUCKET_VALUE_OFFSET, currValue);
+            PlatformDependent.putLong(lastAddr + NEXT_VALUE_OFFSET, currNext);
+            PlatformDependent.putLong(lastAddr + PREV_VALUE_OFFSET, currPrev);
+        }
+    }
 
-            if(currAddr == first){
-                first = lastAddr;
-            }
+    private void patchMove(long currPtr, long newPtr) {
+        long ptrPrev = PlatformDependent.getLong(currPtr + PREV_VALUE_OFFSET);
+        long ptrNext = PlatformDependent.getLong(currPtr + NEXT_VALUE_OFFSET);
 
-            if(currAddr == this.last){
-                this.last = lastAddr;
-            }
+        if(ptrPrev != 0){
+            PlatformDependent.putLong(ptrPrev + NEXT_VALUE_OFFSET, newPtr);
+        }
 
-            if(currPrev != 0) {
-                PlatformDependent.putLong(currPrev + NEXT_VALUE_OFFSET, lastAddr);
-            }
+        if(ptrNext != 0){
+            PlatformDependent.putLong(ptrNext + PREV_VALUE_OFFSET, newPtr);
+        }
 
-            if(currNext != 0) {
-                PlatformDependent.putLong(currNext + PREV_VALUE_OFFSET, lastAddr);
-            }
+        if(currPtr == this.first){
+            first = newPtr;
+        }
+
+        if(currPtr == this.last){
+            this.last = newPtr;
+        }
+    }
+
+    public void patchRemoval(long ptr){
+        long ptrPrev = PlatformDependent.getLong(ptr + PREV_VALUE_OFFSET);
+        long ptrNext = PlatformDependent.getLong(ptr + NEXT_VALUE_OFFSET);
+
+        if(ptrPrev != 0){
+            PlatformDependent.putLong(ptrPrev + NEXT_VALUE_OFFSET, ptrNext);
+        }
+
+        if(ptrNext != 0){
+            PlatformDependent.putLong(ptrNext + PREV_VALUE_OFFSET, ptrPrev);
         }
     }
 
@@ -502,9 +523,9 @@ public class LinkedInt3HashSet implements AutoCloseable{
         this.size--;
 
         if(value == 0){
-            this.usedBuckets--;
-
-            this.shiftBuckets(tableAddr, (this.first - tableAddr) / BUCKET_BYTES, tableSize - 1L);
+            long pos = (this.first - tableAddr) / BUCKET_BYTES;
+            removeBucket(this.first);
+            this.shiftBuckets(tableAddr, pos, tableSize - 1L);
 
             cachedIndex = -1;
         }else{
@@ -520,18 +541,7 @@ public class LinkedInt3HashSet implements AutoCloseable{
     protected void getFirstSetBitInFirstBucket(int start) {
         long value = PlatformDependent.getLong(first + BUCKET_VALUE_OFFSET);
 
-        int i = start;
-        value >>= start;
-        //This might not be very optimised
-        while ((value & 1L) != 1) {
-            if (value == 0) {
-                throw new IllegalStateException("No set bit in first value!");
-            }
-            value >>= 1;
-            i++;
-        }
-
-        cachedIndex = i;
+        cachedIndex = Long.numberOfTrailingZeros(value);
     }
 
     protected void setTableSize(long tableSize) {
@@ -601,6 +611,8 @@ public class LinkedInt3HashSet implements AutoCloseable{
         return BlockPos.asLong(x, y, z);
     }
 
+    //Should only be used during tests
+
     public XYZTriple[] toArray(){
         XYZTriple[] arr = new XYZTriple[(int) size];
 
@@ -609,8 +621,11 @@ public class LinkedInt3HashSet implements AutoCloseable{
             arr[i.getAndIncrement()] = new XYZTriple(x, y, z);
         });
 
+        if(i.getValue() != size){
+            throw new IllegalStateException("Size mismatch");
+        }
+
         return arr;
     }
-
     public static record XYZTriple(int x, int y, int z){}
 }

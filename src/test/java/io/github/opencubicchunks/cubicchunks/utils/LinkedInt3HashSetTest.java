@@ -6,6 +6,8 @@ import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import java.util.Random;
+
 public class LinkedInt3HashSetTest {
     @Test
     public void test1(){
@@ -47,5 +49,40 @@ public class LinkedInt3HashSetTest {
         assertEquals(BlockPos.asLong(0, 0, 0), set.removeFirstLong());
         assertEquals(BlockPos.asLong(0, 0, 1), set.removeFirstLong());
         assertEquals(BlockPos.asLong(3, 1, 0), set.removeFirstLong());
+    }
+
+    @Test
+    public void test2(){
+        //Do random shit and see if it crashes
+        Random random = new Random();
+
+        long seed = -6179321261534362552L;//random.nextLong();
+        random.setSeed(seed);
+
+        LinkedInt3HashSet set = new LinkedInt3HashSet();
+
+        System.out.println("Seed: " + seed);
+
+        for(int i = 0; i < 100000; i++){
+            System.out.println("Go #" + i);
+
+            int n = random.nextInt(4);
+
+            switch (n){
+                case 0:
+                case 3:
+                    set.add(random.nextInt(10), random.nextInt(10), random.nextInt(10));
+                    break;
+                case 1:
+                    set.remove(random.nextInt(10), random.nextInt(10), random.nextInt(10));
+                    break;
+                case 2:
+                    if(set.size > 0)
+                        set.removeFirstLong();
+                    break;
+            }
+
+            set.toArray();
+        }
     }
 }
