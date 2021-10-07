@@ -54,6 +54,19 @@ public class Int3HashSet implements AutoCloseable {
         this.setTableSize(Math.max(initialCapacity, DEFAULT_TABLE_SIZE));
     }
 
+    protected Int3HashSet(Int3HashSet src) {
+        if (src.tableAddr != 0L) { //source table is allocated, let's copy it
+            long tableSizeBytes = src.tableSize * BUCKET_BYTES;
+            this.tableAddr = PlatformDependent.allocateMemory(tableSizeBytes);
+            PlatformDependent.copyMemory(src.tableAddr, this.tableAddr, tableSizeBytes);
+        }
+
+        this.tableSize = src.tableSize;
+        this.resizeThreshold = src.resizeThreshold;
+        this.usedBuckets = src.usedBuckets;
+        this.size = src.size;
+    }
+
     protected static long hashPosition(int x, int y, int z) {
         return x * 1403638657883916319L //some random prime numbers
             + y * 4408464607732138253L
@@ -210,9 +223,11 @@ public class Int3HashSet implements AutoCloseable {
     }
 
     /**
-     * Runs the given function on every position in this set.
+     * Runs the given callback function on every position in this set.
+     * <p>
+     * The callback function must not modify this set.
      *
-     * @param action the function to run
+     * @param action the callback function
      *
      * @see java.util.Set#forEach(java.util.function.Consumer)
      */
@@ -375,6 +390,11 @@ public class Int3HashSet implements AutoCloseable {
      */
     public boolean isEmpty() {
         return this.size == 0L;
+    }
+
+    @Override
+    public Int3HashSet clone() {
+        return new Int3HashSet(this);
     }
 
     /**

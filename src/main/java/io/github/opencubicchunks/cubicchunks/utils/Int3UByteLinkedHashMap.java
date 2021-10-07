@@ -7,6 +7,9 @@ import io.netty.util.internal.PlatformDependent;
  * <p>
  * Optimized for the case where queries will be close to each other.
  * <p>
+ * Buckets are arranged into a doubly linked list, which allows efficient iteration when the table is sparse and is crucial to keep {@link #poll(EntryConsumer)}'s average runtime nearly
+ * constant.
+ * <p>
  * Not thread-safe. Attempting to use this concurrently from multiple threads will likely have catastrophic results (read: JVM crashes).
  *
  * @author DaPorkchop_
@@ -46,16 +49,16 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
      * struct bucket_t {
      *   key_t key;
      *   value_t value;
-     *   bucket_t* prev;
-     *   bucket_t* next;
+     *   long prevIndex;
+     *   long nextIndex;
      * };
      */
 
     protected static final long BUCKET_KEY_OFFSET = 0L;
     protected static final long BUCKET_VALUE_OFFSET = BUCKET_KEY_OFFSET + KEY_BYTES;
-    protected static final long BUCKET_PREV_OFFSET = BUCKET_VALUE_OFFSET + VALUE_BYTES;
-    protected static final long BUCKET_NEXT_OFFSET = BUCKET_PREV_OFFSET + PlatformDependent.addressSize();
-    protected static final long BUCKET_BYTES = BUCKET_NEXT_OFFSET + PlatformDependent.addressSize();
+    protected static final long BUCKET_PREVINDEX_OFFSET = BUCKET_VALUE_OFFSET + VALUE_BYTES;
+    protected static final long BUCKET_NEXTINDEX_OFFSET = BUCKET_PREVINDEX_OFFSET + Long.BYTES;
+    protected static final long BUCKET_BYTES = BUCKET_NEXTINDEX_OFFSET + Long.BYTES;
 
     protected static final long DEFAULT_TABLE_SIZE = 16L;
 
@@ -72,8 +75,8 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
 
     protected long size = 0L; //the number of values stored in the set
 
-    protected long firstBucket = 0L; //pointer to the first known assigned bucket in the list
-    protected long lastBucket = 0L; //pointer to the last known assigned bucket in the list
+    protected long firstBucketIndex = -1L; //index of the first known assigned bucket in the list
+    protected long lastBucketIndex = -1L; //index of the last known assigned bucket in the list
 
     protected boolean closed = false;
 
@@ -87,46 +90,19 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         this.setTableSize(Math.max(initialCapacity, DEFAULT_TABLE_SIZE));
     }
 
-    protected static long getAddress(long addr) {
-        if (PlatformDependent.addressSize() == Integer.BYTES) {
-            return Integer.toUnsignedLong(PlatformDependent.getInt(addr));
-        } else {
-            return PlatformDependent.getLong(addr);
-        }
-    }
-
-    protected static void putAddress(long addr, long value) {
-        if (PlatformDependent.addressSize() == Integer.BYTES) {
-            PlatformDependent.putInt(addr, (int) value);
-        } else {
-            PlatformDependent.putLong(addr, value);
-        }
-    }
-
-    /**
-     * Faster memset routine (for small ranges) which JIT can optimize specifically for the range size.
-     *
-     * @param dstAddr the destination address
-     */
-    protected static void memsetZero(long dstAddr, long size) {
-        long offset = 0L;
-
-        while (size - offset >= Long.BYTES) { //copy as many longs as possible
-            PlatformDependent.putLong(dstAddr + offset, 0L);
-            offset += Long.BYTES;
+    protected Int3UByteLinkedHashMap(Int3UByteLinkedHashMap src) {
+        if (src.tableAddr != 0L) { //source table is allocated, let's copy it
+            long tableSizeBytes = src.tableSize * BUCKET_BYTES;
+            this.tableAddr = PlatformDependent.allocateMemory(tableSizeBytes);
+            PlatformDependent.copyMemory(src.tableAddr, this.tableAddr, tableSizeBytes);
         }
 
-        while (size - offset >= Integer.BYTES) { //pad with ints
-            PlatformDependent.putInt(dstAddr + offset, 0);
-            offset += Integer.BYTES;
-        }
-
-        while (size - offset >= Byte.BYTES) { //pad with bytes
-            PlatformDependent.putByte(dstAddr + offset, (byte) 0);
-            offset += Byte.BYTES;
-        }
-
-        assert offset == size;
+        this.tableSize = src.tableSize;
+        this.resizeThreshold = src.resizeThreshold;
+        this.usedBuckets = src.usedBuckets;
+        this.size = src.size;
+        this.firstBucketIndex = src.firstBucketIndex;
+        this.lastBucketIndex = src.lastBucketIndex;
     }
 
     /**
@@ -303,7 +279,8 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         long hash = hashPosition(x, y, z);
 
         for (long i = 0L; ; i++) {
-            long bucketAddr = tableAddr + ((hash + i) & mask) * BUCKET_BYTES;
+            long bucketIndex = (hash + i) & mask;
+            long bucketAddr = tableAddr + bucketIndex * BUCKET_BYTES;
 
             if (PlatformDependent.getLong(bucketAddr + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET) == 0L) { //if the value's flags are 0, it means the bucket hasn't been assigned yet
                 if (createIfAbsent) {
@@ -314,17 +291,19 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
                         PlatformDependent.putInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET, z);
 
                         //add bucket to linked list
-                        long prevBucket = 0L;
-                        long nextBucket = 0L;
-                        if (this.firstBucket == 0L) { //no other buckets exist
-                            this.firstBucket = bucketAddr;
+                        long prevBucketIndex = -1L;
+                        long nextBucketIndex = -1L;
+                        if (this.firstBucketIndex < 0L) { //no other buckets exist
+                            this.firstBucketIndex = bucketIndex;
                         } else { //there are other buckets, let's insert this bucket at the back of the list
-                            putAddress(this.lastBucket + BUCKET_NEXT_OFFSET, bucketAddr);
-                            prevBucket = this.lastBucket;
+                            prevBucketIndex = this.lastBucketIndex;
+
+                            long prevBucketAddr = tableAddr + prevBucketIndex * BUCKET_BYTES;
+                            PlatformDependent.putLong(prevBucketAddr + BUCKET_NEXTINDEX_OFFSET, bucketIndex);
                         }
-                        putAddress(bucketAddr + BUCKET_PREV_OFFSET, prevBucket);
-                        putAddress(bucketAddr + BUCKET_NEXT_OFFSET, nextBucket);
-                        this.lastBucket = bucketAddr;
+                        PlatformDependent.putLong(bucketAddr + BUCKET_PREVINDEX_OFFSET, prevBucketIndex);
+                        PlatformDependent.putLong(bucketAddr + BUCKET_NEXTINDEX_OFFSET, nextBucketIndex);
+                        this.lastBucketIndex = bucketIndex;
 
                         return bucketAddr;
                     } else {
@@ -360,8 +339,8 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         long newMask = newTableSize - 1L;
 
         //iterate through every bucket in the old table and copy it to the new one
-        for (long i = 0; i < oldTableSize; i++) {
-            long oldBucketAddr = oldTableAddr + i * BUCKET_BYTES;
+        for (long oldBucketIndex = 0; oldBucketIndex < oldTableSize; oldBucketIndex++) {
+            long oldBucketAddr = oldTableAddr + oldBucketIndex * BUCKET_BYTES;
 
             //read the key into registers
             int x = PlatformDependent.getInt(oldBucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
@@ -380,6 +359,8 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
                     PlatformDependent.putInt(newBucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET, y);
                     PlatformDependent.putInt(newBucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET, z);
                     memcpy(oldBucketAddr + BUCKET_VALUE_OFFSET, newBucketAddr + BUCKET_VALUE_OFFSET, VALUE_BYTES);
+                    PlatformDependent.putLong(newBucketAddr + BUCKET_PREVINDEX_OFFSET, -1L);
+                    PlatformDependent.putLong(newBucketAddr + BUCKET_NEXTINDEX_OFFSET, -1L);
                     break; //advance to next bucket in old table
                 }
 
@@ -391,61 +372,86 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         PlatformDependent.freeMemory(oldTableAddr);
 
         //iterate through every bucket in the new table and append non-empty buckets to the new linked list
-        long prevBucket = 0L;
-        for (long i = 0; i < newTableSize; i++) {
-            long bucketAddr = newTableAddr + i * BUCKET_BYTES;
+        long prevBucketIndex = -1L;
+        for (long bucketIndex = 0; bucketIndex < newTableSize; bucketIndex++) {
+            long bucketAddr = newTableAddr + bucketIndex * BUCKET_BYTES;
 
             if (PlatformDependent.getLong(bucketAddr + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET) == 0L) { //the bucket is unset, so there's no reason to add it to the list
                 continue;
             }
 
-            if (prevBucket == 0L) { //this is first bucket we've encountered in the list so far
-                prevBucket = bucketAddr;
-                this.firstBucket = bucketAddr;
+            if (prevBucketIndex < 0L) { //this is first bucket we've encountered in the list so far
+                this.firstBucketIndex = bucketIndex;
             } else { //append current bucket to list
-                putAddress(prevBucket + BUCKET_NEXT_OFFSET, bucketAddr);
-                putAddress(bucketAddr + BUCKET_PREV_OFFSET, prevBucket);
-                prevBucket = bucketAddr;
+                long prevBucketAddr = newTableAddr + prevBucketIndex * BUCKET_BYTES;
+
+                PlatformDependent.putLong(prevBucketAddr + BUCKET_NEXTINDEX_OFFSET, bucketIndex);
+                PlatformDependent.putLong(bucketAddr + BUCKET_PREVINDEX_OFFSET, prevBucketIndex);
             }
+            prevBucketIndex = bucketIndex;
         }
-        this.lastBucket = prevBucket;
+        this.lastBucketIndex = prevBucketIndex;
     }
 
     /**
-     * Runs the given function on every entry in this map.
+     * Runs the given callback function on every entry in this map.
+     * <p>
+     * The callback function must not modify this map.
      *
-     * @param action the function to run
+     * @param action the callback function
      *
      * @see java.util.Map#forEach(java.util.function.BiConsumer)
      */
     public void forEach(EntryConsumer action) {
-        long tableAddr = this.tableAddr;
-        if (tableAddr == 0L) { //the table isn't even allocated yet, there's nothing to iterate through...
-            return;
+        if (this.tableAddr == 0L //table hasn't even been allocated
+            || this.isEmpty()) { //no entries are present
+            return; //there's nothing to iterate over...
         }
 
+        if (this.usedBuckets >= (this.tableSize >> 1L)) { //table is at least half-full
+            this.forEachFull(action);
+        } else {
+            this.forEachSparse(action);
+        }
+    }
+
+    protected void forEachFull(EntryConsumer action) { //optimized for the case where the table is mostly full
         //haha yes, c-style iterators
-        for (long bucket = tableAddr, end = tableAddr + this.tableSize * BUCKET_BYTES; bucket != end; bucket += BUCKET_BYTES) {
-            //read the bucket's key and flags into registers
-            int bucketX = PlatformDependent.getInt(bucket + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
-            int bucketY = PlatformDependent.getInt(bucket + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);
-            int bucketZ = PlatformDependent.getInt(bucket + BUCKET_KEY_OFFSET + KEY_Z_OFFSET);
-            long flags = PlatformDependent.getLong(bucket + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET);
+        for (long bucketAddr = this.tableAddr, end = bucketAddr + this.tableSize * BUCKET_BYTES; bucketAddr != end; bucketAddr += BUCKET_BYTES) {
+            this.forEachInBucket(action, bucketAddr);
+        }
+    }
 
-            while (flags != 0L) {
-                //this is intrinsic and compiles into TZCNT, which has a latency of 3 cycles - much faster than iterating through all 64 bits
-                //  and checking each one individually!
-                int index = Long.numberOfTrailingZeros(flags);
+    protected void forEachSparse(EntryConsumer action) { //optimized for the case where the table is mostly empty
+        long tableAddr = this.tableAddr;
 
-                //clear the bit in question so that it won't be returned next time around
-                flags &= ~(1L << index);
+        for (long bucketIndex = this.firstBucketIndex, bucketAddr = tableAddr + bucketIndex * BUCKET_BYTES;
+             bucketIndex >= 0L;
+             bucketIndex = PlatformDependent.getLong(bucketAddr + BUCKET_NEXTINDEX_OFFSET), bucketAddr = tableAddr + bucketIndex * BUCKET_BYTES) {
+            this.forEachInBucket(action, bucketAddr);
+        }
+    }
 
-                int dx = index >> (BUCKET_AXIS_BITS * 2);
-                int dy = (index >> BUCKET_AXIS_BITS) & BUCKET_AXIS_MASK;
-                int dz = index & BUCKET_AXIS_MASK;
-                int val = PlatformDependent.getByte(bucket + BUCKET_VALUE_OFFSET + VALUE_VALS_OFFSET + index * Byte.BYTES) & 0xFF;
-                action.accept((bucketX << BUCKET_AXIS_BITS) + dx, (bucketY << BUCKET_AXIS_BITS) + dy, (bucketZ << BUCKET_AXIS_BITS) + dz, val);
-            }
+    protected void forEachInBucket(EntryConsumer action, long bucketAddr) {
+        //read the bucket's key and flags into registers
+        int bucketX = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
+        int bucketY = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);
+        int bucketZ = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET);
+        long flags = PlatformDependent.getLong(bucketAddr + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET);
+
+        while (flags != 0L) {
+            //this is intrinsic and compiles into TZCNT, which has a latency of 3 cycles - much faster than iterating through all 64 bits
+            //  and checking each one individually!
+            int index = Long.numberOfTrailingZeros(flags);
+
+            //clear the bit in question so that it won't be returned next time around
+            flags &= ~(1L << index);
+
+            int dx = index >> (BUCKET_AXIS_BITS * 2);
+            int dy = (index >> BUCKET_AXIS_BITS) & BUCKET_AXIS_MASK;
+            int dz = index & BUCKET_AXIS_MASK;
+            int val = PlatformDependent.getByte(bucketAddr + BUCKET_VALUE_OFFSET + VALUE_VALS_OFFSET + index * Byte.BYTES) & 0xFF;
+            action.accept((bucketX << BUCKET_AXIS_BITS) + dx, (bucketY << BUCKET_AXIS_BITS) + dy, (bucketZ << BUCKET_AXIS_BITS) + dz, val);
         }
     }
 
@@ -475,7 +481,8 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         long hash = hashPosition(searchBucketX, searchBucketY, searchBucketZ);
 
         for (long i = 0L; ; i++) {
-            long bucketAddr = tableAddr + ((hash + i) & mask) * BUCKET_BYTES;
+            long bucketIndex = (hash + i) & mask;
+            long bucketAddr = tableAddr + bucketIndex * BUCKET_BYTES;
 
             //read the bucket's key and flags into registers
             int bucketX = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
@@ -493,36 +500,88 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
             //load the old value in order to return it later (there's no reason to zero it out, since the flag bit will be cleared anyway)
             int oldVal = PlatformDependent.getByte(bucketAddr + BUCKET_VALUE_OFFSET + VALUE_VALS_OFFSET + positionIndex(x, y, z) * Byte.BYTES) & 0xFF;
 
-            //the bucket that we found contains the position, so now we remove it from the set
-            this.size--;
-
-            //update bucket flags
-            flags &= ~flag;
-            PlatformDependent.putLong(bucketAddr + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET, flags);
-
-            if (flags == 0L) { //this position was the only position in the bucket, so we need to delete the bucket
-                this.usedBuckets--;
-
-                //remove the bucket from the linked list
-                long prevBucket = getAddress(bucketAddr + BUCKET_PREV_OFFSET);
-                long nextBucket = getAddress(bucketAddr + BUCKET_NEXT_OFFSET);
-
-                if (prevBucket == 0L) { //previous bucket is nullptr, meaning the current bucket used to be at the front
-                    this.firstBucket = nextBucket;
-                } else {
-                    putAddress(prevBucket + BUCKET_NEXT_OFFSET, nextBucket);
-                }
-                if (nextBucket == 0L) { //next bucket is nullptr, meaning the current bucket used to be at the back
-                    this.lastBucket = prevBucket;
-                } else {
-                    putAddress(nextBucket + BUCKET_PREV_OFFSET, prevBucket);
-                }
-
-                //shifting the buckets IS expensive, yes, but it'll only happen when the entire bucket is deleted, which won't happen on every removal
-                this.shiftBuckets(tableAddr, (hash + i) & mask, mask);
-            }
+            //remove entry from map
+            this.removeEntry(tableAddr, mask, bucketIndex, bucketAddr, flags, flag);
 
             return oldVal;
+        }
+    }
+
+    /**
+     * Gets and removes an entry from this map, then passes it to the given callback function.
+     * <p>
+     * The callback function is allowed to modify this map.
+     *
+     * @param action the callback function
+     *
+     * @return whether or not the callback function was invoked. A return value of {@code false} indicates that the map was already empty
+     */
+    public boolean poll(EntryConsumer action) {
+        long bucketIndex = this.firstBucketIndex;
+        if (bucketIndex >= 0L) {
+            long tableAddr = this.tableAddr;
+            long bucketAddr = tableAddr + bucketIndex * BUCKET_BYTES;
+
+            //read the bucket's key and flags into registers
+            int bucketX = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
+            int bucketY = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);
+            int bucketZ = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET);
+            long flags = PlatformDependent.getLong(bucketAddr + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET);
+
+            assert flags != 0L : "polled empty bucket?!?";
+
+            //this is intrinsic and compiles into TZCNT, which has a latency of 3 cycles - much faster than iterating through all 64 bits
+            //  and checking each one individually!
+            int index = Long.numberOfTrailingZeros(flags);
+
+            //compute entry position within bucket
+            int dx = index >> (BUCKET_AXIS_BITS * 2);
+            int dy = (index >> BUCKET_AXIS_BITS) & BUCKET_AXIS_MASK;
+            int dz = index & BUCKET_AXIS_MASK;
+            int val = PlatformDependent.getByte(bucketAddr + BUCKET_VALUE_OFFSET + VALUE_VALS_OFFSET + index * Byte.BYTES) & 0xFF;
+
+            //remove entry from bucket
+            this.removeEntry(tableAddr, this.tableSize - 1L, bucketIndex, bucketAddr, flags, 1L << index);
+
+            //run the callback
+            action.accept((bucketX << BUCKET_AXIS_BITS) + dx, (bucketY << BUCKET_AXIS_BITS) + dy, (bucketZ << BUCKET_AXIS_BITS) + dz, val);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    //assumes that the entry is present in the bucket
+    protected void removeEntry(long tableAddr, long mask, long bucketIndex, long bucketAddr, long flags, long flag) {
+        //the bucket that we found contains the position, so now we remove it from the set
+        this.size--;
+
+        //update bucket flags
+        flags &= ~flag;
+        PlatformDependent.putLong(bucketAddr + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET, flags);
+
+        if (flags == 0L) { //this position was the only position in the bucket, so we need to delete the bucket
+            this.usedBuckets--;
+
+            //remove the bucket from the linked list
+            long prevBucketIndex = PlatformDependent.getLong(bucketAddr + BUCKET_PREVINDEX_OFFSET);
+            long nextBucketIndex = PlatformDependent.getLong(bucketAddr + BUCKET_NEXTINDEX_OFFSET);
+
+            if (prevBucketIndex < 0L) { //previous bucket is nullptr, meaning the current bucket used to be at the front
+                this.firstBucketIndex = nextBucketIndex;
+            } else {
+                long prevBucketAddr = tableAddr + prevBucketIndex * BUCKET_BYTES;
+                PlatformDependent.putLong(prevBucketAddr + BUCKET_NEXTINDEX_OFFSET, nextBucketIndex);
+            }
+            if (nextBucketIndex < 0L) { //next bucket is nullptr, meaning the current bucket used to be at the back
+                this.lastBucketIndex = prevBucketIndex;
+            } else {
+                long nextBucketAddr = tableAddr + nextBucketIndex * BUCKET_BYTES;
+                PlatformDependent.putLong(nextBucketAddr + BUCKET_PREVINDEX_OFFSET, prevBucketIndex);
+            }
+
+            //shifting the buckets IS expensive, yes, but it'll only happen when the entire bucket is deleted, which won't happen on every removal
+            this.shiftBuckets(tableAddr, bucketIndex, mask);
         }
     }
 
@@ -531,13 +590,14 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         long last;
         long slot;
 
-        for (; ; ) {
-            pos = ((last = pos) + 1L) & mask;
-
-            for (; ; pos = (pos + 1L) & mask) {
+        while (true) {
+            for (pos = ((last = pos) + 1L) & mask; ; pos = (pos + 1L) & mask) {
                 long currAddr = tableAddr + pos * BUCKET_BYTES;
                 if (PlatformDependent.getLong(currAddr + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET) == 0L) { //curr points to an unset bucket
-                    PlatformDependent.putLong(tableAddr + last * BUCKET_BYTES, 0L); //delete last bucket
+                    if (PlatformDependent.getLong(tableAddr + last * BUCKET_BYTES + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET) != 0L) {
+                        System.out.println("non-zero!");
+                    }
+                    //PlatformDependent.putLong(tableAddr + last * BUCKET_BYTES + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET, 0L); //delete last bucket
                     return;
                 }
 
@@ -556,17 +616,19 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
                     PlatformDependent.putLong(currAddr + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET, 0L);
 
                     //update pointer to self in linked list neighbors
-                    long prevBucket = getAddress(currAddr + BUCKET_PREV_OFFSET);
-                    long nextBucket = getAddress(currAddr + BUCKET_NEXT_OFFSET);
-                    if (prevBucket == 0L) { //previous bucket is nullptr, meaning the current bucket used to be at the front
-                        this.firstBucket = newAddr;
+                    long prevBucketIndex = PlatformDependent.getLong(currAddr + BUCKET_PREVINDEX_OFFSET);
+                    long nextBucketIndex = PlatformDependent.getLong(currAddr + BUCKET_NEXTINDEX_OFFSET);
+                    if (prevBucketIndex < 0L) { //previous bucket is nullptr, meaning the current bucket used to be at the front
+                        this.firstBucketIndex = last;
                     } else {
-                        putAddress(prevBucket + BUCKET_NEXT_OFFSET, newAddr);
+                        long prevBucketAddr = tableAddr + prevBucketIndex * BUCKET_BYTES;
+                        PlatformDependent.putLong(prevBucketAddr + BUCKET_NEXTINDEX_OFFSET, last);
                     }
-                    if (nextBucket == 0L) { //next bucket is nullptr, meaning the current bucket used to be at the back
-                        this.lastBucket = newAddr;
+                    if (nextBucketIndex < 0L) { //next bucket is nullptr, meaning the current bucket used to be at the back
+                        this.lastBucketIndex = last;
                     } else {
-                        putAddress(nextBucket + BUCKET_PREV_OFFSET, newAddr);
+                        long nextBucketAddr = tableAddr + nextBucketIndex * BUCKET_BYTES;
+                        PlatformDependent.putLong(nextBucketAddr + BUCKET_PREVINDEX_OFFSET, last);
                     }
 
                     break;
@@ -592,7 +654,8 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         //reset all size counters
         this.usedBuckets = 0L;
         this.size = 0L;
-        this.firstBucket = 0L;
+        this.firstBucketIndex = -1L;
+        this.lastBucketIndex = -1L;
     }
 
     protected void setTableSize(long tableSize) {
@@ -612,6 +675,11 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
      */
     public boolean isEmpty() {
         return this.size == 0L;
+    }
+
+    @Override
+    public Int3UByteLinkedHashMap clone() {
+        return new Int3UByteLinkedHashMap(this);
     }
 
     /**
