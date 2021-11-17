@@ -4,6 +4,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.invoke.LambdaMetafactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,6 +21,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.bytecodegen.InstructionFactory;
 import net.fabricmc.loader.api.MappingResolver;
 import net.minecraft.core.BlockPos;
@@ -30,6 +32,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FrameNode;
@@ -37,6 +40,7 @@ import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -423,9 +427,11 @@ public class LongPosTransformer {
         newMethod.localVariables = localVariables;
         newMethod.parameters = null;
 
-        newMethod.maxLocals = 0; //TODO: This ain't correct lol
+        newMethod.maxLocals = 0;
         newMethod.maxStack = 0;
 
+        //Add CubicChunksSynthetic annotation to method
+        MainTransformer.markCCSynthetic(newMethod, methodNode.name, methodNode.desc, "LONG_POS_TRANSFORM");
         return newMethod;
     }
 

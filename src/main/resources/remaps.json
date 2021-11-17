@@ -131,6 +131,7 @@
 
     "class_info": {
         "net/minecraft/class_3554": {
+            "mapped": "DynamicGraphMinFixedPoint",
             "superclasses": [
                 "net/minecraft/class_3196",
                 "net/minecraft/class_3204",
@@ -143,136 +144,226 @@
                 "net/minecraft/class_3572",
                 "net/minecraft/class_3569"
             ],
+            "superclasses_mapped": [
+                "ChunkTracer",
+                "DistanceManager",
+                "SectionTracker",
+                "PoiManager$DistanceTracker",
+                "BlockLightEngine",
+                "BlockLightSectionStorage",
+                "LayerLightEngine",
+                "LayerLightSectionStorage",
+                "SkyLightEngine",
+                "SkyLightSectionStorage"
+            ],
             "transform": [
                 {
                     "name": "method_15478",
-                    "descriptor": "(JJIZ)V"
+                    "descriptor": "(JJIZ)V",
+                    "mapped": "checkEdge"
                 },
                 {
                     "name": "method_15482",
-                    "descriptor": "(JJIIIZ)V"
+                    "descriptor": "(JJIIIZ)V",
+                    "mapped": "checkEdge"
+                },
+                {
+                    "name": "method_15493",
+                    "descriptor": "(JIIZ)V",
+                    "override_locals": [1],
+                    "mapped": "dequeue"
+                },
+                {
+                    "name": "method_15491",
+                    "descriptor": "(J)V",
+                    "override_locals": [1],
+                    "mapped": "checkNode"
+                },
+                {
+                    "name": "method_15479",
+                    "descriptor": "(JII)V",
+                    "override_locals": [1],
+                    "mapped": "enqueue"
                 }
             ]
         },
         "net/minecraft/class_3552": {
+            "mapped": "BlockLightEngine",
             "transform": [
                 {
                     "owner": "net/minecraft/class_3565",
                     "name": "method_15514",
-                    "descriptor": "(Lnet/minecraft/class_2338;I)V"
+                    "descriptor": "(Lnet/minecraft/class_2338;I)V",
+                    "mapped": "onBlockEmissionIncrease"
                 },
                 {
                     "name": "method_15474",
-                    "descriptor": "(J)I"
+                    "descriptor": "(J)I",
+                    "mapped": "getLightEmission"
                 },
                 {
                     "owner": "net/minecraft/class_3554",
                     "name":"method_15488",
-                    "descriptor": "(JJI)I"
+                    "descriptor": "(JJI)I",
+                    "mapped": "computeLevelFromNeighbor"
                 },
                 {
                     "owner": "net/minecraft/class_3554",
                     "name": "method_15487",
-                    "descriptor": "(JIZ)V"
+                    "descriptor": "(JIZ)V",
+                    "mapped": "checkNeighborsAfterUpdate"
                 },
                 {
                     "owner": "net/minecraft/class_3554",
                     "name": "method_15486",
-                    "descriptor": "(JJI)I"
+                    "descriptor": "(JJI)I",
+                    "mapped": "getComputedLevel"
                 }
             ]
         },
         "net/minecraft/class_3572": {
-            "transform":[
+            "mapped": "SkyLightEngine",
+            "transform": [
                 {
                     "owner": "net/minecraft/class_3554",
                     "name": "method_15488",
-                    "descriptor": "(JJI)I"
+                    "descriptor": "(JJI)I",
+                    "mapped": "computeLevelFromNeighbor"
                 },
                 {
                     "owner": "net/minecraft/class_3554",
                     "name": "method_15487",
-                    "descriptor": "(JIZ)V"
-                },
-                {
-                    "owner": "net/minecraft/class_3554",
-                    "name": "method_15486",
-                    "descriptor": "(JJI)I"
-                },
-                {
-                    "owner": "net/minecraft/class_3554",
-                    "name": "method_15491",
-                    "descriptor": "(J)V"
-                }
-            ]
-        },
-        "net/minecraft/class_3558": {
-            "transform": [
-                {
-                    "owner": "net/minecraft/class_3554",
-                    "name": "method_15491",
-                    "descriptor": "(J)V"
-                },
-                {
-                    "name": "method_20479",
-                    "descriptor": "(JLorg/apache/commons/lang3/mutable/MutableInt;)Lnet/minecraft/class_2680;"
-                },
-                {
-                    "name": "method_20710",
-                    "descriptor": "(Lnet/minecraft/class_2680;JLnet/minecraft/class_2350;)Lnet/minecraft/class_265;"
-                },
-                {
-                    "owner": "net/minecraft/class_3554",
-                    "name": "method_15494",
-                    "descriptor": "(J)Z"
+                    "descriptor": "(JIZ)V",
+                    "mapped": "checkNeighborsAfterUpdate"
                 },
                 {
                     "owner": "net/minecraft/class_3554",
                     "name": "method_15486",
                     "descriptor": "(JJI)I",
-                    "override_locals": [1, 3]
+                    "mapped": "getComputedLevel"
+                },
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15491",
+                    "descriptor": "(J)V",
+                    "mapped": "checkNode"
+                }
+            ]
+        },
+        "net/minecraft/class_3558": {
+            "mapped": "LayerLightEngine",
+            "transform": [
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15491",
+                    "descriptor": "(J)V",
+                    "mapped": "checkNode"
+                },
+                {
+                    "name": "method_20479",
+                    "descriptor": "(JLorg/apache/commons/lang3/mutable/MutableInt;)Lnet/minecraft/class_2680;",
+                    "mapped": "getStateAndOpacity"
+                },
+                {
+                    "name": "method_20710",
+                    "descriptor": "(Lnet/minecraft/class_2680;JLnet/minecraft/class_2350;)Lnet/minecraft/class_265;",
+                    "mapped": "getShape"
+                },
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15494",
+                    "descriptor": "(J)Z",
+                    "mapped": "isSource"
+                },
+                {
+                    "owner": "net/minecraft/class_3554",
+                    "name": "method_15486",
+                    "descriptor": "(JJI)I",
+                    "override_locals": [1, 3],
+                    "mapped": "getComputedLevel"
                 },
                 {
                     "owner": "net/minecraft/class_3554",
                     "name": "method_15480",
-                    "descriptor": "(J)I"
+                    "descriptor": "(J)I",
+                    "mapped": "getLevel"
                 },
                 {
                     "name": "method_15517",
-                    "descriptor": "(Lnet/minecraft/class_2804;J)I"
+                    "descriptor": "(Lnet/minecraft/class_2804;J)I",
+                    "mapped": "getLevel"
                 },
                 {
                     "owner": "net/minecraft/class_3554",
                     "name": "method_15485",
-                    "descriptor": "(JI)V"
+                    "descriptor": "(JI)V",
+                    "mapped": "setLevel"
                 },
                 {
                     "owner": "net/minecraft/class_3554",
                     "name":"method_15488",
                     "descriptor": "(JJI)I",
-                    "override_locals": [1, 3]
+                    "override_locals": [1, 3],
+                    "mapped": "computeLevelFromNeighbor"
                 }
             ],
             "superclasses": [
                 "net/minecraft/class_3572",
                 "net/minecraft/class_3552"
+            ],
+            "superclass_mapped": [
+                "SkyLightEngine",
+                "BlockLightEngine"
             ]
         },
         "net/minecraft/class_2382": {
+            "mapped": "Vec3i",
             "superclasses": [
                 "net/minecraft/class_2338"
+            ],
+            "superclass_mapped": [
+                "BlockPos"
             ]
         },
         "net/minecraft/class_3569": {
+            "mapped": "SkyLightSectionStorage",
             "transform": [
                 {
                     "owner": "net/minecraft/class_3560",
                     "name": "method_15538",
-                    "descriptor": "(J)I"
+                    "descriptor": "(J)I",
+                    "mapped": "getLightValue"
                 },
                 {
                     "name": "method_31931",
-                    "descriptor": "(JZ)I"
+                    "descriptor": "(JZ)I",
+                    "mapped": "getLightValue"
+                }
+            ]
+        },
+        "net/minecraft/class_4076": {
+            "mapped": "SectionPos",
+            "transform": [
+                {
+                    "name": "method_18691",
+                    "descriptor": "(J)J",
+                    "static": true,
+                    "mapped": "blockToSection"
+                }
+            ]
+        },
+        "net/minecraft/class_3560": {
+            "mapped": "LayerLightSectionStorage",
+            "transform": [
+                {
+                    "name": "method_15537",
+                    "descriptor": "(J)I",
+                    "mapped": "getStoredLevel"
+                },
+                {
+                    "name": "method_15525",
+                    "descriptor": "(JI)V",
+                    "mapped": "setStoredLevel"
                 }
             ]
         }

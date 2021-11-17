@@ -7,6 +7,7 @@ import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.lighting.BlockLightEngine;
 import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
 import net.minecraft.world.level.lighting.LayerLightEngine;
+import net.minecraft.world.level.lighting.LayerLightSectionStorage;
 import net.minecraft.world.level.lighting.SkyLightEngine;
 import org.spongepowered.asm.mixin.Mixin;
 
@@ -21,7 +22,8 @@ import org.spongepowered.asm.mixin.Mixin;
     BlockLightEngine.class,
     SkyLightEngine.class,
     LayerLightEngine.class,
-    SectionPos.class
+    SectionPos.class,
+    LayerLightSectionStorage.class
 })
 public class MixinAsmTarget {
     // intentionally empty

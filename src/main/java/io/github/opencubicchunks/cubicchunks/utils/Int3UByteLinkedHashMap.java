@@ -1,6 +1,15 @@
 package io.github.opencubicchunks.cubicchunks.utils;
 
+import java.util.NoSuchElementException;
+
 import io.netty.util.internal.PlatformDependent;
+import it.unimi.dsi.fastutil.longs.AbstractLongSortedSet;
+import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
+import it.unimi.dsi.fastutil.longs.LongComparator;
+import it.unimi.dsi.fastutil.longs.LongListIterator;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongSortedSet;
+import net.minecraft.core.BlockPos;
 
 /**
  * A fast hash-map implementation for 3-dimensional vectors with {@code int} components, mapped to unsigned {@code byte} values.
@@ -664,9 +673,11 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
     }
 
     /**
+     * Called longSize to ensure compatibility with the vanilla use of {@code int Long2ByteOpenHashMap.size()}
+     *
      * @return the number of entries stored in this map
      */
-    public long size() {
+    public long longSize() {
         return this.size;
     }
 
@@ -708,11 +719,228 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         this.close();
     }
 
+    public Int3KeySet int3KeySet(){
+        return new Int3KeySet();
+    }
+
     /**
      * A function which accepts a map entry (consisting of 3 {@code int}s for the key and 1 {@code int} for the value) as a parameter.
      */
     @FunctionalInterface
     public interface EntryConsumer {
         void accept(int x, int y, int z, int value);
+    }
+
+    //Methods for vanilla compatibility
+
+    public byte get(long l){
+        return (byte) get(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
+    }
+
+    public byte remove(long l){
+        return (byte) remove(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
+    }
+
+    public byte put(long l, byte value){
+        return (byte) put(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l), value);
+    }
+
+    public int size(){
+        return (int) size;
+    }
+
+    public LongSet keySet(){
+        return new LongKeySet();
+    }
+
+    protected class LongKeyIterator implements LongListIterator{
+        long bucketIndex;
+        long currentValue;
+        int offset = -1;
+
+        public LongKeyIterator(){
+            if(tableAddr == 0){
+                bucketIndex = -1;
+                currentValue = 0;
+                return;
+            }
+
+            this.bucketIndex = firstBucketIndex;
+            if(bucketIndex != -1) {
+                currentValue = PlatformDependent.getLong(tableAddr + bucketIndex * BUCKET_BYTES + VALUE_FLAGS_OFFSET);
+            }
+        }
+
+        @Override public long previousLong() {
+            throw new UnsupportedOperationException();
+        }
+        @Override public boolean hasPrevious() {
+            throw new UnsupportedOperationException();
+        }
+        @Override public int nextIndex() {
+            throw new UnsupportedOperationException();
+        }
+        @Override public int previousIndex() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public long nextLong() {
+            if(currentValue == 0){
+                bucketIndex = PlatformDependent.getLong(tableAddr + bucketIndex * BUCKET_BYTES + BUCKET_NEXTINDEX_OFFSET);
+                currentValue = PlatformDependent.getLong(tableAddr + bucketIndex * BUCKET_BYTES + VALUE_FLAGS_OFFSET);
+                offset = -1;
+            }
+
+            int shift = Long.numberOfTrailingZeros(currentValue) + 1;
+            currentValue >>= shift;
+            offset += shift;
+
+            long bucketAddr = tableAddr + bucketIndex * BUCKET_BYTES;
+
+            return BlockPos.asLong(
+                PlatformDependent.getInt(bucketAddr + KEY_X_OFFSET) << BUCKET_AXIS_BITS + (offset >> (BUCKET_AXIS_BITS * 2)),
+                PlatformDependent.getInt(bucketAddr + KEY_Y_OFFSET) << BUCKET_AXIS_BITS + ((offset >> BUCKET_AXIS_BITS) & BUCKET_AXIS_MASK),
+                PlatformDependent.getInt(bucketAddr + KEY_Z_OFFSET) << BUCKET_AXIS_BITS + (offset & BUCKET_AXIS_MASK)
+            );
+        }
+
+        @Override public boolean hasNext() {
+            if(bucketIndex == -1) return false;
+            return !(currentValue == 0 && PlatformDependent.getLong(tableAddr + bucketIndex * BUCKET_BYTES + BUCKET_NEXTINDEX_OFFSET) != -1);
+        }
+    }
+
+    protected class LongKeySet extends AbstractLongSortedSet{
+        @Override
+        public LongBidirectionalIterator iterator(long fromElement) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LongBidirectionalIterator iterator() {
+            return new LongKeyIterator();
+        }
+
+        @Override
+        public int size() {
+            return (int) size;
+        }
+
+        @Override
+        public LongSortedSet subSet(long fromElement, long toElement) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LongSortedSet headSet(long toElement) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LongSortedSet tailSet(long fromElement) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public LongComparator comparator() {
+            return null;
+        }
+
+        @Override
+        public long firstLong() {
+            if (size == 0)
+                throw new NoSuchElementException();
+
+            long bucketAddr = tableAddr + firstBucketIndex * BUCKET_BYTES;
+
+            int x = PlatformDependent.getInt(bucketAddr + KEY_X_OFFSET) << BUCKET_AXIS_BITS;
+            int y = PlatformDependent.getInt(bucketAddr + KEY_Y_OFFSET) << BUCKET_AXIS_BITS;
+            int z = PlatformDependent.getInt(bucketAddr + KEY_Z_OFFSET) << BUCKET_AXIS_BITS;
+            long value = PlatformDependent.getLong(bucketAddr + VALUE_FLAGS_OFFSET);
+
+            int index = Long.numberOfTrailingZeros(value);
+
+            return BlockPos.asLong(
+                x + (index >> (BUCKET_AXIS_BITS * 2)),
+                y + ((index >> BUCKET_AXIS_BITS) & BUCKET_AXIS_MASK),
+                z + (index & BUCKET_AXIS_MASK)
+            );
+        }
+
+        @Override
+        public long lastLong() {
+            if (size == 0)
+                throw new NoSuchElementException();
+
+            long bucketAddr = tableAddr + lastBucketIndex * BUCKET_BYTES;
+
+            int x = PlatformDependent.getInt(bucketAddr + KEY_X_OFFSET) << BUCKET_AXIS_BITS;
+            int y = PlatformDependent.getInt(bucketAddr + KEY_Y_OFFSET) << BUCKET_AXIS_BITS;
+            int z = PlatformDependent.getInt(bucketAddr + KEY_Z_OFFSET) << BUCKET_AXIS_BITS;
+            long value = PlatformDependent.getLong(bucketAddr + VALUE_FLAGS_OFFSET);
+
+            int index = 63 - Long.numberOfLeadingZeros(value);
+
+            return BlockPos.asLong(
+                x + (index >> (BUCKET_AXIS_BITS * 2)),
+                y + ((index >> BUCKET_AXIS_BITS) & BUCKET_AXIS_MASK),
+                z + (index & BUCKET_AXIS_MASK)
+            );
+        }
+    }
+
+    //These methods are very similar to ones defined above
+    public class Int3KeySet{
+        //This is the only method that ever gets called on it
+        public void forEach(Int3HashSet.XYZConsumer action){
+            if (tableAddr == 0L //table hasn't even been allocated
+                || isEmpty()) { //no entries are present
+                return; //there's nothing to iterate over...
+            }
+
+            if (usedBuckets >= (tableSize >> 1L)) { //table is at least half-full
+                forEachKeyFull(action);
+            } else {
+                forEachKeySparse(action);
+            }
+        }
+    }
+
+    private void forEachKeySparse(Int3HashSet.XYZConsumer action) {
+        long tableAddr = this.tableAddr;
+
+        for (long bucketIndex = this.firstBucketIndex, bucketAddr = tableAddr + bucketIndex * BUCKET_BYTES;
+             bucketIndex >= 0L;
+             bucketIndex = PlatformDependent.getLong(bucketAddr + BUCKET_NEXTINDEX_OFFSET), bucketAddr = tableAddr + bucketIndex * BUCKET_BYTES) {
+            this.forEachKeyInBucket(action, bucketAddr);
+        }
+    }
+
+    private void forEachKeyFull(Int3HashSet.XYZConsumer action) {
+        for (long bucketAddr = this.tableAddr, end = bucketAddr + this.tableSize * BUCKET_BYTES; bucketAddr != end; bucketAddr += BUCKET_BYTES) {
+            this.forEachKeyInBucket(action, bucketAddr);
+        }
+    }
+
+    private void forEachKeyInBucket(Int3HashSet.XYZConsumer action, long bucketAddr) {
+        //read the bucket's key and flags into registers
+        int bucketX = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
+        int bucketY = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);
+        int bucketZ = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET);
+        long flags = PlatformDependent.getLong(bucketAddr + BUCKET_VALUE_OFFSET + VALUE_FLAGS_OFFSET);
+
+        while (flags != 0L) {
+            //this is intrinsic and compiles into TZCNT, which has a latency of 3 cycles - much faster than iterating through all 64 bits
+            //  and checking each one individually!
+            int index = Long.numberOfTrailingZeros(flags);
+
+            //clear the bit in question so that it won't be returned next time around
+            flags &= ~(1L << index);
+
+            int dx = index >> (BUCKET_AXIS_BITS * 2);
+            int dy = (index >> BUCKET_AXIS_BITS) & BUCKET_AXIS_MASK;
+            int dz = index & BUCKET_AXIS_MASK;
+            action.accept((bucketX << BUCKET_AXIS_BITS) + dx, (bucketY << BUCKET_AXIS_BITS) + dy, (bucketZ << BUCKET_AXIS_BITS) + dz);
+        }
     }
 }

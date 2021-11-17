@@ -432,7 +432,7 @@ public class Int3HashSet implements AutoCloseable {
         void accept(int x, int y, int z);
     }
 
-    //These methods probably won't be used by any CC code but should help ensure some compatibility if other mods access the light engine
+    //These methods probably won't be used by any CC code but should help ensure some compatibility with other mods and vanilla code
 
     public boolean add(long l){
         return add(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));

@@ -1,5 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -15,8 +16,10 @@ import net.fabricmc.loader.api.MappingResolver;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.lighting.BlockLightEngine;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
+import org.spongepowered.asm.mixin.extensibility.IMixinErrorHandler;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import org.spongepowered.asm.mixin.transformer.ClassInfo;
 
@@ -64,14 +67,17 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         } else if (targetClassName.equals(naturalSpawner)) {
             modified = true;
             MainTransformer.transformNaturalSpawner(targetClass);
-        } else if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
-            modified = true;
-            MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
         }
 
         if(LongPosTransformer.shouldModifyClass(targetClass, map)){
             LongPosTransformer.modifyClass(targetClass);
             modified = true;
+        }
+
+        if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
+            //Dynamic graph min fixed point has modifications that need to happen AFTER the long pos tranforms
+            modified = true;
+            MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
         }
 
         if(!modified){
@@ -86,13 +92,25 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             addMethod.setAccessible(true);
 
             ClassInfo ci = ClassInfo.forName(targetClassName);
+
+            //Field fieldField = ClassInfo.class.getDeclaredField("fields");
+            //fieldField.setAccessible(true);
+            //Set<ClassInfo.Field> fields = (Set<ClassInfo.Field>) fieldField.get(ci);
+
             Set<String> existingMethods = ci.getMethods().stream().map(x -> x.getName() + x.getDesc()).collect(Collectors.toSet());
             for (MethodNode method : targetClass.methods) {
                 if (!existingMethods.contains(method.name + method.desc)) {
                     addMethod.invoke(ci, method, false);
                 }
             }
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+
+            /*//Modify descriptors of modified fields
+            for(FieldNode field: targetClass.fields){
+                //Should only remove one
+                fields.removeIf(fieldInfo -> fieldInfo.getName().equals(field.name) && !fieldInfo.getDesc().equals(field.desc));
+                fields.add(ci.new Field(field, false));
+            }*/
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException /*| NoSuchFieldException*/ e) {
             throw new IllegalStateException(e);
         }
 

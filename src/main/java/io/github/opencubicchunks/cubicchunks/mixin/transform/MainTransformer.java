@@ -7,6 +7,8 @@ import static org.objectweb.asm.Type.getObjectType;
 import static org.objectweb.asm.Type.getType;
 import static org.objectweb.asm.commons.Method.getMethod;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,26 +16,22 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LongPosTransformer;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.MethodInfo;
-import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.CubicChunksSynthetic;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
-import net.minecraft.core.SectionPos;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.lighting.BlockLightEngine;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Handle;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.MethodRemapper;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -48,8 +46,9 @@ public class MainTransformer {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final boolean IS_DEV = FabricLoader.getInstance().isDevelopmentEnvironment();
 
-    public static void transformChunkHolder(ClassNode targetClass) {
+    private static final String CC = "io/github/opencubicchunks/cubicchunks/";
 
+    public static void transformChunkHolder(ClassNode targetClass) {
         Map<ClassMethod, String> vanillaToCubic = new HashMap<>();
         vanillaToCubic.put(new ClassMethod(getObjectType("net/minecraft/class_3193"), // ChunkHolder
                 getMethod("void <init>("
@@ -387,17 +386,367 @@ public class MainTransformer {
     }
 
     public static void transformDynamicGraphMinFixedPoint(ClassNode targetClass) {
+        //Add the 3-int abstract methods
+        addDynamicGraphAbstractMethods(targetClass);
+
         // Change computedLevels and queues to be of type Object, as we use different types for the 3-int light engine
-        changeFieldTypeToObject(targetClass, new ClassField(
+        /*changeFieldTypeToObject(targetClass, new ClassField(
                 "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
                 "field_15784", // computedLevels
-                "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"));
+                "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"));*/
 
+        changeFixedPointComputedLevelsTo3Int(targetClass);
         changeFixedPointQueuesTo3Int(targetClass);
         /*changeFieldTypeToObject(targetClass, new ClassField(
                 "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
                 "field_15785", // queues
                 "[Lit/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet;"));*/
+
+        createRemoveIf(targetClass);
+    }
+
+    private static void addDynamicGraphAbstractMethods(ClassNode targetClass) {
+        ClassMethod isSource = remapMethod(new ClassMethod(
+            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
+            getMethod("boolean method_15494(long)")
+        ));
+
+        ClassMethod getComputedLevel = remapMethod(new ClassMethod(
+            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
+            getMethod("int method_15486(long, long, int)")
+        ));
+
+        ClassMethod checkNeighborsAfterUpdate = remapMethod(new ClassMethod(
+            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
+            getMethod("void method_15487(long, int, boolean)")
+        ));
+
+        ClassMethod getLevel = remapMethod(new ClassMethod(
+            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
+            getMethod("int method_15480(long)")
+        ));
+
+        ClassMethod setLevel = remapMethod(new ClassMethod(
+            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
+            getMethod("void method_15485(long, int)")
+        ));
+
+        ClassMethod computeLevelFromNeighbor = remapMethod(new ClassMethod(
+            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
+            getMethod("int method_15488(long, long, int)")
+        ));
+
+        MethodNode isSourceNode = new MethodNode(
+            ACC_PUBLIC,
+            isSource.method.getName(),
+            "(III)Z",
+            null, null
+        );
+
+        MethodNode getComputedLevelNode = new MethodNode(
+            ACC_PUBLIC,
+            getComputedLevel.method.getName(),
+            "(IIIIIII)I",
+            null, null
+        );
+
+        MethodNode checkNeighborsAfterUpdateNode = new MethodNode(
+            ACC_PUBLIC,
+            checkNeighborsAfterUpdate.method.getName(),
+            "(IIIIZ)V",
+            null, null
+        );
+
+        MethodNode getLevelNode = new MethodNode(
+            ACC_PUBLIC,
+            getLevel.method.getName(),
+            "(III)I",
+            null, null
+        );
+
+        MethodNode setLevelNode = new MethodNode(
+            ACC_PUBLIC,
+            setLevel.method.getName(),
+            "(IIII)V",
+            null, null
+        );
+
+        MethodNode computeLevelFromNeighborNode = new MethodNode(
+            ACC_PUBLIC,
+            computeLevelFromNeighbor.method.getName(),
+            "(IIIIIII)I",
+            null, null
+        );
+
+        markCCSynthetic(isSourceNode, isSource.method.getName(), isSource.method.getDescriptor(), "REDIRECT");
+        markCCSynthetic(getComputedLevelNode, getComputedLevel.method.getName(), getComputedLevel.method.getDescriptor(), "REDIRECT");
+        markCCSynthetic(checkNeighborsAfterUpdateNode, checkNeighborsAfterUpdate.method.getName(), checkNeighborsAfterUpdate.method.getDescriptor(), "REDIRECT");
+        markCCSynthetic(getLevelNode, getLevel.method.getName(), getLevel.method.getDescriptor(), "REDIRECT");
+        markCCSynthetic(setLevelNode, setLevel.method.getName(), setLevel.method.getDescriptor(), "REDIRECT");
+        markCCSynthetic(computeLevelFromNeighborNode, computeLevelFromNeighbor.method.getName(), computeLevelFromNeighbor.method.getDescriptor(), "REDIRECT");
+
+        delegate3Int(isSourceNode, isSource, INVOKEVIRTUAL, false, 0);
+        delegate3Int(getComputedLevelNode, getComputedLevel, INVOKEVIRTUAL, false, 0, 1);
+        delegate3Int(checkNeighborsAfterUpdateNode, checkNeighborsAfterUpdate, INVOKEVIRTUAL, false, 0);
+        delegate3Int(getLevelNode, getLevel, INVOKEVIRTUAL, false, 0);
+        delegate3Int(setLevelNode, setLevel, INVOKEVIRTUAL, false, 0);
+        delegate3Int(computeLevelFromNeighborNode, computeLevelFromNeighbor, INVOKEVIRTUAL, false, 0, 1);
+
+        targetClass.methods.add(isSourceNode);
+        targetClass.methods.add(getComputedLevelNode);
+        targetClass.methods.add(checkNeighborsAfterUpdateNode);
+        targetClass.methods.add(getLevelNode);
+        targetClass.methods.add(setLevelNode);
+        targetClass.methods.add(computeLevelFromNeighborNode);
+    }
+
+    private static void delegate3Int(MethodVisitor newMethod, ClassMethod currMethod, int opcode, boolean isStatic, int... expandedArgs) {
+        ClassMethod blockPosAsLong = remapMethod(new ClassMethod(
+            getObjectType("net/minecraft/class_2338"), // BlockPos
+            getMethod("long method_10064(int, int, int)")
+        ));
+
+        Arrays.sort(expandedArgs);
+
+        String descriptor = currMethod.method.getDescriptor();
+        Type[] args = Type.getArgumentTypes(descriptor);
+        Type returnType = Type.getReturnType(descriptor);
+
+        int[] argIndices = new int[args.length];
+        int index = isStatic ? 0 : 1;
+        for (int i = 0; i < args.length; i++) {
+            argIndices[i] = index;
+            index += args[i].getSize();
+        }
+
+        int[] shiftedIndices = new int[args.length];
+        boolean[] triple = new boolean[args.length];
+        index = isStatic ? 0 : 1;
+        int argsIndex = 0;
+        for (int i = 0; i < args.length; i++) {
+            shiftedIndices[i] = index;
+            index += args[i].getSize();
+            if(argsIndex < expandedArgs.length && expandedArgs[argsIndex] == i) {
+                triple[i] = true;
+                index++;
+                argsIndex++;
+            }
+        }
+
+        newMethod.visitCode();
+        if(!isStatic){
+            newMethod.visitVarInsn(ALOAD, 0);
+        }
+        for (int i = 0; i < args.length; i++) {
+            index = shiftedIndices[i];
+            if(triple[i]) {
+                newMethod.visitVarInsn(ILOAD, index);
+                newMethod.visitVarInsn(ILOAD, index + 1);
+                newMethod.visitVarInsn(ILOAD, index + 2);
+                newMethod.visitMethodInsn(INVOKESTATIC, blockPosAsLong.owner.getInternalName(), blockPosAsLong.method.getName(), blockPosAsLong.method.getDescriptor(), false);
+            }else{
+                newMethod.visitVarInsn(args[i].getOpcode(ILOAD), index);
+            }
+        }
+
+        newMethod.visitMethodInsn(opcode, currMethod.owner.getInternalName(), currMethod.method.getName(), currMethod.method.getDescriptor(), opcode == INVOKEINTERFACE);
+
+        if(returnType.getSort() != Type.VOID) {
+            newMethod.visitInsn(returnType.getOpcode(IRETURN));
+        }else{
+            newMethod.visitInsn(RETURN);
+        }
+    }
+
+    private static void createRemoveIf(ClassNode targetClass) {
+        Type dynGraph = remapType(Type.getObjectType("net/minecraft/class_3554")); // DynamicGraphMinFixedPoint
+
+        ClassMethod methodName = remapMethod(new ClassMethod(
+            getObjectType("net/minecraft/class_3554"),
+            new Method("method_24206", "(Ljava/util/function/LongPredicate;)V"))
+        );
+
+        ClassMethod removeFromQueue = remapMethod(
+            new ClassMethod(
+                getObjectType("net/minecraft/class_3554"),
+                new Method("method_15483", "(J)V")
+            )
+        );
+
+        ClassField computedLevels = remapField(new ClassField(
+            "net/minecraft/class_3554",
+            "field_15784",
+            "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"
+        ));
+
+        MethodNode methodVisitor = new MethodNode(ACC_PUBLIC, methodName.method.getName(), "(Lio/github/opencubicchunks/cubicchunks/utils/XYZPredicate;)V", null, null);
+        methodVisitor.visitCode();
+        Label label0 = new Label();
+        Label label1 = new Label();
+        Label label2 = new Label();
+        methodVisitor.visitTryCatchBlock(label0, label1, label2, "java/lang/Throwable");
+        Label label3 = new Label();
+        Label label4 = new Label();
+        Label label5 = new Label();
+        methodVisitor.visitTryCatchBlock(label3, label4, label5, "java/lang/Throwable");
+        Label label6 = new Label();
+        methodVisitor.visitLabel(label6);
+        methodVisitor.visitVarInsn(ALOAD, 0);
+        methodVisitor.visitFieldInsn(GETFIELD, dynGraph.getInternalName(), computedLevels.name, "Lio/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap;");
+        methodVisitor.visitVarInsn(ASTORE, 2);
+        Label label7 = new Label();
+        methodVisitor.visitLabel(label7);
+        methodVisitor.visitTypeInsn(NEW, "io/github/opencubicchunks/cubicchunks/utils/Int3List");
+        methodVisitor.visitInsn(DUP);
+        methodVisitor.visitMethodInsn(INVOKESPECIAL, "io/github/opencubicchunks/cubicchunks/utils/Int3List", "<init>", "()V", false);
+        methodVisitor.visitVarInsn(ASTORE, 3);
+        methodVisitor.visitLabel(label0);
+        methodVisitor.visitVarInsn(ALOAD, 2);
+        methodVisitor.visitVarInsn(ALOAD, 1);
+        methodVisitor.visitVarInsn(ALOAD, 3);
+        methodVisitor.visitInvokeDynamicInsn(
+            "accept",
+            "(Lio/github/opencubicchunks/cubicchunks/utils/XYZPredicate;Lio/github/opencubicchunks/cubicchunks/utils/Int3List;)Lio/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap$EntryConsumer;",
+            new Handle(
+                Opcodes.H_INVOKESTATIC,
+                "java/lang/invoke/LambdaMetafactory",
+                "metafactory",
+                "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
+                false
+            ),
+            Type.getType("(IIII)V"),
+            new Handle(
+                Opcodes.H_INVOKESTATIC,
+                CC + "mixin/transorm/MainTransformer",
+                "removeIfMethod",
+                "(Lio/github/opencubicchunks/cubicchunks/utils/XYZPredicate;Lio/github/opencubicchunks/cubicchunks/utils/Int3List;IIII)V",
+                false
+            ),
+            Type.getType("(IIII)V")
+        );
+        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap", "forEach", "(Lio/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap$EntryConsumer;)V", false);
+        Label label8 = new Label();
+        methodVisitor.visitLabel(label8);
+        methodVisitor.visitVarInsn(ALOAD, 3);
+        methodVisitor.visitVarInsn(ALOAD, 0);
+        methodVisitor.visitInvokeDynamicInsn(
+            "accept",
+            "(L" + dynGraph.getInternalName() + ";)Ljava/util/function/LongConsumer;",
+            new Handle(
+                Opcodes.H_INVOKESTATIC,
+                "java/lang/invoke/LambdaMetafactory",
+                "metafactory",
+                "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
+                false
+            ),
+            Type.getType("(J)V"),
+            new Handle(
+                Opcodes.H_INVOKEVIRTUAL,
+                dynGraph.getInternalName(),
+                removeFromQueue.method.getName(),
+                "(J)V",
+                false
+            ),
+            Type.getType("(J)V"));
+        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "io/github/opencubicchunks/cubicchunks/utils/Int3List", "forEach", "(Ljava/util/function/LongConsumer;)V", false);
+        methodVisitor.visitLabel(label1);
+        methodVisitor.visitVarInsn(ALOAD, 3);
+        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "io/github/opencubicchunks/cubicchunks/utils/Int3List", "close", "()V", false);
+        Label label9 = new Label();
+        methodVisitor.visitJumpInsn(GOTO, label9);
+        methodVisitor.visitLabel(label2);
+        methodVisitor.visitVarInsn(ASTORE, 4);
+        methodVisitor.visitLabel(label3);
+        methodVisitor.visitVarInsn(ALOAD, 3);
+        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "io/github/opencubicchunks/cubicchunks/utils/Int3List", "close", "()V", false);
+        methodVisitor.visitLabel(label4);
+        Label label10 = new Label();
+        methodVisitor.visitJumpInsn(GOTO, label10);
+        methodVisitor.visitLabel(label5);
+        methodVisitor.visitVarInsn(ASTORE, 5);
+        methodVisitor.visitVarInsn(ALOAD, 4);
+        methodVisitor.visitVarInsn(ALOAD, 5);
+        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Throwable", "addSuppressed", "(Ljava/lang/Throwable;)V", false);
+        methodVisitor.visitLabel(label10);
+        methodVisitor.visitVarInsn(ALOAD, 4);
+        methodVisitor.visitInsn(ATHROW);
+        methodVisitor.visitLabel(label9);
+        methodVisitor.visitInsn(RETURN);
+        Label label11 = new Label();
+        methodVisitor.visitLabel(label11);
+        methodVisitor.visitLocalVariable("list", "Lio/github/opencubicchunks/cubicchunks/utils/Int3List;", null, label0, label9, 3);
+        methodVisitor.visitLocalVariable("this", "L" + dynGraph.getInternalName() + ";", null, label6, label11, 0);
+        methodVisitor.visitLocalVariable("condition", "Lio/github/opencubicchunks/cubicchunks/utils/XYZPredicate;", null, label6, label11, 1);
+        methodVisitor.visitLocalVariable("levels", "Lio/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap;", null, label7, label11, 2);
+        methodVisitor.visitMaxs(3, 6);
+        methodVisitor.visitEnd();
+
+        markCCSynthetic(methodVisitor, methodName.method.getName(), methodName.method.getDescriptor(), "HARDCODED");
+        targetClass.methods.add(methodVisitor);
+    }
+
+    private static void changeFixedPointComputedLevelsTo3Int(ClassNode targetClass) {
+        String oldType = "it/unimi/dsi/fastutil/longs/Long2ByteMap";
+        String newType = "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap";
+
+        ClassField targetField = remapField(new ClassField(
+            "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
+            "field_15784", // computedLevels
+            "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"));
+
+        FieldNode fieldNode = targetClass.fields.stream()
+            .filter(x -> targetField.name.equals(x.name) && targetField.desc.getDescriptor().equals(x.desc))
+            .findAny().orElseThrow(() -> new IllegalStateException("Target field " + targetField + " not found"));
+
+        fieldNode.desc = "L" + newType + ";";
+
+        targetClass.methods.forEach((method) -> {
+            AbstractInsnNode[] instructions = method.instructions.toArray();
+
+            if(method.name.equals("<init>")){ //The hash sets get constructed in init
+                for(int i = 0; i < instructions.length; i++){
+                    AbstractInsnNode instruction = instructions[i];
+                    if(instruction.getOpcode() == NEW){
+                        TypeInsnNode newNode = (TypeInsnNode) instruction;
+                        if(newNode.desc.endsWith("$2")){ //Kinda dodgy but should be alright
+                            newNode.desc = newType;
+                        }
+                    }else if(instruction.getOpcode() == INVOKESPECIAL){
+                        MethodInsnNode methodCall = (MethodInsnNode) instruction;
+                        if(methodCall.name.equals("<init>") && methodCall.owner.endsWith("$2")){
+                            methodCall.owner = newType;
+                            methodCall.desc = "()V";
+
+                            //Remove method call arguments
+                            for(int j = 1; j <= 4; j++)
+                                method.instructions.remove(instructions[i - j]);
+                        }
+                    }else if(instruction.getOpcode() == INVOKEINTERFACE){
+                        for(int j = 0; j <= 3; j++)
+                            method.instructions.remove(instructions[i - j]);
+                    }
+                }
+            }
+
+            for (AbstractInsnNode instruction : instructions) {
+                if (instruction instanceof FieldInsnNode fieldInstruction) {
+                    if (fieldInstruction.name.equals(targetField.name) &&
+                        fieldInstruction.desc.equals(targetField.desc.getDescriptor()) &&
+                        fieldInstruction.owner.equals(targetField.owner.getInternalName())) {
+                        fieldInstruction.desc = "L" + newType + ";";
+                    }
+                } else if (instruction instanceof MethodInsnNode methodCall) {
+                    if (methodCall.owner.equals(oldType)) {
+                        methodCall.owner = newType;
+
+                        if(methodCall.getOpcode() == INVOKEINTERFACE){
+                            methodCall.setOpcode(INVOKEVIRTUAL);
+                            methodCall.itf = false;
+                        }
+                    }
+                }
+            }
+        });
     }
 
     private static void changeFixedPointQueuesTo3Int(ClassNode targetClass) {
@@ -476,7 +825,6 @@ public class MainTransformer {
      * @param field The field to change the type of
      */
     private static void changeFieldTypeToObject(ClassNode targetClass, ClassField field) {
-        (new Long2ByteOpenHashMap()).keySet()
         var objectTypeDescriptor = getObjectType("java/lang/Object").getDescriptor();
 
         var remappedField = remapField(field);
@@ -789,6 +1137,17 @@ public class MainTransformer {
             }
         }
         return lambdaRedirects;
+    }
+
+    public static void markCCSynthetic(MethodNode method, String name, String desc, String type) {
+        if(method.visibleAnnotations == null) {
+            method.visibleAnnotations = new ArrayList<>(1);
+        }
+
+        AnnotationNode synthetic = new AnnotationNode(Type.getDescriptor(CubicChunksSynthetic.class));
+        synthetic.visit("original", name + "#" + desc);
+        synthetic.visit("type", type);
+        method.visibleAnnotations.add(synthetic);
     }
 
     private static final class ClassMethod {

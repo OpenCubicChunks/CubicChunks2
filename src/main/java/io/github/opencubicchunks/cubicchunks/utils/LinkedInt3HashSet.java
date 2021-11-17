@@ -186,7 +186,6 @@ public class LinkedInt3HashSet implements AutoCloseable{
     }
 
     protected void resize() {
-        System.out.println("Resizing!");
         this.cachedIndex = -1; //Invalidate cached index
 
         long oldTableSize = this.tableSize;

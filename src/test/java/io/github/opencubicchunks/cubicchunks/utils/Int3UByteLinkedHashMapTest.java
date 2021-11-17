@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkState;
 import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
+import java.util.function.LongConsumer;
 import java.util.function.ToIntFunction;
 import java.util.stream.IntStream;
 
@@ -73,7 +74,7 @@ public class Int3UByteLinkedHashMapTest {
     }
 
     protected void ensureEqual(Object2IntMap<Vec3i> reference, Int3UByteLinkedHashMap test) {
-        checkState(reference.size() == test.size());
+        checkState(reference.size() == test.longSize());
 
         class Tester implements BiConsumer<Vec3i, Integer>, Int3UByteLinkedHashMap.EntryConsumer, Runnable {
             int countReference;
@@ -244,6 +245,19 @@ public class Int3UByteLinkedHashMapTest {
             }
 
             this.ensureEqual(Object2IntMaps.emptyMap(), test);
+        }
+    }
+
+    @Test
+    public void testIterators(){
+        try(Int3UByteLinkedHashMap map = new Int3UByteLinkedHashMap()){
+            map.put(0, 0, 1, 5);
+            map.put(0, 0, 2, 4);
+            map.put(2, 1, 2, 2);
+            map.put(5, 11, 3, 1);
+            map.put(10, 15, -4, 11);
+
+            map.keySet().forEach((LongConsumer) (l) -> {});
         }
     }
 }
