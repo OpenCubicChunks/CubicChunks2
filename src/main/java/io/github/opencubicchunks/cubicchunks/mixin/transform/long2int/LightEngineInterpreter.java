@@ -347,6 +347,7 @@ public class LightEngineInterpreter extends Interpreter<LightEngineValue> {
     }
 
     public void setLocalVarOverrides(List<Integer> overrides) {
-        this.localVarOverrides = overrides;
+        this.localVarOverrides.clear();
+        this.localVarOverrides.addAll(overrides);
     }
 }

@@ -59,6 +59,19 @@
             "blockpos_args": [0],
             "static": true
         },
+        "net/minecraft/class_2338#method_10064 (III)J": {
+            "returns_pos": true,
+            "blockpos_args": [],
+            "static": true,
+            "sep_args": [
+                [0, 1, 2]
+            ],
+            "expansion": [
+                [],
+                [],
+                []
+            ]
+        },
         "net/minecraft/class_2338#method_10063 ()J": {
             "returns_pos": true,
             "blockpos_args": [],
@@ -126,6 +139,44 @@
         "net/minecraft/class_3554#method_15482 (JJIIIZ)V": {
             "returns_pos": false,
             "blockpos_args": [0, 1]
+        },
+        "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet#removeFirstLong ()J": {
+            "returns_pos": true,
+            "blockpos_args": [],
+            "expansion": [
+                [
+                    {
+                        "type": "INVOKEVIRTUAL",
+                        "owner": "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet",
+                        "name": "getFirstX",
+                        "descriptor": "()I"
+                    }
+                ],
+                [
+                    {
+                        "type": "INVOKEVIRTUAL",
+                        "owner": "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet",
+                        "name": "getFirstY",
+                        "descriptor": "()I"
+                    }
+                ],
+                [
+                    "DUP",
+                    {
+                        "type": "INVOKEVIRTUAL",
+                        "owner": "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet",
+                        "name": "getFirstZ",
+                        "descriptor": "()I"
+                    },
+                    "SWAP",
+                    {
+                        "type": "INVOKEVIRTUAL",
+                        "owner": "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet",
+                        "name": "removeFirstValue",
+                        "descriptor": "()V"
+                    }
+                ]
+            ]
         }
     },
 
@@ -184,6 +235,21 @@
                     "descriptor": "(JII)V",
                     "override_locals": [1],
                     "mapped": "enqueue"
+                },
+                {
+                    "name": "method_15484",
+                    "descriptor": "(JJIZ)V",
+                    "mapped": "checkNeighbor"
+                },
+                {
+                    "name": "method_15483",
+                    "descriptor": "(J)V",
+                    "mapped": "removeFromQueue"
+                },
+                {
+                    "name": "method_15492",
+                    "descriptor": "(I)I",
+                    "method": "runUpdates"
                 }
             ]
         },
@@ -305,6 +371,11 @@
                     "descriptor": "(JJI)I",
                     "override_locals": [1, 3],
                     "mapped": "computeLevelFromNeighbor"
+                },
+                {
+                    "owner": "net/minecraft/class_3565",
+                    "name": "method_15513",
+                    "descriptor": "(Lnet/minecraft/class_2338;)V"
                 }
             ],
             "superclasses": [
@@ -332,7 +403,8 @@
                     "owner": "net/minecraft/class_3560",
                     "name": "method_15538",
                     "descriptor": "(J)I",
-                    "mapped": "getLightValue"
+                    "mapped": "getLightValue",
+                    "override_locals": [1]
                 },
                 {
                     "name": "method_31931",
@@ -364,6 +436,16 @@
                     "name": "method_15525",
                     "descriptor": "(JI)V",
                     "mapped": "setStoredLevel"
+                },
+                {
+                    "name": "method_15536",
+                    "descriptor": "(Lnet/minecraft/class_3558;J)V",
+                    "mapped": "clearQueuedSectionBlocks"
+                },
+                {
+                    "name": "method_29967",
+                    "descriptor": "(Lnet/minecraft/class_3558;J)V",
+                    "mapped": "checkEdgesForSection"
                 }
             ]
         }
@@ -373,27 +455,5 @@
         "net/minecraft/class_2338#method_10061 (J)I",
         "net/minecraft/class_2338#method_10071 (J)I",
         "net/minecraft/class_2338#method_10083 (J)I"
-    ],
-
-    "block_pos_unpacking": {
-        "vec3i": "net/minecraft/class_2382",
-        "as_long": "method_10063",
-        "get": [
-            "method_10263",
-            "method_10264",
-            "method_10260"
-        ]
-    },
-
-    "block_pos_direction_offset": {
-        "direction": "net/minecraft/class_2350",
-        "block_pos": "net/minecraft/class_2338",
-
-        "method_name": "method_10060",
-        "method_desc": "(JLnet/minecraft/class_2350;)J",
-
-        "step_x": "method_10148",
-        "step_y": "method_10164",
-        "step_z": "method_10165"
-    }
+    ]
 }

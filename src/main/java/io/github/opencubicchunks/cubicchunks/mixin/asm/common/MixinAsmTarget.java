@@ -9,6 +9,7 @@ import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
 import net.minecraft.world.level.lighting.LayerLightEngine;
 import net.minecraft.world.level.lighting.LayerLightSectionStorage;
 import net.minecraft.world.level.lighting.SkyLightEngine;
+import net.minecraft.world.level.lighting.SkyLightSectionStorage;
 import org.spongepowered.asm.mixin.Mixin;
 
 @Mixin({
@@ -23,7 +24,8 @@ import org.spongepowered.asm.mixin.Mixin;
     SkyLightEngine.class,
     LayerLightEngine.class,
     SectionPos.class,
-    LayerLightSectionStorage.class
+    LayerLightSectionStorage.class,
+    SkyLightSectionStorage.class
 })
 public class MixinAsmTarget {
     // intentionally empty

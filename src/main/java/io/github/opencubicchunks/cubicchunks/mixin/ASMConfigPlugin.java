@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -13,13 +12,9 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LongPosTransformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.lighting.BlockLightEngine;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
-import org.spongepowered.asm.mixin.extensibility.IMixinErrorHandler;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import org.spongepowered.asm.mixin.transformer.ClassInfo;
 
@@ -53,7 +48,6 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         String chunkMap = map.mapClassName("intermediary", "net.minecraft.class_3898");
         String chunkHolder = map.mapClassName("intermediary", "net.minecraft.class_3193");
         String naturalSpawner = map.mapClassName("intermediary", "net.minecraft.class_1948");
-        String dynamicGraphMinFixedPoint = map.mapClassName("intermediary", "net.minecraft.class_3554");
 
         if (targetClassName.equals(chunkMapDistanceManager)) {
             modified = true;
@@ -67,17 +61,6 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         } else if (targetClassName.equals(naturalSpawner)) {
             modified = true;
             MainTransformer.transformNaturalSpawner(targetClass);
-        }
-
-        if(LongPosTransformer.shouldModifyClass(targetClass, map)){
-            LongPosTransformer.modifyClass(targetClass);
-            modified = true;
-        }
-
-        if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
-            //Dynamic graph min fixed point has modifications that need to happen AFTER the long pos tranforms
-            modified = true;
-            MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
         }
 
         if(!modified){
@@ -118,6 +101,16 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     }
 
     @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        MappingResolver map = FabricLoader.getInstance().getMappingResolver();
+        String dynamicGraphMinFixedPoint = map.mapClassName("intermediary", "net.minecraft.class_3554");
 
+        if(LongPosTransformer.shouldModifyClass(targetClass, map)){
+            LongPosTransformer.modifyClass(targetClass);
+        }
+
+        if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
+            //Dynamic graph min fixed point has modifications that need to happen AFTER the long pos tranforms
+            MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
+        }
     }
 }

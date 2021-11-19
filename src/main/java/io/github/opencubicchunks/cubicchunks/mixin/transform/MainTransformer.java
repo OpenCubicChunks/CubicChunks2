@@ -7,21 +7,31 @@ import static org.objectweb.asm.Type.getObjectType;
 import static org.objectweb.asm.Type.getType;
 import static org.objectweb.asm.commons.Method.getMethod;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.google.common.collect.Sets;
+import com.mojang.datafixers.util.Pair;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.CubicChunksSynthetic;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LongPosTransformer;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.TransformInfo;
+import io.github.opencubicchunks.cubicchunks.utils.Int3List;
+import io.github.opencubicchunks.cubicchunks.utils.XYZPredicate;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -35,12 +45,20 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.IincInsnNode;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
+import org.spongepowered.noise.module.modifier.Abs;
+
+import static io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.bytecodegen.functional.BytecodeGen.*;
 
 public class MainTransformer {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -389,20 +407,236 @@ public class MainTransformer {
         //Add the 3-int abstract methods
         addDynamicGraphAbstractMethods(targetClass);
 
-        // Change computedLevels and queues to be of type Object, as we use different types for the 3-int light engine
-        /*changeFieldTypeToObject(targetClass, new ClassField(
-                "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
-                "field_15784", // computedLevels
-                "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"));*/
-
-        changeFixedPointComputedLevelsTo3Int(targetClass);
-        changeFixedPointQueuesTo3Int(targetClass);
-        /*changeFieldTypeToObject(targetClass, new ClassField(
-                "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
-                "field_15785", // queues
-                "[Lit/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet;"));*/
+        targetClass.methods.stream().filter(m -> !m.desc.contains("()") && (m.access & ACC_FINAL) != 0).forEach(
+            //Should only target checkNeighbor and runUpdates
+            m -> {
+                m.access &= ~ACC_FINAL;
+            }
+        );
 
         createRemoveIf(targetClass);
+
+        // Change computedLevels and queues to be of type Object, as we use different types for the 3-int light engine;
+
+        changeFieldTypeToObject(targetClass, new ClassField(
+                "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
+                "field_15784", // computedLevels
+                "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"),
+            (methodNode) -> {
+                if(isCCSynthetic(methodNode)) {
+                    return new Pair<>(getObjectType(CC + "utils/Int3UByteLinkedHashMap"), false);
+                }else{
+                    return new Pair<>(getObjectType("it/unimi/dsi/fastutil/longs/Long2ByteMap"), true);
+                }
+            }
+            );
+
+        changeFieldTypeToObject(targetClass, new ClassField(
+                "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
+                "field_15785", // queues
+                "[Lit/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet;"),
+            (methodNode) -> {
+                if(isCCSynthetic(methodNode)) {
+                    return new Pair<>(getObjectType("[L" + CC + "utils/LinkedInt3HashSet;"), false);
+                }else{
+                    return new Pair<>(getObjectType("[Lit/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet;") ,false);
+                }
+            }
+        );
+
+        createFixedPoint3IntConstructor(targetClass);
+
+        //changeFixedPointComputedLevelsTo3Int(targetClass);
+        //changeFixedPointQueuesTo3Int(targetClass);
+    }
+
+    public static void transformSkyLightEngineSectionStorage(ClassNode targetClass) {
+        //Lmao this whole method is probably very dumb
+        ClassMethod getLightValue = remapMethod(new ClassMethod(
+           getObjectType("net/minecraft/class_3569"),
+           getMethod("int method_31931(long, boolean)")
+        ));
+
+        ClassNode skyLightEngineSectionStorageMixin = loadClass(getObjectType(CC + "mixin/core/common/level/lighting/MixinSkyLightSectionStorage"));
+        MethodNode onGetLightValue = skyLightEngineSectionStorageMixin.methods.stream().filter(m -> m.name.equals("onGetLightValue")).findAny().orElse(null);
+
+        if(onGetLightValue == null) {
+            throw new RuntimeException("Could not find onGetLightValue in SkyLightEngineSectionStorageMixin");
+        }
+
+        TransformInfo info = new TransformInfo(
+            "", List.of(1)
+        );
+
+        MethodNode toInject = LongPosTransformer.modifyMethod(onGetLightValue, skyLightEngineSectionStorageMixin, info, null).transformed();
+
+        LabelNode endOfInject = new LabelNode();
+
+        MethodNode injectInto = targetClass.methods.stream().filter(
+            m -> m.name.equals(getLightValue.method.getName()) && m.desc.equals("(IIIZ)I")
+        ).findAny().orElse(null);
+
+        if(injectInto == null) {
+            throw new RuntimeException("Could not find injectInto in SkyLightEngineSectionStorageMixin");
+        }
+
+        //Remove CallbackInfoReturnable
+        Type[] args = Type.getArgumentTypes(toInject.desc);
+        Type returnType = Type.getReturnType(injectInto.desc);
+        Type[] newArgs = new Type[args.length - 1];
+        System.arraycopy(args, 0, newArgs, 0, newArgs.length);
+
+        int shiftFrom = (toInject.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
+        for(Type arg : newArgs) {
+            shiftFrom += arg.getSize();
+        }
+
+        AbstractInsnNode node = toInject.instructions.getFirst();
+        while(node != null) {
+            if(node.getOpcode() == RETURN) {
+                if (node.getNext() != null) { //No point in doing this if the next node will be the end of inject
+                    toInject.instructions.insertBefore(node, new JumpInsnNode(GOTO, endOfInject));
+                }
+                AbstractInsnNode temp = node.getNext();
+                toInject.instructions.remove(node);
+                node = temp;
+                continue;
+            }else if(node instanceof VarInsnNode var){
+                //Removing returnable means there's a free var slot though we remove the loading of the callback returnable to make it easier
+                if(var.var == shiftFrom){
+                    //Is callback returnable
+                    AbstractInsnNode temp = node.getNext();
+                    toInject.instructions.remove(node);
+                    node = temp;
+                    continue;
+                }else if(var.var > shiftFrom){
+                    //Shift all the vars down
+                    var.var--;
+                }
+            }else if(node instanceof IincInsnNode iinc){
+                if(iinc.var > shiftFrom){
+                    //Shift all the vars down
+                    iinc.var--;
+                }
+            }else if(node instanceof FieldInsnNode field){
+                if(field.owner.equals(skyLightEngineSectionStorageMixin.name)){
+                    //Change field to new class
+                    field.owner = targetClass.name;
+                }
+            }else if(node instanceof MethodInsnNode method){
+                if(method.owner.equals(skyLightEngineSectionStorageMixin.name)){
+                    //Change method to new class
+                    method.owner = targetClass.name;
+                }else if(
+                    (
+                        method.owner.equals("org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable")
+                    ) && method.name.equals("setReturnValue")
+                ){
+                    //Because the injection is inline, we need to actually return
+                    if(returnType.getSort() != OBJECT){
+                        //Type will have been boxed so we remove the boxing step
+                        AbstractInsnNode prev = node.getPrevious();
+                        boolean removedUnboxing = false;
+                        if(prev instanceof MethodInsnNode methodCall){
+                            String owner = methodCall.owner;
+                            String name = methodCall.name;
+                            String desc = methodCall.desc;
+
+                            if(
+                                (
+                                    desc.startsWith("(I)")
+                                    || desc.startsWith("(J)")
+                                    || desc.startsWith("(F)")
+                                    || desc.startsWith("(D)")
+                                    || desc.startsWith("(S)")
+                                    || desc.startsWith("(B)")
+                                    || desc.startsWith("(C)")
+                                    || desc.startsWith("(Z)")
+                                )
+                                && name.equals("valueOf")
+                                && (
+                                    owner.equals("java/lang/Integer")
+                                    || owner.equals("java/lang/Long")
+                                    || owner.equals("java/lang/Short")
+                                    || owner.equals("java/lang/Byte")
+                                    || owner.equals("java/lang/Character")
+                                    || owner.equals("java/lang/Float")
+                                    || owner.equals("java/lang/Double")
+                                    )
+                            ){
+                                //Remove the unboxing step
+                                removedUnboxing = true;
+                                toInject.instructions.remove(prev);
+                            }
+                        }
+
+                        if(!removedUnboxing){
+                            //We need to unbox the return value
+                            String owner;
+                            String desc;
+                            switch (returnType.getSort()) {
+                                case Type.INT:
+                                    owner = "java/lang/Integer";
+                                    desc = "(I)Ljava/lang/Integer;";
+                                    break;
+                                case Type.LONG:
+                                    owner = "java/lang/Long";
+                                    desc = "(J)Ljava/lang/Long;";
+                                    break;
+                                case Type.SHORT:
+                                    owner = "java/lang/Short";
+                                    desc = "(S)Ljava/lang/Short;";
+                                    break;
+                                case Type.BYTE:
+                                    owner = "java/lang/Byte";
+                                    desc = "(B)Ljava/lang/Byte;";
+                                    break;
+                                case Type.CHAR:
+                                    owner = "java/lang/Character";
+                                    desc = "(C)Ljava/lang/Character;";
+                                    break;
+                                case Type.FLOAT:
+                                    owner = "java/lang/Float";
+                                    desc = "(F)Ljava/lang/Float;";
+                                    break;
+                                case Type.DOUBLE:
+                                    owner = "java/lang/Double";
+                                    desc = "(D)Ljava/lang/Double;";
+                                    break;
+                                case Type.BOOLEAN:
+                                    owner = "java/lang/Boolean";
+                                    desc = "(Z)Ljava/lang/Boolean;";
+                                    break;
+                                default:
+                                    throw new IllegalStateException("Unexpected return type: " + returnType);
+                            }
+
+                            //Create the unboxing step
+                            MethodInsnNode unboxing = new MethodInsnNode(
+                                Opcodes.INVOKESTATIC,
+                                owner,
+                                "valueOf",
+                                desc
+                            );
+
+                            //Insert it
+                            toInject.instructions.insert(prev, unboxing);
+                        }
+                    }
+
+                    toInject.instructions.insertBefore(node, new InsnNode(returnType.getOpcode(IRETURN)));
+                    AbstractInsnNode temp = node.getNext();
+                    toInject.instructions.remove(node);
+                    node = temp;
+                    continue;
+                }
+            }
+
+            node = node.getNext();
+        }
+
+        injectInto.instructions.insertBefore(injectInto.instructions.getFirst(), endOfInject);
+        injectInto.instructions.insertBefore(endOfInject, toInject.instructions);
     }
 
     private static void addDynamicGraphAbstractMethods(ClassNode targetClass) {
@@ -685,131 +919,107 @@ public class MainTransformer {
         targetClass.methods.add(methodVisitor);
     }
 
-    private static void changeFixedPointComputedLevelsTo3Int(ClassNode targetClass) {
-        String oldType = "it/unimi/dsi/fastutil/longs/Long2ByteMap";
-        String newType = "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap";
-
-        ClassField targetField = remapField(new ClassField(
-            "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
-            "field_15784", // computedLevels
-            "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"));
-
-        FieldNode fieldNode = targetClass.fields.stream()
-            .filter(x -> targetField.name.equals(x.name) && targetField.desc.getDescriptor().equals(x.desc))
-            .findAny().orElseThrow(() -> new IllegalStateException("Target field " + targetField + " not found"));
-
-        fieldNode.desc = "L" + newType + ";";
-
-        targetClass.methods.forEach((method) -> {
-            AbstractInsnNode[] instructions = method.instructions.toArray();
-
-            if(method.name.equals("<init>")){ //The hash sets get constructed in init
-                for(int i = 0; i < instructions.length; i++){
-                    AbstractInsnNode instruction = instructions[i];
-                    if(instruction.getOpcode() == NEW){
-                        TypeInsnNode newNode = (TypeInsnNode) instruction;
-                        if(newNode.desc.endsWith("$2")){ //Kinda dodgy but should be alright
-                            newNode.desc = newType;
-                        }
-                    }else if(instruction.getOpcode() == INVOKESPECIAL){
-                        MethodInsnNode methodCall = (MethodInsnNode) instruction;
-                        if(methodCall.name.equals("<init>") && methodCall.owner.endsWith("$2")){
-                            methodCall.owner = newType;
-                            methodCall.desc = "()V";
-
-                            //Remove method call arguments
-                            for(int j = 1; j <= 4; j++)
-                                method.instructions.remove(instructions[i - j]);
-                        }
-                    }else if(instruction.getOpcode() == INVOKEINTERFACE){
-                        for(int j = 0; j <= 3; j++)
-                            method.instructions.remove(instructions[i - j]);
-                    }
-                }
-            }
-
-            for (AbstractInsnNode instruction : instructions) {
-                if (instruction instanceof FieldInsnNode fieldInstruction) {
-                    if (fieldInstruction.name.equals(targetField.name) &&
-                        fieldInstruction.desc.equals(targetField.desc.getDescriptor()) &&
-                        fieldInstruction.owner.equals(targetField.owner.getInternalName())) {
-                        fieldInstruction.desc = "L" + newType + ";";
-                    }
-                } else if (instruction instanceof MethodInsnNode methodCall) {
-                    if (methodCall.owner.equals(oldType)) {
-                        methodCall.owner = newType;
-
-                        if(methodCall.getOpcode() == INVOKEINTERFACE){
-                            methodCall.setOpcode(INVOKEVIRTUAL);
-                            methodCall.itf = false;
-                        }
-                    }
-                }
-            }
-        });
+    public static void removeIfMethod(XYZPredicate condition, Int3List list, int x, int y, int z, int value){
+        if(condition.test(x, y, z)){
+            list.add(x, y, z);
+        }
     }
 
-    private static void changeFixedPointQueuesTo3Int(ClassNode targetClass) {
-        String oldType = "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet";
-        String newType = "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet";
+    private static void createFixedPoint3IntConstructor(ClassNode targetClass){
+        //Get original constructor
+        MethodNode originalConstructor = targetClass.methods.stream().filter(
+            m -> m.name.equals("<init>")
+            && m.desc.equals("(III)V")
+        ).findAny().orElse(null);
 
-        ClassField targetField = remapField(new ClassField(
-            "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
-            "field_15785", // queues
-            "[Lit/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet;"));
+        if(originalConstructor == null){
+            throw new IllegalStateException("Could not find original constructor");
+        }
 
-        FieldNode fieldNode = targetClass.fields.stream()
-            .filter(x -> targetField.name.equals(x.name) && targetField.desc.getDescriptor().equals(x.desc))
-            .findAny().orElseThrow(() -> new IllegalStateException("Target field " + targetField + " not found"));
+        //Create new constructor
+        MethodNode constructor = LongPosTransformer.copy(originalConstructor);
+        constructor.name = "<init>";
+        constructor.desc = "(IIII)V"; //The fourth int is redundant but distinguishes the constructor from the original one
 
-        fieldNode.desc = "[L" + newType + ";";
+        int shiftFrom = 4;
 
-        targetClass.methods.forEach((method) -> {
-            AbstractInsnNode[] instructions = method.instructions.toArray();
+        AbstractInsnNode[] instructions = constructor.instructions.toArray();
+        for(int i = 0; i < instructions.length; i++){
+            AbstractInsnNode instruction = instructions[i];
+            if(instruction.getOpcode() == NEW){
+                TypeInsnNode typeInsnNode = (TypeInsnNode) instruction;
+                if(typeInsnNode.desc.endsWith("$2")){ //Kinda dodgy but it works
+                    typeInsnNode.desc = CC + "utils/Int3UByteLinkedHashMap";
+                }else if(typeInsnNode.desc.endsWith("$1")){
+                    typeInsnNode.desc = CC + "utils/LinkedInt3HashSet";
+                }
+            }else if(instruction.getOpcode() == INVOKESPECIAL){
+                MethodInsnNode methodInsnNode = (MethodInsnNode) instruction;
+                if(methodInsnNode.name.equals("<init>")){
+                    if(methodInsnNode.owner.endsWith("$2")){
+                        methodInsnNode.owner = CC + "utils/Int3UByteLinkedHashMap";
+                    }else if(methodInsnNode.owner.endsWith("$1")){
+                        methodInsnNode.owner = CC + "utils/LinkedInt3HashSet";
+                    }else{
+                        continue;
+                    }
+                    methodInsnNode.desc = "()V";
 
-            if(method.name.equals("<init>")){ //The hash sets get constructed in init
-                for(int i = 0; i < instructions.length; i++){
-                    AbstractInsnNode instruction = instructions[i];
-                    if(instruction.getOpcode() == NEW){
-                        TypeInsnNode newNode = (TypeInsnNode) instruction;
-                        if(newNode.desc.endsWith("$1")){ //Kinda dodgy but should be alright
-                            newNode.desc = newType;
-                        }
-                    }else if(instruction.getOpcode() == ANEWARRAY){
-                        TypeInsnNode newArrayNode = (TypeInsnNode) instruction;
-                        if(newArrayNode.desc.equals(oldType)){
-                            newArrayNode.desc = newType;
-                        }
-                    }else if(instruction.getOpcode() == INVOKESPECIAL){
-                        MethodInsnNode methodCall = (MethodInsnNode) instruction;
-                        if(methodCall.name.equals("<init>") && methodCall.owner.endsWith("$1")){
-                            methodCall.owner = newType;
-                            methodCall.desc = "()V";
-
-                            //Remove method call arguments
-                            for(int j = 1; j <= 4; j++)
-                                method.instructions.remove(instructions[i - j]);
-                        }
+                    //Remove method call arguments
+                    for (int j = 1; j <= 4; j++) {
+                        constructor.instructions.remove(instructions[i - j]);
                     }
                 }
-            }
-
-            for(int i = 0; i < instructions.length; i++){
-                AbstractInsnNode instruction = instructions[i];
-                if(instruction instanceof FieldInsnNode fieldInstruction){
-                    if(fieldInstruction.name.equals(targetField.name) &&
-                        fieldInstruction.desc.equals(targetField.desc.getDescriptor()) &&
-                        fieldInstruction.owner.equals(targetField.owner.getInternalName()))
-                    {
-                        fieldInstruction.desc = "[L" + newType + ";";
-                    }
-                }else if(instruction instanceof MethodInsnNode methodCall){
-                    if(methodCall.owner.equals(oldType)){
-                        methodCall.owner = newType;
+            }else if(instruction.getOpcode() == ANEWARRAY){
+                TypeInsnNode typeInsnNode = (TypeInsnNode) instruction;
+                if(typeInsnNode.desc.equals("it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet")){
+                    typeInsnNode.desc = CC + "utils/LinkedInt3HashSet";
+                }
+            }else if(instruction.getOpcode() == INVOKEINTERFACE){
+                MethodInsnNode methodInsnNode = (MethodInsnNode) instruction;
+                if(methodInsnNode.name.equals("defaultReturnValue") && methodInsnNode.desc.equals("(B)V")){
+                    for (int j = 0; j <= 3; j++) {
+                        constructor.instructions.remove(instructions[i - j]);
                     }
                 }
+            }else if(instruction instanceof VarInsnNode var){
+                if(var.var >= shiftFrom){
+                    var.var++;
+                }
+            }else if(instruction instanceof IincInsnNode iinc){
+                if(iinc.var >= shiftFrom){
+                    iinc.var++;
+                }
             }
-        });
+        }
+
+        //Find the super call (DynamicGraphMinFixedNode inherits from Object)
+        AbstractInsnNode insn = constructor.instructions.getFirst();
+        while (!(insn instanceof MethodInsnNode)) {
+            insn = insn.getNext();
+        }
+
+        InsnList check = new InsnList();
+        check.add(new VarInsnNode(ILOAD, 4));
+        check.add(new LdcInsnNode(0xDEADBEEF));
+        LabelNode ok = new LabelNode();
+        check.add(new JumpInsnNode(IF_ICMPEQ, ok));
+        check.add(new TypeInsnNode(NEW, "java/lang/IllegalArgumentException"));
+        check.add(new InsnNode(DUP));
+        check.add(new LdcInsnNode("Fourth argument to synthetic constructor must be 0xDEADBEEF"));
+        check.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/IllegalArgumentException", "<init>", "(Ljava/lang/String;)V", false));
+        check.add(new InsnNode(ATHROW));
+        check.add(ok);
+
+        constructor.instructions.insert(insn, check);
+
+        markCCSynthetic(constructor, "<init>", "(III)V", "HARDCODED");
+
+        if(targetClass.methods.size() == 0){
+            targetClass.methods.add(constructor);
+        }else {
+            targetClass.methods.add(1, constructor);
+        }
     }
 
     /**
@@ -824,7 +1034,7 @@ public class MainTransformer {
      * @param targetClass The class containing the field
      * @param field The field to change the type of
      */
-    private static void changeFieldTypeToObject(ClassNode targetClass, ClassField field) {
+    private static void changeFieldTypeToObject(ClassNode targetClass, ClassField field, Function<MethodNode, Pair<Type, Boolean>> typeProvider) {
         var objectTypeDescriptor = getObjectType("java/lang/Object").getDescriptor();
 
         var remappedField = remapField(field);
@@ -837,9 +1047,24 @@ public class MainTransformer {
         // Change its type to object
         fieldNode.desc = objectTypeDescriptor;
 
+        Type methodOwner = field.desc;
+        while (methodOwner.getSort() == ARRAY){
+            methodOwner = methodOwner.getElementType();
+        }
+
         // Find all usages of the field in the class (i.e. GETFIELD and PUTFIELD instructions)
         // and update their types to object, adding a cast to the original type after all GETFIELDs
+        Type finalMethodOwner = methodOwner;
         targetClass.methods.forEach(methodNode -> {
+            var use = typeProvider.apply(methodNode);
+            Type type = use.getFirst();
+            boolean isInterface = use.getSecond();
+
+            Type newMethodOwner = type;
+            while (newMethodOwner.getSort() == ARRAY){
+                newMethodOwner = newMethodOwner.getElementType();
+            }
+            Type finalNewMethodOwner = newMethodOwner;
             methodNode.instructions.forEach(i -> {
                 if (i.getType() == AbstractInsnNode.FIELD_INSN) {
                     var instruction = ((FieldInsnNode) i);
@@ -849,7 +1074,21 @@ public class MainTransformer {
                         } else if (instruction.getOpcode() == GETFIELD) {
                             instruction.desc = objectTypeDescriptor;
                             // Cast to original type
-                            methodNode.instructions.insert(instruction, new TypeInsnNode(CHECKCAST, field.desc.getInternalName()));
+                            methodNode.instructions.insert(instruction, new TypeInsnNode(CHECKCAST, type.getInternalName()));
+                        }
+                    }
+                }else if(!field.desc.equals(type)) {
+                    // We change all occurrences of the old type to the new type (This could be done better with ASM analysis)
+                    if (i instanceof MethodInsnNode methodCall){
+                        if(methodCall.owner.equals(finalMethodOwner.getInternalName())){
+                            methodCall.owner = finalNewMethodOwner.getInternalName();
+
+                            methodCall.itf = isInterface;
+                            if(methodCall.getOpcode() == INVOKEINTERFACE && !isInterface){
+                                methodCall.setOpcode(INVOKEVIRTUAL);
+                            }else if(methodCall.getOpcode() == INVOKEVIRTUAL && isInterface){
+                                methodCall.setOpcode(INVOKEINTERFACE);
+                            }
                         }
                     }
                 }
@@ -1150,10 +1389,39 @@ public class MainTransformer {
         method.visibleAnnotations.add(synthetic);
     }
 
-    private static final class ClassMethod {
-        final Type owner;
-        final Method method;
-        final Type mappingOwner;
+    public static boolean isCCSynthetic(MethodNode method){
+        if(method.visibleAnnotations == null) {
+            return false;
+        }
+
+        for(AnnotationNode annotation : method.visibleAnnotations){
+            if(annotation.desc.equals(Type.getDescriptor(CubicChunksSynthetic.class))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static ClassNode loadClass(Type type){
+        ClassNode node = new ClassNode();
+
+        try {
+            InputStream is = ClassLoader.getSystemResourceAsStream(type.getInternalName() + ".class");
+            ClassReader reader = new ClassReader(is);
+            reader.accept(node, 0);
+            is.close();
+        }catch (IOException e){
+            throw new RuntimeException(e);
+        }
+
+        return node;
+    }
+
+    public static final class ClassMethod {
+        public final Type owner;
+        public final Method method;
+        public final Type mappingOwner;
 
         ClassMethod(Type owner, Method method) {
             this.owner = owner;
@@ -1188,10 +1456,10 @@ public class MainTransformer {
         }
     }
 
-    private static final class ClassField {
-        final Type owner;
-        final String name;
-        final Type desc;
+    public static final class ClassField {
+        public final Type owner;
+        public final String name;
+        public final Type desc;
 
         ClassField(String owner, String name, String desc) {
             this.owner = getObjectType(owner);

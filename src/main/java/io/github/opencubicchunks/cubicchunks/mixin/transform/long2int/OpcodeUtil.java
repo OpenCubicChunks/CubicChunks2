@@ -139,4 +139,12 @@ public class OpcodeUtil {
             }
         };
     }
+
+    public static boolean isArithmeticOperation(int opcode){
+        //Currently, only for int because there is no reason to have anything else
+        return switch (opcode){
+            case Opcodes.IADD, Opcodes.ISUB, Opcodes.IMUL, Opcodes.IDIV, Opcodes.IREM, Opcodes.ISHL, Opcodes.ISHR, Opcodes.IUSHR, Opcodes.IAND, Opcodes.IOR, Opcodes.IXOR -> true;
+            default -> false;
+        };
+    }
 }

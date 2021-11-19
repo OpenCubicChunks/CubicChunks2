@@ -4,7 +4,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.lang.invoke.LambdaMetafactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,20 +14,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.LongPredicate;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.bytecodegen.BytecodeFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.bytecodegen.InstructionFactory;
+import io.github.opencubicchunks.cubicchunks.utils.XYZConsumer;
+import io.github.opencubicchunks.cubicchunks.utils.XYZPredicate;
 import net.fabricmc.loader.api.MappingResolver;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.SectionPos;
-import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
-import net.minecraft.world.level.lighting.LayerLightEngine;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -52,6 +51,7 @@ import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Value;
+import org.spongepowered.asm.mixin.transformer.meta.MixinMerged;
 
 public class LongPosTransformer {
     private static final String REMAP_PATH = "/remaps.json";
@@ -60,11 +60,13 @@ public class LongPosTransformer {
     private static final String[] UNPACKING_METHODS = new String[3];
     private static boolean loaded = false;
 
+    private static final Map<Handle, MethodTransformationInfo> transformedLambdas = new HashMap<>();
+
     private static final LightEngineInterpreter interpreter = new LightEngineInterpreter(methodInfoLookup);
     private static final Analyzer<LightEngineValue> analyzer = new Analyzer<>(interpreter);
     private static final List<String> errors = new ArrayList<>();
 
-    private static final List<String> allTransformedMethods = new ArrayList<>();
+    private static final Set<String> allTransformedMethods = new HashSet<>();
 
     public static Set<String> remappedMethods = new HashSet<>();
     public static Set<String> newRemaps = new HashSet<>();
@@ -82,7 +84,7 @@ public class LongPosTransformer {
                 System.out.println("[LongPosTransformer]: Modifying " + methodNode.name);
 
                 newRemaps.clear();
-                MethodNode newMethod = modifyMethod(methodNode, classNode, transform);
+                MethodNode newMethod = modifyMethod(methodNode, classNode, transform, newMethods).transformed;
 
                 checkRemaps(classNode);
 
@@ -112,7 +114,8 @@ public class LongPosTransformer {
     private static void saveRemapInfo(){
         allTransformedMethods.forEach(remappedMethods::remove);
 
-        Path path = Path.of("remapped.txt");
+        Path path = Path.of("needed_remaps.txt");
+        Path path2 = Path.of("transformed.txt");
 
         try {
             if (!Files.exists(path)) {
@@ -124,6 +127,19 @@ public class LongPosTransformer {
 
             for(String remappedMethod: remappedMethods){
                 print.println(remappedMethod);
+            }
+
+            print.close();
+
+            if(!Files.exists(path2)){
+                Files.createFile(path2);
+            }
+
+            out = new FileOutputStream(path2.toAbsolutePath().toString());
+            print = new PrintStream(out);
+
+            for(String transformedMethod: allTransformedMethods){
+                print.println(transformedMethod);
             }
 
             print.close();
@@ -172,7 +188,8 @@ public class LongPosTransformer {
         errors.add("Error in " + node.name + ", " + message);
     }
 
-    private static MethodNode modifyMethod(MethodNode methodNode, ClassNode classNode, TransformInfo transformInfo) {
+    public static MethodTransformationInfo modifyMethod(MethodNode methodNode, ClassNode classNode, TransformInfo transformInfo,
+                                                         List<MethodNode> newMethods) {
         String methodNameAndDescriptor = methodNode.name + " " + methodNode.desc;
         MethodNode newMethod = copy(methodNode);
 
@@ -268,6 +285,7 @@ public class LongPosTransformer {
                     String newName = methodCall.name;
                     String newOwner = methodCall.owner;
                     String descriptorVerifier = null;
+                    boolean foundInLookup = false;
                     if ((methodInfo = methodInfoLookup.get(methodID)) != null) {
                         if (methodInfo.returnsPackedBlockPos()) {
                             continue;
@@ -276,6 +294,7 @@ public class LongPosTransformer {
                         newName = methodInfo.getNewName();
                         newOwner = methodInfo.getNewOwner();
                         descriptorVerifier = methodInfo.getNewDesc();
+                        foundInLookup = true;
                     }else if(!methodCall.desc.endsWith("V")){
                         if(topOfFrame(frames[i + 1]).isAPackedLong()){
                             trackError(methodNode, "'" + methodID + " returns a packed long but has no known expansion");
@@ -323,9 +342,55 @@ public class LongPosTransformer {
                     if (!newDescriptor.equals(methodCall.desc)) {
                         logRemap(methodCall);
 
+                        String prevDesc = methodCall.desc;
+
                         methodCall.owner = newOwner;
                         methodCall.name = newName;
                         methodCall.desc = newDescriptor;
+
+                        if(!foundInLookup && methodCall.owner.equals(classNode.name)){
+                             String ID = methodID(methodCall.owner, methodCall.name, prevDesc);
+
+                             if(!allTransformedMethods.contains(ID)){
+                                 //Method wasn't created, get the actual node
+                                 MethodNode method = classNode.methods.stream().filter(m -> m.name.equals(methodCall.name) && m.desc.equals(prevDesc)).findFirst().orElse(null);
+                                 if(method != null){
+                                     //Check that it has the MixinMerged annotation
+                                     AnnotationNode annotation = method.visibleAnnotations == null ? null :
+                                         method.visibleAnnotations.stream().filter(a -> a.desc.equals("L" + MixinMerged.class.getName().replace('.', '/') + ";")).findFirst().orElse(null);
+                                     if(annotation != null){
+                                         //Get expandedIndices
+                                         Type[] args = Type.getArgumentTypes(prevDesc);
+                                         int paramIndex = isStatic ? 0 : 1;
+                                         int variableIndex = isStatic ? 0 : 1;
+                                         List<Integer> expandedVariableIndices = new ArrayList<>();
+                                         for (Type arg : args) {
+                                             if (expandedIndices.contains(paramIndex)) {
+                                                 expandedVariableIndices.add(variableIndex);
+                                             }
+
+                                             paramIndex++;
+                                             variableIndex += arg.getSize();
+                                         }
+
+
+                                         TransformInfo syntheticTransformInfo = new TransformInfo(
+                                             "",
+                                             expandedVariableIndices
+                                         );
+
+                                         MethodNode syntheticMethod = modifyMethod(method, classNode, syntheticTransformInfo, newMethods).transformed;
+                                         allTransformedMethods.add(ID);
+
+                                         if(newMethods == null){
+                                             classNode.methods.add(syntheticMethod);
+                                         }else{
+                                             newMethods.add(syntheticMethod);
+                                         }
+                                     }
+                                 }
+                             }
+                        }
                     }
                 }
             }else if(instruction.getOpcode() == Opcodes.LSTORE){
@@ -378,27 +443,27 @@ public class LongPosTransformer {
 
                     AbstractInsnNode operandOneSource = operandOne.getSource().iterator().next();
                     int operandOneSourceIndex = instructionIndexMap.get(operandOneSource);
-                    InstructionFactory[] operandOneGetters = saveEmitterResultInLocalVariable(frames, instructions, newMethod.instructions, operandOneSource, operandOne,
+                    BytecodeFactory[] operandOneGetters = saveEmitterResultInLocalVariable(frames, instructions, newMethod.instructions, operandOneSource, operandOne,
                         operandOneSourceIndex, variableMapper, variableManager, i, instructionIndexMap);
 
                     AbstractInsnNode operandTwoSource = operandTwo.getSource().iterator().next();
                     int operandTwoSourceIndex = instructionIndexMap.get(operandTwoSource);
-                    InstructionFactory[] operandTwoGetters = saveEmitterResultInLocalVariable(frames, instructions, newMethod.instructions, operandTwoSource, operandTwo,
+                    BytecodeFactory[] operandTwoGetters = saveEmitterResultInLocalVariable(frames, instructions, newMethod.instructions, operandTwoSource, operandTwo,
                         operandTwoSourceIndex, variableMapper, variableManager, i, instructionIndexMap);
 
                     InsnList generated = new InsnList();
 
                     for(int axis = 0; axis < 3; axis++){
                         if(operandOneGetters.length == 1){
-                            generated.add(operandOneGetters[0].create());
+                            generated.add(operandOneGetters[0].generate());
                         }else{
-                            generated.add(operandOneGetters[axis].create());
+                            generated.add(operandOneGetters[axis].generate());
                         }
 
                         if(operandTwoGetters.length == 1){
-                            generated.add(operandTwoGetters[0].create());
+                            generated.add(operandTwoGetters[0].generate());
                         }else{
-                            generated.add(operandTwoGetters[axis].create());
+                            generated.add(operandTwoGetters[axis].generate());
                         }
 
                         generated.add(new JumpInsnNode(jumpOpcode, jumpLabel));
@@ -407,6 +472,108 @@ public class LongPosTransformer {
                     newMethod.instructions.insertBefore(instruction, generated);
                     newMethod.instructions.remove(instruction);
                     newMethod.instructions.remove(jump);
+                }
+            }else if(instruction.getOpcode() == Opcodes.INVOKEDYNAMIC){
+                InvokeDynamicInsnNode invokeDynamic = (InvokeDynamicInsnNode)instruction;
+                if(invokeDynamic.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory") && invokeDynamic.bsm.getName().equals("metafactory") && invokeDynamic.bsm.getDesc().equals("(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;")){
+                    Type produced = Type.getReturnType(invokeDynamic.desc);
+                    LambdaType lambdaType = null;
+                    for(LambdaType type: LambdaType.values()){
+                        if(type.original.equals(produced)){
+                            lambdaType = type;
+                            break;
+                        }
+                    }
+
+                    if(lambdaType == null){
+                        trackError(methodNode, "Unsupported lambda type: " + produced);
+                        continue;
+                    }
+
+                    Handle methodHandle = (Handle) invokeDynamic.bsmArgs[1];
+                    if(methodHandle.getOwner() == null || !methodHandle.getOwner().equals(classNode.name)){
+                        //Can't inspect method handle, so we can't do anything
+                        continue;
+                    }
+
+                    String methodName = methodHandle.getName();
+                    String methodDesc = methodHandle.getDesc();
+                    MethodNode lambdaMethodNode = classNode.methods.stream().filter(m -> m.name.equals(methodName) && m.desc.equals(methodDesc)).findFirst().orElse(null);
+
+                    if(lambdaMethodNode == null){
+                        throw new IllegalStateException("Could not find lambda method");
+                    }
+
+                    //The final argument of the lambda method is the argument of the lambda
+                    Type[] argumentTypes = Type.getArgumentTypes(lambdaMethodNode.desc);
+                    int index = (lambdaMethodNode.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
+                    for(int j = 0; j < argumentTypes.length - 1; j++){
+                        index += argumentTypes[j].getSize();
+                    }
+
+                    boolean added = true;
+                    MethodTransformationInfo lambdaMethodInfo = transformedLambdas.get(methodHandle);
+                    if(lambdaMethodInfo == null){
+                        lambdaMethodInfo = modifyMethod(lambdaMethodNode, classNode, new TransformInfo(lambdaMethodNode.name + "#" + lambdaMethodNode.desc, List.of()), newMethods);
+                        transformedLambdas.put(methodHandle, lambdaMethodInfo);
+                        added = false;
+                    }
+
+                    if(lambdaMethodInfo.expandedLocals.contains(index)){
+                        //We must modify this call
+                        //First we change the descriptor to return the 3 int type
+                        Type[] descArgs = Type.getArgumentTypes(invokeDynamic.desc);
+                        Type descReturn = lambdaType.int3Replacement;
+
+                        String newDesc = Type.getMethodDescriptor(descReturn, descArgs);
+                        invokeDynamic.desc = newDesc;
+
+                        invokeDynamic.bsmArgs = new Object[] {
+                            lambdaType.replacementDesc,
+                            new Handle(
+                                methodHandle.getTag(),
+                                classNode.name,
+                                lambdaMethodInfo.transformed.name,
+                                lambdaMethodInfo.transformed.desc,
+                                false
+                            ),
+                            lambdaType.replacementDesc
+                        };
+
+                        //We also need to change the consumers of the lambda method
+                        LightEngineValue value = topOfFrame(frames[i + 1]); //This value holds the generated call site
+                        Set<AbstractInsnNode> consumers = value.getConsumers();
+                        for(AbstractInsnNode consumer: consumers){
+                            if(consumer instanceof MethodInsnNode methodCall){
+                                int consumerIndex = instructionIndexMap.get(consumer);
+                                Frame<LightEngineValue> consumerFrame = frames[consumerIndex];
+                                //Find the lambda argument
+                                int indexFromTop = 0;
+                                while(consumerFrame.getStack(consumerFrame.getStackSize() - indexFromTop) != value){
+                                    indexFromTop++;
+                                }
+
+                                //We need to replace the lambda argument with the 3 int type
+                                String desc = methodCall.desc;
+                                Type[] types = Type.getArgumentTypes(desc);
+                                Type returnType = Type.getReturnType(desc);
+
+                                types[types.length - indexFromTop] = lambdaType.int3Replacement;
+
+                                methodCall.desc = Type.getMethodDescriptor(returnType, types);
+                            }else{
+                                throw new IllegalStateException("Unexpected consumer: " + consumer);
+                            }
+                        }
+
+                        if(!added){
+                            if(newMethods != null) {
+                                newMethods.add(lambdaMethodInfo.transformed); //Adding directly to the class causes a concurrent modification exception
+                            }else{
+                                classNode.methods.add(lambdaMethodInfo.transformed); //Passing null means that we can add it directly
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -432,7 +599,7 @@ public class LongPosTransformer {
 
         //Add CubicChunksSynthetic annotation to method
         MainTransformer.markCCSynthetic(newMethod, methodNode.name, methodNode.desc, "LONG_POS_TRANSFORM");
-        return newMethod;
+        return new MethodTransformationInfo(newMethod, expandedVariables);
     }
 
     private static boolean testAndExpandEmitter(Frame<LightEngineValue>[] frames, AbstractInsnNode[] instructions, AbstractInsnNode emitter, int emitterIndex, InsnList insnList,
@@ -458,7 +625,7 @@ public class LongPosTransformer {
                 //Change BlockPos.asLong() calls to three separate calls to getX, getY and getZ
                 if (methodInfo.returnsPackedBlockPos()) {
                     Frame<LightEngineValue> currentFrame = frames[emitterIndex];
-                    List<InstructionFactory[]> varGetters = new ArrayList<>();
+                    List<BytecodeFactory[]> varGetters = new ArrayList<>();
                     int stackSize = currentFrame.getStackSize();
 
                     int numMethodArgs = MethodInfo.getNumArgs(methodCall.desc);
@@ -478,27 +645,24 @@ public class LongPosTransformer {
                             instructionIndexMap));
                     }
                     InsnList replacement = new InsnList();
-                    if(methodCall.name.equals("asLong")){
-                        System.out.println("yeet");
-                    }
                     for (int axis = 0; axis < 3; axis++) {
                         int i = 0;
-                        for (InstructionFactory[] generators : varGetters) {
+                        for (BytecodeFactory[] generators : varGetters) {
                             if (generators.length > 1) {
-                                replacement.add(generators[axis].create());
+                                replacement.add(generators[axis].generate());
                             } else {
                                 boolean isSeparated = false;
                                 for(Integer[] separatedArgs: methodInfo.getSeparatedArguments()){
                                     if(separatedArgs[0] == i || separatedArgs[1] == i || separatedArgs[2] == i){
                                         if(separatedArgs[axis] == i){
-                                            replacement.add(generators[0].create());
+                                            replacement.add(generators[0].generate());
                                         }
                                         isSeparated = true;
                                         break;
                                     }
                                 }
                                 if(!isSeparated) {
-                                    replacement.add(generators[0].create());
+                                    replacement.add(generators[0].generate());
                                 }
                             }
                             i++;
@@ -530,10 +694,10 @@ public class LongPosTransformer {
         return false;
     }
 
-    private static InstructionFactory[] saveEmitterResultInLocalVariable(Frame<LightEngineValue>[] frames, AbstractInsnNode[] instructions, InsnList insnList, AbstractInsnNode emitter,
-                                                                         LightEngineValue value,
-                                                                         int emitterIndex, LocalVariableMapper variableMapper,
-                                                                         ExtraVariableManager variableManager, int usageIndex, Map<AbstractInsnNode, Integer> instructionIndexMap) {
+    private static BytecodeFactory[] saveEmitterResultInLocalVariable(Frame<LightEngineValue>[] frames, AbstractInsnNode[] instructions, InsnList insnList, AbstractInsnNode emitter,
+                                                                      LightEngineValue value,
+                                                                      int emitterIndex, LocalVariableMapper variableMapper,
+                                                                      ExtraVariableManager variableManager, int usageIndex, Map<AbstractInsnNode, Integer> instructionIndexMap) {
         if (emitter instanceof VarInsnNode) {
             insnList.remove(emitter);
             if (value.isAPackedLong()) {
@@ -545,101 +709,142 @@ public class LongPosTransformer {
             } else {
                 return new InstructionFactory[] { () -> new VarInsnNode(emitter.getOpcode(), ((VarInsnNode) emitter).var) };
             }
-        } else if(emitter instanceof LdcInsnNode constantNode){
-            if(!(constantNode.cst instanceof Long)){
-                return new InstructionFactory[]{() -> new LdcInsnNode(constantNode.cst)};
+        } else if (emitter instanceof LdcInsnNode constantNode) {
+            if (!(constantNode.cst instanceof Long)) {
+                return new InstructionFactory[] { () -> new LdcInsnNode(constantNode.cst) };
             }
 
             Long cst = (Long) constantNode.cst;
 
-            if(cst != Long.MAX_VALUE){
+            if (cst != Long.MAX_VALUE) {
                 throw new IllegalStateException("Can only expand Long.MAX_VALUE");
             }
 
             insnList.remove(emitter);
 
-            return new InstructionFactory[]{
+            return new InstructionFactory[] {
                 () -> new LdcInsnNode(Integer.MAX_VALUE),
                 () -> new LdcInsnNode(Integer.MAX_VALUE),
                 () -> new LdcInsnNode(Integer.MAX_VALUE)
             };
-        } else if(emitter.getOpcode() == Opcodes.BIPUSH || emitter.getOpcode() == Opcodes.SIPUSH){
+        } else if (emitter.getOpcode() == Opcodes.BIPUSH || emitter.getOpcode() == Opcodes.SIPUSH) {
             insnList.remove(emitter);
 
             IntInsnNode intLoad = (IntInsnNode) emitter;
-            return new InstructionFactory[]{
+            return new InstructionFactory[] {
                 () -> new IntInsnNode(intLoad.getOpcode(), intLoad.operand)
             };
-        }else if(emitter.getOpcode() == Opcodes.GETSTATIC){
-            if(value.isAPackedLong()){;
+        } else if (emitter.getOpcode() == Opcodes.GETSTATIC) {
+            if (value.isAPackedLong()) {
+                ;
                 throw new IllegalStateException("This better never happen");
             }
 
             insnList.remove(emitter);
 
             FieldInsnNode fieldInsnNode = (FieldInsnNode) emitter;
-            return new InstructionFactory[]{
+            return new InstructionFactory[] {
                 () -> new FieldInsnNode(fieldInsnNode.getOpcode(), fieldInsnNode.owner, fieldInsnNode.name, fieldInsnNode.desc)
             };
-        }else if(emitter.getOpcode() >= Opcodes.ACONST_NULL && emitter.getOpcode() <= Opcodes.DCONST_1){
+        } else if (emitter.getOpcode() >= Opcodes.ACONST_NULL && emitter.getOpcode() <= Opcodes.DCONST_1) {
             insnList.remove(emitter);
 
-            return new InstructionFactory[]{
+            return new InstructionFactory[] {
                 () -> new InsnNode(emitter.getOpcode())
             };
-        }else {
+        } else if (OpcodeUtil.isArithmeticOperation(emitter.getOpcode())) {
             if (value.isAPackedLong()) {
-                testAndExpandEmitter(frames, instructions, emitter, emitterIndex, insnList, variableMapper, instructionIndexMap, variableManager);
+                throw new IllegalStateException("Arithmetic operations on packed positions are not supported!");
+            }
 
-                int firstVar = variableManager.getExtraVariable(emitterIndex, usageIndex);
-                int secondVar = variableManager.getExtraVariable(emitterIndex, usageIndex);
-                int thirdVar = variableManager.getExtraVariable(emitterIndex, usageIndex);
+            Frame<LightEngineValue> frame = frames[emitterIndex];
+            int stackSize = frame.getStackSize();
 
-                AbstractInsnNode firstStore = new VarInsnNode(Opcodes.ISTORE, firstVar);
-                AbstractInsnNode secondStore = new VarInsnNode(Opcodes.ISTORE, secondVar);
-                AbstractInsnNode thirdStore = new VarInsnNode(Opcodes.ISTORE, thirdVar);
+            LightEngineValue top = frame.getStack(stackSize - 1);
+            LightEngineValue second = frame.getStack(stackSize - 2);
 
-                insnList.insert(emitter, thirdStore);
-                insnList.insert(thirdStore, secondStore);
-                insnList.insert(secondStore, firstStore);
+            if(top.getSource().size() == 1 && second.getSource().size() == 1) {
+                //If there are multiple sources, revert to default behaviour
+                AbstractInsnNode topSource = top.getSource().iterator().next();
+                BytecodeFactory topFactory = saveEmitterResultInLocalVariable(
+                    frames, instructions, insnList, topSource,
+                    top, instructionIndexMap.get(topSource), variableMapper,
+                    variableManager, emitterIndex, instructionIndexMap
+                )[0];
 
-                return new InstructionFactory[] {
-                    () -> new VarInsnNode(Opcodes.ILOAD, firstVar),
-                    () -> new VarInsnNode(Opcodes.ILOAD, secondVar),
-                    () -> new VarInsnNode(Opcodes.ILOAD, thirdVar)
+                AbstractInsnNode secondSource = second.getSource().iterator().next();
+                BytecodeFactory secondFactory = saveEmitterResultInLocalVariable(
+                    frames, instructions, insnList, secondSource,
+                    second, instructionIndexMap.get(secondSource), variableMapper,
+                    variableManager, emitterIndex, instructionIndexMap
+                )[0];
+
+                insnList.remove(emitter);
+
+                return new BytecodeFactory[]{
+                    () -> {
+                        InsnList newInsnList = new InsnList();
+                        newInsnList.add(secondFactory.generate());
+                        newInsnList.add(topFactory.generate());
+                        newInsnList.add(new InsnNode(emitter.getOpcode()));
+                        return newInsnList;
+                    }
                 };
-            } else {
-                Type type = value.getType();
-                int storeOpcode = switch (type.getSort()) {
-                    case Type.INT, Type.SHORT, Type.CHAR, Type.BYTE -> Opcodes.ISTORE;
-                    case Type.LONG -> Opcodes.LSTORE;
-                    case Type.FLOAT -> Opcodes.FSTORE;
-                    case Type.DOUBLE -> Opcodes.DSTORE;
-                    case Type.ARRAY, Type.OBJECT -> Opcodes.ASTORE;
-                    default -> throw new IllegalStateException("Unexpected value: " + type.getSort());
-                };
-
-                int loadOpcode = switch (type.getSort()){
-                    case Type.INT, Type.SHORT, Type.CHAR, Type.BYTE -> Opcodes.ILOAD;
-                    case Type.LONG -> Opcodes.LLOAD;
-                    case Type.FLOAT -> Opcodes.FLOAD;
-                    case Type.DOUBLE -> Opcodes.DLOAD;
-                    case Type.ARRAY, Type.OBJECT -> Opcodes.ALOAD;
-                    default -> throw new IllegalStateException("Unexpected value: " + type.getSort());
-                };
-
-                int var;
-                if (type.getSize() == 2) {
-                    var = variableManager.getExtraVariableForComputationalTypeTwo(emitterIndex, usageIndex);
-                } else {
-                    var = variableManager.getExtraVariable(emitterIndex, usageIndex);
-                }
-
-                insnList.insert(emitter, new VarInsnNode(storeOpcode, var));
-
-                return new InstructionFactory[] { () -> new VarInsnNode(loadOpcode, var) };
             }
         }
+
+        if (value.isAPackedLong()) {
+            testAndExpandEmitter(frames, instructions, emitter, emitterIndex, insnList, variableMapper, instructionIndexMap, variableManager);
+
+            int firstVar = variableManager.getExtraVariable(emitterIndex, usageIndex);
+            int secondVar = variableManager.getExtraVariable(emitterIndex, usageIndex);
+            int thirdVar = variableManager.getExtraVariable(emitterIndex, usageIndex);
+
+            AbstractInsnNode firstStore = new VarInsnNode(Opcodes.ISTORE, firstVar);
+            AbstractInsnNode secondStore = new VarInsnNode(Opcodes.ISTORE, secondVar);
+            AbstractInsnNode thirdStore = new VarInsnNode(Opcodes.ISTORE, thirdVar);
+
+            insnList.insert(emitter, thirdStore);
+            insnList.insert(thirdStore, secondStore);
+            insnList.insert(secondStore, firstStore);
+
+            return new InstructionFactory[] {
+                () -> new VarInsnNode(Opcodes.ILOAD, firstVar),
+                () -> new VarInsnNode(Opcodes.ILOAD, secondVar),
+                () -> new VarInsnNode(Opcodes.ILOAD, thirdVar)
+            };
+        } else {
+            Type type = value.getType();
+            int storeOpcode = switch (type.getSort()) {
+                case Type.INT, Type.SHORT, Type.CHAR, Type.BYTE -> Opcodes.ISTORE;
+                case Type.LONG -> Opcodes.LSTORE;
+                case Type.FLOAT -> Opcodes.FSTORE;
+                case Type.DOUBLE -> Opcodes.DSTORE;
+                case Type.ARRAY, Type.OBJECT -> Opcodes.ASTORE;
+                default -> throw new IllegalStateException("Unexpected value: " + type.getSort());
+            };
+
+            int loadOpcode = switch (type.getSort()) {
+                case Type.INT, Type.SHORT, Type.CHAR, Type.BYTE -> Opcodes.ILOAD;
+                case Type.LONG -> Opcodes.LLOAD;
+                case Type.FLOAT -> Opcodes.FLOAD;
+                case Type.DOUBLE -> Opcodes.DLOAD;
+                case Type.ARRAY, Type.OBJECT -> Opcodes.ALOAD;
+                default -> throw new IllegalStateException("Unexpected value: " + type.getSort());
+            };
+
+            int var;
+            if (type.getSize() == 2) {
+                var = variableManager.getExtraVariableForComputationalTypeTwo(emitterIndex, usageIndex);
+            } else {
+                var = variableManager.getExtraVariable(emitterIndex, usageIndex);
+            }
+
+            insnList.insert(emitter, new VarInsnNode(storeOpcode, var));
+
+            return new InstructionFactory[] { () -> new VarInsnNode(loadOpcode, var) };
+        }
+
     }
 
     //Assumes that the emitter emits a packed block pos
@@ -822,5 +1027,25 @@ public class LongPosTransformer {
         loaded = true;
     }
 
+    public static final record MethodTransformationInfo(MethodNode transformed, Set<Integer> expandedLocals){
+
+    }
+
     private static final record MethodID(String owner, String name, String descriptor){ }
+
+    private enum LambdaType{
+        LONG_PREDICATE(Type.getObjectType("java/util/function/LongPredicate"), Type.getType(XYZPredicate.class), Type.getMethodType("(III)Z")),
+        LONG_CONSUMER(Type.getObjectType("java/util/function/LongConsumer"), Type.getType(XYZConsumer.class), Type.getMethodType("(III)V")),
+        ;
+
+        private final Type original;
+        private final Type int3Replacement;
+        private final Type replacementDesc;
+
+        LambdaType(Type original, Type int3Replacement, Type newDesc) {
+            this.original = original;
+            this.int3Replacement = int3Replacement;
+            this.replacementDesc = newDesc;
+        }
+    }
 }
