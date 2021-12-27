@@ -36,15 +36,16 @@ public class MixinHeightMapRenderer {
 
     @ModifyVariable(method = "render", ordinal = 0, at = @At(value = "STORE", ordinal = 0), require = 1)
     private LevelAccessor useServerHeightMaps(LevelAccessor original) {
-        if(RENDER_SERVER_HEIGHTMAPS) {
+        if (RENDER_SERVER_HEIGHTMAPS) {
             return Minecraft.getInstance().getSingleplayerServer().getLevel(Minecraft.getInstance().player.level.dimension());
         }
         return original;
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Ljava/util/Collection;iterator()Ljava/util/Iterator;"), locals = LocalCapture.CAPTURE_FAILHARD)
-    private void renderLightHeightMap(PoseStack arg0, MultiBufferSource arg1, double d, double e, double f, CallbackInfo ci, LevelAccessor levelAccessor, BlockPos blockPos, Tesselator tesselator, BufferBuilder bufferBuilder, int i, int j, ChunkAccess chunkAccess) {
-        if(!RENDER_LIGHT_HEIGHTMAP) {
+    private void renderLightHeightMap(PoseStack arg0, MultiBufferSource arg1, double d, double e, double f, CallbackInfo ci,
+                                      LevelAccessor levelAccessor, BlockPos blockPos, Tesselator tesselator, BufferBuilder bufferBuilder, int i, int j, ChunkAccess chunkAccess) {
+        if (!RENDER_LIGHT_HEIGHTMAP) {
             return;
         }
         Heightmap heightmap = ((LightHeightmapGetter) chunkAccess).getLightHeightmap();
@@ -52,14 +53,15 @@ public class MixinHeightMapRenderer {
         ChunkPos chunkPos = chunkAccess.getPos();
         Vector3f color = new Vector3f(0.8f, 1.0f, 0.0f);
 
-        for(int k = 0; k < 16; ++k) {
-            for(int l = 0; l < 16; ++l) {
+        for (int k = 0; k < 16; ++k) {
+            for (int l = 0; l < 16; ++l) {
                 int m = SectionPos.sectionToBlockCoord(chunkPos.x, k);
                 int n = SectionPos.sectionToBlockCoord(chunkPos.z, l);
 
                 double height = ((float) heightmap.getFirstAvailable(k, l) + 6 * 0.09375F);
-                float g = (float)(height - e);
-                LevelRenderer.addChainedFilledBoxVertices(bufferBuilder, (double)((float)m + 0.25F) - d, (double)g, (double)((float)n + 0.25F) - f, (double)((float)m + 0.75F) - d, (double)(g + 0.09375F), (double)((float)n + 0.75F) - f, color.x(), color.y(), color.z(), 1.0F);
+                float g = (float) (height - e);
+                LevelRenderer.addChainedFilledBoxVertices(bufferBuilder, (double) ((float) m + 0.25F) - d, g, (double) ((float) n + 0.25F) - f, (double) ((float) m + 0.75F) - d,
+                    (g + 0.09375F), (double) ((float) n + 0.75F) - f, color.x(), color.y(), color.z(), 1.0F);
             }
         }
     }
