@@ -14,7 +14,8 @@
     "mixins": [
         "common.MixinDistanceManager",
         "common.MixinMinecraftServer",
-        "common.MixinPlayerRespawnLogic"
+        "common.MixinPlayerRespawnLogic",
+        "client.MixinHeightMapRenderer"
     ],
     "client": [
         "client.MixinClientLevel",

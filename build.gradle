@@ -154,6 +154,9 @@ loom {
             "-Dcubicchunks.debug.window=false",
             "-Dcubicchunks.debug.statusrenderer=false",
             "-Dcubicchunks.debug.heightmaprenderer=false",
+            "-Dcubicchunks.debug.heightmaprenderer.server=false",
+            "-Dcubicchunks.debug.heightmaprenderer.render_lightmap=false",
+            "-Dcubicchunks.debug.heightmaprenderer.radius=2",
             "-Dcubicchunks.debug.biomes=false",
             "-ea"
     ]
