@@ -1,5 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -7,12 +9,15 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
+import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventHandler;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventSource;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
+import io.github.opencubicchunks.cubicchunks.config.ServerConfig;
+import io.github.opencubicchunks.cubicchunks.mixin.access.common.LevelStorageAccessAccess;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
+import io.github.opencubicchunks.cubicchunks.world.CubicChunksSavedData;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicFastServerTickList;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
@@ -46,9 +51,9 @@ import net.minecraft.world.level.entity.PersistentEntitySectionManager;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.ServerLevelData;
-import net.minecraft.world.level.storage.WritableLevelData;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -58,18 +63,51 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ServerLevel.class)
-public abstract class MixinServerLevel extends Level implements CubicServerLevel {
+public abstract class MixinServerLevel extends MixinLevel implements CubicServerLevel {
     @Shadow @Final private PersistentEntitySectionManager<Entity> entityManager;
 
     @Shadow @Final private ServerTickList<Fluid> liquidTicks;
 
     @Shadow @Final private ServerTickList<Block> blockTicks;
 
-    protected MixinServerLevel(WritableLevelData data, ResourceKey<Level> resourceKey, DimensionType type,
-                               Supplier<ProfilerFiller> supplier, boolean bl1, boolean bl2, long l) {
-        super(data, resourceKey, type, supplier, bl1, bl2, l);
+    @Inject(method = "<init>", at = @At(value = "INVOKE", shift=At.Shift.AFTER, target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/world/level/dimension/DimensionType;Ljava/util/function/Supplier;ZZJ)V"))
+    private void initSetCubic(MinecraftServer minecraftServer, Executor executor, LevelStorageSource.LevelStorageAccess levelStorageAccess, ServerLevelData serverLevelData,
+                          ResourceKey<Level> dimension, DimensionType dimensionType, ChunkProgressListener chunkProgressListener, ChunkGenerator chunkGenerator, boolean bl, long l,
+                          List<CustomSpawner> list, boolean bl2, CallbackInfo ci) {
+        var dataFixer = minecraftServer.getFixerUpper();
+        Path worldFolder = ((LevelStorageAccessAccess) levelStorageAccess).getLevelPath();
+        File dimensionFolder = levelStorageAccess.getDimensionPath(dimension);
+        // TODO cache config file instead of loading it every time?
+        var config = ServerConfig.getConfig(worldFolder);
+
+        if (config == null) {
+            CubicChunks.LOGGER.info("No cubic chunks config found; disabling CC for dimension " + dimension.location());
+            worldStyle = WorldStyle.CHUNK;
+        } else {
+            File file2 = new File(dimensionFolder, "data");
+            file2.mkdirs();
+            // The dimension's DimensionDataStorage isn't created at this point, so we make our own temporary one to check/create the CC data
+            var tempDataStorage = new DimensionDataStorage(file2, dataFixer);
+            var cubicChunksSavedData = tempDataStorage.get(CubicChunksSavedData::load, CubicChunksSavedData.FILE_ID);
+            if (cubicChunksSavedData != null) {
+                CubicChunks.LOGGER.info("Loaded CC world style " + cubicChunksSavedData.worldStyle.name() + " for dimension " + dimension.location());
+            } else {
+                // TODO determine default dimension world style based on world config
+                CubicChunks.LOGGER.info("CC data for dimension " + dimension.location() + " is null, generating it");
+                cubicChunksSavedData = tempDataStorage.computeIfAbsent(CubicChunksSavedData::load,
+                        () -> new CubicChunksSavedData(CubicChunks.DIMENSION_TO_WORLD_STYLE.get(dimension().location().toString())), CubicChunksSavedData.FILE_ID);
+                CubicChunks.LOGGER.info("Generated CC data. World style: " + cubicChunksSavedData.worldStyle.name());
+                cubicChunksSavedData.setDirty();
+            }
+            tempDataStorage.save();
+            worldStyle = cubicChunksSavedData.worldStyle;
+        }
+
+        isCubic = worldStyle.isCubic();
+        generates2DChunks = worldStyle.generates2DChunks();
     }
 
+    // TODO this probably shouldn't be applied for non-CC levels
     @Redirect(method = "<init>", at = @At(value = "NEW", target = "net/minecraft/world/level/ServerTickList"))
     private <T> ServerTickList<T> constructTickList(ServerLevel serverLevel, Predicate<T> predicate, Function<T, ResourceLocation> function,
                                                     Consumer<TickNextTickData<T>> consumer) {
@@ -156,7 +194,7 @@ public abstract class MixinServerLevel extends Level implements CubicServerLevel
 
                         FluidState fluidState = blockState.getFluidState();
                         if (fluidState.isRandomlyTicking()) {
-                            fluidState.randomTick(this, blockPos, this.random);
+                            fluidState.randomTick((Level)(Object)this, blockPos, this.random);
                         }
                         profilerFiller.pop();
                     }

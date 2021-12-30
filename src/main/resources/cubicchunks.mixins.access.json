@@ -24,6 +24,7 @@
         "common.IOWorkerAccess",
         "common.LayerLightSectionStorageAccess",
         "common.LevelChunkSectionAccess",
+        "common.LevelStorageAccessAccess",
         "common.Matrix4fAccess",
         "common.NaturalSpawnerAccess",
         "common.NoiseGeneratorSettingsAccess",

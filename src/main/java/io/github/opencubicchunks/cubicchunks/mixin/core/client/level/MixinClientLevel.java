@@ -2,8 +2,10 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.client.level;
 
 import java.util.function.Supplier;
 
+import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
 import io.github.opencubicchunks.cubicchunks.client.multiplayer.CubicClientLevel;
+import io.github.opencubicchunks.cubicchunks.mixin.core.common.level.MixinLevel;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
@@ -17,7 +19,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.entity.TransientEntitySectionManager;
-import net.minecraft.world.level.storage.WritableLevelData;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,13 +28,17 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientLevel.class)
-public abstract class MixinClientLevel extends Level implements CubicClientLevel {
+public abstract class MixinClientLevel extends MixinLevel implements CubicClientLevel {
 
     @Shadow @Final private TransientEntitySectionManager<Entity> entityStorage;
 
-    protected MixinClientLevel(WritableLevelData levelData, ResourceKey<Level> resourceKey, DimensionType dimensionType,
-                               Supplier<ProfilerFiller> profiler, boolean b0, boolean b1, long l) {
-        super(levelData, resourceKey, dimensionType, profiler, b0, b1, l);
+    @Inject(method = "<init>", at = @At(value = "INVOKE", shift=At.Shift.AFTER, target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/world/level/dimension/DimensionType;Ljava/util/function/Supplier;ZZJ)V"))
+    private void initSetCubic(ClientPacketListener clientPacketListener, ClientLevel.ClientLevelData clientLevelData, ResourceKey resourceKey, DimensionType dimensionType, int i,
+                              Supplier supplier, LevelRenderer levelRenderer, boolean bl, long l, CallbackInfo ci) {
+        // FIXME get world style from the server somehow
+        worldStyle = CubicChunks.DIMENSION_TO_WORLD_STYLE.get(dimension().location().toString());
+        isCubic = worldStyle.isCubic();
+        generates2DChunks = worldStyle.generates2DChunks();
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
