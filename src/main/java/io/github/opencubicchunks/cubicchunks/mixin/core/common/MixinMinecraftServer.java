@@ -6,11 +6,14 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.datafixers.DataFixer;
+import io.github.opencubicchunks.cubicchunks.config.ServerConfig;
 import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.BiomeGenerationSettingsAccess;
 import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
@@ -20,6 +23,7 @@ import io.github.opencubicchunks.cubicchunks.world.ForcedCubesSaveData;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
@@ -53,11 +57,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MinecraftServer.class)
-public abstract class MixinMinecraftServer {
-
+public abstract class MixinMinecraftServer implements CubicMinecraftServer {
     @Shadow @Final private static Logger LOGGER;
     @Shadow protected long nextTickTime;
     @Shadow @Final private Map<ResourceKey<Level>, ServerLevel> levels;
+
+    @Nullable private ServerConfig cubicChunksServerConfig;
 
     @Shadow protected abstract void waitUntilNextTick();
     @Shadow public abstract ServerLevel overworld();
@@ -68,6 +73,7 @@ public abstract class MixinMinecraftServer {
     private void injectFeatures(Thread thread, RegistryAccess.RegistryHolder registryHolder, LevelStorageSource.LevelStorageAccess levelStorageAccess, WorldData worldData,
                                 PackRepository packRepository, Proxy proxy, DataFixer dataFixer, ServerResources serverResources, MinecraftSessionService minecraftSessionService,
                                 GameProfileRepository gameProfileRepository, GameProfileCache gameProfileCache, ChunkProgressListenerFactory chunkProgressListenerFactory, CallbackInfo ci) {
+        cubicChunksServerConfig = ServerConfig.getConfig(levelStorageAccess);
 
         for (Map.Entry<ResourceKey<Biome>, Biome> entry : this.registryAccess().registry(Registry.BIOME_REGISTRY).get().entrySet()) {
             Biome biome = entry.getValue();
@@ -155,5 +161,10 @@ public abstract class MixinMinecraftServer {
         this.waitUntilNextTick();
         statusListener.stop();
         serverChunkCache.getLightEngine().setTaskPerBatch(5);
+    }
+
+    @Override
+    @Nullable public ServerConfig getServerConfig() {
+        return cubicChunksServerConfig;
     }
 }

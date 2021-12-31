@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -14,8 +13,6 @@ import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventHandler;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventSource;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
-import io.github.opencubicchunks.cubicchunks.config.ServerConfig;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.LevelStorageAccessAccess;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.CubicChunksSavedData;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
@@ -25,6 +22,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccesso
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.SurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -77,10 +75,8 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
                           ResourceKey<Level> dimension, DimensionType dimensionType, ChunkProgressListener chunkProgressListener, ChunkGenerator chunkGenerator, boolean bl, long l,
                           List<CustomSpawner> list, boolean bl2, CallbackInfo ci) {
         var dataFixer = minecraftServer.getFixerUpper();
-        Path worldFolder = ((LevelStorageAccessAccess) levelStorageAccess).getLevelPath();
         File dimensionFolder = levelStorageAccess.getDimensionPath(dimension);
-        // TODO cache config file instead of loading it every time?
-        var config = ServerConfig.getConfig(worldFolder);
+        var config = ((CubicMinecraftServer) minecraftServer).getServerConfig();
 
         if (config == null) {
             CubicChunks.LOGGER.info("No cubic chunks config found; disabling CC for dimension " + dimension.location());
@@ -94,10 +90,9 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
             if (cubicChunksSavedData != null) {
                 CubicChunks.LOGGER.info("Loaded CC world style " + cubicChunksSavedData.worldStyle.name() + " for dimension " + dimension.location());
             } else {
-                // TODO determine default dimension world style based on world config
                 CubicChunks.LOGGER.info("CC data for dimension " + dimension.location() + " is null, generating it");
                 cubicChunksSavedData = tempDataStorage.computeIfAbsent(CubicChunksSavedData::load,
-                        () -> new CubicChunksSavedData(CubicChunks.DIMENSION_TO_WORLD_STYLE.get(dimension().location().toString())), CubicChunksSavedData.FILE_ID);
+                        () -> new CubicChunksSavedData(config.getWorldStyle(dimension)), CubicChunksSavedData.FILE_ID);
                 CubicChunks.LOGGER.info("Generated CC data. World style: " + cubicChunksSavedData.worldStyle.name());
                 cubicChunksSavedData.setDirty();
             }

@@ -1,43 +1,138 @@
 package io.github.opencubicchunks.cubicchunks.config;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import com.electronwill.nightconfig.core.CommentedConfig;
+import com.electronwill.nightconfig.core.Config;
+import com.electronwill.nightconfig.core.file.FileNotFoundAction;
+import com.electronwill.nightconfig.core.io.ParsingMode;
+import com.electronwill.nightconfig.core.io.WritingMode;
+import com.electronwill.nightconfig.toml.TomlParser;
+import com.electronwill.nightconfig.toml.TomlWriter;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LevelStorageAccessAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelStorageSource;
 
-// TODO actually store config data instead of just using this as a marker
 public class ServerConfig {
     private static final String FILE_PATH = "serverconfig/cubicchunks.toml";
-    private File configPath;
 
-    private ServerConfig(File configPath) {
-        this.configPath = configPath;
+    private static final String KEY_WORLDSTYLES = "worldStyles";
+    private static final String KEY_DEFAULT_WORLD_STYLE = KEY_WORLDSTYLES + ".defaultWorldStyle";
+    private static final String KEY_CUBIC_DIMENSIONS = KEY_WORLDSTYLES + ".cubicDimensions";
+    private static final String KEY_HYBRID_DIMENSIONS = KEY_WORLDSTYLES + ".hybridDimensions";
+    private static final String KEY_CHUNK_DIMENSIONS = KEY_WORLDSTYLES + ".vanillaDimensions";
+
+    private final CubicLevelHeightAccessor.WorldStyle defaultWorldStyle;
+    // TODO should this be a Map<ResourceLocation, ...> instead?
+    private final Map<String, CubicLevelHeightAccessor.WorldStyle> overrides = new HashMap<>();
+
+    private ServerConfig(CommentedConfig config) {
+        // TODO actually give proper user feedback if this crashes due to incorrect values
+        defaultWorldStyle = worldStyleFromString(config.get(KEY_DEFAULT_WORLD_STYLE));
+
+        config.<List<String>>get(KEY_CUBIC_DIMENSIONS).forEach((s) -> overrides.put(s, CubicLevelHeightAccessor.WorldStyle.CUBIC));
+        config.<List<String>>get(KEY_HYBRID_DIMENSIONS).forEach((s) -> overrides.put(s, CubicLevelHeightAccessor.WorldStyle.HYBRID));
+        config.<List<String>>get(KEY_CHUNK_DIMENSIONS).forEach((s) -> overrides.put(s, CubicLevelHeightAccessor.WorldStyle.CHUNK));
+    }
+
+    private static CubicLevelHeightAccessor.WorldStyle worldStyleFromString(String string) {
+        if (string.equals("VANILLA")) return CubicLevelHeightAccessor.WorldStyle.CHUNK;
+        return CubicLevelHeightAccessor.WorldStyle.valueOf(string);
+    }
+
+    public CubicLevelHeightAccessor.WorldStyle getWorldStyle(ResourceKey<Level> dimension) {
+        return overrides.getOrDefault(dimension.location().toString(), defaultWorldStyle);
+    }
+
+    private static CommentedConfig createDefaultConfig() {
+        // TODO some way of setting different defaults for specific modids? e.g. for things like RFTools and Mystcraft - maybe things like "mystcraft:*"
+        Config.setInsertionOrderPreserved(true);
+        var config = CommentedConfig.inMemory();
+        config.set(KEY_DEFAULT_WORLD_STYLE, CubicLevelHeightAccessor.WorldStyle.CUBIC);
+        config.setComment(KEY_DEFAULT_WORLD_STYLE, """
+ The default world style used for dimensions that are not explicitly defined in one of the three lists below.
+ Possible values:
+     "CUBIC" - the dimension uses cubic chunks.
+     "HYBRID" - the dimension has cubic chunks enabled, but uses vanilla world generation. This may improve mod compatibility in some cases.
+     "VANILLA" - the dimension does NOT use cubic chunks; it behaves the same as in vanilla, with limited height, etc.\
+""");
+        config.set(KEY_CUBIC_DIMENSIONS, List.of());
+        config.set(KEY_HYBRID_DIMENSIONS, List.of());
+        config.set(KEY_CHUNK_DIMENSIONS, List.of(Level.END.location().toString()));
+        config.setComment(KEY_CUBIC_DIMENSIONS, """
+ Explicitly sets the world style for each dimension. Overrides the default in defaultWorldStyle.
+ Note that this only affects dimensions that have not yet been generated.
+ If you want to change the world style of an existing dimension, you will need to delete it manually to make it regenerate.
+
+ By default, the only dimension listed here is the End, which is set to Vanilla so that you don't fall forever if you fall off.\
+""");
+        return config;
     }
 
     private static File getConfigPath(Path worldFolder) {
         return new File(worldFolder.toFile(), FILE_PATH);
     }
 
-    private static ServerConfig create(Path worldFolder) throws IOException {
+    private static void createConfig(Path worldFolder) {
         File configPath = getConfigPath(worldFolder);
+        if (configPath.exists()) return;
         configPath.getParentFile().mkdirs();
-        configPath.createNewFile();
-
-        Files.write(configPath.toPath(), "# This file will store config data eventually, until then it's just used as a marker\n".getBytes());
-
-        return new ServerConfig(configPath);
+        write(configPath, createDefaultConfig());
     }
 
-    @Nullable public static ServerConfig getConfig(Path worldFolder) {
-        File configPath = getConfigPath(worldFolder);
+    private static void write(File configPath, CommentedConfig config) {
+        var writer = new TomlWriter();
+        writer.write(config, configPath, WritingMode.REPLACE);
+    }
+
+    // TODO might want this in a util class somewhere, as it might be used for other configs as well
+    //      possibly other methods as well
+    private static void updateConfig(Config target, Config newValues) {
+        for (Map.Entry<String, Object> entry : target.valueMap().entrySet()) {
+            var key = entry.getKey();
+            var value = entry.getValue();
+            var newValue = newValues.get(key);
+            if (value instanceof Config) {
+                if (newValue instanceof Config) {
+                    // Recursively update sub-configs
+                    updateConfig(((Config) value), ((Config) newValue));
+                }
+            } else {
+                // Note that this doesn't handle values having incorrect types - TODO should it?
+                if (newValue != null) {
+                    entry.setValue(newValue);
+                }
+            }
+        }
+    }
+
+    private static void read(File configPath, CommentedConfig config) {
+        var parser = new TomlParser();
+        // We parse the config separately and then merge it, so that new keys get added and unnecessary keys are discarded
+        // ParsingMode.MERGE doesn't support nested configs
+        var parsedConfig = CommentedConfig.inMemory();
+        parser.parse(configPath, parsedConfig, ParsingMode.REPLACE, FileNotFoundAction.THROW_ERROR);
+        updateConfig(config, parsedConfig);
+    }
+
+    @Nullable public static ServerConfig getConfig(LevelStorageSource.LevelStorageAccess levelStorageAccess) {
+        File configPath = getConfigPath(((LevelStorageAccessAccess) levelStorageAccess).getLevelPath());
         if (configPath.exists()) {
-            return new ServerConfig(configPath);
+            var config = createDefaultConfig();
+            read(configPath, config);
+            var serverConfig = new ServerConfig(config);
+            // Write the config again in case any keys were missing or invalid
+            write(configPath, config);
+            return serverConfig;
         }
         return null;
     }
@@ -46,12 +141,7 @@ public class ServerConfig {
         if (CubicChunks.config().common.generateNewWorldsAsCC) {
             CubicChunks.LOGGER.info("New worlds are configured to generate as CC; creating CC config file");
             var rootFolderPath = ((LevelStorageAccessAccess) levelStorageAccess).getLevelPath();
-            try {
-                ServerConfig.create(rootFolderPath);
-            } catch (IOException e) {
-                // FIXME proper error handling
-                throw new Error(e);
-            }
+            ServerConfig.createConfig(rootFolderPath);
         } else {
             CubicChunks.LOGGER.info("New worlds are configured to NOT generate as CC; no Cubic Chunks data will be created");
         }
