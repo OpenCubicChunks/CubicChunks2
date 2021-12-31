@@ -6,6 +6,7 @@ import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
 import io.github.opencubicchunks.cubicchunks.client.multiplayer.CubicClientLevel;
 import io.github.opencubicchunks.cubicchunks.mixin.core.common.level.MixinLevel;
+import io.github.opencubicchunks.cubicchunks.network.PacketCCLevelInfo;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
@@ -29,14 +30,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientLevel.class)
 public abstract class MixinClientLevel extends MixinLevel implements CubicClientLevel {
-
     @Shadow @Final private TransientEntitySectionManager<Entity> entityStorage;
 
     @Inject(method = "<init>", at = @At(value = "INVOKE", shift=At.Shift.AFTER, target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/world/level/dimension/DimensionType;Ljava/util/function/Supplier;ZZJ)V"))
     private void initSetCubic(ClientPacketListener clientPacketListener, ClientLevel.ClientLevelData clientLevelData, ResourceKey resourceKey, DimensionType dimensionType, int i,
                               Supplier supplier, LevelRenderer levelRenderer, boolean bl, long l, CallbackInfo ci) {
-        // FIXME get world style from the server somehow
-        worldStyle = CubicChunks.DIMENSION_TO_WORLD_STYLE.get(dimension().location().toString());
+        worldStyle = PacketCCLevelInfo.getQueuedWorldStyle();
+        if (worldStyle == null) {
+            CubicChunks.LOGGER.warn("No world style received from server; defaulting to vanilla world style (CHUNK)");
+            worldStyle = WorldStyle.CHUNK;
+        }
+        CubicChunks.LOGGER.info("Initializing client world with style {}", worldStyle);
         isCubic = worldStyle.isCubic();
         generates2DChunks = worldStyle.generates2DChunks();
     }

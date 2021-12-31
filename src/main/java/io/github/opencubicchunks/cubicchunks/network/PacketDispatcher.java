@@ -99,7 +99,9 @@ public class PacketDispatcher {
                 client.execute(() -> {
                     T packet = decode.apply(buf);
                     ClientLevel level = client.level;
-                    if (level != null) {
+                    // PacketCCLevelInfo is received before the ClientLevel is instantiated, so we special-case it here
+                    // TODO PacketCCLevelInfo's special casing should probably be handled in a better way
+                    if (level != null || packet instanceof PacketCCLevelInfo) {
                         try {
                             handler.accept(packet, level);
                         } catch (Throwable throwable) {

@@ -107,10 +107,12 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         generates2DChunks = worldStyle.generates2DChunks();
     }
 
-    // TODO this probably shouldn't be applied for non-CC levels
     @Redirect(method = "<init>", at = @At(value = "NEW", target = "net/minecraft/world/level/ServerTickList"))
     private <T> ServerTickList<T> constructTickList(ServerLevel serverLevel, Predicate<T> predicate, Function<T, ResourceLocation> function,
                                                     Consumer<TickNextTickData<T>> consumer) {
+        if (!((CubicLevelHeightAccessor) serverLevel).isCubic()) {
+            return new ServerTickList<>(serverLevel, predicate, function, consumer);
+        }
         return new CubicFastServerTickList<>(serverLevel, predicate, function, consumer);
     }
 
