@@ -4,7 +4,6 @@ import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
 import org.spongepowered.asm.mixin.Mixin;

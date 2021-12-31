@@ -19,7 +19,8 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(Minecraft.class)
 public class MixinMinecraft {
-    @Inject(method = "doLoadLevel", locals = LocalCapture.CAPTURE_FAILHARD, at = @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/world/level/storage/LevelStorageSource;createAccess(Ljava/lang/String;)Lnet/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess;"))
+    @Inject(method = "doLoadLevel", locals = LocalCapture.CAPTURE_FAILHARD, at = @At(value = "INVOKE_ASSIGN",
+            target = "Lnet/minecraft/world/level/storage/LevelStorageSource;createAccess(Ljava/lang/String;)Lnet/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess;"))
     private void onDoLoadLevel(String string, RegistryAccess.RegistryHolder registryHolder, Function<LevelStorageSource.LevelStorageAccess, DataPackConfig> function,
                                Function4<LevelStorageSource.LevelStorageAccess, RegistryAccess.RegistryHolder, ResourceManager, DataPackConfig, WorldData> function4, boolean bl,
                                @Coerce Object experimentalDialogType, CallbackInfo ci, LevelStorageSource.LevelStorageAccess levelStorageAccess) {

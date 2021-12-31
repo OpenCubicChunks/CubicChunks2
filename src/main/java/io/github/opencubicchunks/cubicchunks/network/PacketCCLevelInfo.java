@@ -7,10 +7,10 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
 
 public class PacketCCLevelInfo {
-    private final String worldStyle;
-
     /** The WorldStyle that will be applied to the next constructed ClientLevel */
     private static CubicLevelHeightAccessor.WorldStyle queuedWorldStyle;
+
+    private final String worldStyle;
 
     public PacketCCLevelInfo(CubicLevelHeightAccessor.WorldStyle worldStyle) {
         this.worldStyle = worldStyle.name();
@@ -24,17 +24,17 @@ public class PacketCCLevelInfo {
         buf.writeUtf(this.worldStyle);
     }
 
-    public static class Handler {
-        public static void handle(PacketCCLevelInfo packet, Level level) {
-            queuedWorldStyle = CubicLevelHeightAccessor.WorldStyle.valueOf(packet.worldStyle.toUpperCase());
-        }
-    }
-
     @Nullable
     public static CubicLevelHeightAccessor.WorldStyle getQueuedWorldStyle() {
         var style = queuedWorldStyle;
         // Clear the queued style afterwards to prevent possible issues with stale data
         queuedWorldStyle = null;
         return style;
+    }
+
+    public static class Handler {
+        public static void handle(PacketCCLevelInfo packet, Level level) {
+            queuedWorldStyle = CubicLevelHeightAccessor.WorldStyle.valueOf(packet.worldStyle.toUpperCase());
+        }
     }
 }

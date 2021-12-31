@@ -70,7 +70,9 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
 
     @Shadow @Final private ServerTickList<Block> blockTicks;
 
-    @Inject(method = "<init>", at = @At(value = "INVOKE", shift=At.Shift.AFTER, target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/world/level/dimension/DimensionType;Ljava/util/function/Supplier;ZZJ)V"))
+    @Inject(method = "<init>", at = @At(value = "INVOKE", shift = At.Shift.AFTER,
+            target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;" +
+                    "Lnet/minecraft/world/level/dimension/DimensionType;Ljava/util/function/Supplier;ZZJ)V"))
     private void initSetCubic(MinecraftServer minecraftServer, Executor executor, LevelStorageSource.LevelStorageAccess levelStorageAccess, ServerLevelData serverLevelData,
                           ResourceKey<Level> dimension, DimensionType dimensionType, ChunkProgressListener chunkProgressListener, ChunkGenerator chunkGenerator, boolean bl, long l,
                           List<CustomSpawner> list, boolean bl2, CallbackInfo ci) {
@@ -196,7 +198,7 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
 
                         FluidState fluidState = blockState.getFluidState();
                         if (fluidState.isRandomlyTicking()) {
-                            fluidState.randomTick((Level)(Object)this, blockPos, this.random);
+                            fluidState.randomTick((Level) (Object) this, blockPos, this.random);
                         }
                         profilerFiller.pop();
                     }

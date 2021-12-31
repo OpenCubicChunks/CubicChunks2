@@ -32,7 +32,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinClientLevel extends MixinLevel implements CubicClientLevel {
     @Shadow @Final private TransientEntitySectionManager<Entity> entityStorage;
 
-    @Inject(method = "<init>", at = @At(value = "INVOKE", shift=At.Shift.AFTER, target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/world/level/dimension/DimensionType;Ljava/util/function/Supplier;ZZJ)V"))
+    @Inject(method = "<init>", at = @At(value = "INVOKE", shift = At.Shift.AFTER,
+            target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;" +
+                    "Lnet/minecraft/world/level/dimension/DimensionType;Ljava/util/function/Supplier;ZZJ)V"))
     private void initSetCubic(ClientPacketListener clientPacketListener, ClientLevel.ClientLevelData clientLevelData, ResourceKey resourceKey, DimensionType dimensionType, int i,
                               Supplier supplier, LevelRenderer levelRenderer, boolean bl, long l, CallbackInfo ci) {
         worldStyle = PacketCCLevelInfo.getQueuedWorldStyle();

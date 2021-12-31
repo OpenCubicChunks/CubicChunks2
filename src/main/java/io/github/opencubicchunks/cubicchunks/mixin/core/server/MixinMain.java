@@ -1,13 +1,11 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.server;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 
 import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
-import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.config.ServerConfig;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
