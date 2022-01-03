@@ -1,59 +1,62 @@
-package io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.bytecodegen;
+package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen;
+
+import static org.objectweb.asm.Opcodes.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.MethodInfo;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.VarInsnNode;
-
-import static org.objectweb.asm.Opcodes.*;
 
 public class JSONBytecodeFactory implements BytecodeFactory{
     private static final String NAMESPACE = "intermediary";
 
     private final List<InstructionFactory> instructionGenerators = new ArrayList<>();
 
-    public JSONBytecodeFactory(JsonArray data, MappingResolver mappings){
+    public JSONBytecodeFactory(JsonArray data, MappingResolver mappings, Map<String, MethodID> methodIDMap){
         for(JsonElement element: data){
             if(element.isJsonPrimitive()){
                 instructionGenerators.add(Objects.requireNonNull(createInstructionFactoryFromName(element.getAsString())));
             }else{
-                instructionGenerators.add(Objects.requireNonNull(createInstructionFactoryFromObject(element.getAsJsonObject(), mappings)));
+                instructionGenerators.add(Objects.requireNonNull(createInstructionFactoryFromObject(element.getAsJsonObject(), mappings, methodIDMap)));
             }
         }
     }
 
-    private InstructionFactory createInstructionFactoryFromObject(JsonObject object, MappingResolver mappings) {
+    private InstructionFactory createInstructionFactoryFromObject(JsonObject object, MappingResolver mappings, Map<String, MethodID> methodIDMap) {
         String type = object.get("type").getAsString();
 
         if(type.equals("INVOKEVIRTUAL") || type.equals("INVOKESTATIC") || type.equals("INVOKESPECIAL") || type.equals("INVOKEINTERFACE")){
-            String intermediaryOwner = object.get("owner").getAsString().replace('/', '.');
-            String intermediaryName = object.get("name").getAsString();
-            String intermediaryDescriptor = object.get("descriptor").getAsString();
+            JsonElement method = object.get("method");
+            MethodID methodID = null;
 
-            String mappedOwner = mappings.mapClassName(NAMESPACE, intermediaryOwner).replace('.', '/');
-            String mappedName = mappings.mapMethodName(NAMESPACE, intermediaryOwner, intermediaryName, intermediaryDescriptor);
-            String mappedDescriptor = MethodInfo.mapDescriptor(intermediaryDescriptor, mappings);
+            if(method.isJsonPrimitive()){
+                methodID = methodIDMap.get(method.getAsString());
+            }
 
-            int opcode = switch (type){
-                case "INVOKEVIRTUAL" -> Opcodes.INVOKEVIRTUAL;
-                case "INVOKESTATIC" -> Opcodes.INVOKESTATIC;
-                case "INVOKESPECIAL" -> Opcodes.INVOKESPECIAL;
-                case "INVOKEINTERFACE" -> Opcodes.INVOKEINTERFACE;
-                default -> throw new IllegalStateException("Unexpected value: " + type);
-            };
+            if(methodID == null){
+                MethodID.CallType callType = switch (type) {
+                    case "INVOKEVIRTUAL" -> MethodID.CallType.VIRTUAL;
+                    case "INVOKESTATIC" -> MethodID.CallType.STATIC;
+                    case "INVOKESPECIAL" -> MethodID.CallType.SPECIAL;
+                    case "INVOKEINTERFACE" -> MethodID.CallType.INTERFACE;
 
-            return () -> new MethodInsnNode(opcode, mappedOwner, mappedName, mappedDescriptor);
+                    default -> throw new IllegalArgumentException("Invalid call type: " + type); //This will never be reached but the compiler gets angry if it isn't here
+                };
+                methodID = ConfigLoader.loadMethodID(method, mappings, callType);
+            }
+
+            return methodID::callNode;
         }else if(type.equals("LDC")){
             String constantType = object.get("constant_type").getAsString();
 

@@ -245,7 +245,7 @@ public class LinkedInt3HashSet implements AutoCloseable{
      *
      * @see java.util.Set#forEach(java.util.function.Consumer)
      */
-    public void forEach(Int3HashSet.XYZConsumer action) {
+    public void forEach(XYZConsumer action) {
         long tableAddr = this.tableAddr;
         if (tableAddr == 0L) { //the table isn't even allocated yet, there's nothing to iterate through...
             return;

@@ -3,29 +3,23 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.ARRAY;
 import static org.objectweb.asm.Type.OBJECT;
+import static org.objectweb.asm.Type.getMethodType;
 import static org.objectweb.asm.Type.getObjectType;
 import static org.objectweb.asm.Type.getType;
 import static org.objectweb.asm.commons.Method.getMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 
 import com.google.common.collect.Sets;
-import com.mojang.datafixers.util.Pair;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.CubicChunksSynthetic;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LongPosTransformer;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.TransformInfo;
-import io.github.opencubicchunks.cubicchunks.utils.Int3List;
-import io.github.opencubicchunks.cubicchunks.utils.XYZPredicate;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 import org.apache.logging.log4j.LogManager;
@@ -33,21 +27,18 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.MethodRemapper;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
@@ -56,13 +47,12 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
-import org.spongepowered.noise.module.modifier.Abs;
-
-import static io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.bytecodegen.functional.BytecodeGen.*;
 
 public class MainTransformer {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final boolean IS_DEV = FabricLoader.getInstance().isDevelopmentEnvironment();
+    private static final Set<String> warningsCalled = new HashSet<>();
+    private static final Config TRANSFORM_CONFIG;
 
     private static final String CC = "io/github/opencubicchunks/cubicchunks/";
 
@@ -404,696 +394,208 @@ public class MainTransformer {
     }
 
     public static void transformDynamicGraphMinFixedPoint(ClassNode targetClass) {
-        //Add the 3-int abstract methods
-        addDynamicGraphAbstractMethods(targetClass);
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, false, true);
 
-        targetClass.methods.stream().filter(m -> !m.desc.contains("()") && (m.access & ACC_FINAL) != 0).forEach(
-            //Should only target checkNeighbor and runUpdates
-            m -> {
-                m.access &= ~ACC_FINAL;
-            }
-        );
-
-        createRemoveIf(targetClass);
-
-        // Change computedLevels and queues to be of type Object, as we use different types for the 3-int light engine;
-
-        changeFieldTypeToObject(targetClass, new ClassField(
-                "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
-                "field_15784", // computedLevels
-                "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"),
-            (methodNode) -> {
-                if(isCCSynthetic(methodNode)) {
-                    return new Pair<>(getObjectType(CC + "utils/Int3UByteLinkedHashMap"), false);
-                }else{
-                    return new Pair<>(getObjectType("it/unimi/dsi/fastutil/longs/Long2ByteMap"), true);
-                }
-            }
-            );
-
-        changeFieldTypeToObject(targetClass, new ClassField(
-                "net/minecraft/class_3554", // DynamicGraphMinFixedPoint
-                "field_15785", // queues
-                "[Lit/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet;"),
-            (methodNode) -> {
-                if(isCCSynthetic(methodNode)) {
-                    return new Pair<>(getObjectType("[L" + CC + "utils/LinkedInt3HashSet;"), false);
-                }else{
-                    return new Pair<>(getObjectType("[Lit/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet;") ,false);
-                }
-            }
-        );
-
-        createFixedPoint3IntConstructor(targetClass);
-
-        //changeFixedPointComputedLevelsTo3Int(targetClass);
-        //changeFixedPointQueuesTo3Int(targetClass);
+        transformer.analyzeAllMethods();
+        transformer.makeConstructor("(III)V", makeDynGraphConstructor());
+        transformer.transformAllMethods();
     }
 
-    public static void transformSkyLightEngineSectionStorage(ClassNode targetClass) {
-        //Lmao this whole method is probably very dumb
-        ClassMethod getLightValue = remapMethod(new ClassMethod(
-           getObjectType("net/minecraft/class_3569"),
-           getMethod("int method_31931(long, boolean)")
-        ));
+    private static InsnList makeDynGraphConstructor() {
+        LabelNode l1 = new LabelNode();
+        LabelNode l2 = new LabelNode();
+        LabelNode l3 = new LabelNode();
 
-        ClassNode skyLightEngineSectionStorageMixin = loadClass(getObjectType(CC + "mixin/core/common/level/lighting/MixinSkyLightSectionStorage"));
-        MethodNode onGetLightValue = skyLightEngineSectionStorageMixin.methods.stream().filter(m -> m.name.equals("onGetLightValue")).findAny().orElse(null);
-
-        if(onGetLightValue == null) {
-            throw new RuntimeException("Could not find onGetLightValue in SkyLightEngineSectionStorageMixin");
-        }
-
-        TransformInfo info = new TransformInfo(
-            "", List.of(1)
-        );
-
-        MethodNode toInject = LongPosTransformer.modifyMethod(onGetLightValue, skyLightEngineSectionStorageMixin, info, null).transformed();
-
-        LabelNode endOfInject = new LabelNode();
-
-        MethodNode injectInto = targetClass.methods.stream().filter(
-            m -> m.name.equals(getLightValue.method.getName()) && m.desc.equals("(IIIZ)I")
-        ).findAny().orElse(null);
-
-        if(injectInto == null) {
-            throw new RuntimeException("Could not find injectInto in SkyLightEngineSectionStorageMixin");
-        }
-
-        //Remove CallbackInfoReturnable
-        Type[] args = Type.getArgumentTypes(toInject.desc);
-        Type returnType = Type.getReturnType(injectInto.desc);
-        Type[] newArgs = new Type[args.length - 1];
-        System.arraycopy(args, 0, newArgs, 0, newArgs.length);
-
-        int shiftFrom = (toInject.access & Opcodes.ACC_STATIC) == 0 ? 1 : 0;
-        for(Type arg : newArgs) {
-            shiftFrom += arg.getSize();
-        }
-
-        AbstractInsnNode node = toInject.instructions.getFirst();
-        while(node != null) {
-            if(node.getOpcode() == RETURN) {
-                if (node.getNext() != null) { //No point in doing this if the next node will be the end of inject
-                    toInject.instructions.insertBefore(node, new JumpInsnNode(GOTO, endOfInject));
-                }
-                AbstractInsnNode temp = node.getNext();
-                toInject.instructions.remove(node);
-                node = temp;
-                continue;
-            }else if(node instanceof VarInsnNode var){
-                //Removing returnable means there's a free var slot though we remove the loading of the callback returnable to make it easier
-                if(var.var == shiftFrom){
-                    //Is callback returnable
-                    AbstractInsnNode temp = node.getNext();
-                    toInject.instructions.remove(node);
-                    node = temp;
-                    continue;
-                }else if(var.var > shiftFrom){
-                    //Shift all the vars down
-                    var.var--;
-                }
-            }else if(node instanceof IincInsnNode iinc){
-                if(iinc.var > shiftFrom){
-                    //Shift all the vars down
-                    iinc.var--;
-                }
-            }else if(node instanceof FieldInsnNode field){
-                if(field.owner.equals(skyLightEngineSectionStorageMixin.name)){
-                    //Change field to new class
-                    field.owner = targetClass.name;
-                }
-            }else if(node instanceof MethodInsnNode method){
-                if(method.owner.equals(skyLightEngineSectionStorageMixin.name)){
-                    //Change method to new class
-                    method.owner = targetClass.name;
-                }else if(
-                    (
-                        method.owner.equals("org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable")
-                    ) && method.name.equals("setReturnValue")
-                ){
-                    //Because the injection is inline, we need to actually return
-                    if(returnType.getSort() != OBJECT){
-                        //Type will have been boxed so we remove the boxing step
-                        AbstractInsnNode prev = node.getPrevious();
-                        boolean removedUnboxing = false;
-                        if(prev instanceof MethodInsnNode methodCall){
-                            String owner = methodCall.owner;
-                            String name = methodCall.name;
-                            String desc = methodCall.desc;
-
-                            if(
-                                (
-                                    desc.startsWith("(I)")
-                                    || desc.startsWith("(J)")
-                                    || desc.startsWith("(F)")
-                                    || desc.startsWith("(D)")
-                                    || desc.startsWith("(S)")
-                                    || desc.startsWith("(B)")
-                                    || desc.startsWith("(C)")
-                                    || desc.startsWith("(Z)")
-                                )
-                                && name.equals("valueOf")
-                                && (
-                                    owner.equals("java/lang/Integer")
-                                    || owner.equals("java/lang/Long")
-                                    || owner.equals("java/lang/Short")
-                                    || owner.equals("java/lang/Byte")
-                                    || owner.equals("java/lang/Character")
-                                    || owner.equals("java/lang/Float")
-                                    || owner.equals("java/lang/Double")
-                                    )
-                            ){
-                                //Remove the unboxing step
-                                removedUnboxing = true;
-                                toInject.instructions.remove(prev);
-                            }
-                        }
-
-                        if(!removedUnboxing){
-                            //We need to unbox the return value
-                            String owner;
-                            String desc;
-                            switch (returnType.getSort()) {
-                                case Type.INT:
-                                    owner = "java/lang/Integer";
-                                    desc = "(I)Ljava/lang/Integer;";
-                                    break;
-                                case Type.LONG:
-                                    owner = "java/lang/Long";
-                                    desc = "(J)Ljava/lang/Long;";
-                                    break;
-                                case Type.SHORT:
-                                    owner = "java/lang/Short";
-                                    desc = "(S)Ljava/lang/Short;";
-                                    break;
-                                case Type.BYTE:
-                                    owner = "java/lang/Byte";
-                                    desc = "(B)Ljava/lang/Byte;";
-                                    break;
-                                case Type.CHAR:
-                                    owner = "java/lang/Character";
-                                    desc = "(C)Ljava/lang/Character;";
-                                    break;
-                                case Type.FLOAT:
-                                    owner = "java/lang/Float";
-                                    desc = "(F)Ljava/lang/Float;";
-                                    break;
-                                case Type.DOUBLE:
-                                    owner = "java/lang/Double";
-                                    desc = "(D)Ljava/lang/Double;";
-                                    break;
-                                case Type.BOOLEAN:
-                                    owner = "java/lang/Boolean";
-                                    desc = "(Z)Ljava/lang/Boolean;";
-                                    break;
-                                default:
-                                    throw new IllegalStateException("Unexpected return type: " + returnType);
-                            }
-
-                            //Create the unboxing step
-                            MethodInsnNode unboxing = new MethodInsnNode(
-                                Opcodes.INVOKESTATIC,
-                                owner,
-                                "valueOf",
-                                desc
-                            );
-
-                            //Insert it
-                            toInject.instructions.insert(prev, unboxing);
-                        }
-                    }
-
-                    toInject.instructions.insertBefore(node, new InsnNode(returnType.getOpcode(IRETURN)));
-                    AbstractInsnNode temp = node.getNext();
-                    toInject.instructions.remove(node);
-                    node = temp;
-                    continue;
-                }
-            }
-
-            node = node.getNext();
-        }
-
-        injectInto.instructions.insertBefore(injectInto.instructions.getFirst(), endOfInject);
-        injectInto.instructions.insertBefore(endOfInject, toInject.instructions);
+        InsnList l = new InsnList();
+        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        l.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false));
+        l.add(new VarInsnNode(Opcodes.ILOAD, 1));
+        l.add(new IntInsnNode(Opcodes.SIPUSH, 254));
+        l.add(new JumpInsnNode(Opcodes.IF_ICMPLT, l1));
+        l.add(new TypeInsnNode(Opcodes.NEW, "java/lang/IllegalArgumentException"));
+        l.add(new InsnNode(Opcodes.DUP));
+        l.add(new LdcInsnNode("Level count must be < 254."));
+        l.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/lang/IllegalArgumentException", "<init>", "(Ljava/lang/String;)V", false));
+        l.add(new InsnNode(Opcodes.ATHROW));
+        l.add(l1);
+        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        l.add(new VarInsnNode(Opcodes.ILOAD, 1));
+        l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "levelCount", "I"));
+        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        l.add(new VarInsnNode(Opcodes.ILOAD, 1));
+        l.add(new TypeInsnNode(Opcodes.ANEWARRAY, "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet"));
+        //l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "queues",
+        // "[Lio/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet;
+        // "));
+        l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "queues", "Ljava/lang/Object;"));
+        l.add(new InsnNode(Opcodes.ICONST_0));
+        l.add(new VarInsnNode(Opcodes.ISTORE, 4));
+        l.add(l3);
+        l.add(new VarInsnNode(Opcodes.ILOAD, 4));
+        l.add(new VarInsnNode(Opcodes.ILOAD, 1));
+        l.add(new JumpInsnNode(Opcodes.IF_ICMPGE, l2));
+        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        //l.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "queues",
+        // "[Lio/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet;
+        // "));
+        l.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "queues", "Ljava/lang/Object;"));
+        l.add(new TypeInsnNode(Opcodes.CHECKCAST, "[Lio/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet;"));
+        l.add(new VarInsnNode(Opcodes.ILOAD, 4));
+        l.add(new TypeInsnNode(Opcodes.NEW, "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet"));
+        l.add(new InsnNode(Opcodes.DUP));
+        l.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet", "<init>", "()V", false));
+        l.add(new InsnNode(Opcodes.AASTORE));
+        l.add(new IincInsnNode(4, 1));
+        l.add(new JumpInsnNode(Opcodes.GOTO, l3));
+        l.add(l2);
+        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        l.add(new TypeInsnNode(Opcodes.NEW, "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap"));
+        l.add(new InsnNode(Opcodes.DUP));
+        l.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap", "<init>", "()V", false));
+        //l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "computedLevels",
+        // "Lio/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap;
+        // "));
+        l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "computedLevels", "Ljava/lang/Object;"));
+        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
+        l.add(new VarInsnNode(Opcodes.ILOAD, 1));
+        l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "firstQueuedLevel", "I"));
+        l.add(new InsnNode(Opcodes.RETURN));
+        return l;
     }
 
-    private static void addDynamicGraphAbstractMethods(ClassNode targetClass) {
-        ClassMethod isSource = remapMethod(new ClassMethod(
-            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
-            getMethod("boolean method_15494(long)")
-        ));
+    public static void transformLayerLightEngine(ClassNode targetClass){
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, false, true);
 
-        ClassMethod getComputedLevel = remapMethod(new ClassMethod(
-            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
-            getMethod("int method_15486(long, long, int)")
-        ));
+        transformer.analyzeAllMethods();
+        transformer.transformAllMethods();
 
-        ClassMethod checkNeighborsAfterUpdate = remapMethod(new ClassMethod(
-            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
-            getMethod("void method_15487(long, int, boolean)")
-        ));
-
-        ClassMethod getLevel = remapMethod(new ClassMethod(
-            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
-            getMethod("int method_15480(long)")
-        ));
-
-        ClassMethod setLevel = remapMethod(new ClassMethod(
-            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
-            getMethod("void method_15485(long, int)")
-        ));
-
-        ClassMethod computeLevelFromNeighbor = remapMethod(new ClassMethod(
-            getObjectType("net/minecraft/class_3554"), // DynamicGraphMinFixedPoint
-            getMethod("int method_15488(long, long, int)")
-        ));
-
-        MethodNode isSourceNode = new MethodNode(
-            ACC_PUBLIC,
-            isSource.method.getName(),
-            "(III)Z",
-            null, null
-        );
-
-        MethodNode getComputedLevelNode = new MethodNode(
-            ACC_PUBLIC,
-            getComputedLevel.method.getName(),
-            "(IIIIIII)I",
-            null, null
-        );
-
-        MethodNode checkNeighborsAfterUpdateNode = new MethodNode(
-            ACC_PUBLIC,
-            checkNeighborsAfterUpdate.method.getName(),
-            "(IIIIZ)V",
-            null, null
-        );
-
-        MethodNode getLevelNode = new MethodNode(
-            ACC_PUBLIC,
-            getLevel.method.getName(),
-            "(III)I",
-            null, null
-        );
-
-        MethodNode setLevelNode = new MethodNode(
-            ACC_PUBLIC,
-            setLevel.method.getName(),
-            "(IIII)V",
-            null, null
-        );
-
-        MethodNode computeLevelFromNeighborNode = new MethodNode(
-            ACC_PUBLIC,
-            computeLevelFromNeighbor.method.getName(),
-            "(IIIIIII)I",
-            null, null
-        );
-
-        markCCSynthetic(isSourceNode, isSource.method.getName(), isSource.method.getDescriptor(), "REDIRECT");
-        markCCSynthetic(getComputedLevelNode, getComputedLevel.method.getName(), getComputedLevel.method.getDescriptor(), "REDIRECT");
-        markCCSynthetic(checkNeighborsAfterUpdateNode, checkNeighborsAfterUpdate.method.getName(), checkNeighborsAfterUpdate.method.getDescriptor(), "REDIRECT");
-        markCCSynthetic(getLevelNode, getLevel.method.getName(), getLevel.method.getDescriptor(), "REDIRECT");
-        markCCSynthetic(setLevelNode, setLevel.method.getName(), setLevel.method.getDescriptor(), "REDIRECT");
-        markCCSynthetic(computeLevelFromNeighborNode, computeLevelFromNeighbor.method.getName(), computeLevelFromNeighbor.method.getDescriptor(), "REDIRECT");
-
-        delegate3Int(isSourceNode, isSource, INVOKEVIRTUAL, false, 0);
-        delegate3Int(getComputedLevelNode, getComputedLevel, INVOKEVIRTUAL, false, 0, 1);
-        delegate3Int(checkNeighborsAfterUpdateNode, checkNeighborsAfterUpdate, INVOKEVIRTUAL, false, 0);
-        delegate3Int(getLevelNode, getLevel, INVOKEVIRTUAL, false, 0);
-        delegate3Int(setLevelNode, setLevel, INVOKEVIRTUAL, false, 0);
-        delegate3Int(computeLevelFromNeighborNode, computeLevelFromNeighbor, INVOKEVIRTUAL, false, 0, 1);
-
-        targetClass.methods.add(isSourceNode);
-        targetClass.methods.add(getComputedLevelNode);
-        targetClass.methods.add(checkNeighborsAfterUpdateNode);
-        targetClass.methods.add(getLevelNode);
-        targetClass.methods.add(setLevelNode);
-        targetClass.methods.add(computeLevelFromNeighborNode);
+        transformer.callMagicSuperConstructor();
     }
 
-    private static void delegate3Int(MethodVisitor newMethod, ClassMethod currMethod, int opcode, boolean isStatic, int... expandedArgs) {
-        ClassMethod blockPosAsLong = remapMethod(new ClassMethod(
-            getObjectType("net/minecraft/class_2338"), // BlockPos
-            getMethod("long method_10064(int, int, int)")
-        ));
+    public static void transformSectionPos(ClassNode targetClass){
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, false, true);
 
-        Arrays.sort(expandedArgs);
-
-        String descriptor = currMethod.method.getDescriptor();
-        Type[] args = Type.getArgumentTypes(descriptor);
-        Type returnType = Type.getReturnType(descriptor);
-
-        int[] argIndices = new int[args.length];
-        int index = isStatic ? 0 : 1;
-        for (int i = 0; i < args.length; i++) {
-            argIndices[i] = index;
-            index += args[i].getSize();
-        }
-
-        int[] shiftedIndices = new int[args.length];
-        boolean[] triple = new boolean[args.length];
-        index = isStatic ? 0 : 1;
-        int argsIndex = 0;
-        for (int i = 0; i < args.length; i++) {
-            shiftedIndices[i] = index;
-            index += args[i].getSize();
-            if(argsIndex < expandedArgs.length && expandedArgs[argsIndex] == i) {
-                triple[i] = true;
-                index++;
-                argsIndex++;
-            }
-        }
-
-        newMethod.visitCode();
-        if(!isStatic){
-            newMethod.visitVarInsn(ALOAD, 0);
-        }
-        for (int i = 0; i < args.length; i++) {
-            index = shiftedIndices[i];
-            if(triple[i]) {
-                newMethod.visitVarInsn(ILOAD, index);
-                newMethod.visitVarInsn(ILOAD, index + 1);
-                newMethod.visitVarInsn(ILOAD, index + 2);
-                newMethod.visitMethodInsn(INVOKESTATIC, blockPosAsLong.owner.getInternalName(), blockPosAsLong.method.getName(), blockPosAsLong.method.getDescriptor(), false);
-            }else{
-                newMethod.visitVarInsn(args[i].getOpcode(ILOAD), index);
-            }
-        }
-
-        newMethod.visitMethodInsn(opcode, currMethod.owner.getInternalName(), currMethod.method.getName(), currMethod.method.getDescriptor(), opcode == INVOKEINTERFACE);
-
-        if(returnType.getSort() != Type.VOID) {
-            newMethod.visitInsn(returnType.getOpcode(IRETURN));
-        }else{
-            newMethod.visitInsn(RETURN);
-        }
-    }
-
-    private static void createRemoveIf(ClassNode targetClass) {
-        Type dynGraph = remapType(Type.getObjectType("net/minecraft/class_3554")); // DynamicGraphMinFixedPoint
-
-        ClassMethod methodName = remapMethod(new ClassMethod(
-            getObjectType("net/minecraft/class_3554"),
-            new Method("method_24206", "(Ljava/util/function/LongPredicate;)V"))
-        );
-
-        ClassMethod removeFromQueue = remapMethod(
+        ClassMethod blockToSection = remapMethod(
             new ClassMethod(
-                getObjectType("net/minecraft/class_3554"),
-                new Method("method_15483", "(J)V")
+                getObjectType("net/minecraft/class_4076"),
+                new Method("method_18691", "(J)J"),
+                getObjectType("net/minecraft/class_4076")
             )
         );
 
-        ClassField computedLevels = remapField(new ClassField(
-            "net/minecraft/class_3554",
-            "field_15784",
-            "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"
-        ));
+        transformer.analyzeMethod(blockToSection.method.getName(), blockToSection.method.getDescriptor());
+        transformer.cleanUpAnalysis();
 
-        MethodNode methodVisitor = new MethodNode(ACC_PUBLIC, methodName.method.getName(), "(Lio/github/opencubicchunks/cubicchunks/utils/XYZPredicate;)V", null, null);
-        methodVisitor.visitCode();
-        Label label0 = new Label();
-        Label label1 = new Label();
-        Label label2 = new Label();
-        methodVisitor.visitTryCatchBlock(label0, label1, label2, "java/lang/Throwable");
-        Label label3 = new Label();
-        Label label4 = new Label();
-        Label label5 = new Label();
-        methodVisitor.visitTryCatchBlock(label3, label4, label5, "java/lang/Throwable");
-        Label label6 = new Label();
-        methodVisitor.visitLabel(label6);
-        methodVisitor.visitVarInsn(ALOAD, 0);
-        methodVisitor.visitFieldInsn(GETFIELD, dynGraph.getInternalName(), computedLevels.name, "Lio/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap;");
-        methodVisitor.visitVarInsn(ASTORE, 2);
-        Label label7 = new Label();
-        methodVisitor.visitLabel(label7);
-        methodVisitor.visitTypeInsn(NEW, "io/github/opencubicchunks/cubicchunks/utils/Int3List");
-        methodVisitor.visitInsn(DUP);
-        methodVisitor.visitMethodInsn(INVOKESPECIAL, "io/github/opencubicchunks/cubicchunks/utils/Int3List", "<init>", "()V", false);
-        methodVisitor.visitVarInsn(ASTORE, 3);
-        methodVisitor.visitLabel(label0);
-        methodVisitor.visitVarInsn(ALOAD, 2);
-        methodVisitor.visitVarInsn(ALOAD, 1);
-        methodVisitor.visitVarInsn(ALOAD, 3);
-        methodVisitor.visitInvokeDynamicInsn(
-            "accept",
-            "(Lio/github/opencubicchunks/cubicchunks/utils/XYZPredicate;Lio/github/opencubicchunks/cubicchunks/utils/Int3List;)Lio/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap$EntryConsumer;",
-            new Handle(
-                Opcodes.H_INVOKESTATIC,
-                "java/lang/invoke/LambdaMetafactory",
-                "metafactory",
-                "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
-                false
-            ),
-            Type.getType("(IIII)V"),
-            new Handle(
-                Opcodes.H_INVOKESTATIC,
-                CC + "mixin/transorm/MainTransformer",
-                "removeIfMethod",
-                "(Lio/github/opencubicchunks/cubicchunks/utils/XYZPredicate;Lio/github/opencubicchunks/cubicchunks/utils/Int3List;IIII)V",
-                false
-            ),
-            Type.getType("(IIII)V")
+        transformer.transformMethod(blockToSection.method.getName(), blockToSection.method.getDescriptor());
+        transformer.cleanUpTransform();
+    }
+
+    public static void defaultTransform(ClassNode targetClass){
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, false, true);
+
+        transformer.analyzeAllMethods();
+        transformer.transformAllMethods();
+    }
+
+    public static void transformLayerLightSectionStorage(ClassNode targetClass) {
+        //400% performance improvement and all the vanilla lighting bugs go away with this one simple trick
+
+        //Find setLevel
+
+        ClassMethod setLevel = remapMethod(
+            new ClassMethod(
+                getObjectType("net/minecraft/class_3560"),
+                new Method("method_15485", "(JI)V"),
+                getObjectType("net/minecraft/class_3554")
+            )
         );
-        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap", "forEach", "(Lio/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap$EntryConsumer;)V", false);
-        Label label8 = new Label();
-        methodVisitor.visitLabel(label8);
-        methodVisitor.visitVarInsn(ALOAD, 3);
-        methodVisitor.visitVarInsn(ALOAD, 0);
-        methodVisitor.visitInvokeDynamicInsn(
-            "accept",
-            "(L" + dynGraph.getInternalName() + ";)Ljava/util/function/LongConsumer;",
-            new Handle(
-                Opcodes.H_INVOKESTATIC,
-                "java/lang/invoke/LambdaMetafactory",
-                "metafactory",
-                "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
-                false
-            ),
-            Type.getType("(J)V"),
-            new Handle(
-                Opcodes.H_INVOKEVIRTUAL,
-                dynGraph.getInternalName(),
-                removeFromQueue.method.getName(),
-                "(J)V",
-                false
-            ),
-            Type.getType("(J)V"));
-        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "io/github/opencubicchunks/cubicchunks/utils/Int3List", "forEach", "(Ljava/util/function/LongConsumer;)V", false);
-        methodVisitor.visitLabel(label1);
-        methodVisitor.visitVarInsn(ALOAD, 3);
-        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "io/github/opencubicchunks/cubicchunks/utils/Int3List", "close", "()V", false);
-        Label label9 = new Label();
-        methodVisitor.visitJumpInsn(GOTO, label9);
-        methodVisitor.visitLabel(label2);
-        methodVisitor.visitVarInsn(ASTORE, 4);
-        methodVisitor.visitLabel(label3);
-        methodVisitor.visitVarInsn(ALOAD, 3);
-        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "io/github/opencubicchunks/cubicchunks/utils/Int3List", "close", "()V", false);
-        methodVisitor.visitLabel(label4);
-        Label label10 = new Label();
-        methodVisitor.visitJumpInsn(GOTO, label10);
-        methodVisitor.visitLabel(label5);
-        methodVisitor.visitVarInsn(ASTORE, 5);
-        methodVisitor.visitVarInsn(ALOAD, 4);
-        methodVisitor.visitVarInsn(ALOAD, 5);
-        methodVisitor.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Throwable", "addSuppressed", "(Ljava/lang/Throwable;)V", false);
-        methodVisitor.visitLabel(label10);
-        methodVisitor.visitVarInsn(ALOAD, 4);
-        methodVisitor.visitInsn(ATHROW);
-        methodVisitor.visitLabel(label9);
-        methodVisitor.visitInsn(RETURN);
-        Label label11 = new Label();
-        methodVisitor.visitLabel(label11);
-        methodVisitor.visitLocalVariable("list", "Lio/github/opencubicchunks/cubicchunks/utils/Int3List;", null, label0, label9, 3);
-        methodVisitor.visitLocalVariable("this", "L" + dynGraph.getInternalName() + ";", null, label6, label11, 0);
-        methodVisitor.visitLocalVariable("condition", "Lio/github/opencubicchunks/cubicchunks/utils/XYZPredicate;", null, label6, label11, 1);
-        methodVisitor.visitLocalVariable("levels", "Lio/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap;", null, label7, label11, 2);
-        methodVisitor.visitMaxs(3, 6);
-        methodVisitor.visitEnd();
 
-        markCCSynthetic(methodVisitor, methodName.method.getName(), methodName.method.getDescriptor(), "HARDCODED");
-        targetClass.methods.add(methodVisitor);
-    }
-
-    public static void removeIfMethod(XYZPredicate condition, Int3List list, int x, int y, int z, int value){
-        if(condition.test(x, y, z)){
-            list.add(x, y, z);
-        }
-    }
-
-    private static void createFixedPoint3IntConstructor(ClassNode targetClass){
-        //Get original constructor
-        MethodNode originalConstructor = targetClass.methods.stream().filter(
-            m -> m.name.equals("<init>")
-            && m.desc.equals("(III)V")
-        ).findAny().orElse(null);
-
-        if(originalConstructor == null){
-            throw new IllegalStateException("Could not find original constructor");
+        MethodNode setLevelNode = targetClass.methods.stream().filter(m -> m.name.equals(setLevel.method.getName()) && m.desc.equals(setLevel.method.getDescriptor())).findFirst().get();
+        if(setLevelNode == null){
+            throw new RuntimeException("Could not find setLevel method");
         }
 
-        //Create new constructor
-        MethodNode constructor = LongPosTransformer.copy(originalConstructor);
-        constructor.name = "<init>";
-        constructor.desc = "(IIII)V"; //The fourth int is redundant but distinguishes the constructor from the original one
+        //Find field access (sectionsAffectedByLightUpdates)
+        ClassField sectionsAffectedByLightUpdates = remapField(
+            new ClassField(
+                "net/minecraft/class_3560",
+                "field_16448",
+                "Lit/unimi/dsi/fastutil/longs/LongSet;"
+            )
+        );
 
-        int shiftFrom = 4;
-
-        AbstractInsnNode[] instructions = constructor.instructions.toArray();
-        for(int i = 0; i < instructions.length; i++){
-            AbstractInsnNode instruction = instructions[i];
-            if(instruction.getOpcode() == NEW){
-                TypeInsnNode typeInsnNode = (TypeInsnNode) instruction;
-                if(typeInsnNode.desc.endsWith("$2")){ //Kinda dodgy but it works
-                    typeInsnNode.desc = CC + "utils/Int3UByteLinkedHashMap";
-                }else if(typeInsnNode.desc.endsWith("$1")){
-                    typeInsnNode.desc = CC + "utils/LinkedInt3HashSet";
-                }
-            }else if(instruction.getOpcode() == INVOKESPECIAL){
-                MethodInsnNode methodInsnNode = (MethodInsnNode) instruction;
-                if(methodInsnNode.name.equals("<init>")){
-                    if(methodInsnNode.owner.endsWith("$2")){
-                        methodInsnNode.owner = CC + "utils/Int3UByteLinkedHashMap";
-                    }else if(methodInsnNode.owner.endsWith("$1")){
-                        methodInsnNode.owner = CC + "utils/LinkedInt3HashSet";
-                    }else{
-                        continue;
-                    }
-                    methodInsnNode.desc = "()V";
-
-                    //Remove method call arguments
-                    for (int j = 1; j <= 4; j++) {
-                        constructor.instructions.remove(instructions[i - j]);
-                    }
-                }
-            }else if(instruction.getOpcode() == ANEWARRAY){
-                TypeInsnNode typeInsnNode = (TypeInsnNode) instruction;
-                if(typeInsnNode.desc.equals("it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet")){
-                    typeInsnNode.desc = CC + "utils/LinkedInt3HashSet";
-                }
-            }else if(instruction.getOpcode() == INVOKEINTERFACE){
-                MethodInsnNode methodInsnNode = (MethodInsnNode) instruction;
-                if(methodInsnNode.name.equals("defaultReturnValue") && methodInsnNode.desc.equals("(B)V")){
-                    for (int j = 0; j <= 3; j++) {
-                        constructor.instructions.remove(instructions[i - j]);
-                    }
-                }
-            }else if(instruction instanceof VarInsnNode var){
-                if(var.var >= shiftFrom){
-                    var.var++;
-                }
-            }else if(instruction instanceof IincInsnNode iinc){
-                if(iinc.var >= shiftFrom){
-                    iinc.var++;
+        AbstractInsnNode sectionsAffectedByLightUpdatesNode = setLevelNode.instructions.getFirst();
+        while(sectionsAffectedByLightUpdatesNode != null){
+            if(sectionsAffectedByLightUpdatesNode.getOpcode() == GETFIELD){
+                FieldInsnNode fieldInsnNode = (FieldInsnNode) sectionsAffectedByLightUpdatesNode;
+                if(fieldInsnNode.owner.equals(sectionsAffectedByLightUpdates.owner.getInternalName()) && fieldInsnNode.name.equals(sectionsAffectedByLightUpdates.name)){
+                    break;
                 }
             }
+            sectionsAffectedByLightUpdatesNode = sectionsAffectedByLightUpdatesNode.getNext();
         }
 
-        //Find the super call (DynamicGraphMinFixedNode inherits from Object)
-        AbstractInsnNode insn = constructor.instructions.getFirst();
-        while (!(insn instanceof MethodInsnNode)) {
-            insn = insn.getNext();
+        //Find the LLOAD_1 instruction that comes after sectionsAffectedByLightUpdatesNode
+        AbstractInsnNode load1Node = sectionsAffectedByLightUpdatesNode.getNext();
+        while(load1Node != null && load1Node.getOpcode() != LLOAD){
+            load1Node = load1Node.getNext();
         }
 
-        InsnList check = new InsnList();
-        check.add(new VarInsnNode(ILOAD, 4));
-        check.add(new LdcInsnNode(0xDEADBEEF));
-        LabelNode ok = new LabelNode();
-        check.add(new JumpInsnNode(IF_ICMPEQ, ok));
-        check.add(new TypeInsnNode(NEW, "java/lang/IllegalArgumentException"));
-        check.add(new InsnNode(DUP));
-        check.add(new LdcInsnNode("Fourth argument to synthetic constructor must be 0xDEADBEEF"));
-        check.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/IllegalArgumentException", "<init>", "(Ljava/lang/String;)V", false));
-        check.add(new InsnNode(ATHROW));
-        check.add(ok);
+        assert ((VarInsnNode) load1Node).var == 1;
 
-        constructor.instructions.insert(insn, check);
+        //Convert to BlockPos (SectionPos.sectionToBlock(J)J)
 
-        markCCSynthetic(constructor, "<init>", "(III)V", "HARDCODED");
+        ClassMethod blockToSection = remapMethod(
+            new ClassMethod(
+                getObjectType("net/minecraft/class_4076"),
+                new Method("method_18691", "(J)J"),
+                getObjectType("net/minecraft/class_4076")
+            )
+        );
 
-        if(targetClass.methods.size() == 0){
-            targetClass.methods.add(constructor);
-        }else {
-            targetClass.methods.add(1, constructor);
-        }
-    }
+        ClassMethod blockPosOffset = remapMethod(
+            new ClassMethod(
+                getObjectType("net/minecraft/class_2338"),
+                new Method("method_10096", "(JIII)J"),
+                getObjectType("net/minecraft/class_2338")
+            )
+        );
 
-    /**
-     * Change a field's type to Object, and make all field accesses in the class cast the field to its original type.
-     *
-     * <p>Used to allow us to assign a different type to fields when replacing methods with CC equivalents,
-     * rather than adding a new field or cloning the class.</p>
-     *
-     * Note: should also only be used for non-static private fields,
-     * as static field accesses and field accesses in other classes are not updated.
-     *
-     * @param targetClass The class containing the field
-     * @param field The field to change the type of
-     */
-    private static void changeFieldTypeToObject(ClassNode targetClass, ClassField field, Function<MethodNode, Pair<Type, Boolean>> typeProvider) {
-        var objectTypeDescriptor = getObjectType("java/lang/Object").getDescriptor();
+        ClassMethod sectionPosOffset = remapMethod(
+            new ClassMethod(
+                getObjectType("net/minecraft/class_4076"),
+                new Method("method_18678", "(JIII)J"),
+                getObjectType("net/minecraft/class_4076")
+            )
+        );
 
-        var remappedField = remapField(field);
-
-        // Find the field in the class
-        var fieldNode = targetClass.fields.stream()
-                .filter(x -> remappedField.name.equals(x.name) && remappedField.desc.getDescriptor().equals(x.desc))
-                .findAny().orElseThrow(() -> new IllegalStateException("Target field " + remappedField + " not found"));
-
-        // Change its type to object
-        fieldNode.desc = objectTypeDescriptor;
-
-        Type methodOwner = field.desc;
-        while (methodOwner.getSort() == ARRAY){
-            methodOwner = methodOwner.getElementType();
-        }
-
-        // Find all usages of the field in the class (i.e. GETFIELD and PUTFIELD instructions)
-        // and update their types to object, adding a cast to the original type after all GETFIELDs
-        Type finalMethodOwner = methodOwner;
-        targetClass.methods.forEach(methodNode -> {
-            var use = typeProvider.apply(methodNode);
-            Type type = use.getFirst();
-            boolean isInterface = use.getSecond();
-
-            Type newMethodOwner = type;
-            while (newMethodOwner.getSort() == ARRAY){
-                newMethodOwner = newMethodOwner.getElementType();
-            }
-            Type finalNewMethodOwner = newMethodOwner;
-            methodNode.instructions.forEach(i -> {
-                if (i.getType() == AbstractInsnNode.FIELD_INSN) {
-                    var instruction = ((FieldInsnNode) i);
-                    if (fieldNode.name.equals(instruction.name)) {
-                        if (instruction.getOpcode() == PUTFIELD) {
-                            instruction.desc = objectTypeDescriptor;
-                        } else if (instruction.getOpcode() == GETFIELD) {
-                            instruction.desc = objectTypeDescriptor;
-                            // Cast to original type
-                            methodNode.instructions.insert(instruction, new TypeInsnNode(CHECKCAST, type.getInternalName()));
-                        }
-                    }
-                }else if(!field.desc.equals(type)) {
-                    // We change all occurrences of the old type to the new type (This could be done better with ASM analysis)
-                    if (i instanceof MethodInsnNode methodCall){
-                        if(methodCall.owner.equals(finalMethodOwner.getInternalName())){
-                            methodCall.owner = finalNewMethodOwner.getInternalName();
-
-                            methodCall.itf = isInterface;
-                            if(methodCall.getOpcode() == INVOKEINTERFACE && !isInterface){
-                                methodCall.setOpcode(INVOKEVIRTUAL);
-                            }else if(methodCall.getOpcode() == INVOKEVIRTUAL && isInterface){
-                                methodCall.setOpcode(INVOKEINTERFACE);
-                            }
-                        }
-                    }
+        AbstractInsnNode blockPosOffsetCall = load1Node;
+        while (blockPosOffsetCall != null) {
+            if(blockPosOffsetCall instanceof MethodInsnNode methodCall){
+                if(methodCall.owner.equals(blockPosOffset.owner.getInternalName()) && methodCall.name.equals(blockPosOffset.method.getName()) && methodCall.desc.equals(blockPosOffset.method.getDescriptor())){
+                    break;
                 }
-            });
-        });
+            }
+            blockPosOffsetCall = blockPosOffsetCall.getNext();
+        }
+
+        AbstractInsnNode blockToSectionCall = blockPosOffsetCall.getNext();
+        while (blockToSectionCall != null) {
+            if(blockToSectionCall instanceof MethodInsnNode methodCall){
+                if(methodCall.owner.equals(blockToSection.owner.getInternalName()) && methodCall.name.equals(blockToSection.method.getName()) && methodCall.desc.equals(blockToSection.method.getDescriptor())){
+                    break;
+                }
+            }
+            blockToSectionCall = blockToSectionCall.getNext();
+        }
+
+        MethodInsnNode sectionOffset = new MethodInsnNode(INVOKESTATIC, sectionPosOffset.owner.getInternalName(), sectionPosOffset.method.getName(), sectionPosOffset.method.getDescriptor(), false);
+
+        setLevelNode.instructions.insert(blockToSectionCall, sectionOffset);
+        setLevelNode.instructions.remove(blockToSectionCall);
+        setLevelNode.instructions.remove(blockPosOffsetCall);
+
+        defaultTransform(targetClass);
     }
 
     /**
@@ -1378,31 +880,6 @@ public class MainTransformer {
         return lambdaRedirects;
     }
 
-    public static void markCCSynthetic(MethodNode method, String name, String desc, String type) {
-        if(method.visibleAnnotations == null) {
-            method.visibleAnnotations = new ArrayList<>(1);
-        }
-
-        AnnotationNode synthetic = new AnnotationNode(Type.getDescriptor(CubicChunksSynthetic.class));
-        synthetic.visit("original", name + "#" + desc);
-        synthetic.visit("type", type);
-        method.visibleAnnotations.add(synthetic);
-    }
-
-    public static boolean isCCSynthetic(MethodNode method){
-        if(method.visibleAnnotations == null) {
-            return false;
-        }
-
-        for(AnnotationNode annotation : method.visibleAnnotations){
-            if(annotation.desc.equals(Type.getDescriptor(CubicChunksSynthetic.class))) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private static ClassNode loadClass(Type type){
         ClassNode node = new ClassNode();
 
@@ -1494,6 +971,17 @@ public class MainTransformer {
                 ", name='" + name + '\'' +
                 ", desc=" + desc +
                 '}';
+        }
+    }
+
+    static {
+        //Load config
+        try{
+            InputStream is = MainTransformer.class.getResourceAsStream("/type-transform.json");
+            TRANSFORM_CONFIG = ConfigLoader.loadConfig(is);
+            is.close();
+        }catch (IOException e){
+            throw new RuntimeException("Couldn't load transform config", e);
         }
     }
 }

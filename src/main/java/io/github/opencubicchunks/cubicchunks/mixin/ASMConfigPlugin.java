@@ -1,7 +1,10 @@
 package io.github.opencubicchunks.cubicchunks.mixin;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -9,9 +12,9 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.long2int.LongPosTransformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -103,14 +106,44 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
         MappingResolver map = FabricLoader.getInstance().getMappingResolver();
         String dynamicGraphMinFixedPoint = map.mapClassName("intermediary", "net.minecraft.class_3554");
+        String layerLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3558");
+        String layerLightSectionStorage = map.mapClassName("intermediary", "net.minecraft.class_3560");
+        String blockLightSectionStorage = map.mapClassName("intermediary", "net.minecraft.class_3547");
+        String skyLightSectionStorage = map.mapClassName("intermediary", "net.minecraft.class_3569");
+        String sectionPos = map.mapClassName("intermediary", "net.minecraft.class_4076");
+        String blockLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3552");
+        String skyLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3572");
 
-        if(LongPosTransformer.shouldModifyClass(targetClass, map)){
-            LongPosTransformer.modifyClass(targetClass);
-        }
+        Set<String> defaulted = Set.of(
+            blockLightSectionStorage,
+            skyLightSectionStorage,
+            blockLightEngine,
+            skyLightEngine
+        );
 
         if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
-            //Dynamic graph min fixed point has modifications that need to happen AFTER the long pos tranforms
             MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
+        }else if(targetClassName.equals(layerLightEngine)){
+            MainTransformer.transformLayerLightEngine(targetClass);
+        }else if(targetClassName.equals(layerLightSectionStorage)){
+            MainTransformer.transformLayerLightSectionStorage(targetClass);
+        }else if(targetClassName.equals(sectionPos)) {
+            MainTransformer.transformSectionPos(targetClass);
+        }else if(defaulted.contains(targetClassName)){
+            MainTransformer.defaultTransform(targetClass);
+        }
+
+        //Save it without computing extra stuff (like maxs) which means that if the frames are wrong and mixin fails to save it, it will be saved elsewhere
+        Path savePath = FabricLoader.getInstance().getGameDir().resolve("longpos-out").resolve(targetClassName.replace('.', '/') + ".class");
+        try {
+            Files.createDirectories(savePath.getParent());
+
+            ClassWriter writer = new ClassWriter(0);
+            targetClass.accept(writer);
+            Files.write(savePath, writer.toByteArray());
+            System.out.println("Saved " + targetClassName + " to " + savePath);
+        }catch (IOException e){
+            throw new IllegalStateException(e);
         }
     }
 }

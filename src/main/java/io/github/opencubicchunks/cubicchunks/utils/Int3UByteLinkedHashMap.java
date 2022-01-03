@@ -749,8 +749,11 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         return (int) size;
     }
 
-    public LongSet keySet(){
-        return new LongKeySet();
+    //TODO: Make this more efficient
+    public LinkedInt3HashSet keySet(){
+        LinkedInt3HashSet set = new LinkedInt3HashSet();
+        this.forEach((x, y, z, __) -> set.add(x, y, z));
+        return set;
     }
 
     protected class LongKeyIterator implements LongListIterator{
@@ -892,7 +895,7 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
     //These methods are very similar to ones defined above
     public class Int3KeySet{
         //This is the only method that ever gets called on it
-        public void forEach(Int3HashSet.XYZConsumer action){
+        public void forEach(XYZConsumer action){
             if (tableAddr == 0L //table hasn't even been allocated
                 || isEmpty()) { //no entries are present
                 return; //there's nothing to iterate over...
@@ -906,7 +909,7 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         }
     }
 
-    private void forEachKeySparse(Int3HashSet.XYZConsumer action) {
+    private void forEachKeySparse(XYZConsumer action) {
         long tableAddr = this.tableAddr;
 
         for (long bucketIndex = this.firstBucketIndex, bucketAddr = tableAddr + bucketIndex * BUCKET_BYTES;
@@ -916,13 +919,13 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         }
     }
 
-    private void forEachKeyFull(Int3HashSet.XYZConsumer action) {
+    private void forEachKeyFull(XYZConsumer action) {
         for (long bucketAddr = this.tableAddr, end = bucketAddr + this.tableSize * BUCKET_BYTES; bucketAddr != end; bucketAddr += BUCKET_BYTES) {
             this.forEachKeyInBucket(action, bucketAddr);
         }
     }
 
-    private void forEachKeyInBucket(Int3HashSet.XYZConsumer action, long bucketAddr) {
+    private void forEachKeyInBucket(XYZConsumer action, long bucketAddr) {
         //read the bucket's key and flags into registers
         int bucketX = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
         int bucketY = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);

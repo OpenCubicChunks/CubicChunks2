@@ -5,6 +5,7 @@ import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.lighting.BlockLightEngine;
+import net.minecraft.world.level.lighting.BlockLightSectionStorage;
 import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
 import net.minecraft.world.level.lighting.LayerLightEngine;
 import net.minecraft.world.level.lighting.LayerLightSectionStorage;
@@ -25,7 +26,8 @@ import org.spongepowered.asm.mixin.Mixin;
     LayerLightEngine.class,
     SectionPos.class,
     LayerLightSectionStorage.class,
-    SkyLightSectionStorage.class
+    SkyLightSectionStorage.class,
+    BlockLightSectionStorage.class
 })
 public class MixinAsmTarget {
     // intentionally empty

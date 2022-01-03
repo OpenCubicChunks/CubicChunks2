@@ -424,14 +424,6 @@ public class Int3HashSet implements AutoCloseable {
         this.close();
     }
 
-    /**
-     * A function which accepts three {@code int}s as parameters.
-     */
-    @FunctionalInterface
-    public interface XYZConsumer {
-        void accept(int x, int y, int z);
-    }
-
     //These methods probably won't be used by any CC code but should help ensure some compatibility with other mods and vanilla code
 
     public boolean add(long l){
