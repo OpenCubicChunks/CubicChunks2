@@ -224,6 +224,7 @@ public class TransformTrackingValue implements Value {
 
         Set<TransformTrackingValue> newValues = new HashSet<>(mergedFrom);
         newValues.addAll(mergedTo);
+        newValues.add(this);
 
         while(!newValues.isEmpty()){
             Set<TransformTrackingValue> nextValues = new HashSet<>();
@@ -232,8 +233,32 @@ public class TransformTrackingValue implements Value {
                 nextValues.addAll(value.mergedFrom);
                 nextValues.addAll(value.mergedTo);
             }
+            nextValues.removeAll(relatedValues);
+            nextValues.removeAll(newValues);
             newValues = nextValues;
         }
+
+        return relatedValues;
+    }
+
+    public Set<TransformTrackingValue> getFurthestAncestors(){
+        Set<TransformTrackingValue> relatedValues = new HashSet<>();
+
+        Set<TransformTrackingValue> newValues = new HashSet<>(mergedFrom);
+        newValues.add(this);
+
+        while(!newValues.isEmpty()){
+            Set<TransformTrackingValue> nextValues = new HashSet<>();
+            for(TransformTrackingValue value : newValues){
+                relatedValues.add(value);
+                nextValues.addAll(value.mergedFrom);
+            }
+            nextValues.removeAll(relatedValues);
+            nextValues.removeAll(newValues);
+            newValues = nextValues;
+        }
+
+        relatedValues.removeIf(value -> !value.mergedFrom.isEmpty());
 
         return relatedValues;
     }

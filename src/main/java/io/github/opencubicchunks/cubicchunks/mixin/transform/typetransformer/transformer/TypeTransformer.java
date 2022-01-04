@@ -11,7 +11,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -452,12 +454,12 @@ public class TypeTransformer {
                         Set<AbstractInsnNode> allPossibleSources = relatedValues.stream().map(TransformTrackingValue::getSource).reduce(new HashSet<>(), (a, b) -> {
                             a.addAll(b);
                             return a;
-                        });
+                        }).stream().map(context::getActual).collect(Collectors.toSet());
 
                         Set<AbstractInsnNode> allPossibleConsumers = relatedValues.stream().map(TransformTrackingValue::getConsumers).reduce(new HashSet<>(), (a, b) -> {
                             a.addAll(b);
                             return a;
-                        });
+                        }).stream().map(context::getActual).collect(Collectors.toSet());
 
                         //Just a debug check
                         if(!allPossibleSources.contains(instruction)){
@@ -521,20 +523,110 @@ public class TypeTransformer {
     private void generateEmitter(TransformContext context, Map<AbstractInsnNode, int[][]> tempVariables, int index) {
         AbstractInsnNode instruction = context.instructions[index];
         Frame<TransformTrackingValue> frame = context.analysisResults.frames()[index];
+        Frame<TransformTrackingValue> nextFrame = context.analysisResults.frames()[index + 1];
 
         int[][] saveSlots = tempVariables.get(instruction);
 
-        int numValuesToSave = ASMUtil.numValuesReturned(frame, instruction);
+        int numValuesToSave = ASMUtil.numValuesReturned(nextFrame, instruction);
         
         TransformTrackingValue[] valuesToSave = new TransformTrackingValue[numValuesToSave];
         for(int i = 0; i < numValuesToSave; i++){
-            valuesToSave[i] = frame.getStack(frame.getStackSize() - numValuesToSave + i);
+            valuesToSave[i] = nextFrame.getStack(nextFrame.getStackSize() - numValuesToSave + i);
         }
 
         if(numValuesToSave > 1){
             //We save them all into local variables to make our lives easier
+            InsnList store = new InsnList();
+            BytecodeFactory[][] syntheticEmitters = new BytecodeFactory[numValuesToSave][];
+
             for(int i = 0; i < numValuesToSave; i++){
                 Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[i], saveSlots == null ? null : saveSlots[i]);
+                store.add(storeAndLoad.getFirst().generate());
+                syntheticEmitters[i] = storeAndLoad.getSecond();
+            }
+
+            //Insert the store
+            context.target.instructions.insert(instruction, store);
+
+            context.syntheticEmitters[index] = syntheticEmitters;
+        }else{
+            if(saveSlots != null && saveSlots[0] != null){
+                //We NEED to save the value into a local variable
+                Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[0], saveSlots[0]);
+                context.target.instructions.insert(instruction, storeAndLoad.getFirst().generate());
+                context.syntheticEmitters[index] = new BytecodeFactory[][]{
+                    storeAndLoad.getSecond()
+                };
+            }else {
+                boolean useDefault = true;
+                context.syntheticEmitters[index] = new BytecodeFactory[1][];
+
+                if (instruction instanceof VarInsnNode varNode) {
+                    //Will be a load
+                    int slot = varNode.var;
+                    //Check that the value is in the slot at every point that we would need it
+                    boolean canUseVar = true;
+
+                    TransformTrackingValue varValue = frame.getLocal(slot); //The actual value in the slot does not have the same identity as the one on the stack in the next frame
+
+                    for(AbstractInsnNode consumer: valuesToSave[0].getConsumers()){
+                        int insnIndex = context.indexLookup().get(consumer);
+                        Frame<TransformTrackingValue> consumerFrame = context.analysisResults.frames()[insnIndex];
+                        if(consumerFrame.getLocal(slot) != varValue){
+                            canUseVar = false;
+                            break;
+                        }
+                    }
+
+                    if(canUseVar){
+                        useDefault = false;
+                        int newSlot = context.varLookup[index][slot];
+
+                        List<Type> transformTypes = valuesToSave[0].transformedTypes();
+
+                        BytecodeFactory[] loads = new BytecodeFactory[transformTypes.size()];
+                        for(int i = 0; i < loads.length; i++){
+                            int finalI = i;
+                            int finalSlot = newSlot;
+                            loads[i] = () -> {
+                                InsnList list = new InsnList();
+                                list.add(new VarInsnNode(transformTypes.get(finalI).getOpcode(Opcodes.ILOAD), finalSlot));
+                                return list;
+                            };
+                            newSlot += transformTypes.get(i).getSize();
+                        }
+
+                        context.syntheticEmitters[index][0] = loads;
+
+                        //Remove the original load
+                        context.target.instructions.remove(instruction);
+                    }
+                }else if(ASMUtil.isConstant(instruction)){
+                    useDefault = false;
+
+                    //If it is a constant we can just copy it
+                    Object constant = ASMUtil.getConstant(instruction);
+
+                    context.target.instructions.remove(instruction);
+
+                    //Still need to expand it
+                    if(valuesToSave[0].getTransformType() != null && valuesToSave[0].getTransform().getSubtype() == TransformSubtype.SubType.NONE) {
+                        BytecodeFactory[] expansion = valuesToSave[0].getTransformType().getConstantReplacements().get(constant);
+                        if(expansion == null){
+                            throw new IllegalStateException("No expansion for constant " + constant + " of type " + valuesToSave[0].getTransformType());
+                        }
+                        context.syntheticEmitters[index][0] = expansion;
+                    }else{
+                        context.syntheticEmitters[index][0] = new BytecodeFactory[]{new ConstantFactory(constant)};
+                    }
+                }
+
+                if(useDefault){
+                    //We need to save the value into a local variable
+                    Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[0], null);
+                    context.target.instructions.insert(instruction, storeAndLoad.getFirst().generate());
+                    context.syntheticEmitters[index][0] = storeAndLoad.getSecond();
+                }
             }
         }
     }
@@ -1340,157 +1432,6 @@ public class TypeTransformer {
         }
     }
 
-    //This won't work if the value has multiple sources which emit multiple values
-    /**
-     * Removes the emitter from code and creates a new one that can be used multiple times
-     * This still has some issues with DUP instructions but the basis is that they are removed and the values are stored in variables
-     * @param context The transform context
-     * @param arg The value to remove
-     * @return A generator for each component of the emitter
-     */
-    private BytecodeFactory[] generateEmitter(TransformContext context, TransformTrackingValue arg) {
-        BytecodeFactory[][] ret;
-
-        if(arg.getSource().size() > 1){
-            //If there are multiple sources for this value, it is simpler to just make them all store their values in a single variable
-            ret = new BytecodeFactory[][]{
-                saveInVar(context, arg)
-            };
-        }else{
-            //Get the single source
-            AbstractInsnNode source = arg.getSource().iterator().next();
-            int index = context.indexLookup().get(source);
-            AbstractInsnNode actualSource = context.instructions()[index];
-
-            if(source instanceof VarInsnNode varLoad){
-                //If it is a variable load, we can just copy it
-                //We still have to expand the var load
-                //TODO: This code is basically a duplicate of the code in the modifyCode that expands variable loads
-                List<Type> transformedTypes = arg.getTransform().transformedTypes(arg.getType());
-                ret = new BytecodeFactory[1][transformedTypes.size()];
-                int varIndex = context.varLookup()[index][varLoad.var];
-                context.target.instructions.remove(actualSource);
-                for(int i = 0; i < transformedTypes.size(); i++){
-                    int finalI = i;
-                    int finalVarIndex = varIndex;
-                    ret[0][i] = () -> {
-                        InsnList instructions = new InsnList();
-                        instructions.add(new VarInsnNode(transformedTypes.get(finalI).getOpcode(Opcodes.ILOAD), finalVarIndex));
-                        return instructions;
-                    };
-                    varIndex += transformedTypes.get(finalI).getSize();
-                }
-            }else if(ASMUtil.isConstant(actualSource)) {
-                //If it is a constant, we can just copy it
-                Object constant = ASMUtil.getConstant(actualSource);
-
-                context.target().instructions.remove(actualSource);
-
-                //Still need to expand it
-                if(arg.getTransformType() != null & arg.getTransform().getSubtype() == TransformSubtype.SubType.NONE){
-                    ret = new BytecodeFactory[][]{
-                        arg.getTransformType().getConstantReplacements().get(constant)
-                    };
-                    if(ret == null){
-                        throw new IllegalStateException("No constant replacement found for " + constant);
-                    }
-                }else{
-                    ret = new BytecodeFactory[1][1];
-                    ret[0][0] = new ConstantFactory(constant);
-                }
-            }else{
-                //Otherwise, we just save it in a variable
-                //TODO: Other operations can be copied without needing a variable. Mainly arithmetic operations
-                ret = new BytecodeFactory[][]{
-
-                }
-            }
-        }
-
-        //Store the synthetic emitters
-        for(AbstractInsnNode source: arg.getSource()){
-            int index = context.indexLookup().get(source);
-            context.syntheticEmitters()[index] = ret;
-        }
-
-        return ret;
-    }
-
-    /**
-     * Saves a value in a variable. This is done by adding a STORE instruction right after it is created
-     * @param context The transform context
-     * @param arg The value to save
-     * @return A generator for each component of the emitter (will all be variable loads)
-     */
-    private BytecodeFactory[] saveInVar(TransformContext context, TransformTrackingValue arg) {
-        //Store in var
-        //Step one: Find the range of instructions where it is needed
-        int minIndex = Integer.MAX_VALUE;
-        int maxIndex = Integer.MIN_VALUE;
-
-        for(AbstractInsnNode source: arg.getSource()){
-            int index = context.indexLookup().get(source);
-            if(index < minIndex){
-                minIndex = index;
-            }
-        }
-
-        for(AbstractInsnNode source: arg.getConsumers()){
-            int index = context.indexLookup().get(source);
-            if(index > maxIndex){
-                maxIndex = index;
-            }
-        }
-
-        //Step two: Generate the new variable indices
-        Type[] types;
-        if(arg.getTransformType() == null){
-            types = new Type[]{arg.getType()};
-        }else{
-            types = arg.transformedTypes().toArray(new Type[0]);
-        }
-
-        int[] vars = new int[types.length];
-
-        for(int i = 0; i < vars.length; i++){
-            vars[i] = context.variableManager.allocate(minIndex, maxIndex, types[i]);
-        }
-
-        //Step three: Store the results
-        for(AbstractInsnNode source: arg.getSource()){
-            InsnList newInstructions = new InsnList();
-            for (int i = vars.length - 1; i >= 0; i--) {
-                newInstructions.add(new VarInsnNode(types[i].getOpcode(Opcodes.ISTORE), vars[i]));
-            }
-            AbstractInsnNode actualSource = context.getActual(source);
-
-            context.target().instructions.insert(actualSource, newInstructions);
-
-            if(actualSource.getOpcode() == Opcodes.DUP){
-                //We just store the single value
-                for(int i = 0; i < vars.length; i++) {
-                    //Although we remove vars.length values there is currently no code that makes DUP instructions duplicate transformed values
-                    //TODO: Do the above
-                    context.target().instructions.insert(actualSource, new InsnNode(Opcodes.POP));
-                }
-                //Now there is only the single value on the stack
-            }
-        }
-
-        //Step four: Load the results
-        BytecodeFactory[] emitters = new BytecodeFactory[vars.length];
-        for(int i = 0; i < vars.length; i++){
-            int finalI = i;
-            emitters[i] = () -> {
-                InsnList newInstructions = new InsnList();
-                newInstructions.add(new VarInsnNode(types[finalI].getOpcode(Opcodes.ILOAD), vars[finalI]));
-                return newInstructions;
-            };
-        }
-
-        return emitters;
-    }
-
     /**
      * Modifies the variable and parameter tables (if they exist) to make it easier to read the generated code when decompiled
      * @param methodNode The method to modify
@@ -2198,14 +2139,17 @@ public class TypeTransformer {
             BytecodeFactory[][] emitters = syntheticEmitters[index];
             Frame<TransformTrackingValue> frame = analysisResults.frames()[index + 1];
 
+            Set<TransformTrackingValue> lookingFor = value.getFurthestAncestors();
+
             int i = 0;
             for(; i < frame.getStackSize(); i++){
-                if(frame.getStack(frame.getStackSize() - 1 - i).equals(value)){
+                if(lookingFor.contains(frame.getStack(frame.getStackSize() - 1 - i))){
                     break;
                 }
             }
 
             if(i == frame.getStackSize()){
+                value.getFurthestAncestors();
                 throw new RuntimeException("Could not find value in frame");
             }
 
