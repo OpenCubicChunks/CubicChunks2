@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
-import java.util.function.Supplier;
+import java.util.Random;
 
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
@@ -13,8 +13,8 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.chunk.ChunkStatus;
-import net.minecraft.world.level.dimension.DimensionType;
-import net.minecraft.world.level.storage.WritableLevelData;
+import net.minecraft.world.level.chunk.LevelChunk;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -25,19 +25,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Level.class)
 public abstract class MixinLevel implements CubicLevelAccessor, LevelReader {
 
-    private boolean isCubic;
-    private boolean generates2DChunks;
-    private WorldStyle worldStyle;
+    @Final @Shadow public Random random;
+    protected boolean isCubic;
+    protected boolean generates2DChunks;
+    protected WorldStyle worldStyle;
 
     @Shadow public abstract ResourceKey<Level> dimension();
-
-    @Inject(method = "<init>", at = @At("RETURN"))
-    private void setCubic(WritableLevelData writableLevelData, ResourceKey<Level> resourceKey, DimensionType dimensionType, Supplier<ProfilerFiller> supplier, boolean bl, boolean bl2,
-                          long l, CallbackInfo ci) {
-        worldStyle = CubicChunks.DIMENSION_TO_WORLD_STYLE.get(dimension().location().toString());
-        isCubic = worldStyle.isCubic();
-        generates2DChunks = worldStyle.generates2DChunks();
-    }
 
     @Override public int getHeight() {
         if (!isCubic()) {
@@ -111,4 +104,12 @@ public abstract class MixinLevel implements CubicLevelAccessor, LevelReader {
             return cube;
         }
     }
+
+    @Shadow public abstract boolean isInWorldBounds(BlockPos pos);
+
+    @Shadow public abstract ProfilerFiller getProfiler();
+
+    @Shadow public abstract LevelChunk getChunk(int x, int z);
+
+    @Shadow public abstract BlockPos getBlockRandomPos(int x, int i, int z, int i1);
 }

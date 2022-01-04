@@ -66,6 +66,8 @@
         "client.level.MixinClientChunkCache",
         "client.level.MixinClientLevel",
         "client.MixinClientPacketListener",
+        "client.MixinCreateWorldScreen",
+        "client.MixinMinecraft",
         "client.MixinOptions",
         "client.MixinVideoSettingsScreen",
         "client.progress.MixinLevelLoadingScreen",
@@ -79,6 +81,7 @@
         "client.server.MixinIntegratedServer"
     ],
     "server": [
-        "server.chunk.MixinLevelChunk"
+        "server.chunk.MixinLevelChunk",
+        "server.MixinMain"
     ]
 }

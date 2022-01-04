@@ -1,11 +1,15 @@
 package io.github.opencubicchunks.cubicchunks.network;
 
+import javax.annotation.Nullable;
+
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
 
-//TODO: Find an earlier point to call this packet, preferably right after client world construction.
 public class PacketCCLevelInfo {
+    /** The WorldStyle that will be applied to the next constructed ClientLevel */
+    private static CubicLevelHeightAccessor.WorldStyle queuedWorldStyle;
+
     private final String worldStyle;
 
     public PacketCCLevelInfo(CubicLevelHeightAccessor.WorldStyle worldStyle) {
@@ -20,9 +24,17 @@ public class PacketCCLevelInfo {
         buf.writeUtf(this.worldStyle);
     }
 
+    @Nullable
+    public static CubicLevelHeightAccessor.WorldStyle getQueuedWorldStyle() {
+        var style = queuedWorldStyle;
+        // Clear the queued style afterwards to prevent possible issues with stale data
+        queuedWorldStyle = null;
+        return style;
+    }
+
     public static class Handler {
         public static void handle(PacketCCLevelInfo packet, Level level) {
-            ((CubicLevelHeightAccessor) level).setWorldStyle(CubicLevelHeightAccessor.WorldStyle.valueOf(packet.worldStyle.toUpperCase()));
+            queuedWorldStyle = CubicLevelHeightAccessor.WorldStyle.valueOf(packet.worldStyle.toUpperCase());
         }
     }
 }

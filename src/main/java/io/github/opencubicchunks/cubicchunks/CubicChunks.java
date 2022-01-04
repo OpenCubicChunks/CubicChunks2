@@ -82,13 +82,18 @@ public class CubicChunks implements ModInitializer {
 
     //TODO: Implement a file for this.
     public static class Config {
-        public Client client = new Client();
+        public ClientConfig client = new ClientConfig();
+        public CommonConfig common = new CommonConfig();
 
         public void markDirty() {
         }
 
-        public static class Client {
+        public static class ClientConfig {
             public int verticalViewDistance = 8;
+        }
+
+        public static class CommonConfig {
+            public boolean generateNewWorldsAsCC = true;
         }
     }
 }
