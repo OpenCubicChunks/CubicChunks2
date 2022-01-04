@@ -13,6 +13,7 @@ import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventHandler;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventSource;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
+import io.github.opencubicchunks.cubicchunks.levelgen.CubicNoiseBasedChunkGenerator;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.CubicChunksSavedData;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
@@ -47,6 +48,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.entity.PersistentEntitySectionManager;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.storage.DimensionDataStorage;
@@ -102,6 +104,10 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
 
         isCubic = worldStyle.isCubic();
         generates2DChunks = worldStyle.generates2DChunks();
+
+        if (isCubic && (chunkGenerator instanceof NoiseBasedChunkGenerator)) {
+            ((CubicNoiseBasedChunkGenerator) chunkGenerator).setCubic();
+        }
     }
 
     @Redirect(method = "<init>", at = @At(value = "NEW", target = "net/minecraft/world/level/ServerTickList"))

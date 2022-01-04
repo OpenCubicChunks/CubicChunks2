@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
+import io.github.opencubicchunks.cubicchunks.levelgen.CubicNoiseBasedChunkGenerator;
 import io.github.opencubicchunks.cubicchunks.levelgen.aquifer.AquiferSourceSampler;
 import io.github.opencubicchunks.cubicchunks.levelgen.aquifer.CubicAquifer;
 import io.github.opencubicchunks.cubicchunks.levelgen.util.NonAtomicWorldgenRandom;
@@ -38,7 +39,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(NoiseBasedChunkGenerator.class)
-public abstract class MixinNoiseBasedChunkGenerator {
+public abstract class MixinNoiseBasedChunkGenerator implements CubicNoiseBasedChunkGenerator {
     @Mutable @Shadow @Final protected Supplier<NoiseGeneratorSettings> settings;
 
     @Shadow @Final protected BlockState defaultFluid;
@@ -46,6 +47,8 @@ public abstract class MixinNoiseBasedChunkGenerator {
     @Mutable @Shadow @Final int cellCountY;
 
     private AquiferSourceSampler aquiferSourceSampler;
+
+    private boolean isCubic = false;
 
     @Shadow @Final private int cellHeight;
 
@@ -56,6 +59,7 @@ public abstract class MixinNoiseBasedChunkGenerator {
     @Shadow @Final private NormalNoise lavaNoise;
 
     @Shadow public abstract int getSeaLevel();
+
 
     @Inject(method = "<init>(Lnet/minecraft/world/level/biome/BiomeSource;Lnet/minecraft/world/level/biome/BiomeSource;JLjava/util/function/Supplier;)V", at = @At("RETURN"))
     private void init(BiomeSource biomeSource, BiomeSource biomeSource2, long l, Supplier<NoiseGeneratorSettings> supplier, CallbackInfo ci) {
@@ -162,7 +166,7 @@ public abstract class MixinNoiseBasedChunkGenerator {
 
     @Inject(method = "getAquifer", at = @At("HEAD"), cancellable = true)
     private void createNoiseAquifer(int minY, int sizeY, ChunkPos chunkPos, CallbackInfoReturnable<Aquifer> cir) {
-        if (!this.settings.get().noiseSettings().islandNoiseOverride()) {
+        if (this.isCubic && !this.settings.get().noiseSettings().islandNoiseOverride()) {
             cir.setReturnValue(new CubicAquifer(chunkPos, this.barrierNoise, this.aquiferSourceSampler, minY * cellHeight, this.defaultFluid));
         }
     }
@@ -170,5 +174,9 @@ public abstract class MixinNoiseBasedChunkGenerator {
     @Redirect(method = "createAquifer", at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(II)I"))
     private int alwaysUseChunkMinY(int a, int b, ChunkAccess chunk) {
         return ((CubicLevelHeightAccessor) chunk).isCubic() ? chunk.getMinBuildHeight() : Math.max(a, b);
+    }
+
+    public void setCubic() {
+        this.isCubic = true;
     }
 }
