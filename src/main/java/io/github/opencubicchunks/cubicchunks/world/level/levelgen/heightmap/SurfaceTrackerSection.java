@@ -148,6 +148,22 @@ public class SurfaceTrackerSection {
         }
     }
 
+    public void markAllDirtyAndTreeIfRequired() {
+        assert dirtyPositions.length == 4;
+
+        dirtyPositions[0] = -1;
+        dirtyPositions[1] = -1;
+        dirtyPositions[2] = -1;
+        dirtyPositions[3] = -1;
+
+        for (int z = 0; z < WIDTH_BLOCKS; z++) {
+            for (int x = 0; x < WIDTH_BLOCKS; x++) {
+                // here we mark the tree dirty if their positions are below the top block of this cube
+                this.markTreeDirtyIfRequired(x, z, relToAbsY(CubeAccess.DIAMETER_IN_SECTIONS - 1, this.scaledY, this.scale) + 1);
+            }
+        }
+    }
+
     /** Returns if any position in the SurfaceTrackerSection is dirty*/
     public boolean isAnyDirty() {
         assert dirtyPositions.length == 4;

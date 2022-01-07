@@ -322,24 +322,19 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
      * Lazily initializes new SurfaceTrackerSections.
      */
     private SurfaceTrackerSection[] getHeightmapSections(Heightmap.Types type) {
-
-        SurfaceTrackerSection[] surfaceTrackerSections = heightmaps.get(type);
-
-        if (surfaceTrackerSections == null) {
-            surfaceTrackerSections = new SurfaceTrackerSection[CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS];
+        return heightmaps.computeIfAbsent(type, t -> {
+            SurfaceTrackerSection[] surfaceTrackerSections = new SurfaceTrackerSection[CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS];
 
             for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {
                 for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
                     int idx = dx + dz * CubeAccess.DIAMETER_IN_SECTIONS;
                     surfaceTrackerSections[idx] = new SurfaceTrackerSection(0, cubePos.getY(), null, this, (byte) type.ordinal());
                     surfaceTrackerSections[idx].loadCube(dx, dz, this);
+                    surfaceTrackerSections[idx].markAllDirtyAndTreeIfRequired();
                 }
             }
-
-            heightmaps.put(type, surfaceTrackerSections);
-        }
-
-        return surfaceTrackerSections;
+            return surfaceTrackerSections;
+        });
     }
 
     @Override public void setFeatureBlocks(BlockPos pos, BlockState state) {
