@@ -1,7 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap;
 
-import java.util.Arrays;
-
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
@@ -10,7 +8,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
@@ -21,11 +18,24 @@ public class LightSurfaceTrackerSection extends SurfaceTrackerSection {
 
     public LightSurfaceTrackerSection(int scale, int scaledY, SurfaceTrackerSection parent) {
         // type shouldn't actually matter here
-        super(scale, scaledY, parent, Heightmap.Types.WORLD_SURFACE);
+        super(scale, scaledY, parent, (byte) -1);
     }
 
     public LightSurfaceTrackerSection(int scale, int scaledY, SurfaceTrackerSection parent, CubeAccess cube) {
-        super(scale, scaledY, parent, cube, Heightmap.Types.WORLD_SURFACE);
+        super(scale, scaledY, parent, cube, (byte) -1);
+    }
+
+    protected LightSurfaceTrackerSection createNewChild(int newScale, int newScaledY, CubeAccess cube) {
+        if (newScale == 0) {
+            return new LightSurfaceTrackerSection(newScale, newScaledY, this, cube);
+        } else {
+            return new LightSurfaceTrackerSection(newScale, newScaledY, this);
+        }
+    }
+
+    @Override
+    protected void loadHeightmapSection(CubeAccess cube, int localSectionX, int localSectionZ) {
+        cube.setLightHeightmapSection(this, localSectionX, localSectionZ);
     }
 
     private LightSurfaceTrackerSection getRoot() {
@@ -37,19 +47,6 @@ public class LightSurfaceTrackerSection extends SurfaceTrackerSection {
     }
 
     @Nullable
-    @Override
-    protected SurfaceTrackerSection loadNode(int newScaledY, int sectionScale, CubeAccess newCube, boolean create) {
-        // TODO: loading from disk
-        if (!create) {
-            return null;
-        }
-        if (sectionScale == 0) {
-            return new LightSurfaceTrackerSection(sectionScale, newScaledY, this, newCube);
-        }
-        return new LightSurfaceTrackerSection(sectionScale, newScaledY, this);
-    }
-
-    @Nullable
     private LightSurfaceTrackerSection getSectionAbove() {
         if (scale != 0) {
             throw new IllegalStateException("Attempted to get section above for a non-zero scale section");
@@ -58,14 +55,7 @@ public class LightSurfaceTrackerSection extends SurfaceTrackerSection {
         return (LightSurfaceTrackerSection) this.getRoot().getCubeNode(scaledY + 1);
     }
 
-    @Override
-    public int getHeight(int x, int z) {
-        int idx = index(x, z);
-        if (!isDirty(idx)) {
-            int relativeY = heights.get(idx);
-            return relToAbsY(relativeY, scaledY, scale);
-        }
-
+    protected int updateHeight(int x, int z, int idx) {
         synchronized (this) {
             int maxY = Integer.MIN_VALUE;
             if (scale == 0) {
@@ -133,33 +123,6 @@ public class LightSurfaceTrackerSection extends SurfaceTrackerSection {
         }
         this.cubeOrNodes = cube;
 
-    }
-
-    @Override
-    public void loadCube(int sectionX, int sectionZ, CubeAccess newCube, boolean markDirty) {
-        if (this.cubeOrNodes == null) {
-            throw new IllegalStateException("Attempting to load cube " + newCube.getCubePos() + " into an unloaded surface tracker section");
-        }
-        if (markDirty) {
-            Arrays.fill(dirtyPositions, -1);
-        }
-        if (this.scale == 0) {
-            // TODO merge loadHeightmapSection and loadLightHeightmapSection, and just use instanceof checks in the implementation to figure out if it's a light heightmap?
-            newCube.setLightHeightmapSection(this, sectionX, sectionZ);
-            return;
-        }
-        int idx = indexOfRawHeightNode(newCube.getCubePos().getY(), scale, scaledY);
-        SurfaceTrackerSection[] nodes = (SurfaceTrackerSection[]) cubeOrNodes;
-        for (int i = 0; i < nodes.length; i++) {
-            if (nodes[i] != null) {
-                continue;
-            }
-            int newScaledY = indexToScaledY(i, scale, scaledY);
-            SurfaceTrackerSection newMap = loadNode(newScaledY, scale - 1, newCube, i == idx);
-            nodes[i] = newMap;
-        }
-        assert nodes[idx] != null;
-        nodes[idx].loadCube(sectionX, sectionZ, newCube, markDirty);
     }
 
     protected VoxelShape getShape(BlockState blockState, BlockPos pos, Direction facing) {

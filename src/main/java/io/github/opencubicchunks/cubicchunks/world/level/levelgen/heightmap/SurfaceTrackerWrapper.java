@@ -2,6 +2,8 @@ package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap;
 
 import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
 
+import javax.annotation.Nullable;
+
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.HeightmapAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.util.BitStorage;
@@ -18,6 +20,7 @@ public class SurfaceTrackerWrapper extends Heightmap {
 
     public SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types) {
         super(chunkAccess, types);
+        //noinspection ConstantConditions
         ((HeightmapAccess) this).setIsOpaque(null);
         this.surfaceTracker = new SurfaceTrackerSection(types);
         this.dx = sectionToMinBlock(chunkAccess.getPos().x);
@@ -26,6 +29,7 @@ public class SurfaceTrackerWrapper extends Heightmap {
 
     protected SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types, SurfaceTrackerSection root) {
         super(chunkAccess, types);
+        //noinspection ConstantConditions
         ((HeightmapAccess) this).setIsOpaque(null);
         this.surfaceTracker = root;
         this.dx = sectionToMinBlock(chunkAccess.getPos().x);
@@ -49,7 +53,8 @@ public class SurfaceTrackerWrapper extends Heightmap {
 
     @Override
     public int getFirstAvailable(int columnLocalX, int columnLocalZ) {
-        return surfaceTracker.getHeight(columnLocalX + dx, columnLocalZ + dz) + 1;
+        int height = surfaceTracker.getHeight(columnLocalX + dx, columnLocalZ + dz) + 1;
+        return height;
     }
 
     // TODO not sure what to do about these methods
@@ -65,12 +70,16 @@ public class SurfaceTrackerWrapper extends Heightmap {
         return data.getRaw();
     }
 
-    public void loadCube(CubeAccess cube) {
-        // TODO loading should only cause marking as dirty if not loading from save file
-        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), cube, true);
+    public synchronized void loadCube(CubeAccess cube) {
+        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), cube);
     }
 
-    public void unloadCube(CubeAccess cube) {
-        this.surfaceTracker.getCubeNode(cube.getCubePos().getY()).unloadCube(cube);
+    @Nullable
+    public SurfaceTrackerSection getCubeNode(int cubeY) {
+        return surfaceTracker.getCubeNode(cubeY);
+    }
+
+    public SurfaceTrackerSection getSurfaceTrackerSection() {
+        return this.surfaceTracker;
     }
 }

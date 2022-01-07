@@ -21,6 +21,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LevelChunkSectionAccess;
+import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
 import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
@@ -218,6 +219,8 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         this.setAllStarts(protoCube.getAllCubeStructureStarts());
         this.setAllReferences(protoCube.getAllReferences());
 
+        this.heightmaps.putAll(protoCube.getCubeHeightmaps());
+
         LightSurfaceTrackerSection[] protoCubeLightHeightmaps = protoCube.getLightHeightmaps();
         for (int i = 0; i < CubeAccess.CHUNK_COUNT; i++) {
             this.lightHeightmaps[i] = protoCubeLightHeightmaps[i];
@@ -235,6 +238,10 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
     @Override public void setLightHeightmapSection(LightSurfaceTrackerSection section, int localSectionX, int localSectionZ) {
         int idx = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
         this.lightHeightmaps[idx] = section;
+    }
+
+    @Override public Map<Heightmap.Types, SurfaceTrackerSection[]> getCubeHeightmaps() {
+        return this.heightmaps;
     }
 
     @Deprecated @Override public ChunkPos getPos() {

@@ -96,4 +96,6 @@ public interface CubeAccess extends BlockGetter, ChunkAccess, FeatureAccess {
 
     default void setLightHeightmapSection(LightSurfaceTrackerSection section, int localSectionX, int localSectionZZ) {
     }
+
+    Map<Heightmap.Types, SurfaceTrackerSection[]> getCubeHeightmaps();
 }

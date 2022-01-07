@@ -169,19 +169,6 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
     @Override
     public void onCubeUnloading(LevelCube cube) {
         cube.invalidateAllBlockEntities();
-
-        ChunkPos pos = cube.getCubePos().asChunkPos();
-        for (int x = 0; x < CubeAccess.DIAMETER_IN_SECTIONS; x++) {
-            for (int z = 0; z < CubeAccess.DIAMETER_IN_SECTIONS; z++) {
-                // TODO this might cause columns to reload after they've already been unloaded
-                LevelChunk chunk = this.getChunk(pos.x + x, pos.z + z);
-                for (Map.Entry<Heightmap.Types, Heightmap> entry : chunk.getHeightmaps()) {
-                    Heightmap heightmap = entry.getValue();
-                    SurfaceTrackerWrapper tracker = (SurfaceTrackerWrapper) heightmap;
-                    tracker.unloadCube(cube);
-                }
-            }
-        }
     }
 
     @Override

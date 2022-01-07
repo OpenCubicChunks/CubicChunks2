@@ -19,6 +19,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkBiomeContainerAccess;
+import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
@@ -241,6 +242,10 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
         return lightHeightmaps;
     }
 
+    @Override public Map<Heightmap.Types, SurfaceTrackerSection[]> getCubeHeightmaps() {
+        return this.heightmaps;
+    }
+
     @Override public ChunkStatus getCubeStatus() {
         return this.status;
     }
@@ -326,8 +331,8 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
             for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {
                 for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
                     int idx = dx + dz * CubeAccess.DIAMETER_IN_SECTIONS;
-                    surfaceTrackerSections[idx] = new SurfaceTrackerSection(0, cubePos.getY(), null, this, type);
-                    surfaceTrackerSections[idx].loadCube(dx, dz, this, true);
+                    surfaceTrackerSections[idx] = new SurfaceTrackerSection(0, cubePos.getY(), null, this, (byte) type.ordinal());
+                    surfaceTrackerSections[idx].loadCube(dx, dz, this);
                 }
             }
 
@@ -349,21 +354,6 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
 
     public Map<BlockPos, BlockState> getFeaturesStateMap() {
         return featuresStateMap;
-    }
-
-    private void primeHeightMaps(EnumSet<Heightmap.Types> toInitialize) {
-        for (Heightmap.Types type : toInitialize) {
-            SurfaceTrackerSection[] surfaceTrackerSections = new SurfaceTrackerSection[CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS];
-
-            for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {
-                for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
-                    int idx = dx + dz * CubeAccess.DIAMETER_IN_SECTIONS;
-                    surfaceTrackerSections[idx] = new SurfaceTrackerSection(0, cubePos.getY(), null, this, type);
-                    surfaceTrackerSections[idx].loadCube(dx, dz, this, true);
-                }
-            }
-            this.heightmaps.put(type, surfaceTrackerSections);
-        }
     }
 
     public void addCubeEntity(Entity entity) {
@@ -490,10 +480,6 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
 
     @Override public int getCubeLocalHeight(Heightmap.Types type, int x, int z) {
         SurfaceTrackerSection[] surfaceTrackerSections = getHeightmapSections(type);
-        if (surfaceTrackerSections == null) {
-            primeHeightMaps(EnumSet.of(type));
-            surfaceTrackerSections = this.heightmaps.get(type);
-        }
         int xSection = Coords.blockToCubeLocalSection(x);
         int zSection = Coords.blockToCubeLocalSection(z);
 
