@@ -25,6 +25,7 @@ public class SurfaceTrackerSection {
 
     // Use width of 16 to match columns.
     public static final int WIDTH_BLOCKS = 16;
+    public static final int SCALE_0_NODE_HEIGHT = CubeAccess.DIAMETER_IN_BLOCKS;
 
     protected static final Heightmap.Types[] HEIGHTMAP_TYPES = Heightmap.Types.values();
 
@@ -104,9 +105,9 @@ public class SurfaceTrackerSection {
             if (scale == 0) {
                 CubeAccess cube = (CubeAccess) cubeOrNodes;
                 Predicate<BlockState> isOpaque = HEIGHTMAP_TYPES[this.heightmapType].isOpaque();
-                for (int dy = CubeAccess.DIAMETER_IN_BLOCKS - 1; dy >= 0; dy--) {
+                for (int dy = SCALE_0_NODE_HEIGHT - 1; dy >= 0; dy--) {
                     if (isOpaque.test(cube.getBlockState(x, dy, z))) {
-                        int minY = scaledY * CubeAccess.DIAMETER_IN_BLOCKS;
+                        int minY = scaledY * SCALE_0_NODE_HEIGHT;
                         maxY = minY + dy;
                         break;
                     }
@@ -159,7 +160,7 @@ public class SurfaceTrackerSection {
         for (int z = 0; z < WIDTH_BLOCKS; z++) {
             for (int x = 0; x < WIDTH_BLOCKS; x++) {
                 // here we mark the tree dirty if their positions are below the top block of this cube
-                this.markTreeDirtyIfRequired(x, z, relToAbsY(CubeAccess.DIAMETER_IN_SECTIONS - 1, this.scaledY, this.scale) + 1);
+                this.markTreeDirtyIfRequired(x, z, relToAbsY(SCALE_0_NODE_HEIGHT - 1, this.scaledY, this.scale) + 1);
             }
         }
     }
@@ -383,7 +384,7 @@ public class SurfaceTrackerSection {
         if (relativeY == 0) {
             return Integer.MIN_VALUE;
         }
-        return relativeY - 1 + scaledYBottomY(scaledY, scale) * CubeAccess.DIAMETER_IN_BLOCKS;
+        return relativeY - 1 + scaledYBottomY(scaledY, scale) * SCALE_0_NODE_HEIGHT;
     }
 
     /** Get the relative y coordinate for a given absoluteY, scaledY and scale */
@@ -392,7 +393,7 @@ public class SurfaceTrackerSection {
         if (absoluteY == Integer.MIN_VALUE) {
             return 0;
         }
-        return absoluteY + 1 - scaledYBottomY(scaledY, scale) * CubeAccess.DIAMETER_IN_BLOCKS;
+        return absoluteY + 1 - scaledYBottomY(scaledY, scale) * SCALE_0_NODE_HEIGHT;
     }
 
     public void writeData(int mainX, int mainZ, BitStorage data, int minValue) {
