@@ -545,7 +545,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
         return blockState.canOcclude() && blockState.useShapeForLightOcclusion() ? blockState.getFaceOcclusionShape(this, pos, facing) : Shapes.empty();
     }
 
-    @Override public int getY() {
+    @Override public int getNodeY() {
         return this.cubePos.getY();
     }
 

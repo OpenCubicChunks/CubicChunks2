@@ -43,7 +43,7 @@ public class LightSurfaceTrackerSection extends SurfaceTrackerSection {
     /**
      * Used when upgrading CubePrimers to BigCubes; should never be used elsewhere.
      */
-    public void upgradeCube(HeightmapNode node) {
+    public void upgradeNode(HeightmapNode node) {
         if (this.scale != 0) {
             throw new IllegalStateException("Attempted to upgrade node on a non-zero scale section");
         }

@@ -8,5 +8,5 @@ public interface HeightmapNode {
 
     int getHighest(int x, int z, byte heightmapType);
 
-    int getY();
+    int getNodeY();
 }

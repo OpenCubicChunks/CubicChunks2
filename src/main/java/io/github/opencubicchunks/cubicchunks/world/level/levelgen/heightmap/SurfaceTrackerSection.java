@@ -252,7 +252,7 @@ public class SurfaceTrackerSection {
             }
             return;
         }
-        int idx = indexOfRawHeightNode(newNode.getY(), scale, scaledY);
+        int idx = indexOfRawHeightNode(newNode.getNodeY(), scale, scaledY);
         SurfaceTrackerSection[] nodes = (SurfaceTrackerSection[]) cubeOrNodes;
         for (int i = 0; i < nodes.length; i++) {
             if (nodes[i] != null) {

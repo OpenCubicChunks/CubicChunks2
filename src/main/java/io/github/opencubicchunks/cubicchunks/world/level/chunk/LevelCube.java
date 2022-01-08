@@ -22,7 +22,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LevelChunkSectionAccess;
-import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
 import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
@@ -231,7 +230,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
             if (this.lightHeightmaps[i] == null) {
                 System.out.println("Got a null light heightmap while upgrading from CubePrimer at " + this.cubePos);
             } else {
-                this.lightHeightmaps[i].upgradeCube(this);
+                this.lightHeightmaps[i].upgradeNode(this);
             }
         }
 
@@ -314,7 +313,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         return blockState.canOcclude() && blockState.useShapeForLightOcclusion() ? blockState.getFaceOcclusionShape(this, pos, facing) : Shapes.empty();
     }
 
-    @Override public int getY() {
+    @Override public int getNodeY() {
         return this.cubePos.getY();
     }
 
