@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap;
 
-import java.util.Arrays;
 import java.util.function.IntPredicate;
 
 import javax.annotation.Nullable;
@@ -8,7 +7,6 @@ import javax.annotation.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
-import net.minecraft.core.SectionPos;
 import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.levelgen.Heightmap;
 
@@ -144,7 +142,7 @@ public class SurfaceTrackerSection {
         for (int z = 0; z < WIDTH_BLOCKS; z++) {
             for (int x = 0; x < WIDTH_BLOCKS; x++) {
                 // here we mark the tree dirty if their positions are below the top block of this cube
-                this.markTreeDirtyIfRequired(x, z, relToAbsY(SCALE_0_NODE_HEIGHT - 1, this.scaledY, this.scale) + 1);
+                this.markTreeDirtyIfRequired(x, z, relToAbsY(SCALE_0_NODE_HEIGHT << this.scale, this.scaledY, this.scale) + 1);
             }
         }
     }
@@ -263,7 +261,7 @@ public class SurfaceTrackerSection {
             int newScale = scale - 1;
             //TODO: load from save here, instead of always creating
             SurfaceTrackerSection newOrLoadedSection;
-            if(i == idx) {
+            if (i == idx) {
                 newOrLoadedSection = createNewChild(newScale, newScaledY, newNode);
             } else {
                 newOrLoadedSection = null;
