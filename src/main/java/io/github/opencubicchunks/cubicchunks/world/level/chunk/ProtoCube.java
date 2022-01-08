@@ -1,5 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 
+import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
 import static net.minecraft.world.level.chunk.LevelChunk.EMPTY_SECTION;
 
 import java.util.BitSet;
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.IntPredicate;
 import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
@@ -27,6 +29,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccesso
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerSection;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.SurfaceTrackerSection;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.SurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
 import io.github.opencubicchunks.cubicchunks.world.storage.CubeProtoTickList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -34,6 +37,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import it.unimi.dsi.fastutil.shorts.ShortList;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -61,6 +65,8 @@ import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeightAccessor {
 
@@ -233,9 +239,16 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
     }
 
     @Override
-    public void setLightHeightmapSection(LightSurfaceTrackerSection section, int localSectionX, int localSectionZ) {
+    public void sectionLoaded(SurfaceTrackerSection surfaceTrackerSection, int localSectionX, int localSectionZ) {
         int idx = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
-        this.lightHeightmaps[idx] = section;
+
+        if(surfaceTrackerSection.getRawType() == -1) { //light
+            this.lightHeightmaps[idx] = (LightSurfaceTrackerSection) surfaceTrackerSection;
+        } else { // normal heightmap
+            this.heightmaps.computeIfAbsent(surfaceTrackerSection.getType(),
+                type -> new SurfaceTrackerSection[DIAMETER_IN_SECTIONS*DIAMETER_IN_SECTIONS]
+            )[idx] = surfaceTrackerSection;
+        }
     }
 
     public LightSurfaceTrackerSection[] getLightHeightmaps() {
@@ -309,9 +322,10 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
         int zChunk = Coords.blockToCubeLocalSection(pos.getZ());
         int chunkIdx = xChunk + zChunk * DIAMETER_IN_SECTIONS;
 
+        IntPredicate isOpaquePredicate = SurfaceTrackerWrapper.opaquePredicateForState(state);
         for (Heightmap.Types types : heightMapsAfter) {
             SurfaceTrackerSection surfaceTrackerSection = getHeightmapSections(types)[chunkIdx];
-            surfaceTrackerSection.onSetBlock(xSection, pos.getY(), zSection, state);
+            surfaceTrackerSection.onSetBlock(xSection, pos.getY(), zSection, isOpaquePredicate);
         }
 
         return lastState;
@@ -324,7 +338,6 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
     private SurfaceTrackerSection[] getHeightmapSections(Heightmap.Types type) {
         return heightmaps.computeIfAbsent(type, t -> {
             SurfaceTrackerSection[] surfaceTrackerSections = new SurfaceTrackerSection[CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS];
-
             for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {
                 for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
                     int idx = dx + dz * CubeAccess.DIAMETER_IN_SECTIONS;
@@ -471,6 +484,69 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
         } else {
             return EMPTY_FLUID;
         }
+    }
+
+    @Override public int getHighest(int x, int z, byte heightmapType) {
+        if(heightmapType == -1) { //light
+            return getHighestLight(x, z);
+        } else { //normal heightmaps
+            int maxY = Integer.MIN_VALUE;
+            for (int dy = CubeAccess.DIAMETER_IN_BLOCKS - 1; dy >= 0; dy--) {
+                if (SurfaceTrackerWrapper.HEIGHTMAP_TYPES[heightmapType].isOpaque().test(this.getBlockState(x, dy, z))) {
+                    int minY = this.cubePos.getY() * DIAMETER_IN_BLOCKS;
+                    maxY = minY + dy;
+                    break;
+                }
+            }
+            return maxY;
+        }
+    }
+
+    public int getHighestLight(int x, int z) {
+        int maxY = Integer.MIN_VALUE;
+
+        int xSection = blockToCubeLocalSection(x);
+        int zSection = blockToCubeLocalSection(z);
+
+        int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
+        LightSurfaceTrackerSection sectionAbove = this.lightHeightmaps[idx].getSectionAbove();
+
+        int dy = CubeAccess.DIAMETER_IN_BLOCKS - 1;
+
+        // TODO unknown behavior for occlusion on a loading boundary (i.e. sectionAbove == null)
+        BlockState above = sectionAbove == null ? Blocks.AIR.defaultBlockState() : ((CubeAccess) sectionAbove.getNode()).getBlockState(x, 0, z);
+        BlockState state = this.getBlockState(x, dy, z);
+
+        // note that this BlockPos relies on `cubePos.blockY` returning correct results when the local coord is not inside the cube
+        VoxelShape voxelShapeAbove = sectionAbove == null
+            ? Shapes.empty()
+            : this.getShape(above, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy + 1), cubePos.blockZ(z)), Direction.DOWN);
+        VoxelShape voxelShape = this.getShape(state, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy), cubePos.blockZ(z)), Direction.UP);
+
+        while (dy >= 0) {
+            int lightBlock = state.getLightBlock(this, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy), cubePos.blockZ(z)));
+            if (lightBlock > 0 || Shapes.faceShapeOccludes(voxelShapeAbove, voxelShape)) {
+                int minY = this.cubePos.getY() * CubeAccess.DIAMETER_IN_BLOCKS;
+                maxY = minY + dy;
+                break;
+            }
+            dy--;
+            if (dy >= 0) {
+                above = state;
+                state = this.getBlockState(x, dy, z);
+                voxelShapeAbove = this.getShape(above, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy + 1), cubePos.blockZ(z)), Direction.DOWN);
+                voxelShape = this.getShape(state, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy), cubePos.blockZ(z)), Direction.UP);
+            }
+        }
+        return maxY;
+    }
+
+    protected VoxelShape getShape(BlockState blockState, BlockPos pos, Direction facing) {
+        return blockState.canOcclude() && blockState.useShapeForLightOcclusion() ? blockState.getFaceOcclusionShape(this, pos, facing) : Shapes.empty();
+    }
+
+    @Override public int getY() {
+        return this.cubePos.getY();
     }
 
     @Override public int getCubeLocalHeight(Heightmap.Types type, int x, int z) {

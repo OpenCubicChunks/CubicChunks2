@@ -2,6 +2,9 @@ package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap;
 
 import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
 
+import java.util.function.IntPredicate;
+
+
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.HeightmapAccess;
@@ -10,8 +13,11 @@ import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
+import org.apache.commons.lang3.NotImplementedException;
 
 public class SurfaceTrackerWrapper extends Heightmap {
+    public static final Heightmap.Types[] HEIGHTMAP_TYPES = Heightmap.Types.values();
+
     protected final SurfaceTrackerSection surfaceTracker;
     /** global x of min block in column */
     protected final int dx;
@@ -46,15 +52,14 @@ public class SurfaceTrackerWrapper extends Heightmap {
      */
     @Override
     public boolean update(int columnLocalX, int globalY, int columnLocalZ, BlockState blockState) {
-        surfaceTracker.getCubeNode(blockToCube(globalY)).onSetBlock(dx + columnLocalX, globalY, dz + columnLocalZ, blockState);
+        surfaceTracker.getCubeNode(blockToCube(globalY)).onSetBlock(dx + columnLocalX, globalY, dz + columnLocalZ, opaquePredicateForState(blockState));
         // We always return false, because the result is never used anywhere anyway (by either vanilla or us)
         return false;
     }
 
     @Override
     public int getFirstAvailable(int columnLocalX, int columnLocalZ) {
-        int height = surfaceTracker.getHeight(columnLocalX + dx, columnLocalZ + dz) + 1;
-        return height;
+        return surfaceTracker.getHeight(columnLocalX + dx, columnLocalZ + dz) + 1;
     }
 
     // TODO not sure what to do about these methods
@@ -81,5 +86,15 @@ public class SurfaceTrackerWrapper extends Heightmap {
 
     public SurfaceTrackerSection getSurfaceTrackerSection() {
         return this.surfaceTracker;
+    }
+
+    public static IntPredicate opaquePredicateForState(BlockState blockState) {
+        return heightmapType -> {
+            if (heightmapType == -1) {
+                throw new NotImplementedException("Currently we are always marking light as dirty, so this should never be reached");
+            } else {
+                return HEIGHTMAP_TYPES[heightmapType].isOpaque().test(blockState);
+            }
+        };
     }
 }
