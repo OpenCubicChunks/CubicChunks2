@@ -249,7 +249,7 @@ public class SurfaceTrackerSection {
             //Don't need to mark this cube-scale section as dirty, as it should have been updated on unload
             newNode.sectionLoaded(this, localSectionX, localSectionZ);
             if (this.parent != null) {
-                this.onLoad(localSectionX, localSectionZ);
+                this.markAllDirtyAndTreeIfRequired();
             }
             return;
         }
@@ -262,33 +262,16 @@ public class SurfaceTrackerSection {
             int newScaledY = indexToScaledY(i, scale, scaledY);
             int newScale = scale - 1;
             //TODO: load from save here, instead of always creating
-            SurfaceTrackerSection newOrLoadedSection = createNewChild(newScale, newScaledY, newNode);
-            if (newOrLoadedSection != null) { //always load all direct child sections
-                newOrLoadedSection.parent = this;
-                if (newOrLoadedSection.scale == 0) {
-                    newOrLoadedSection.cubeOrNodes = newNode;
-                }
+            SurfaceTrackerSection newOrLoadedSection;
+            if(i == idx) {
+                newOrLoadedSection = createNewChild(newScale, newScaledY, newNode);
             } else {
-                if (i == idx) { //only create new section if section was directly required by cube
-                    newOrLoadedSection = createNewChild(newScale, newScaledY, newNode);
-                    Arrays.fill(newOrLoadedSection.dirtyPositions, -1); //new section created, mark as entirely dirty!
-                }
+                newOrLoadedSection = null;
             }
             nodes[i] = newOrLoadedSection;
         }
         assert nodes[idx] != null;
         nodes[idx].loadCube(localSectionX, localSectionZ, newNode);
-    }
-
-    /**
-     * Recursively marks any parent positions as dirty if they are below this node's positions
-     */
-    private void onLoad(int localSectionX, int localSectionZ) {
-        for (int z = SectionPos.sectionToBlockCoord(localSectionZ), zMax = z + WIDTH_BLOCKS; z < zMax; z++) {
-            for (int x = SectionPos.sectionToBlockCoord(localSectionX), xMax = x + WIDTH_BLOCKS; x < xMax; x++) {
-                this.parent.markTreeDirtyIfRequired(x, z, this.getHeight(x, z));
-            }
-        }
     }
 
     @Nullable
