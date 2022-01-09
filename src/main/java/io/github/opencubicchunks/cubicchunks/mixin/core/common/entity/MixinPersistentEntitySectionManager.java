@@ -10,8 +10,11 @@ import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventS
 import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicPersistentEntitySectionManager;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicEntityStorage;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.world.level.ChunkPos;
@@ -32,7 +35,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(PersistentEntitySectionManager.class)
-public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess> implements IsCubicEntityContext, ChunkEntityStateEventSource {
+public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess> implements IsCubicEntityContext, ChunkEntityStateEventSource, CubicPersistentEntitySectionManager {
 
     @Shadow @Final private Long2ObjectMap<Object> chunkLoadStatuses;
     @Shadow @Final private EntityPersistentStorage<T> permanentStorage;
@@ -40,10 +43,15 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
     @Shadow @Final private EntitySectionStorage<T> sectionStorage;
     @Shadow @Final private Long2ObjectMap<Visibility> chunkVisibility;
 
+    // Tracks which chunks are ticking in a CC world (where `chunkVisibility` is instead used for Cubes)
+    private LongSet ccTickingChunks;
+
     private boolean isCubic;
     private List<ChunkEntityStateEventHandler> eventHandler = new ArrayList<>();
 
     @Shadow public abstract void updateChunkStatus(ChunkPos chunkPos, Visibility visibility);
+
+    @Shadow public abstract boolean isPositionTicking(ChunkPos chunkPos);
 
     @Override public boolean isCubic() {
         return this.isCubic;
@@ -56,6 +64,9 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
     @Override public void setIsCubic(boolean isCubic) {
         this.isCubic = isCubic;
         ((IsCubicEntityContext) this.sectionStorage).setIsCubic(isCubic);
+        if (isCubic) {
+            ccTickingChunks = new LongOpenHashSet();
+        }
     }
 
     @Inject(method = "updateChunkStatus(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/server/level/ChunkHolder$FullChunkStatus;)V", at = @At("HEAD"), cancellable = true)
@@ -65,6 +76,13 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
             if (pos instanceof ImposterChunkPos) {
                 Visibility visibility = Visibility.fromFullChunkStatus(fullChunkStatus);
                 this.updateChunkStatus(pos, visibility);
+            } else {
+                long chunkPos = pos.toLong();
+                if (Visibility.fromFullChunkStatus(fullChunkStatus).isTicking()) {
+                    ccTickingChunks.add(chunkPos);
+                } else {
+                    ccTickingChunks.remove(chunkPos);
+                }
             }
         }
     }
@@ -97,14 +115,14 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
         }
     }
 
-    // TODO: should we keep track of columns
     @Inject(method = "isPositionTicking(Lnet/minecraft/world/level/ChunkPos;)Z", at = @At("HEAD"), cancellable = true)
     private void isColumnPositionTicking(ChunkPos chunkPos, CallbackInfoReturnable<Boolean> cir) {
         if (chunkPos instanceof ImposterChunkPos) {
+            // TODO throw on ImposterChunkPos in non-cc?
             return;
         }
         if (isCubic) {
-            cir.setReturnValue(false);
+            cir.setReturnValue(isChunkTicking(chunkPos));
         }
     }
 
@@ -142,5 +160,22 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
             var pos = CubePos.from(posLong);
             eventHandler.forEach(x -> x.onCubeEntitiesUnload(pos));
         }
+    }
+
+    @Override
+    public boolean isCubeTicking(CubePos pos) {
+        if (!isCubic) {
+            throw new IllegalStateException("Attempted to check if cubePos " + pos + " is ticking for non-cubic PersistentEntitySectionManager");
+        }
+        return this.chunkVisibility.get(pos.asLong()).isTicking();
+    }
+
+    @Override
+    public boolean isChunkTicking(ChunkPos pos) {
+        // TODO throw on ImposterChunkPos?
+        if (!isCubic) {
+            return isPositionTicking(pos);
+        }
+        return ccTickingChunks.contains(pos.toLong());
     }
 }

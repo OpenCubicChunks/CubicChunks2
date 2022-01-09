@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerWrapper;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -16,6 +17,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.spongepowered.asm.mixin.Final;
@@ -52,7 +54,7 @@ public abstract class MixinDebugScreenOverlay {
             target = "Lnet/minecraft/client/multiplayer/ClientLevel;getBrightness(Lnet/minecraft/world/level/LightLayer;Lnet/minecraft/core/BlockPos;)I",
             ordinal = 0),
         locals = LocalCapture.CAPTURE_FAILHARD)
-    private void onGetGameInformation(CallbackInfoReturnable<List<String>> cir, String string2, BlockPos pos, Entity entity, Direction direction,
+    private void onAddLightInfo(CallbackInfoReturnable<List<String>> cir, String string2, BlockPos pos, Entity entity, Direction direction,
                                       String string7, Level level, LongSet longSet, List<String> list, LevelChunk clientChunk, int i) {
         LevelChunk serverChunk = this.getServerChunk();
         if (((CubicLevelHeightAccessor) level).isCubic()) {
@@ -77,6 +79,21 @@ public abstract class MixinDebugScreenOverlay {
                     + lightEngine.getLayerListener(LightLayer.BLOCK).getLightValue(pos) + " block)");
             } else {
                 list.add("Server Light: (?? sky, ?? block)");
+            }
+        }
+    }
+
+    @Inject(method = "getGameInformation",
+            at = @At(value = "INVOKE", ordinal = 0, target = "Lnet/minecraft/world/level/Level;getDifficulty()Lnet/minecraft/world/Difficulty;"),
+            locals = LocalCapture.CAPTURE_FAILHARD)
+    private void onAddLocalDifficultyInfo(CallbackInfoReturnable<List<String>> cir, String string2, BlockPos blockPos, Entity entity, Direction direction, String string7, Level level,
+                                          LongSet longSet, List<String> list, LevelChunk clientChunk, int i, int j, int k, LevelChunk serverChunk) {
+        if (this.minecraft.getSingleplayerServer() != null) {
+            list.add("Chunk inhabited time: " + (serverChunk == null ? "???" : "" + serverChunk.getInhabitedTime()));
+            if (((CubicLevelHeightAccessor) level).isCubic()) {
+                var cube = ((CubeSource) level.getChunkSource())
+                        .getCube(Coords.blockToCube(blockPos.getX()), Coords.blockToCube(blockPos.getY()), Coords.blockToCube(blockPos.getZ()), ChunkStatus.FULL, false);
+                list.add("Cube inhabited time: " + (cube == null ? "???" : "" + cube.getCubeInhabitedTime()));
             }
         }
     }
