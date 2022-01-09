@@ -32,6 +32,8 @@ public abstract class MixinLevel implements CubicLevelAccessor, LevelReader {
 
     @Shadow public abstract ResourceKey<Level> dimension();
 
+    @Shadow public abstract boolean isRainingAt(BlockPos blockPos);
+
     @Override public int getHeight() {
         if (!isCubic()) {
             return LevelReader.super.getHeight();

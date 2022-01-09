@@ -3,7 +3,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -18,7 +17,6 @@ import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.CubicChunksSavedData;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicFastServerTickList;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
@@ -30,6 +28,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -42,7 +41,6 @@ import net.minecraft.world.level.TickNextTickData;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.dimension.DimensionType;
@@ -61,6 +59,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(ServerLevel.class)
 public abstract class MixinServerLevel extends MixinLevel implements CubicServerLevel {
@@ -69,6 +68,8 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
     @Shadow @Final private ServerTickList<Fluid> liquidTicks;
 
     @Shadow @Final private ServerTickList<Block> blockTicks;
+
+    @Shadow public abstract ServerChunkCache getChunkSource();
 
     @Inject(method = "<init>", at = @At(value = "INVOKE", shift = At.Shift.AFTER,
             target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;" +
@@ -132,22 +133,32 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         }
     }
 
-    @Redirect(method = "tickChunk", at = @At(value = "INVOKE", target = "Ljava/util/Random;nextInt(I)I", ordinal = 1))
-    private int onRandNextInt(Random random, int bound, LevelChunk levelChunk, int i) {
-        if (!((CubicLevelHeightAccessor) levelChunk).isCubic()) {
-            return random.nextInt(bound);
+    private boolean isPositionTicking(BlockPos pos) {
+        return this.entityManager.isPositionTicking(pos);
+    }
+
+    @Redirect(method = "tickChunk", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerLevel;isRainingAt(Lnet/minecraft/core/BlockPos;)Z"))
+    private boolean onLightningRainCheck(ServerLevel instance, BlockPos blockPos) {
+        // Return false in the rain check if the position isn't loaded, so that lightning strikes don't occur in unloaded cubes
+        return (!this.isCubic || isPositionTicking(blockPos)) && isRainingAt(blockPos);
+    }
+
+    // Prevent snow/ice if the blocks aren't loaded
+    @Inject(method = "tickChunk", locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true, at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/server/level/ServerLevel;getBiome(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/biome/Biome;"))
+    private void onSnowAndIce(LevelChunk levelChunk, int i, CallbackInfo ci, ChunkPos chunkPos, boolean bl, int j, int k, ProfilerFiller profilerFiller, BlockPos blockPos2,
+                                BlockPos blockPos3) {
+        if (!this.isCubic) {
+            return;
         }
-        ChunkPos chunkPos = levelChunk.getPos();
-        int x = chunkPos.getMinBlockX();
-        int z = chunkPos.getMinBlockZ();
-        BlockPos pos = this.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, this.getBlockRandomPos(x, 0, z, 15));
-        if (!isInWorldBounds(pos)) {
-            return -1;
+        if (isPositionTicking(blockPos2) && isPositionTicking(blockPos3)) {
+            return;
         }
-        if (((CubicLevelAccessor) this).getCube(pos, ChunkStatus.FULL, false) == null) {
-            return -1;
-        }
-        return this.random.nextInt(16);
+        // TODO we shouldn't cancel here, as it could interfere with other mods' injects
+        //      however it's difficult to control snow+ice without cancelling out of the method
+        ci.cancel();
+        // cancelling skips a call to pop()
+        profilerFiller.pop();
     }
 
     @Redirect(method = "isPositionTickingWithEntitiesLoaded", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/ChunkPos;asLong(Lnet/minecraft/core/BlockPos;)J"))
@@ -177,7 +188,7 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
     public void tickCube(LevelCube cube, int randomTicks) {
         ProfilerFiller profilerFiller = this.getProfiler();
 
-        // TODO lightning and snow/freezing - see ServerLevel.tickChunk()
+        // TODO this method should probably use ASM and exclude lightning/snow rather than copying randomTicks
         profilerFiller.push("tickBlocks");
         if (randomTicks > 0) {
             LevelChunkSection[] sections = cube.getCubeSections();
