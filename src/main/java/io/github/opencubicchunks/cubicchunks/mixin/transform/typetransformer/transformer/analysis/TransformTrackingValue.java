@@ -1,14 +1,19 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
+import net.minecraft.Util;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.analysis.Value;
@@ -21,8 +26,8 @@ public class TransformTrackingValue implements Value {
     private final Set<FieldSource> fieldSources = new HashSet<>(); //Used for field detecting which field this value comes from. For now only tracks instance fields (i.e not static)
     private final AncestorHashMap<FieldID, TransformTrackingValue> pseudoValues;
 
-    private final Set<TransformTrackingValue> mergedFrom = new HashSet<>();
-    private final Set<TransformTrackingValue> mergedTo = new HashSet<>();
+    private final List<TransformTrackingValue> mergedFrom = new ArrayList<>(2);
+    private final List<TransformTrackingValue> mergedTo = new ArrayList<>(1);
 
     private final TransformSubtype transform;
 
@@ -88,7 +93,7 @@ public class TransformTrackingValue implements Value {
 
         setSameType(this, other);
 
-        TransformTrackingValue value = new TransformTrackingValue(
+        TransformTrackingValue newValue = new TransformTrackingValue(
                 subType,
                 union(source, other.source),
                 union(localVars, other.localVars),
@@ -96,13 +101,13 @@ public class TransformTrackingValue implements Value {
                 pseudoValues
         );
 
-        value.mergedFrom.add(this);
-        value.mergedFrom.add(other);
+        newValue.mergedFrom.add(this);
+        newValue.mergedFrom.add(other);
 
-        this.mergedTo.add(value);
-        other.mergedTo.add(value);
+        this.mergedTo.add(newValue);
+        other.mergedTo.add(newValue);
 
-        return value;
+        return newValue;
     }
 
     public TransformType getTransformType(){
@@ -220,14 +225,14 @@ public class TransformTrackingValue implements Value {
     }
 
     public Set<TransformTrackingValue> getAllRelatedValues(){
-        Set<TransformTrackingValue> relatedValues = new HashSet<>();
+        Set<TransformTrackingValue> relatedValues = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
 
-        Set<TransformTrackingValue> newValues = new HashSet<>(mergedFrom);
+        Set<TransformTrackingValue> newValues = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
         newValues.addAll(mergedTo);
         newValues.add(this);
 
         while(!newValues.isEmpty()){
-            Set<TransformTrackingValue> nextValues = new HashSet<>();
+            Set<TransformTrackingValue> nextValues = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
             for(TransformTrackingValue value : newValues){
                 relatedValues.add(value);
                 nextValues.addAll(value.mergedFrom);
@@ -242,25 +247,21 @@ public class TransformTrackingValue implements Value {
     }
 
     public Set<TransformTrackingValue> getFurthestAncestors(){
-        Set<TransformTrackingValue> relatedValues = new HashSet<>();
+        Queue<TransformTrackingValue> toCheck = new LinkedList<>();
+        Set<TransformTrackingValue> furthestAncestors = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
 
-        Set<TransformTrackingValue> newValues = new HashSet<>(mergedFrom);
-        newValues.add(this);
+        toCheck.add(this);
 
-        while(!newValues.isEmpty()){
-            Set<TransformTrackingValue> nextValues = new HashSet<>();
-            for(TransformTrackingValue value : newValues){
-                relatedValues.add(value);
-                nextValues.addAll(value.mergedFrom);
+        while(!toCheck.isEmpty()){
+            TransformTrackingValue value = toCheck.poll();
+            if(value.mergedFrom.isEmpty()){
+                furthestAncestors.add(value);
             }
-            nextValues.removeAll(relatedValues);
-            nextValues.removeAll(newValues);
-            newValues = nextValues;
+
+            toCheck.addAll(value.mergedFrom);
         }
 
-        relatedValues.removeIf(value -> !value.mergedFrom.isEmpty());
-
-        return relatedValues;
+        return furthestAncestors;
     }
 
     public static void setSameType(TransformTrackingValue first, TransformTrackingValue second){

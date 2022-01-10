@@ -1712,6 +1712,7 @@ public class TypeTransformer {
      *             long pos = ((LongList)list).get(0);
      *             ...
      *         }
+     *     }
      * </pre>
      */
     private void makeFieldCasts(){
@@ -2139,7 +2140,7 @@ public class TypeTransformer {
             BytecodeFactory[][] emitters = syntheticEmitters[index];
             Frame<TransformTrackingValue> frame = analysisResults.frames()[index + 1];
 
-            Set<TransformTrackingValue> lookingFor = value.getFurthestAncestors();
+            Set<TransformTrackingValue> lookingFor = value.getAllRelatedValues();
 
             int i = 0;
             for(; i < frame.getStackSize(); i++){
@@ -2150,6 +2151,7 @@ public class TypeTransformer {
 
             if(i == frame.getStackSize()){
                 value.getFurthestAncestors();
+                value.getAllRelatedValues();
                 throw new RuntimeException("Could not find value in frame");
             }
 
