@@ -1,5 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.asm.common;
 
+import io.github.opencubicchunks.cubicchunks.mixin.access.common.DynamicGraphMinFixedPointAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;

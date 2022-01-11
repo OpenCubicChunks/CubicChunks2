@@ -20,6 +20,8 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tra
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import net.fabricmc.loader.api.MappingResolver;
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
@@ -59,8 +61,8 @@ public class TypeTransformerMethods {
             "net.minecraft.class_3572"
         ).map(name -> map.mapClassName("intermediary", name)).collect(Collectors.toSet());
 
-        Set<MethodID> methodsUsed = new HashSet<>();
-        Map<MethodID, List<String>> usages = new HashMap<>();
+        Set<MethodID> methodsUsed = new ObjectOpenCustomHashSet<>(MethodID.HASH_CALL_TYPE);
+        Map<MethodID, List<String>> usages = new Object2ObjectOpenCustomHashMap<>(MethodID.HASH_CALL_TYPE);
 
         for (String className : classNamesToTransform) {
             ClassNode classNode = getClassNode(className);
@@ -196,9 +198,9 @@ public class TypeTransformerMethods {
             classNode = loadClassNodeFromMixinOut(className);
 
             if(classNode == null){
-                System.err.println("Couldn't find class " + className + "in .mixin.out");
+                System.err.println("Couldn't find class " + className + " in .mixin.out");
                 classNode = loadClassNodeFromClassPath(className);
-                plugin.postApply(classNode.name, classNode, null, null);
+                plugin.postApply(className.replace('/', '.'), classNode, null, null);
             }
 
             cachedClasses.put(className, classNode);
@@ -260,11 +262,5 @@ public class TypeTransformerMethods {
 
     private void makeTransformer() {
         MixinBootstrap.init();
-    }
-
-    private Set<ClassNode> findSubclasses(){
-        //This method will only return correct results after all transformed classes have been loaded through getClassNode()
-
-        return cachedClasses.values().stream().filter(classNode -> !classNode.name.equals(classNode.superName)).collect(Collectors.toSet());
     }
 }

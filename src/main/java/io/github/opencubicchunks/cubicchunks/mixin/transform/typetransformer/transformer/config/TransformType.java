@@ -124,7 +124,7 @@ public class TransformType {
             MethodReplacement methodReplacement = new MethodReplacement(
                     () -> {
                         InsnList list = new InsnList();
-                        list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, transformedPredicateType.getInternalName(), "test", Type.getMethodDescriptor(Type.BOOLEAN_TYPE, to)));
+                        list.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, transformedPredicateType.getInternalName(), "test", Type.getMethodDescriptor(Type.BOOLEAN_TYPE, to)));
                         return list;
                     }
             );
@@ -146,7 +146,7 @@ public class TransformType {
             MethodReplacement methodReplacement = new MethodReplacement(
                     () -> {
                         InsnList list = new InsnList();
-                        list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, transformedConsumerType.getInternalName(), "accept", Type.getMethodDescriptor(Type.VOID_TYPE, to)));
+                        list.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, transformedConsumerType.getInternalName(), "accept", Type.getMethodDescriptor(Type.VOID_TYPE, to)));
                         return list;
                     }
             );

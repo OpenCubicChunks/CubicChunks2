@@ -124,14 +124,16 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
 
         if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
             MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
-        }else if(targetClassName.equals(layerLightEngine)){
+        } else if (targetClassName.equals(layerLightEngine)) {
             MainTransformer.transformLayerLightEngine(targetClass);
-        }else if(targetClassName.equals(layerLightSectionStorage)){
+        } else if (targetClassName.equals(layerLightSectionStorage)) {
             MainTransformer.transformLayerLightSectionStorage(targetClass);
-        }else if(targetClassName.equals(sectionPos)) {
+        } else if (targetClassName.equals(sectionPos)) {
             MainTransformer.transformSectionPos(targetClass);
-        }else if(defaulted.contains(targetClassName)){
+        } else if (defaulted.contains(targetClassName)) {
             MainTransformer.defaultTransform(targetClass);
+        } else {
+            return;
         }
 
         //Save it without computing extra stuff (like maxs) which means that if the frames are wrong and mixin fails to save it, it will be saved elsewhere
@@ -143,7 +145,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             targetClass.accept(writer);
             Files.write(savePath, writer.toByteArray());
             System.out.println("Saved " + targetClassName + " to " + savePath);
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new IllegalStateException(e);
         }
     }

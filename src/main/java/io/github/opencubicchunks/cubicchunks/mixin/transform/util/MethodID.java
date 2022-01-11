@@ -2,6 +2,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.util;
 
 import java.util.Objects;
 
+import it.unimi.dsi.fastutil.Hash;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -12,6 +13,19 @@ public class MethodID implements Ancestralizable<MethodID>{
     private final Type descriptor;
 
     private final CallType callType;
+
+    public static final Hash.Strategy<MethodID> HASH_CALL_TYPE = new Hash.Strategy<MethodID>() {
+        @Override public int hashCode(MethodID o) {
+            return Objects.hash(o.callType, o.owner, o.name, o.descriptor);
+        }
+
+        @Override public boolean equals(MethodID a, MethodID b) {
+            if(a == b) return true;
+            if(a == null || b == null) return false;
+
+            return a.callType == b.callType && a.owner.equals(b.owner) && a.name.equals(b.name) && a.descriptor.equals(b.descriptor);
+        }
+    };
 
     public MethodID(Type owner, String name, Type descriptor, CallType callType) {
         this.owner = owner;
