@@ -19,6 +19,7 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.byt
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
+import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 import org.jetbrains.annotations.NotNull;
@@ -583,10 +584,6 @@ public class ConfigLoader {
     }
 
     private static MappingResolver getMapper() {
-        try {
-            return FabricLoader.getInstance().getMappingResolver();
-        } catch (NullPointerException e) {
-            throw new IllegalStateException("Not running in Fabric", e);
-        }
+        return Utils.getMappingResolver();
     }
 }

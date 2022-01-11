@@ -10,18 +10,26 @@ import static org.objectweb.asm.commons.Method.getMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import com.google.common.collect.Sets;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
+import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import net.fabricmc.loader.launch.common.MappingConfiguration;
+import net.fabricmc.mapping.tree.TinyTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -50,11 +58,9 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 public class MainTransformer {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final boolean IS_DEV = FabricLoader.getInstance().isDevelopmentEnvironment();
+    private static final boolean IS_DEV = Utils.isDev();
     private static final Set<String> warningsCalled = new HashSet<>();
     private static final Config TRANSFORM_CONFIG;
-
-    private static final String CC = "io/github/opencubicchunks/cubicchunks/";
 
     public static void transformChunkHolder(ClassNode targetClass) {
         Map<ClassMethod, String> vanillaToCubic = new HashMap<>();
@@ -784,7 +790,7 @@ public class MainTransformer {
     }
 
     private static ClassField remapField(ClassField clField) {
-        MappingResolver mappingResolver = FabricLoader.getInstance().getMappingResolver();
+        MappingResolver mappingResolver = Utils.getMappingResolver();
 
         Type mappedType = remapType(clField.owner);
         String mappedName = mappingResolver.mapFieldName("intermediary",
@@ -797,7 +803,7 @@ public class MainTransformer {
     }
 
     @NotNull private static ClassMethod remapMethod(ClassMethod clMethod) {
-        MappingResolver mappingResolver = FabricLoader.getInstance().getMappingResolver();
+        MappingResolver mappingResolver = Utils.getMappingResolver();
         Type[] params = Type.getArgumentTypes(clMethod.method.getDescriptor());
         Type returnType = Type.getReturnType(clMethod.method.getDescriptor());
 
@@ -827,7 +833,7 @@ public class MainTransformer {
         if (t.getSort() != OBJECT) {
             return t;
         }
-        MappingResolver mappingResolver = FabricLoader.getInstance().getMappingResolver();
+        MappingResolver mappingResolver = Utils.getMappingResolver();
         String unmapped = t.getClassName();
         if (unmapped.endsWith(";")) {
             unmapped = unmapped.substring(1, unmapped.length() - 1);
@@ -841,7 +847,7 @@ public class MainTransformer {
     }
 
     private static Type remapType(Type t) {
-        MappingResolver mappingResolver = FabricLoader.getInstance().getMappingResolver();
+        MappingResolver mappingResolver = Utils.getMappingResolver();
         String unmapped = t.getClassName();
         String mapped = mappingResolver.mapClassName("intermediary", unmapped);
         if (unmapped.contains("class") && IS_DEV && mapped.equals(unmapped)) {
@@ -973,6 +979,8 @@ public class MainTransformer {
                 '}';
         }
     }
+
+
 
     static {
         //Load config

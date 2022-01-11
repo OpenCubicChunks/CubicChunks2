@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
+import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.ClassWriter;
@@ -45,7 +46,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     }
 
     @Override public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-        MappingResolver map = FabricLoader.getInstance().getMappingResolver();
+        MappingResolver map = Utils.getMappingResolver();
         boolean modified = false;
         String chunkMapDistanceManager = map.mapClassName("intermediary", "net.minecraft.class_3898$class_3216");
         String chunkMap = map.mapClassName("intermediary", "net.minecraft.class_3898");
@@ -104,7 +105,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     }
 
     @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-        MappingResolver map = FabricLoader.getInstance().getMappingResolver();
+        MappingResolver map = Utils.getMappingResolver();
         String dynamicGraphMinFixedPoint = map.mapClassName("intermediary", "net.minecraft.class_3554");
         String layerLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3558");
         String layerLightSectionStorage = map.mapClassName("intermediary", "net.minecraft.class_3560");
@@ -134,7 +135,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         }
 
         //Save it without computing extra stuff (like maxs) which means that if the frames are wrong and mixin fails to save it, it will be saved elsewhere
-        Path savePath = FabricLoader.getInstance().getGameDir().resolve("longpos-out").resolve(targetClassName.replace('.', '/') + ".class");
+        Path savePath = Utils.getGameDir().resolve("longpos-out").resolve(targetClassName.replace('.', '/') + ".class");
         try {
             Files.createDirectories(savePath.getParent());
 

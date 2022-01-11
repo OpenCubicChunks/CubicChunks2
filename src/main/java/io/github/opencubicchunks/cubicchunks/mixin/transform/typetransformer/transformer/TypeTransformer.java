@@ -35,6 +35,7 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
+import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
@@ -71,7 +72,7 @@ import org.objectweb.asm.tree.analysis.Frame;
  */
 public class TypeTransformer {
     //Directory where the transformed classes will be written to for debugging purposes
-    private static final Path OUT_DIR = FabricLoader.getInstance().getGameDir().resolve("transformed");
+    private static final Path OUT_DIR = Utils.getGameDir().resolve("transformed");
     //Postfix that gets appended to some names to prevent conflicts
     public static final String MIX = "$$cc_transformed";
     //A value that should be passed to transformed constructors. Any other value will cause an error
@@ -79,7 +80,7 @@ public class TypeTransformer {
     //When safety is enabled, if a long-pos method is called for a 3-int object a warning will be created. This keeps track of all warnings.
     private static final Set<String> warnings = new HashSet<>();
     //Path to file where errors should be logged
-    private static final Path ERROR_LOG = FabricLoader.getInstance().getGameDir().resolve("errors.log");
+    private static final Path ERROR_LOG = Utils.getGameDir().resolve("errors.log");
 
     //The global configuration loaded by ConfigLoader
     private final Config config;
@@ -369,6 +370,8 @@ public class TypeTransformer {
             for(int i = 0; i < context.removedEmitter().length; i++){
                 AbstractInsnNode instruction = context.instructions()[i];
                 Frame<TransformTrackingValue> frame = frames[i];
+
+                if(frame == null) return;
 
                 int consumed = ASMUtil.stackConsumed(instruction);
                 int opcode = instruction.getOpcode();

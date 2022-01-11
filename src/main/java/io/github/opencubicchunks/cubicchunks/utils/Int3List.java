@@ -34,7 +34,7 @@ public class Int3List implements AutoCloseable{
         this.size = 0;
     }
 
-    public void add(int x, int y, int z){
+    public boolean add(int x, int y, int z){
         long arrayAddr = this.arrayAddr;
         if(this.arrayAddr == 0){
             arrayAddr = this.arrayAddr = allocateTable(capacity);
@@ -50,6 +50,8 @@ public class Int3List implements AutoCloseable{
         PlatformDependent.putInt(putAt + Z_VALUE_OFFSET, z);
 
         this.size++;
+
+        return true;
     }
 
     public void set(int index, int x, int y, int z){

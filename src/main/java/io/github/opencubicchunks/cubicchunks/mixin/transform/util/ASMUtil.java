@@ -643,4 +643,26 @@ public class ASMUtil {
             }
         };
     }
+
+    public static String prettyPrintMethod(String name, String descriptor) {
+        Type[] types = Type.getArgumentTypes(descriptor);
+        Type returnType = Type.getReturnType(descriptor);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(onlyClassName(returnType.getClassName()));
+        sb.append(" ");
+        sb.append(name);
+        sb.append("(");
+        for (int i = 0; i < types.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+
+            sb.append(onlyClassName(types[i].getClassName()));
+        }
+
+        sb.append(")");
+
+        return sb.toString();
+    }
 }
