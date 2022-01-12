@@ -1,5 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.typetransformer;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.github.opencubicchunks.cubicchunks.mixin.ASMConfigPlugin;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.CustomClassAdder;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.CCSynthetic;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
@@ -44,7 +46,7 @@ import org.spongepowered.asm.mixin.transformer.MixinProcessor;
  * This test makes the assumption that an untransformed class is completely correct.
  */
 public class TypeTransformerMethods {
-    private static final boolean LOAD_FROM_MIXIN_OUT = false;
+    private static final boolean LOAD_FROM_MIXIN_OUT = true;
 
     private static final Path assumedMixinOut = Utils.getGameDir().resolve(".mixin.out/class");
     private static final Map<String, ClassNode> cachedClasses = new HashMap<>();
@@ -52,6 +54,8 @@ public class TypeTransformerMethods {
 
     @Test
     public void transformAndTest() {
+        System.out.println("Config: " + MainTransformer.TRANSFORM_CONFIG); //Load MainTransformer
+
         MappingResolver map = Utils.getMappingResolver();
 
         final Set<String> classNamesToTransform = Stream.of(
@@ -217,12 +221,17 @@ public class TypeTransformerMethods {
     }
 
     private ClassNode loadClassNodeFromClassPath(String className) {
-        ClassNode generated = MainTransformer.TRANSFORM_CONFIG.generatedClasses.get(className);
-        if(generated != null) {
-            return generated;
-        }
+        byte[] bytes;
 
-        InputStream is = ClassLoader.getSystemResourceAsStream(className + ".class");
+        bytes = CustomClassAdder.data.get("/" + className + ".class");
+
+        InputStream is;
+
+        if(bytes == null) {
+            is = ClassLoader.getSystemResourceAsStream(className + ".class");
+        }else{
+            is = new ByteArrayInputStream(bytes);
+        }
 
         if (is == null) {
             throw new RuntimeException("Could not find class " + className);

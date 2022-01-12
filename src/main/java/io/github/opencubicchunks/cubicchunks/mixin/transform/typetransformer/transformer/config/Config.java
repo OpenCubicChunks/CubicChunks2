@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.github.opencubicchunks.cubicchunks.mixin.transform.CustomClassAdder;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingInterpreter;
@@ -106,8 +107,11 @@ public class Config { private final HierarchyTree hierarchy;
     }
 
     public void loadAllAccessors(){
-        for(AccessorClassInfo info : accessorClasses){
-            generatedClasses.put(info.getMixinClass().getInternalName() + TypeTransformer.MIX, info.load());
+        synchronized(CustomClassAdder.data) {
+            System.out.println("Loading custom accessor interfaces...");
+            for (AccessorClassInfo info : accessorClasses) {
+                generatedClasses.put(info.getMixinClass().getInternalName() + TypeTransformer.MIX, info.load());
+            }
         }
     }
 

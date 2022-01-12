@@ -93,7 +93,7 @@ public abstract class AccessorMethodInfo {
 
         MethodReplacement replacement = new MethodReplacement(replacementCode);
 
-        MethodID methodID = new MethodID(targetClassName, originalName, originalDesc, MethodID.CallType.INTERFACE);
+        MethodID methodID = new MethodID(accessorClassInfo.getMixinClass().getInternalName(), originalName, originalDesc, MethodID.CallType.INTERFACE);
 
         MethodTransformChecker.Minimum[] minimums;
 

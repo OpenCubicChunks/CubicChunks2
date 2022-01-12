@@ -968,7 +968,11 @@ public class MainTransformer {
 
 
     static {
-        CustomClassAdder.addUrlToClassLoader();
+        try {
+            CustomClassAdder.addUrlToClassLoader();
+        }catch (NullPointerException e){
+            System.err.println("Couldn't add URL to class loader");
+        }
 
         //Load config
         try{

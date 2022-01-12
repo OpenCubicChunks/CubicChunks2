@@ -33,7 +33,7 @@ public class AccessorClassInfo {
         this.targetClass = targetClass;
         this.methods = methods;
 
-        String classBaseName = mixinClass.getClassName().substring(mixinClass.getClassName().lastIndexOf('.') + 1) + TypeTransformer.MIX;
+        String classBaseName = mixinClass.getClassName().substring(mixinClass.getClassName().lastIndexOf('.') + 1) + "_transformed_accessor";
 
         if(usedNames.contains(classBaseName)) {
             int i = 1;

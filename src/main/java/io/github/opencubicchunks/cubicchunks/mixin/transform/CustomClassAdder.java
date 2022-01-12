@@ -28,7 +28,7 @@ public class CustomClassAdder {
         }
     }
 
-    private static final Map<String, byte[]> data = new HashMap<>();
+    public static final Map<String, byte[]> data = new HashMap<>();
 
     public static void addCustomClass(String className, byte[] bytes) {
         className = className.replace('.', '/');
