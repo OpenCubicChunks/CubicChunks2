@@ -1,37 +1,49 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config;
 
 import java.io.PrintStream;
+import java.security.ProtectionDomain;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingInterpreter;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingValue;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.AccessorClassInfo;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.AccessorMethodInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Interpreter;
 import org.objectweb.asm.tree.analysis.Value;
 
-public class Config {
-    private final HierarchyTree hierarchy;
+public class Config { private final HierarchyTree hierarchy;
     private final Map<String, TransformType> types;
     private final AncestorHashMap<MethodID, List<MethodParameterInfo>> methodParameterInfo;
     private final Map<Type, ClassTransformInfo> classes;
+    private final List<AccessorClassInfo> accessorClasses;
 
     private TransformTrackingInterpreter interpreter;
     private Analyzer<TransformTrackingValue> analyzer;
 
-    public Config(HierarchyTree hierarchy, Map<String, TransformType> transformTypeMap, AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo, Map<Type, ClassTransformInfo> classes) {
+    public final Map<String, ClassNode> generatedClasses = new HashMap<>();
+
+    public Config(HierarchyTree hierarchy, Map<String, TransformType> transformTypeMap, AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo,
+                  Map<Type, ClassTransformInfo> classes,
+                  List<AccessorClassInfo> accessorInterfaces) {
         this.types = transformTypeMap;
         this.methodParameterInfo = parameterInfo;
         this.hierarchy = hierarchy;
         this.classes = classes;
+        this.accessorClasses = accessorInterfaces;
 
         TransformSubtype.init(this);
     }
@@ -93,8 +105,18 @@ public class Config {
         };
     }
 
+    public void loadAllAccessors(){
+        for(AccessorClassInfo info : accessorClasses){
+            generatedClasses.put(info.getMixinClass().getInternalName() + TypeTransformer.MIX, info.load());
+        }
+    }
+
     public Map<Type, ClassTransformInfo> getClasses() {
         return classes;
+    }
+
+    public List<AccessorClassInfo> getAccessors() {
+        return accessorClasses;
     }
 
     /**

@@ -60,7 +60,7 @@ public class MainTransformer {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final boolean IS_DEV = Utils.isDev();
     private static final Set<String> warningsCalled = new HashSet<>();
-    private static final Config TRANSFORM_CONFIG;
+    public static final Config TRANSFORM_CONFIG;
 
     public static void transformChunkHolder(ClassNode targetClass) {
         Map<ClassMethod, String> vanillaToCubic = new HashMap<>();
@@ -886,21 +886,6 @@ public class MainTransformer {
         return lambdaRedirects;
     }
 
-    private static ClassNode loadClass(Type type){
-        ClassNode node = new ClassNode();
-
-        try {
-            InputStream is = ClassLoader.getSystemResourceAsStream(type.getInternalName() + ".class");
-            ClassReader reader = new ClassReader(is);
-            reader.accept(node, 0);
-            is.close();
-        }catch (IOException e){
-            throw new RuntimeException(e);
-        }
-
-        return node;
-    }
-
     public static final class ClassMethod {
         public final Type owner;
         public final Method method;
@@ -983,6 +968,8 @@ public class MainTransformer {
 
 
     static {
+        CustomClassAdder.addUrlToClassLoader();
+
         //Load config
         try{
             InputStream is = MainTransformer.class.getResourceAsStream("/type-transform.json");
@@ -991,5 +978,7 @@ public class MainTransformer {
         }catch (IOException e){
             throw new RuntimeException("Couldn't load transform config", e);
         }
+
+        TRANSFORM_CONFIG.loadAllAccessors();
     }
 }

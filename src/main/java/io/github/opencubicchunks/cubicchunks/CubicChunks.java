@@ -18,6 +18,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
+import net.minecraft.world.level.lighting.SkyLightEngine;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,8 +69,9 @@ public class CubicChunks implements ModInitializer {
         CubicFeatureDecorators.init();
         CubicFeatures.init();
 
-        //This is really hacky, but I need DynamicGraphMinFixedPoint to be loaded before LayerLightEngine
+        //This is just so that these classes get loaded earlier on, allowing for quicker testing. It's not needed in release
         DynamicGraphMinFixedPoint.class.getName();
+        SkyLightEngine.class.getName();
     }
 
     public static Config config() {

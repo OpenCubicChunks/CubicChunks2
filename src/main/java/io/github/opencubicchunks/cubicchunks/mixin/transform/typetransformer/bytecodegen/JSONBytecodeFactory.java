@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -14,6 +15,7 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tra
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -220,7 +222,7 @@ public class JSONBytecodeFactory implements BytecodeFactory{
         };
     }
 
-    @Override public InsnList generate() {
+    @Override public InsnList generate(Function<Type, Integer> varAllocator) {
         InsnList generated = new InsnList();
         for(InstructionFactory instructionFactory: instructionGenerators){
             generated.add(instructionFactory.create());

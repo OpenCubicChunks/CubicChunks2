@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.BytecodeFactory;
@@ -76,7 +77,7 @@ public class TransformType {
             for (MethodID methodID : fromOriginal) {
                 MethodReplacement methodReplacement = new MethodReplacement(
                         new BytecodeFactory[]{
-                                InsnList::new
+                            (Function<Type, Integer> variableAllocator) -> new InsnList()
                         },
                         new List[][]{
                                 new List[]{
@@ -92,7 +93,7 @@ public class TransformType {
 
         BytecodeFactory[] expansions = new BytecodeFactory[to.length];
         for (int i = 0; i < to.length; i++) {
-            expansions[i] = InsnList::new;
+            expansions[i] = (Function<Type, Integer> variableAllocator) -> new InsnList();
         }
 
         if(toOriginal != null) {
@@ -122,7 +123,7 @@ public class TransformType {
             TransformSubtype[] argTypes = new TransformSubtype[]{TransformSubtype.of(this, "predicate"), TransformSubtype.of(this)};
 
             MethodReplacement methodReplacement = new MethodReplacement(
-                    () -> {
+                (Function<Type, Integer> variableAllocator) -> {
                         InsnList list = new InsnList();
                         list.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, transformedPredicateType.getInternalName(), "test", Type.getMethodDescriptor(Type.BOOLEAN_TYPE, to)));
                         return list;
@@ -144,7 +145,7 @@ public class TransformType {
             TransformSubtype[] argTypes = new TransformSubtype[]{TransformSubtype.of(this, "consumer"), TransformSubtype.of(this)};
 
             MethodReplacement methodReplacement = new MethodReplacement(
-                    () -> {
+                (Function<Type, Integer> variableAllocator) -> {
                         InsnList list = new InsnList();
                         list.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, transformedConsumerType.getInternalName(), "accept", Type.getMethodDescriptor(Type.VOID_TYPE, to)));
                         return list;

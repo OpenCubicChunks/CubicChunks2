@@ -17,11 +17,15 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.byt
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.ConstantFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.JSONBytecodeFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.AccessorClassInfo;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.AccessorMethodInfo;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.InvokerMethodInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
@@ -41,19 +45,59 @@ public class ConfigLoader {
         Map<String, TransformType> transformTypeMap = loadTransformTypes(root.get("types"), map, methodIDMap);
         AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo = loadMethodParameterInfo(root.get("methods"), map, methodIDMap, transformTypeMap, hierarchy);
         Map<Type, ClassTransformInfo> classes = loadClassInfo(root.get("classes"), map, methodIDMap, transformTypeMap, hierarchy);
+        List<AccessorClassInfo> accessorInterfaces = loadAccessors(root.get("accessors"), map, transformTypeMap);
 
         for(TransformType type : transformTypeMap.values()){
             type.addParameterInfoTo(parameterInfo);
+        }
+
+        for(AccessorClassInfo accessor : accessorInterfaces){
+            accessor.addParameterInfoTo(parameterInfo);
         }
 
         Config config = new Config(
                 hierarchy,
                 transformTypeMap,
                 parameterInfo,
-                classes
+                classes,
+                accessorInterfaces
         );
 
         return config;
+    }
+
+    private static List<AccessorClassInfo> loadAccessors(JsonElement accessors, MappingResolver map, Map<String, TransformType> transformTypeMap) {
+        JsonArray arr = accessors.getAsJsonArray();
+        List<AccessorClassInfo> accessorInterfaces = new ArrayList<>();
+
+        for(JsonElement e : arr){
+            JsonObject obj = e.getAsJsonObject();
+
+            String accessorClassName = obj.get("name").getAsString();
+            String targetClassName = obj.get("target").getAsString();
+
+            JsonArray methods = obj.get("methods").getAsJsonArray();
+            List<AccessorMethodInfo> methodInfos = new ArrayList<>();
+
+            for(JsonElement e2 : methods){
+                JsonObject obj2 = e2.getAsJsonObject();
+
+                String type = obj2.get("type").getAsString();
+                methodInfos.add(switch (type.toUpperCase()) {
+                    case "INVOKE", "INVOKER", "CALLER" -> InvokerMethodInfo.load(obj2, targetClassName, map, transformTypeMap);
+                    case "SET", "SETTER" -> throw new NotImplementedException("Setter accessor not implemented");
+                    case "GET", "GETTER" -> throw new NotImplementedException("Getter accessor not implemented");
+                    default -> throw new IllegalArgumentException("Unknown accessor type: " + type);
+                });
+            }
+
+            Type accessorClass = remapType(Type.getObjectType(accessorClassName), map, false);
+            Type targetClass = remapType(Type.getObjectType(targetClassName), map, false);
+
+            accessorInterfaces.add(new AccessorClassInfo(accessorClass, targetClass, methodInfos));
+        }
+
+        return accessorInterfaces;
     }
 
     private static Map<Type, ClassTransformInfo> loadClassInfo(JsonElement classes, MappingResolver map, Map<String, MethodID> methodIDMap, Map<String, TransformType> transformTypeMap,
@@ -539,7 +583,7 @@ public class ConfigLoader {
         return methodID;
     }
 
-    private static MethodID remapMethod(MethodID methodID, @NotNull MappingResolver map) {
+    public static MethodID remapMethod(MethodID methodID, @NotNull MappingResolver map) {
         //Map owner
         Type mappedOwner = remapType(methodID.getOwner(), map, false);
 

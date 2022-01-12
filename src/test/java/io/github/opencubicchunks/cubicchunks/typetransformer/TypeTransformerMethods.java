@@ -16,7 +16,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.github.opencubicchunks.cubicchunks.mixin.ASMConfigPlugin;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.CCSynthetic;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
@@ -42,6 +44,8 @@ import org.spongepowered.asm.mixin.transformer.MixinProcessor;
  * This test makes the assumption that an untransformed class is completely correct.
  */
 public class TypeTransformerMethods {
+    private static final boolean LOAD_FROM_MIXIN_OUT = false;
+
     private static final Path assumedMixinOut = Utils.getGameDir().resolve(".mixin.out/class");
     private static final Map<String, ClassNode> cachedClasses = new HashMap<>();
     private ASMConfigPlugin plugin = new ASMConfigPlugin();
@@ -195,7 +199,10 @@ public class TypeTransformerMethods {
         ClassNode classNode = cachedClasses.get(className);
 
         if(classNode == null){
-            classNode = loadClassNodeFromMixinOut(className);
+
+            if(LOAD_FROM_MIXIN_OUT) {
+                classNode = loadClassNodeFromMixinOut(className);
+            }
 
             if(classNode == null){
                 System.err.println("Couldn't find class " + className + " in .mixin.out");
@@ -210,6 +217,11 @@ public class TypeTransformerMethods {
     }
 
     private ClassNode loadClassNodeFromClassPath(String className) {
+        ClassNode generated = MainTransformer.TRANSFORM_CONFIG.generatedClasses.get(className);
+        if(generated != null) {
+            return generated;
+        }
+
         InputStream is = ClassLoader.getSystemResourceAsStream(className + ".class");
 
         if (is == null) {
