@@ -479,6 +479,15 @@
     },
 
     {
+      "method": "s net/minecraft/class_4076#method_18691 (J)J",
+      "possibilities": [
+        {
+          "parameters": ["blockpos"]
+        }
+      ]
+    },
+
+    {
       "method": "v net/minecraft/class_3554#method_15478 (JJIZ)V",
 
       "possibilities": [

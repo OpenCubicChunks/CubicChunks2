@@ -38,6 +38,7 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMa
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
+import net.minecraft.util.Mth;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
@@ -2121,9 +2122,10 @@ public class TypeTransformer {
         if(warnings.add(warningID)){
             System.out.println("[CC Warning] " + warningID);
             try{
-                FileOutputStream fos = new FileOutputStream(ERROR_LOG.toFile(), true);
+                FileOutputStream fos = new FileOutputStream(ERROR_LOG.toFile());
                 for(String warning : warnings){
                     fos.write(warning.getBytes());
+                    fos.write("\n".getBytes());
                 }
                 fos.close();
             }catch (IOException e){
