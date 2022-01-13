@@ -19,8 +19,6 @@ import java.util.stream.Stream;
 import io.github.opencubicchunks.cubicchunks.mixin.ASMConfigPlugin;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.CustomClassAdder;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.CCSynthetic;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
@@ -39,14 +37,13 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
-import org.spongepowered.asm.mixin.transformer.MixinProcessor;
 
 /**
  * This class runs the TypeTransformer on all required classes and tracks the methods which are assumed to exist.
  * This test makes the assumption that an untransformed class is completely correct.
  */
 public class TypeTransformerMethods {
-    private static final boolean LOAD_FROM_MIXIN_OUT = true;
+    private static final boolean LOAD_FROM_MIXIN_OUT = false;
 
     private static final Path assumedMixinOut = Utils.getGameDir().resolve(".mixin.out/class");
     private static final Map<String, ClassNode> cachedClasses = new HashMap<>();
@@ -223,7 +220,7 @@ public class TypeTransformerMethods {
     private ClassNode loadClassNodeFromClassPath(String className) {
         byte[] bytes;
 
-        bytes = CustomClassAdder.data.get("/" + className + ".class");
+        bytes = CustomClassAdder.find(className);
 
         InputStream is;
 

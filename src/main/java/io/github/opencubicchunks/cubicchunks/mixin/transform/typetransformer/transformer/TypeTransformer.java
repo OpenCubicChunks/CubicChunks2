@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import com.mojang.datafixers.util.Pair;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.BytecodeFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.ConstantFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.AnalysisResults;
@@ -28,11 +29,10 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tra
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ClassTransformInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.HierarchyTree;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.InterfaceInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodParameterInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodReplacement;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.AccessorClassInfo;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.AccessorMethodInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
@@ -184,25 +184,30 @@ public class TypeTransformer {
             makeFieldCasts();
         }
 
-        addAccessors();
-    }
+        for(InterfaceInfo itf: MainTransformer.TRANSFORM_CONFIG.getInterfaces()){
+            itf.tryApplyTo(classNode);
+        }
 
-    private void addAccessors() {
-        List<AccessorClassInfo> accessors = config.getAccessors();
-
-        for(AccessorClassInfo accessor: accessors){
-            if(accessor.getTargetClass().getInternalName().equals(classNode.name)){
-                System.out.println("Adding accessor for " + accessor.getMixinClass().getInternalName() + " to " + classNode.name);
-                getTransformed().interfaces.add(accessor.getNewClassName());
-
-                for(AccessorMethodInfo method: accessor.getMethods()){
-                    MethodNode methodNode = method.generateSafetyImplementation();
-
-                    if(getTransformed().methods.stream().noneMatch(m -> m.name.equals(methodNode.name) && m.desc.equals(methodNode.desc))) {
-                        getTransformed().methods.add(methodNode);
-                    }
-                }
+        if(classNode.signature != null){
+            //Make sure the superclass/interfaces in the signature are correct
+            //Find the type parameter information (if it exists it is at the start and delimited by '<' and '>')
+            int typeParamEnd = classNode.signature.indexOf('>');
+            String typeParam = "";
+            if(typeParamEnd != -1){
+                typeParam = classNode.signature.substring(0, typeParamEnd + 1);
             }
+
+            StringBuilder signature = new StringBuilder(typeParam);
+
+            //Add the superclass
+            signature.append("L").append(classNode.superName).append(";");
+
+            //Add interfaces
+            for(String itf: classNode.interfaces){
+                signature.append("L").append(itf).append(";");
+            }
+
+            classNode.signature = signature.toString();
         }
     }
 
@@ -322,6 +327,7 @@ public class TypeTransformer {
 
         //Resolve the method parameter infos
         MethodParameterInfo[] methodInfos = new MethodParameterInfo[insns.length];
+        Type t = Type.getObjectType(classNode.name);
         for(int i = 0; i < insns.length; i++){
             AbstractInsnNode insn = instructions[i];
             Frame<TransformTrackingValue> frame = frames[i];
@@ -1829,6 +1835,7 @@ public class TypeTransformer {
         config.getInterpreter().setFutureBindings(futureMethodBindings);
         config.getInterpreter().setCurrentClass(classNode);
         config.getInterpreter().setFieldBindings(fieldPseudoValues);
+        config.getInterpreter().setTransforming(Type.getObjectType(classNode.name));
 
         MethodID methodID = new MethodID(classNode.name, methodNode.name, methodNode.desc, null);
 

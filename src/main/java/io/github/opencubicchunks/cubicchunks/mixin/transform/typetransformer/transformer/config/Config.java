@@ -1,21 +1,15 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config;
 
 import java.io.PrintStream;
-import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.github.opencubicchunks.cubicchunks.mixin.transform.CustomClassAdder;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingInterpreter;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingValue;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.AccessorClassInfo;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.AccessorMethodInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -30,7 +24,7 @@ public class Config { private final HierarchyTree hierarchy;
     private final Map<String, TransformType> types;
     private final AncestorHashMap<MethodID, List<MethodParameterInfo>> methodParameterInfo;
     private final Map<Type, ClassTransformInfo> classes;
-    private final List<AccessorClassInfo> accessorClasses;
+    private final List<InterfaceInfo> interfaces;
 
     private TransformTrackingInterpreter interpreter;
     private Analyzer<TransformTrackingValue> analyzer;
@@ -39,12 +33,12 @@ public class Config { private final HierarchyTree hierarchy;
 
     public Config(HierarchyTree hierarchy, Map<String, TransformType> transformTypeMap, AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo,
                   Map<Type, ClassTransformInfo> classes,
-                  List<AccessorClassInfo> accessorInterfaces) {
+                  List<InterfaceInfo> accessorInterfaces) {
         this.types = transformTypeMap;
         this.methodParameterInfo = parameterInfo;
         this.hierarchy = hierarchy;
         this.classes = classes;
-        this.accessorClasses = accessorInterfaces;
+        this.interfaces = accessorInterfaces;
 
         TransformSubtype.init(this);
     }
@@ -106,21 +100,12 @@ public class Config { private final HierarchyTree hierarchy;
         };
     }
 
-    public void loadAllAccessors(){
-        synchronized(CustomClassAdder.data) {
-            System.out.println("Loading custom accessor interfaces...");
-            for (AccessorClassInfo info : accessorClasses) {
-                generatedClasses.put(info.getMixinClass().getInternalName() + TypeTransformer.MIX, info.load());
-            }
-        }
-    }
-
     public Map<Type, ClassTransformInfo> getClasses() {
         return classes;
     }
 
-    public List<AccessorClassInfo> getAccessors() {
-        return accessorClasses;
+    public List<InterfaceInfo> getInterfaces() {
+        return interfaces;
     }
 
     /**

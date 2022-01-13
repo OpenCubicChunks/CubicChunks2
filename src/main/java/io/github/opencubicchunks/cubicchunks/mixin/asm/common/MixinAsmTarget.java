@@ -29,9 +29,7 @@ import org.spongepowered.asm.mixin.Mixin;
     SectionPos.class,
     LayerLightSectionStorage.class,
     SkyLightSectionStorage.class,
-    BlockLightSectionStorage.class,
-
-    Container.class
+    BlockLightSectionStorage.class
 })
 public class MixinAsmTarget {
     // intentionally empty

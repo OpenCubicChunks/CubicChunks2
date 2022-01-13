@@ -17,9 +17,6 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.byt
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.ConstantFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.JSONBytecodeFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.AccessorClassInfo;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.AccessorMethodInfo;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.accessor.InvokerMethodInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
@@ -29,6 +26,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.InsnList;
 
 public class ConfigLoader {
@@ -45,14 +43,14 @@ public class ConfigLoader {
         Map<String, TransformType> transformTypeMap = loadTransformTypes(root.get("types"), map, methodIDMap);
         AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo = loadMethodParameterInfo(root.get("methods"), map, methodIDMap, transformTypeMap, hierarchy);
         Map<Type, ClassTransformInfo> classes = loadClassInfo(root.get("classes"), map, methodIDMap, transformTypeMap, hierarchy);
-        List<AccessorClassInfo> accessorInterfaces = loadAccessors(root.get("accessors"), map, transformTypeMap);
+        List<InterfaceInfo> interfaces = loadInterfaces(root.get("interfaces"), map, transformTypeMap);
 
         for(TransformType type : transformTypeMap.values()){
             type.addParameterInfoTo(parameterInfo);
         }
 
-        for(AccessorClassInfo accessor : accessorInterfaces){
-            accessor.addParameterInfoTo(parameterInfo);
+        for(InterfaceInfo itf: interfaces){
+            itf.addTransformsTo(parameterInfo);
         }
 
         Config config = new Config(
@@ -60,44 +58,51 @@ public class ConfigLoader {
                 transformTypeMap,
                 parameterInfo,
                 classes,
-                accessorInterfaces
+                interfaces
         );
 
         return config;
     }
 
-    private static List<AccessorClassInfo> loadAccessors(JsonElement accessors, MappingResolver map, Map<String, TransformType> transformTypeMap) {
+    private static List<InterfaceInfo> loadInterfaces(JsonElement accessors, MappingResolver map, Map<String, TransformType> transformTypeMap) {
         JsonArray arr = accessors.getAsJsonArray();
-        List<AccessorClassInfo> accessorInterfaces = new ArrayList<>();
+        List<InterfaceInfo> interfaces = new ArrayList<>();
 
         for(JsonElement e : arr){
             JsonObject obj = e.getAsJsonObject();
-
-            String accessorClassName = obj.get("name").getAsString();
-            String targetClassName = obj.get("target").getAsString();
+            String name = obj.get("name").getAsString();
 
             JsonArray methods = obj.get("methods").getAsJsonArray();
-            List<AccessorMethodInfo> methodInfos = new ArrayList<>();
+            List<Method> methodsList = new ArrayList<>();
+            List<TransformSubtype[]> argTypes = new ArrayList<>();
+            for(JsonElement m : methods) {
+                JsonObject obj2 = m.getAsJsonObject();
+                String[] methodInfo = obj2.get("name").getAsString().split(" ");
+                Method method = new Method(methodInfo[0], methodInfo[1]);
 
-            for(JsonElement e2 : methods){
-                JsonObject obj2 = e2.getAsJsonObject();
+                TransformSubtype[] transformTypes = new TransformSubtype[Type.getArgumentTypes(method.getDescriptor()).length];
 
-                String type = obj2.get("type").getAsString();
-                methodInfos.add(switch (type.toUpperCase()) {
-                    case "INVOKE", "INVOKER", "CALLER" -> InvokerMethodInfo.load(obj2, targetClassName, map, transformTypeMap);
-                    case "SET", "SETTER" -> throw new NotImplementedException("Setter accessor not implemented");
-                    case "GET", "GETTER" -> throw new NotImplementedException("Getter accessor not implemented");
-                    default -> throw new IllegalArgumentException("Unknown accessor type: " + type);
-                });
+                JsonArray types = obj2.get("types").getAsJsonArray();
+
+                int i;
+                for (i = 0; i < types.size(); i++) {
+                    String type = types.get(i).getAsString();
+                    transformTypes[i] = TransformSubtype.fromString(type, transformTypeMap);
+                }
+
+                for(; i < transformTypes.length; i++){
+                    transformTypes[i] = TransformSubtype.of(null);
+                }
+
+                methodsList.add(method);
+                argTypes.add(transformTypes);
             }
 
-            Type accessorClass = remapType(Type.getObjectType(accessorClassName), map, false);
-            Type targetClass = remapType(Type.getObjectType(targetClassName), map, false);
-
-            accessorInterfaces.add(new AccessorClassInfo(accessorClass, targetClass, methodInfos));
+            InterfaceInfo itf = new InterfaceInfo(Type.getObjectType(name), methodsList, argTypes);
+            interfaces.add(itf);
         }
 
-        return accessorInterfaces;
+        return interfaces;
     }
 
     private static Map<Type, ClassTransformInfo> loadClassInfo(JsonElement classes, MappingResolver map, Map<String, MethodID> methodIDMap, Map<String, TransformType> transformTypeMap,

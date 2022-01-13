@@ -10,6 +10,9 @@ import java.net.URLStreamHandler;
 import java.security.Permission;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
 
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
 
@@ -20,15 +23,16 @@ public class CustomClassAdder {
     private static final String PROTOCOL = "ccadder";
     private static final URL URL;
 
+    public static final Map<String, byte[]> knownData = new HashMap<>();
+    public static final Map<String, Supplier<byte[]>> lazyData = new HashMap<>();
+
     static {
         try {
             URL = new URL(PROTOCOL, null, -1, "/", new CCStreamHandler());
         } catch (MalformedURLException e) {
             throw new RuntimeException("Couldn't create URL", e);
         }
-    }
-
-    public static final Map<String, byte[]> data = new HashMap<>();
+    };
 
     public static void addCustomClass(String className, byte[] bytes) {
         className = className.replace('.', '/');
@@ -41,7 +45,21 @@ public class CustomClassAdder {
             className = "/" + className;
         }
 
-        data.put(className, bytes);
+        knownData.put(className, bytes);
+    }
+
+    public static void addCustomClass(String className, Supplier<byte[]> lazyBytes) {
+        className = className.replace('.', '/');
+
+        if(!className.endsWith(".class")){
+            className += ".class";
+        }
+
+        if(!className.startsWith("/")){
+            className = "/" + className;
+        }
+
+        lazyData.put(className, lazyBytes);
     }
 
     public static void addUrlToClassLoader(){
@@ -49,15 +67,45 @@ public class CustomClassAdder {
         FabricLauncherBase.getLauncher().propose(URL);
     }
 
-    private static class CCStreamHandler extends URLStreamHandler{
+    private static String formatClassName(String className){
+        className = className.replace('.', '/');
 
-        @Override protected URLConnection openConnection(URL url) throws IOException {
-            if(!data.containsKey(url.getPath())) {
+        if(!className.endsWith(".class")){
+            className += ".class";
+        }
+
+        if(!className.startsWith("/")){
+            className = "/" + className;
+        }
+
+        return className;
+    }
+
+    public static @Nullable byte[] find(String className) {
+        className = formatClassName(className);
+
+        if(knownData.containsKey(className)){
+            return knownData.get(className);
+        }else if(lazyData.containsKey(className)){
+            byte[] evaluated = lazyData.get(className).get();
+            knownData.put(className, evaluated);
+            lazyData.remove(className);
+            return evaluated;
+        }
+
+        return null;
+    }
+
+    private static class CCStreamHandler extends URLStreamHandler{
+        @Override
+        protected @Nullable URLConnection openConnection(URL url) {
+            byte[] data = find(url.getPath());
+
+            if(data == null){
                 return null;
             }
 
-            System.out.println("Returning custom class URL connection for " + url.getPath());
-            return new CCConnection(url, data.get(url.getPath()));
+            return new CCConnection(url, data);
         }
     }
 

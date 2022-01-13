@@ -41,6 +41,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     private final Map<Integer, TransformType> parameterOverrides = new HashMap<>();
     private final Set<TransformTrackingValue> returnValues = new HashSet<>();
 
+    private Type transforming;
     private Map<MethodID, AnalysisResults> resultLookup = new HashMap<>();
     private Map<MethodID, List<FutureMethodBinding>> futureMethodBindings;
     private ClassNode currentClass;
@@ -60,6 +61,11 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
 
     public void reset(){
         parameterOverrides.clear();
+        transforming = null;
+    }
+
+    public void setTransforming(Type transforming) {
+        this.transforming = transforming;
     }
 
     @Override

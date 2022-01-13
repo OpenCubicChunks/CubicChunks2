@@ -448,6 +448,24 @@
           }
         }
       ]
+    },
+
+    {
+      "method": "v net/minecraft/class_3554#method_15478 (JJIZ)V",
+
+      "possibilities": [
+        {
+          "parameters": [null, "blockpos", "blockpos", null, null],
+          "minimums": [
+            {
+              "parameters": [null, "blockpos", null, null, null]
+            },
+            {
+              "parameters": [null, null, "blockpos", null, null]
+            }
+          ]
+        }
+      ]
     }
   ],
   "hierarchy": {
@@ -587,40 +605,21 @@
     }
   ],
 
-  "accessors": [
+  "interfaces": [
     {
       "name": "io/github/opencubicchunks/cubicchunks/mixin/access/common/DynamicGraphMinFixedPointAccess",
-
-      "target": "net/minecraft/class_3554",
-
-
       "methods": [
         {
-          "type": "INVOKE",
-          "name": "invokeCheckEdge",
-          "target": "method_15478 (JJIZ)V",
-          "static": false,
-
-          "transformed_args": ["blockpos", "blockpos"],
-          "minimum_policy": "ANY"
+          "name": "invokeCheckEdge (JJIZ)V",
+          "types": ["blockpos", "blockpos"]
         },
         {
-          "type": "INVOKE",
-          "name": "invokeComputeLevelFromNeighbor",
-          "target": "method_15488 (JJI)I",
-          "static": false,
-
-          "transformed_args": ["blockpos", "blockpos"],
-          "minimum_policy": "ANY"
+          "name": "invokeComputeLevelFromNeighbor (JJI)I",
+          "types": ["blockpos", "blockpos"]
         },
         {
-          "type": "INVOKE",
-          "name": "invokeGetLevel",
-          "target": "method_15480 (J)I",
-          "static": false,
-
-          "transformed_args": ["blockpos"],
-          "minimum_policy": "ANY"
+          "name": "invokeGetLevel (J)I",
+          "types": ["blockpos"]
         }
       ]
     }

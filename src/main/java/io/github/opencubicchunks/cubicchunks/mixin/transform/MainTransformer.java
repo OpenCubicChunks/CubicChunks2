@@ -982,7 +982,5 @@ public class MainTransformer {
         }catch (IOException e){
             throw new RuntimeException("Couldn't load transform config", e);
         }
-
-        TRANSFORM_CONFIG.loadAllAccessors();
     }
 }

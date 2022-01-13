@@ -1,10 +1,14 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config;
 
+import java.util.List;
+import java.util.Stack;
+
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingValue;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
 
 public class MethodParameterInfo{
     private final MethodID method;
@@ -13,7 +17,8 @@ public class MethodParameterInfo{
     private final MethodTransformChecker transformCondition;
     private final MethodReplacement replacement;
 
-    public MethodParameterInfo(MethodID method, @NotNull TransformSubtype returnType, @NotNull TransformSubtype[] parameterTypes, MethodTransformChecker.Minimum[] minimums, MethodReplacement replacement) {
+    public MethodParameterInfo(MethodID method, @NotNull TransformSubtype returnType, @NotNull TransformSubtype[] parameterTypes, MethodTransformChecker.Minimum[] minimums,
+                               MethodReplacement replacement) {
         this.method = method;
         this.returnType = returnType;
         this.parameterTypes = parameterTypes;
