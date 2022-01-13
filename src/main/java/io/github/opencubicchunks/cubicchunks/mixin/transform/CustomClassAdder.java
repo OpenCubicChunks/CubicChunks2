@@ -68,14 +68,13 @@ public class CustomClassAdder {
     }
 
     private static String formatClassName(String className){
-        className = className.replace('.', '/');
-
-        if(!className.endsWith(".class")){
-            className += ".class";
-        }
-
         if(!className.startsWith("/")){
             className = "/" + className;
+        }
+
+        if(!className.endsWith(".class")){
+            className = className.replace('.', '/');
+            className += ".class";
         }
 
         return className;

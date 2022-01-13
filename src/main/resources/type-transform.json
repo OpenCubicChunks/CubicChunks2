@@ -449,6 +449,34 @@
         }
       ]
     },
+    {
+      "method": "s net/minecraft/class_2338#method_10092 (J)Lnet/minecraft/class_2338;",
+      "mappedName": "BlockPos.of",
+      "possibilities": [
+        {
+          "parameters": ["blockpos"],
+          "replacement": [
+            [
+              "ISTORE {z}",
+              "ISTORE {y}",
+              "ISTORE {x}",
+              {
+                "type": "NEW",
+                "class": "net/minecraft/class_2338"
+              },
+              "DUP",
+              "ILOAD {x}",
+              "ILOAD {y}",
+              "ILOAD {z}",
+              {
+                "type": "INVOKESPECIAL",
+                "method": "S net/minecraft/class_2338#<init> (III)V"
+              }
+            ]
+          ]
+        }
+      ]
+    },
 
     {
       "method": "v net/minecraft/class_3554#method_15478 (JJIZ)V",

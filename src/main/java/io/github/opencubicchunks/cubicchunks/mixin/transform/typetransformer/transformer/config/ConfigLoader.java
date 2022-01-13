@@ -613,7 +613,7 @@ public class ConfigLoader {
         return new MethodID(mappedOwner, mappedName, mappedDesc, methodID.getCallType());
     }
 
-    private static Type remapType(Type type, @NotNull MappingResolver map, boolean warnIfNotPresent) {
+    public static Type remapType(Type type, @NotNull MappingResolver map, boolean warnIfNotPresent) {
         if(type.getSort() == Type.ARRAY){
             Type componentType = remapType(type.getElementType(), map, warnIfNotPresent);
             return Type.getType("[" + componentType.getDescriptor());
