@@ -7,10 +7,9 @@ import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.server.level.progress.LoggerChunkProgressListener;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkStatus;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
@@ -21,12 +20,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LoggerChunkProgressListener.class)
 public abstract class MixinLoggerChunkProgressListener implements CubeProgressListener {
-
     private int loadedCubes;
     private int totalCubes;
+    // We don't reuse the vanilla field for this as a different number of chunks are loaded when CC is active
+    private int totalChunks;
+
+    private boolean isCubic;
 
     @Shadow private int count;
-    @Shadow @Final @Mutable private int maxCount;
+
+    @Shadow public abstract void onStatusChange(ChunkPos chunkPos, @Nullable ChunkStatus chunkStatus);
 
     @Inject(method = "<init>", at = @At("RETURN"))
     public void onInit(int vanillaSpawnRadius, CallbackInfo ci) {
@@ -38,18 +41,20 @@ public abstract class MixinLoggerChunkProgressListener implements CubeProgressLi
         int ccCubeDiameter = ccCubeRadius * 2 + 1;
         totalCubes = ccCubeDiameter * ccCubeDiameter * ccCubeDiameter;
 
-        int ccChunkRadius = ccCubeRadius * CubeAccess.DIAMETER_IN_SECTIONS;
-        int ccChunkDiameter = ccChunkRadius * 2 + 1;
-        maxCount = ccChunkDiameter * ccChunkDiameter;
+        int ccChunkDiameter = ccCubeDiameter * CubeAccess.DIAMETER_IN_SECTIONS;
+        totalChunks = ccChunkDiameter * ccChunkDiameter;
     }
 
     @Override public void startCubes(CubePos center) {
+        isCubic = true;
     }
 
     @Override public void onCubeStatusChange(CubePos cubePos, @Nullable ChunkStatus newStatus) {
         if (newStatus == ChunkStatus.FULL) {
             this.loadedCubes++;
         }
+        // Call the regular method with null arguments to trigger logging, as chunks finish loading before cubes
+        this.onStatusChange(null, null);
     }
 
     @ModifyConstant(constant = @Constant(longValue = 500L), method = "onStatusChange")
@@ -59,13 +64,15 @@ public abstract class MixinLoggerChunkProgressListener implements CubeProgressLi
 
     /**
      * @author CursedFlames & NotStirred
-     * @reason number of chunks is different due to rounding to chunks rounding to 1 cubes to 1, 2, 4, 8 depending on {@link CubeAccess#DIAMETER_IN_SECTIONS}
+     * @reason account for cubes as well as chunks in the loading progress
      */
     @Inject(method = "getProgress", at = @At("HEAD"), cancellable = true)
     private void getProgress(CallbackInfoReturnable<Integer> cir) {
-        //TODO: Check and return for Cubic Worlds
+        if (!isCubic) {
+            return;
+        }
         int loaded = count + loadedCubes;
-        int total = maxCount + totalCubes;
+        int total = totalChunks + totalCubes;
         cir.setReturnValue(Mth.floor(loaded * 100.0F / total));
     }
 }
