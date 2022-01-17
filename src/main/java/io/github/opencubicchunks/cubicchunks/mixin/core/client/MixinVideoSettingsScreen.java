@@ -14,10 +14,9 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(VideoSettingsScreen.class)
 public class MixinVideoSettingsScreen {
     // TODO: do it better without replacing the entire options array
-    // TODO: add lang entries
     private static final Option[] MODIFIED_OPTIONS;
 
-    private static final ProgressOption VERTICAL_RENDER_DISTANCE = new ProgressOption("options.renderDistance", 2.0D,
+    private static final ProgressOption VERTICAL_RENDER_DISTANCE = new ProgressOption("options.verticalRenderDistance", 2.0D,
         (Minecraft.getInstance().is64Bit() && Runtime.getRuntime().maxMemory() >= 1000000000L) ? 32.0 : 16.0D, 1.0F, (gameOptions) -> {
         return (double) CubicChunks.config().client.verticalViewDistance;
     }, (gameOptions, viewDistance) -> {
