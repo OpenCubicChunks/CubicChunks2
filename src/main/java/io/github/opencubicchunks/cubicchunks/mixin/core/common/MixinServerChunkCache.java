@@ -281,8 +281,8 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
 
     @Override
     @Nullable
-    public BlockGetter getCubeForLighting(int sectionX, int sectionY, int sectionZ) {
-        long cubePosAsLong = CubePos.of(Coords.sectionToCube(sectionX), Coords.sectionToCube(sectionY), Coords.sectionToCube(sectionZ)).asLong();
+    public BlockGetter getCubeForLighting(int cubeX, int cubeY, int cubeZ) {
+        long cubePosAsLong = CubePos.of(cubeX, cubeY, cubeZ).asLong();
         ChunkHolder chunkholder = ((CubeMap) this.chunkMap).getVisibleCubeIfPresent(cubePosAsLong);
         if (chunkholder == null) {
             return null;

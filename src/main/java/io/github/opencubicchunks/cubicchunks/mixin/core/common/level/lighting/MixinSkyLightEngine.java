@@ -120,7 +120,10 @@ public abstract class MixinSkyLightEngine extends MixinLayerLightEngine<SkyLight
         BlockPos pos = BlockPos.of(id);
 
         BlockGetter cube = ((LightCubeGetter) this.chunkSource).getCubeForLighting(
-            Coords.blockToSection(pos.getX()), Coords.blockToSection(pos.getY()), Coords.blockToSection(pos.getZ()));
+            Coords.blockToCube(pos.getX()),
+            Coords.blockToCube(pos.getY()),
+            Coords.blockToCube(pos.getZ())
+        );
         if (cube == null || !((CubeAccess) cube).getStatus().isOrAfter(ChunkStatus.LIGHT)) {
             return;
         }

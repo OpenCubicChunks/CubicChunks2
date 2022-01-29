@@ -16,8 +16,8 @@ public abstract class MixinChunkSource implements LightCubeGetter, CubeSource {
 
     @Override
     @Nullable
-    public BlockGetter getCubeForLighting(int sectionX, int sectionY, int sectionZ) {
-        return this.getCube(Coords.sectionToCube(sectionX), Coords.sectionToCube(sectionY), Coords.sectionToCube(sectionZ), ChunkStatus.EMPTY, false);
+    public BlockGetter getCubeForLighting(int cubeX, int cubeY, int cubeZ) {
+        return this.getCube(cubeX, cubeY, cubeZ, ChunkStatus.EMPTY, false);
     }
 
     @Override

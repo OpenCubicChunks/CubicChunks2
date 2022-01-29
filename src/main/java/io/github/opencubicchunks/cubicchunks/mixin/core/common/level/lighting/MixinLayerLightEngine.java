@@ -3,6 +3,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level.lighting;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LayerLightSectionStorageAccess;
+import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
@@ -93,7 +94,11 @@ public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S 
             }
         }
 
-        BlockGetter iblockreader = ((LightCubeGetter) this.chunkSource).getCubeForLighting(sectionX, sectionY, sectionZ);
+        BlockGetter iblockreader = ((LightCubeGetter) this.chunkSource).getCubeForLighting(
+            Coords.sectionToCube(sectionX),
+            Coords.sectionToCube(sectionY),
+            Coords.sectionToCube(sectionZ)
+        );
 
         for (int k = 1; k > 0; --k) {
             this.lastChunkPos[k] = this.lastChunkPos[k - 1];
