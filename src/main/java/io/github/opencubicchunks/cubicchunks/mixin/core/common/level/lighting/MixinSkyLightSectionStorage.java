@@ -72,7 +72,10 @@ public abstract class MixinSkyLightSectionStorage extends LayerLightSectionStora
 
             //TODO: Optimize
             BlockGetter cube = ((LightCubeGetter) ((LayerLightSectionStorageAccess) this).getChunkSource()).getCubeForLighting(
-                chunkX, Coords.blockToSection(blockY), chunkZ);
+                Coords.blockToCube(blockX),
+                Coords.blockToCube(blockY),
+                Coords.blockToCube(blockZ)
+            );
             if (cube == null || !((CubeAccess) cube).getStatus().isOrAfter(ChunkStatus.LIGHT)) {
                 cir.setReturnValue(0);
                 return;
