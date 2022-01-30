@@ -24,7 +24,7 @@ public final class SpawnPlaceFinder {
     @Nullable
     public static BlockPos getTopBlockBisect(BlockGetter level, BlockPos pos, boolean checkValid) {
         BlockPos minPos, maxPos;
-        if (findNonEmpty(level, pos) == null) {
+        if (findSolid(level, pos) == null) {
             CubicChunks.LOGGER.debug("Starting bisect with empty space at init {}", pos);
             maxPos = pos;
             minPos = findMinPos(level, pos);
@@ -38,30 +38,28 @@ public final class SpawnPlaceFinder {
             CubicChunks.LOGGER.error("No suitable spawn found, using original input {} (min={}, max={})", pos, minPos, maxPos);
             return null;
         }
-        assert findNonEmpty(level, maxPos) == null && findNonEmpty(level, minPos) != null;
+        assert findSolid(level, maxPos) == null && findSolid(level, minPos) != null;
         BlockPos foundPos = bisect(level, minPos.below(MIN_FREE_SPACE_SPAWN), maxPos.above(MIN_FREE_SPACE_SPAWN));
-        if (foundPos != null && checkValid && !level.getBlockState(foundPos).is(BlockTags.VALID_SPAWN)) {
+        if (checkValid && !level.getBlockState(foundPos).is(BlockTags.VALID_SPAWN)) {
             return null;
         }
-        return foundPos;
+        return foundPos.above(); // return block above ground
     }
 
-    @Nullable
     private static BlockPos bisect(BlockGetter level, BlockPos min, BlockPos max) {
         while (min.getY() < max.getY() - 1) {
             CubicChunks.LOGGER.debug("Bisect step with min={}, max={}", min, max);
             BlockPos middle = middleY(min, max);
-            if (findNonEmpty(level, middle) != null) {
-                // middle has solid space, so it can be used as new minimum
-                min = middle;
-            } else {
+            if (findSolid(level, middle) == null) {
                 // middle is empty, so can be used as new maximum
                 max = middle;
+            } else {
+                // middle has solid space, so it can be used as new minimum
+                min = middle;
             }
         }
         // now max should contain the all-empty part, but min should still have filled part.
-        // take the block above the non-empty part of min
-        return findNonEmpty(level, min);
+        return min;
     }
 
     private static BlockPos middleY(BlockPos min, BlockPos max) {
@@ -71,8 +69,8 @@ public final class SpawnPlaceFinder {
     @Nullable
     private static BlockPos findMinPos(BlockGetter level, BlockPos pos) {
         // go down twice as much each time until we hit filled space
-        double dy = 16;
-        while (findNonEmpty(level, inWorldUp(level, pos, -dy)) == null) {
+        long dy = 16;
+        while (findSolid(level, inWorldUp(level, pos, -dy)) == null) {
             if (dy > Integer.MAX_VALUE) {
                 CubicChunks.LOGGER.debug("Error finding spawn point: can't find solid start height at {}", pos);
                 return null;
@@ -85,8 +83,8 @@ public final class SpawnPlaceFinder {
     @Nullable
     private static BlockPos findMaxPos(BlockGetter level, BlockPos pos) {
         // go up twice as much each time until we hit empty space
-        double dy = 16;
-        while (findNonEmpty(level, inWorldUp(level, pos, dy)) != null) {
+        long dy = 16;
+        while (findSolid(level, inWorldUp(level, pos, dy)) != null) {
             if (dy > Integer.MAX_VALUE) {
                 CubicChunks.LOGGER.debug("Error finding spawn point: can't find non-solid end height at {}", pos);
                 return null;
@@ -97,9 +95,8 @@ public final class SpawnPlaceFinder {
     }
 
     @Nullable
-    private static BlockPos findNonEmpty(BlockGetter level, BlockPos pos) {
-        pos = pos.below(MIN_FREE_SPACE_SPAWN);
-        for (int i = 0; i < MIN_FREE_SPACE_SPAWN * 2; i++, pos = pos.above()) {
+    private static BlockPos findSolid(BlockGetter level, BlockPos pos) {
+        for (int i = 0; i < MIN_FREE_SPACE_SPAWN; i++, pos = pos.above()) {
             if (!level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) {
                 return pos;
             }
@@ -107,9 +104,8 @@ public final class SpawnPlaceFinder {
         return null;
     }
 
-    private static BlockPos inWorldUp(LevelHeightAccessor level, BlockPos original, double up) {
-        int y = (int) (original.getY() + up);
-        y = Mth.clamp(y, level.getMinBuildHeight(), level.getMaxBuildHeight());
+    private static BlockPos inWorldUp(LevelHeightAccessor level, BlockPos original, long up) {
+        int y = (int) Mth.clamp(original.getY() + up, level.getMinBuildHeight(), level.getMaxBuildHeight());
         return new BlockPos(original.getX(), y, original.getZ());
     }
 }

@@ -19,15 +19,20 @@ public abstract class MixinCreateWorldScreen extends Screen {
         super(component);
     }
 
-    @Inject(method = "init", at = @At("RETURN"))
+    @Inject(method = "init", at = @At("HEAD"))
     private void onInit(CallbackInfo ci) {
         isCubicChunksButton = this.addRenderableWidget(CycleButton.onOffBuilder(CubicChunks.config().common.generateNewWorldsAsCC)
 //                .withCustomNarration((button) -> CommonComponents.joinForNarration(button.createDefaultNarrationMessage(), new TranslatableComponent("selectWorld.cubicChunks.info")))
-                .create(this.width / 2 + 5, 151 - 20, 150, 20, new TranslatableComponent("selectWorld.cubicChunks"), (button, cubicChunksEnabled) -> {
+                .create(this.width / 2 + 5, 151, 150, 20, new TranslatableComponent("selectWorld.cubicChunks"), (button, cubicChunksEnabled) -> {
             var config = CubicChunks.config();
             config.common.generateNewWorldsAsCC = cubicChunksEnabled;
             config.markDirty();
             CubicChunks.LOGGER.info("New worlds generate as CC: " + config.common.generateNewWorldsAsCC);
         }));
+    }
+
+    @Inject(method = "setWorldGenSettingsVisible", at = @At("HEAD"))
+    private void onSetWorldGenSettingsVisible(boolean bl, CallbackInfo ci) {
+        isCubicChunksButton.visible = bl;
     }
 }
