@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.github.opencubicchunks.cubicchunks.mixin.ASMConfigPlugin;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.CustomClassAdder;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
@@ -220,15 +219,9 @@ public class TypeTransformerMethods {
     private ClassNode loadClassNodeFromClassPath(String className) {
         byte[] bytes;
 
-        bytes = CustomClassAdder.find(className);
-
         InputStream is;
 
-        if(bytes == null) {
-            is = ClassLoader.getSystemResourceAsStream(className + ".class");
-        }else{
-            is = new ByteArrayInputStream(bytes);
-        }
+        is = ClassLoader.getSystemResourceAsStream(className + ".class");
 
         if (is == null) {
             throw new RuntimeException("Could not find class " + className);

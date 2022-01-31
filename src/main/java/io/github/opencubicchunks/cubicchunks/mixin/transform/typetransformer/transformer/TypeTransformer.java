@@ -30,7 +30,7 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tra
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConstructorReplacer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.HierarchyTree;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.InterfaceInfo;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.InvokerInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodParameterInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodReplacement;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
@@ -39,7 +39,6 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMa
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
-import net.minecraft.util.Mth;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
@@ -129,6 +128,14 @@ public class TypeTransformer {
 
         //Extract per-class config from the global config
         this.transformInfo = config.getClasses().get(Type.getObjectType(classNode.name));
+
+        //Make invoker methods public
+        InvokerInfo invokerInfo = config.getInvokers().get(Type.getObjectType(classNode.name));
+        if(invokerInfo != null){
+            for(var method: invokerInfo.getMethods()){
+                MethodNode actualMethod = classNode.methods.stream().filter(m -> m.name.equals(method.targetMethodName()) && m.desc.equals(method.desc())).findFirst().orElse(null);
+            }
+        }
     }
 
     /**
@@ -145,32 +152,6 @@ public class TypeTransformer {
         }
 
         makeFieldCasts();
-
-        for(InterfaceInfo itf: MainTransformer.TRANSFORM_CONFIG.getInterfaces()){
-            itf.tryApplyTo(classNode);
-        }
-
-        if(classNode.signature != null){
-            //Make sure the superclass/interfaces in the signature are correct
-            //Find the type parameter information (if it exists it is at the start and delimited by '<' and '>')
-            int typeParamEnd = classNode.signature.indexOf('>');
-            String typeParam = "";
-            if(typeParamEnd != -1){
-                typeParam = classNode.signature.substring(0, typeParamEnd + 1);
-            }
-
-            StringBuilder signature = new StringBuilder(typeParam);
-
-            //Add the superclass
-            signature.append("L").append(classNode.superName).append(";");
-
-            //Add interfaces
-            for(String itf: classNode.interfaces){
-                signature.append("L").append(itf).append(";");
-            }
-
-            classNode.signature = signature.toString();
-        }
     }
 
     /**

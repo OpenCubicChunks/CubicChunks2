@@ -40,14 +40,14 @@ public class ConfigLoader {
         Map<String, TransformType> transformTypeMap = loadTransformTypes(root.get("types"), map, methodIDMap);
         AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo = loadMethodParameterInfo(root.get("methods"), map, methodIDMap, transformTypeMap, hierarchy);
         Map<Type, ClassTransformInfo> classes = loadClassInfo(root.get("classes"), map, methodIDMap, transformTypeMap, hierarchy);
-        List<InterfaceInfo> interfaces = loadInterfaces(root.get("interfaces"), map, transformTypeMap);
+        Map<Type, InvokerInfo> invokers = loadInvokers(root.get("invokers"), map, transformTypeMap);
 
         for(TransformType type : transformTypeMap.values()){
             type.addParameterInfoTo(parameterInfo);
         }
 
-        for(InterfaceInfo itf: interfaces){
-            itf.addTransformsTo(parameterInfo);
+        for(InvokerInfo invoker : invokers.values()){
+            invoker.addReplacementTo(parameterInfo);
         }
 
         Config config = new Config(
@@ -55,27 +55,32 @@ public class ConfigLoader {
                 transformTypeMap,
                 parameterInfo,
                 classes,
-                interfaces
+                invokers
         );
 
         return config;
     }
 
-    private static List<InterfaceInfo> loadInterfaces(JsonElement accessors, MappingResolver map, Map<String, TransformType> transformTypeMap) {
+    private static Map<Type, InvokerInfo> loadInvokers(JsonElement accessors, MappingResolver map, Map<String, TransformType> transformTypeMap) {
         JsonArray arr = accessors.getAsJsonArray();
-        List<InterfaceInfo> interfaces = new ArrayList<>();
+        Map<Type, InvokerInfo> interfaces = new HashMap<>();
 
         for(JsonElement e : arr){
             JsonObject obj = e.getAsJsonObject();
             String name = obj.get("name").getAsString();
 
+            String targetName = obj.get("target").getAsString();
+            Type target = remapType(Type.getObjectType(targetName), map, false);
+
             JsonArray methods = obj.get("methods").getAsJsonArray();
-            List<Method> methodsList = new ArrayList<>();
-            List<TransformSubtype[]> argTypes = new ArrayList<>();
+            List<InvokerInfo.InvokerMethodInfo> methodInfos = new ArrayList<>();
             for(JsonElement m : methods) {
                 JsonObject obj2 = m.getAsJsonObject();
                 String[] methodInfo = obj2.get("name").getAsString().split(" ");
                 Method method = new Method(methodInfo[0], methodInfo[1]);
+
+                String targetMethod = obj2.get("calls").getAsString();
+                targetMethod = map.mapMethodName("intermediary", targetName.replace('/', '.'), targetMethod, method.getDescriptor());
 
                 TransformSubtype[] transformTypes = new TransformSubtype[Type.getArgumentTypes(method.getDescriptor()).length];
 
@@ -91,12 +96,11 @@ public class ConfigLoader {
                     transformTypes[i] = TransformSubtype.of(null);
                 }
 
-                methodsList.add(method);
-                argTypes.add(transformTypes);
+                methodInfos.add(new InvokerInfo.InvokerMethodInfo(transformTypes, method.getName(), targetMethod, method.getDescriptor()));
             }
 
-            InterfaceInfo itf = new InterfaceInfo(Type.getObjectType(name), methodsList, argTypes);
-            interfaces.add(itf);
+            InvokerInfo invoker = new InvokerInfo(Type.getObjectType(name), target, methodInfos);
+            interfaces.put(target, invoker);
         }
 
         return interfaces;

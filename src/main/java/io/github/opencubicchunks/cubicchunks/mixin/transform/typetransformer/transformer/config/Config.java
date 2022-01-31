@@ -20,11 +20,12 @@ import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Interpreter;
 import org.objectweb.asm.tree.analysis.Value;
 
-public class Config { private final HierarchyTree hierarchy;
+public class Config {
+    private final HierarchyTree hierarchy;
     private final Map<String, TransformType> types;
     private final AncestorHashMap<MethodID, List<MethodParameterInfo>> methodParameterInfo;
     private final Map<Type, ClassTransformInfo> classes;
-    private final List<InterfaceInfo> interfaces;
+    private final Map<Type, InvokerInfo> invokers;
 
     private TransformTrackingInterpreter interpreter;
     private Analyzer<TransformTrackingValue> analyzer;
@@ -33,12 +34,12 @@ public class Config { private final HierarchyTree hierarchy;
 
     public Config(HierarchyTree hierarchy, Map<String, TransformType> transformTypeMap, AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo,
                   Map<Type, ClassTransformInfo> classes,
-                  List<InterfaceInfo> accessorInterfaces) {
+                  Map<Type, InvokerInfo> invokers) {
         this.types = transformTypeMap;
         this.methodParameterInfo = parameterInfo;
         this.hierarchy = hierarchy;
         this.classes = classes;
-        this.interfaces = accessorInterfaces;
+        this.invokers = invokers;
 
         TransformSubtype.init(this);
     }
@@ -104,8 +105,8 @@ public class Config { private final HierarchyTree hierarchy;
         return classes;
     }
 
-    public List<InterfaceInfo> getInterfaces() {
-        return interfaces;
+    public Map<Type, InvokerInfo> getInvokers() {
+        return invokers;
     }
 
     /**

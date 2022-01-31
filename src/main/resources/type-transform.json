@@ -654,20 +654,25 @@
     }
   ],
 
-  "interfaces": [
+  "invokers": [
     {
       "name": "io/github/opencubicchunks/cubicchunks/mixin/access/common/DynamicGraphMinFixedPointAccess",
+      "target": "net/minecraft/class_3554",
+
       "methods": [
         {
           "name": "invokeCheckEdge (JJIZ)V",
+          "calls": "method_15478",
           "types": ["blockpos", "blockpos"]
         },
         {
           "name": "invokeComputeLevelFromNeighbor (JJI)I",
+          "calls": "method_15488",
           "types": ["blockpos", "blockpos"]
         },
         {
           "name": "invokeGetLevel (J)I",
+          "calls": "method_15480",
           "types": ["blockpos"]
         }
       ]
