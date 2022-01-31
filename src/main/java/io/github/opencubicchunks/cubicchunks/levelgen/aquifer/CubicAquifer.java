@@ -91,7 +91,9 @@ public final class CubicAquifer implements Aquifer {
         int localX = x - this.minGridX;
         int localY = y - this.minGridY;
         int localZ = z - this.minGridZ;
-        return (localY * this.gridSizeZ + localZ) * this.gridSizeX + localX;
+
+        return 0;
+        //return (localY * this.gridSizeZ + localZ) * this.gridSizeX + localX;
     }
 
     @Override

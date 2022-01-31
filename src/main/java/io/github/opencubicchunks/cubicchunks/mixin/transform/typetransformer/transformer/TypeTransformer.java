@@ -88,8 +88,6 @@ public class TypeTransformer {
     private final Config config;
     //The original class node
     private final ClassNode classNode;
-    //When the class is being duplicated this is the new class.
-    private final ClassNode newClassNode;
     //Stores all the analysis results per method
     private final Map<MethodID, AnalysisResults> analysisResults = new HashMap<>();
     //Keeps track of bindings to un-analyzed methods
@@ -109,21 +107,14 @@ public class TypeTransformer {
     //Stores any other methods that need to be added. There really isn't much of a reason for these two to be separate.
     private final Set<MethodNode> newMethods = new HashSet<>();
 
-    //If the class is being duplicated, this is the name of the new class.
-    private final String renameTo;
 
     /**
      * Constructs a new TypeTransformer for a given class.
      * @param config The global configuration loaded by ConfigLoader
      * @param classNode The original class node
-     * @param duplicateClass Whether the class should be duplicated
      * @param addSafety Whether safety checks/dispatches/warnings should be inserted into the code.
      */
-    public TypeTransformer(Config config, ClassNode classNode, boolean duplicateClass, boolean addSafety) {
-        if(duplicateClass && addSafety){
-            throw new IllegalArgumentException("Cannot duplicate a class and add safety checks at the same time");
-        }
-
+    public TypeTransformer(Config config, ClassNode classNode, boolean addSafety) {
         this.config = config;
         this.classNode = classNode;
         this.fieldPseudoValues = new AncestorHashMap<>(config.getHierarchy());
@@ -137,53 +128,18 @@ public class TypeTransformer {
 
         //Extract per-class config from the global config
         this.transformInfo = config.getClasses().get(Type.getObjectType(classNode.name));
-
-        if(duplicateClass){
-            //Simple way of copying the class node
-            this.newClassNode = new ClassNode();
-
-            classNode.accept(newClassNode);
-
-            renameTo = newClassNode.name + "_transformed";
-
-            //Since we know that any isntance of a class will have transformed fields there is no need to add a field to check for it.
-            isTransformedField = null;
-        }else{
-            this.newClassNode = null;
-            renameTo = null;
-        }
     }
 
     /**
      * Should be called after all transforms have been applied.
      */
     public void cleanUpTransform(){
-        if(newClassNode != null){
-            //If the class is duplicated/renamed, this changes the name of the owner of all method/field accesses in all methods
-            ASMUtil.rename(newClassNode, newClassNode.name + "_transformed");
-        }
+        //Add methods that need to be added
 
-        if(newClassNode != null){
-            //There is no support for inner classes so we remove them
-            newClassNode.innerClasses.removeIf(
-                    c -> c.name.contains(classNode.name)
-            );
+        classNode.methods.addAll(lambdaTransformers);
+        classNode.methods.addAll(newMethods);
 
-            //Same thing for nest members
-            newClassNode.nestMembers.removeIf(
-                    c -> c.contains(classNode.name)
-            );
-        }else{
-            //Add methods that need to be added
-
-            classNode.methods.addAll(lambdaTransformers);
-            classNode.methods.addAll(newMethods);
-        }
-
-        if(newClassNode == null){
-            //See documentation for makeFieldCasts
-            makeFieldCasts();
-        }
+        makeFieldCasts();
 
         for(InterfaceInfo itf: MainTransformer.TRANSFORM_CONFIG.getInterfaces()){
             itf.tryApplyTo(classNode);
@@ -231,16 +187,12 @@ public class TypeTransformer {
         //Create or get the new method node
         MethodNode newMethod;
 
-        if(newClassNode != null) {
-            //The method is duplicated so we don't need to create a new one
-            newMethod = newClassNode.methods.stream().filter(m -> m.name.equals(methodNode.name) && m.desc.equals(methodNode.desc)).findFirst().orElse(null);
-        }else{
-            //Create a copy of the method
-            newMethod = ASMUtil.copy(methodNode);
-            //Add it to newMethods so that it gets added later and doesn't cause a ConcurrentModificationException if iterating over the methods.
-            newMethods.add(newMethod);
-            markSynthetic(newMethod, "AUTO-TRANSFORMED", methodNode.name + methodNode.desc);
-        }
+
+        //Create a copy of the method
+        newMethod = ASMUtil.copy(methodNode);
+        //Add it to newMethods so that it gets added later and doesn't cause a ConcurrentModificationException if iterating over the methods.
+        newMethods.add(newMethod);
+        markSynthetic(newMethod, "AUTO-TRANSFORMED", methodNode.name + methodNode.desc);
 
         if(newMethod == null){
             throw new RuntimeException("Method " + methodID + " not found in new class");
@@ -829,8 +781,8 @@ public class TypeTransformer {
 
         boolean renamed = false;
 
-        //If the method's descriptor's didn't change then we  need to change the name otherwise it will throw errors
-        if(newDescriptor.equals(oldMethod.desc) && newClassNode == null){
+        //If the method's descriptor's didn't change then we need to change the name otherwise it will throw errors
+        if(newDescriptor.equals(oldMethod.desc)){
             methodNode.name += MIX;
             renamed = true;
         }
@@ -1264,7 +1216,7 @@ public class TypeTransformer {
                         String methodName = methodReference.getName();
                         String methodDesc = methodReference.getDesc();
                         String methodOwner = methodReference.getOwner();
-                        if (!methodOwner.equals(getTransformed().name)) {
+                        if (!methodOwner.equals(classNode.name)) {
                             throw new IllegalStateException("Method reference must be in the same class");
                         }
 
@@ -1682,26 +1634,12 @@ public class TypeTransformer {
             analysisResults.put(methodID, finalResults);
         }
 
-        //Change field type in duplicate class
-        if(newClassNode != null) {
-            for (var entry : fieldPseudoValues.entrySet()) {
-                if (entry.getValue().getTransformType() == null) {
-                    continue;
-                }
 
+        //Check for transformed fields
+        for(var entry: fieldPseudoValues.entrySet()){
+            if(entry.getValue().getTransformType() != null){
                 hasTransformedFields = true;
-
-                TransformSubtype transformType = entry.getValue().getTransform();
-                FieldID fieldID = entry.getKey();
-                ASMUtil.changeFieldType(newClassNode, fieldID, transformType.getSingleType(), (m) -> new InsnList());
-            }
-        }else{
-            //Still check for transformed fields
-            for(var entry: fieldPseudoValues.entrySet()){
-                if(entry.getValue().getTransformType() != null){
-                    hasTransformedFields = true;
-                    break;
-                }
+                break;
             }
         }
 
@@ -1883,11 +1821,11 @@ public class TypeTransformer {
     }
 
     public void saveTransformedClass(){
-        Path outputPath = OUT_DIR.resolve(getTransformed().name + ".class");
+        Path outputPath = OUT_DIR.resolve(classNode.name + ".class");
         try {
             Files.createDirectories(outputPath.getParent());
             ClassWriter writer = new ClassWriter(0);
-            getTransformed().accept(writer);
+            classNode.accept(writer);
             Files.write(outputPath, writer.toByteArray());
         }catch (IOException e){
             throw new RuntimeException("Failed to save transformed class", e);
@@ -1923,10 +1861,10 @@ public class TypeTransformer {
 
     public Class<?> loadTransformedClass() {
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-        getTransformed().accept(writer);
+        classNode.accept(writer);
         byte[] bytes = writer.toByteArray();
 
-        String targetName = getTransformed().name.replace('/', '.');
+        String targetName = classNode.name.replace('/', '.');
 
         ClassLoader classLoader = new ClassLoader(this.getClass().getClassLoader()) {
             @Override
@@ -1943,14 +1881,6 @@ public class TypeTransformer {
             return classLoader.loadClass(targetName);
         }catch (ClassNotFoundException e){
             throw new RuntimeException("Failed to load transformed class", e);
-        }
-    }
-
-    private ClassNode getTransformed(){
-        if(newClassNode == null){
-            return classNode;
-        }else{
-            return newClassNode;
         }
     }
 
@@ -2181,10 +2111,6 @@ public class TypeTransformer {
 
     public Map<FieldID, TransformTrackingValue> getFieldPseudoValues(){
         return fieldPseudoValues;
-    }
-
-    public ClassNode getTargetClass() {
-        return getTransformed();
     }
 
     /**

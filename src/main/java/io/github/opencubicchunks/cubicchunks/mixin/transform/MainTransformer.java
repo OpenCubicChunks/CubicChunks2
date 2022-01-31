@@ -400,7 +400,7 @@ public class MainTransformer {
     }
 
     public static void transformDynamicGraphMinFixedPoint(ClassNode targetClass) {
-        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, false, true);
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass,  true);
 
         transformer.analyzeAllMethods();
         transformer.makeConstructor("(III)V", makeDynGraphConstructor());
@@ -470,7 +470,7 @@ public class MainTransformer {
     }
 
     public static void transformLayerLightEngine(ClassNode targetClass){
-        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, false, true);
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
 
         transformer.analyzeAllMethods();
         transformer.transformAllMethods();
@@ -479,7 +479,7 @@ public class MainTransformer {
     }
 
     public static void transformSectionPos(ClassNode targetClass){
-        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, false, true);
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
 
         ClassMethod blockToSection = remapMethod(
             new ClassMethod(
@@ -497,7 +497,7 @@ public class MainTransformer {
     }
 
     public static void defaultTransform(ClassNode targetClass){
-        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, false, true);
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
 
         transformer.analyzeAllMethods();
         transformer.transformAllMethods();
