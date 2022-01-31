@@ -10,6 +10,8 @@ import it.unimi.dsi.fastutil.longs.LongListIterator;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * A fast hash-map implementation for 3-dimensional vectors with {@code int} components, mapped to unsigned {@code byte} values.
@@ -88,6 +90,11 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
     protected long lastBucketIndex = -1L; //index of the last known assigned bucket in the list
 
     protected boolean closed = false;
+
+    //Used in DynamicGraphMinFixedPoint transform constructor
+    public Int3UByteLinkedHashMap(DynamicGraphMinFixedPoint $1, int $2, float $3, int $4){
+        this();
+    }
 
     public Int3UByteLinkedHashMap() {
         this.setTableSize(DEFAULT_TABLE_SIZE);
@@ -945,5 +952,17 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
             int dz = index & BUCKET_AXIS_MASK;
             action.accept((bucketX << BUCKET_AXIS_BITS) + dx, (bucketY << BUCKET_AXIS_BITS) + dy, (bucketZ << BUCKET_AXIS_BITS) + dz);
         }
+    }
+
+    /**
+     * This is a dummy function used in the transformation of the DynamicGraphMinFixedPoint constructor.
+     * Calling it will do nothing.
+     *
+     * @deprecated So no one touches it
+     */
+    @ApiStatus.Internal
+    @Deprecated
+    public void defaultReturnValue(byte b){
+        //This is intentionally left blank
     }
 }

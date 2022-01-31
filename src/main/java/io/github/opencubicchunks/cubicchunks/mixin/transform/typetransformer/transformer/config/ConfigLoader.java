@@ -20,14 +20,11 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tra
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
-import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
-import org.objectweb.asm.tree.InsnList;
 
 public class ConfigLoader {
     public static Config loadConfig(InputStream is){
@@ -128,7 +125,30 @@ public class ConfigLoader {
                 typeHints.put(method, paramTypes);
             }
 
-            ClassTransformInfo info = new ClassTransformInfo(typeHints);
+            JsonElement constructorReplacersArr = obj.get("constructor_replacers");
+            Map<String, ConstructorReplacer> constructorReplacers = new HashMap<>();
+            if(constructorReplacersArr != null){
+                for(JsonElement constructorReplacer : constructorReplacersArr.getAsJsonArray()){
+                    JsonObject constructorReplacerObj = constructorReplacer.getAsJsonObject();
+                    String original = constructorReplacerObj.get("original").getAsString();
+
+                    if(!original.contains("(")){
+                        original = "(" + original + ")V";
+                    }
+
+                    Map<String, String> replacements = new HashMap<>();
+                    for(Map.Entry<String, JsonElement> replacement : constructorReplacerObj.get("type_replacements").getAsJsonObject().entrySet()){
+                        Type type1 = remapType(Type.getObjectType(replacement.getKey()), map, false);
+                        Type type2 = remapType(Type.getObjectType(replacement.getValue().getAsString()), map, false);
+
+                        replacements.put(type1.getInternalName(), type2.getInternalName());
+                    }
+
+                    constructorReplacers.put(original, new ConstructorReplacer(original, replacements));
+                }
+            }
+
+            ClassTransformInfo info = new ClassTransformInfo(typeHints, constructorReplacers);
             classInfo.put(type, info);
         }
 

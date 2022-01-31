@@ -28,6 +28,7 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tra
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingValue;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ClassTransformInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConstructorReplacer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.HierarchyTree;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.InterfaceInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodParameterInfo;
@@ -138,6 +139,10 @@ public class TypeTransformer {
 
         classNode.methods.addAll(lambdaTransformers);
         classNode.methods.addAll(newMethods);
+
+        if(hasTransformedFields) {
+            addSafetyFieldSetter();
+        }
 
         makeFieldCasts();
 
@@ -1634,7 +1639,6 @@ public class TypeTransformer {
             analysisResults.put(methodID, finalResults);
         }
 
-
         //Check for transformed fields
         for(var entry: fieldPseudoValues.entrySet()){
             if(entry.getValue().getTransformType() != null){
@@ -1655,10 +1659,13 @@ public class TypeTransformer {
     private void addSafetyField() {
         isTransformedField = new FieldID(Type.getObjectType(classNode.name), "isTransformed" + MIX, Type.BOOLEAN_TYPE);
         classNode.fields.add(isTransformedField.toNode(false, Opcodes.ACC_FINAL));
+    }
 
-        //For every constructor already in the method, add 'isTransformed = false' to it.
+    private void addSafetyFieldSetter(){
         for(MethodNode methodNode: classNode.methods){
             if(methodNode.name.equals("<init>")){
+                if(isSynthetic(methodNode)) continue;
+
                 insertAtReturn(methodNode, (variableAllocator) -> {
                     InsnList instructions = new InsnList();
                     instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
@@ -1727,7 +1734,7 @@ public class TypeTransformer {
             ASMUtil.changeFieldType(classNode, fieldID, Type.getObjectType("java/lang/Object"), (method) -> {
                 InsnList insnList = new InsnList();
                 if(isSynthetic(method)) {
-                    insnList.add(new TypeInsnNode(Opcodes.CHECKCAST, transformType.getSingleType().getInternalName()));
+                    insnList.add(new TypeInsnNode(Opcodes.CHECKCAST, transformedType));
                 }else{
                     insnList.add(new TypeInsnNode(Opcodes.CHECKCAST, originalType));
                 }
@@ -1898,6 +1905,20 @@ public class TypeTransformer {
         }
 
         cleanUpTransform();
+    }
+
+    /**
+     * Transform and add a constructor. Replacement info must be provided
+     * @param desc The descriptor of the original constructor
+     */
+    public void makeConstructor(String desc) {
+        ConstructorReplacer replacer = transformInfo.getConstructorReplacers().get(desc);
+
+        if(replacer == null){
+            throw new RuntimeException("No replacement info found for constructor " + desc);
+        }
+
+        makeConstructor(desc, replacer.make(this));
     }
 
     /**
@@ -2111,6 +2132,14 @@ public class TypeTransformer {
 
     public Map<FieldID, TransformTrackingValue> getFieldPseudoValues(){
         return fieldPseudoValues;
+    }
+
+    public ClassNode getClassNode() {
+        return classNode;
+    }
+
+    public Config getConfig() {
+        return config;
     }
 
     /**

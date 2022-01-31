@@ -403,7 +403,10 @@ public class MainTransformer {
         TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass,  true);
 
         transformer.analyzeAllMethods();
-        transformer.makeConstructor("(III)V", makeDynGraphConstructor());
+
+        //transformer.makeConstructor("(III)V", makeDynGraphConstructor());
+        transformer.makeConstructor("(III)V");
+
         transformer.transformAllMethods();
     }
 

@@ -4,6 +4,7 @@ import java.util.NoSuchElementException;
 
 import io.netty.util.internal.PlatformDependent;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 /**
@@ -70,6 +71,11 @@ public class LinkedInt3HashSet implements AutoCloseable{
 
     protected long first = 0;
     protected long last = 0;
+
+    //Used in DynamicGraphMinFixedPoint transform constructor
+    public LinkedInt3HashSet(DynamicGraphMinFixedPoint $1, int $2, float $3, int $4){
+        this();
+    }
 
     public LinkedInt3HashSet() {
         this.setTableSize(DEFAULT_TABLE_SIZE);

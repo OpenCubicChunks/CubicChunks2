@@ -579,6 +579,18 @@
             "blockpos"
           ]
         }
+      ],
+      "constructor_replacers": [
+        {
+          "original": "III",
+          "type_replacements": {
+            "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet": "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet",
+            "it/unimi/dsi/fastutil/longs/Long2ByteOpenHashMap": "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap",
+            "net/minecraft/class_3554$1": "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet",
+            "net/minecraft/class_3554$2": "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap",
+            "it/unimi/dsi/fastutil/longs/Long2ByteMap": "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap"
+          }
+        }
       ]
     },
     {
