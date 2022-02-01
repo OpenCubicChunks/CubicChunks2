@@ -68,10 +68,6 @@ public class CubicChunks implements ModInitializer {
         //Custom CC Features
         CubicFeatureDecorators.init();
         CubicFeatures.init();
-
-        //This is just so that these classes get loaded earlier on, allowing for quicker testing. It's not needed in release
-        DynamicGraphMinFixedPoint.class.getName();
-        SkyLightEngine.class.getName();
     }
 
     public static Config config() {

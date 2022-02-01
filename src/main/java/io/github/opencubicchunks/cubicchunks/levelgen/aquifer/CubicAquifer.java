@@ -92,8 +92,15 @@ public final class CubicAquifer implements Aquifer {
         int localY = y - this.minGridY;
         int localZ = z - this.minGridZ;
 
-        return 0;
-        //return (localY * this.gridSizeZ + localZ) * this.gridSizeX + localX;
+        int index = (localY * this.gridSizeZ + localZ) * this.gridSizeX + localX;
+
+        //FIXME: Because of the way the cache is implemented, this can cause an ArrayIndexOutOfBoundsException.
+        //The coordinates are unpacked from longs so when outside the proper range, they wrap around and this returns nonsense values.
+        if(index < 0 || index >= this.aquiferCache.length){
+            return 0;
+        }
+
+        return index;
     }
 
     @Override
@@ -119,6 +126,7 @@ public final class CubicAquifer implements Aquifer {
         int firstDistance2 = Integer.MAX_VALUE;
         int secondDistance2 = Integer.MAX_VALUE;
         int thirdDistance2 = Integer.MAX_VALUE;
+
         long firstSource = 0;
         long secondSource = 0;
         long thirdSource = 0;
