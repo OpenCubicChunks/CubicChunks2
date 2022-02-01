@@ -1,10 +1,8 @@
 package io.github.opencubicchunks.cubicchunks.mixin.asm.common;
 
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.DynamicGraphMinFixedPointAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
-import net.minecraft.world.Container;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.lighting.BlockLightEngine;
 import net.minecraft.world.level.lighting.BlockLightSectionStorage;

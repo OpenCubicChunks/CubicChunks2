@@ -6,7 +6,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 
-public interface InstructionFactory extends BytecodeFactory{
+public interface InstructionFactory extends BytecodeFactory {
     AbstractInsnNode create();
     default InsnList generate(Function<Type, Integer> variableAllocator) {
         InsnList list = new InsnList();

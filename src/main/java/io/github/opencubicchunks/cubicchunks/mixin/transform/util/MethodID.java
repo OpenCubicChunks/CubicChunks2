@@ -7,25 +7,25 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-public class MethodID implements Ancestralizable<MethodID>{
-    private final Type owner;
-    private final String name;
-    private final Type descriptor;
-
-    private final CallType callType;
-
-    public static final Hash.Strategy<MethodID> HASH_CALL_TYPE = new Hash.Strategy<MethodID>() {
+public class MethodID implements Ancestralizable<MethodID> {
+    public static final Hash.Strategy<MethodID> HASH_CALL_TYPE = new Hash.Strategy<>() {
         @Override public int hashCode(MethodID o) {
             return Objects.hash(o.callType, o.owner, o.name, o.descriptor);
         }
 
         @Override public boolean equals(MethodID a, MethodID b) {
-            if(a == b) return true;
-            if(a == null || b == null) return false;
+            if (a == b) return true;
+            if (a == null || b == null) return false;
 
             return a.callType == b.callType && a.owner.equals(b.owner) && a.name.equals(b.name) && a.descriptor.equals(b.descriptor);
         }
     };
+
+    private final Type owner;
+    private final String name;
+    private final Type descriptor;
+
+    private final CallType callType;
 
     public MethodID(Type owner, String name, Type descriptor, CallType callType) {
         this.owner = owner;
@@ -129,7 +129,7 @@ public class MethodID implements Ancestralizable<MethodID>{
 
         private final int opcode;
 
-        CallType(int opcode){
+        CallType(int opcode) {
             this.opcode = opcode;
         }
 
@@ -143,12 +143,12 @@ public class MethodID implements Ancestralizable<MethodID>{
             };
         }
 
-        public int getOpcode(){
+        public int getOpcode() {
             return opcode;
         }
 
         public int getOffset() {
-            if(this == STATIC){
+            if (this == STATIC) {
                 return 0;
             }
             return 1;

@@ -7,7 +7,6 @@ import it.unimi.dsi.fastutil.longs.AbstractLongSortedSet;
 import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
 import it.unimi.dsi.fastutil.longs.LongComparator;
 import it.unimi.dsi.fastutil.longs.LongListIterator;
-import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
@@ -92,7 +91,7 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
     protected boolean closed = false;
 
     //Used in DynamicGraphMinFixedPoint transform constructor
-    public Int3UByteLinkedHashMap(DynamicGraphMinFixedPoint $1, int $2, float $3, int $4){
+    public Int3UByteLinkedHashMap(DynamicGraphMinFixedPoint $1, int $2, float $3, int $4) {
         this();
     }
 
@@ -726,7 +725,7 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         this.close();
     }
 
-    public Int3KeySet int3KeySet(){
+    public Int3KeySet int3KeySet() {
         return new Int3KeySet();
     }
 
@@ -740,43 +739,43 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
 
     //Methods for vanilla compatibility
 
-    public byte get(long l){
+    public byte get(long l) {
         return (byte) get(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
     }
 
-    public byte remove(long l){
+    public byte remove(long l) {
         return (byte) remove(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
     }
 
-    public byte put(long l, byte value){
+    public byte put(long l, byte value) {
         return (byte) put(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l), value);
     }
 
-    public int size(){
+    public int size() {
         return (int) size;
     }
 
     //TODO: Make this more efficient
-    public LinkedInt3HashSet keySet(){
+    public LinkedInt3HashSet keySet() {
         LinkedInt3HashSet set = new LinkedInt3HashSet();
         this.forEach((x, y, z, __) -> set.add(x, y, z));
         return set;
     }
 
-    protected class LongKeyIterator implements LongListIterator{
+    protected class LongKeyIterator implements LongListIterator {
         long bucketIndex;
         long currentValue;
         int offset = -1;
 
-        public LongKeyIterator(){
-            if(tableAddr == 0){
+        public LongKeyIterator() {
+            if (tableAddr == 0) {
                 bucketIndex = -1;
                 currentValue = 0;
                 return;
             }
 
             this.bucketIndex = firstBucketIndex;
-            if(bucketIndex != -1) {
+            if (bucketIndex != -1) {
                 currentValue = PlatformDependent.getLong(tableAddr + bucketIndex * BUCKET_BYTES + VALUE_FLAGS_OFFSET);
             }
         }
@@ -784,18 +783,21 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         @Override public long previousLong() {
             throw new UnsupportedOperationException();
         }
+
         @Override public boolean hasPrevious() {
             throw new UnsupportedOperationException();
         }
+
         @Override public int nextIndex() {
             throw new UnsupportedOperationException();
         }
+
         @Override public int previousIndex() {
             throw new UnsupportedOperationException();
         }
 
         @Override public long nextLong() {
-            if(currentValue == 0){
+            if (currentValue == 0) {
                 bucketIndex = PlatformDependent.getLong(tableAddr + bucketIndex * BUCKET_BYTES + BUCKET_NEXTINDEX_OFFSET);
                 currentValue = PlatformDependent.getLong(tableAddr + bucketIndex * BUCKET_BYTES + VALUE_FLAGS_OFFSET);
                 offset = -1;
@@ -815,12 +817,12 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
         }
 
         @Override public boolean hasNext() {
-            if(bucketIndex == -1) return false;
+            if (bucketIndex == -1) return false;
             return !(currentValue == 0 && PlatformDependent.getLong(tableAddr + bucketIndex * BUCKET_BYTES + BUCKET_NEXTINDEX_OFFSET) != -1);
         }
     }
 
-    protected class LongKeySet extends AbstractLongSortedSet{
+    protected class LongKeySet extends AbstractLongSortedSet {
         @Override
         public LongBidirectionalIterator iterator(long fromElement) {
             throw new UnsupportedOperationException();
@@ -858,8 +860,9 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
 
         @Override
         public long firstLong() {
-            if (size == 0)
+            if (size == 0) {
                 throw new NoSuchElementException();
+            }
 
             long bucketAddr = tableAddr + firstBucketIndex * BUCKET_BYTES;
 
@@ -879,8 +882,9 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
 
         @Override
         public long lastLong() {
-            if (size == 0)
+            if (size == 0) {
                 throw new NoSuchElementException();
+            }
 
             long bucketAddr = tableAddr + lastBucketIndex * BUCKET_BYTES;
 
@@ -900,9 +904,9 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
     }
 
     //These methods are very similar to ones defined above
-    public class Int3KeySet{
+    public class Int3KeySet {
         //This is the only method that ever gets called on it
-        public void forEach(XYZConsumer action){
+        public void forEach(XYZConsumer action) {
             if (tableAddr == 0L //table hasn't even been allocated
                 || isEmpty()) { //no entries are present
                 return; //there's nothing to iterate over...
@@ -955,15 +959,14 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
     }
 
     /**
-     * This is a dummy function used in the transformation of the DynamicGraphMinFixedPoint constructor.
-     * Calling it will do nothing.
+     * This is a dummy function used in the transformation of the DynamicGraphMinFixedPoint constructor. Calling it will do nothing.
      *
      * @deprecated So no one touches it
      */
     @ApiStatus.Internal
     @Deprecated
-    public void defaultReturnValue(byte b){
-        if(b != -1){
+    public void defaultReturnValue(byte b) {
+        if (b != -1) {
             throw new IllegalStateException("Default return value is not -1");
         }
     }

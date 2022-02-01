@@ -96,7 +96,7 @@ public final class CubicAquifer implements Aquifer {
 
         //FIXME: Because of the way the cache is implemented, this can cause an ArrayIndexOutOfBoundsException.
         //The coordinates are unpacked from longs so when outside the proper range, they wrap around and this returns nonsense values.
-        if(index < 0 || index >= this.aquiferCache.length){
+        if (index < 0 || index >= this.aquiferCache.length) {
             return 0;
         }
 

@@ -8,20 +8,19 @@ import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 /**
- * Modification of DaPorkchop_'s original {@code Int3HashSet} which keeps track of a linked list which
- * allows for easy lookup of elements. This makes it a bit slower and uses up more memory
+ * Modification of DaPorkchop_'s original {@code Int3HashSet} which keeps track of a linked list which allows for easy lookup of elements. This makes it a bit slower and uses up more memory
  * <br><br>
  * Original Description (By DaPorkchop_):
  * <br>
  * A fast hash-set implementation for 3-dimensional vectors with {@code int} components.
  * <p>
- *   Optimized for the case where queries will be close to each other.
+ * Optimized for the case where queries will be close to each other.
  * <p>
- *   Not thread-safe. Attempting to use this concurrently from multiple threads will likely have catastrophic results (read: JVM crashes).
+ * Not thread-safe. Attempting to use this concurrently from multiple threads will likely have catastrophic results (read: JVM crashes).
  *
  * @author DaPorkchop_ & Salamander
  */
-public class LinkedInt3HashSet implements AutoCloseable{
+public class LinkedInt3HashSet implements AutoCloseable {
     protected static final long KEY_X_OFFSET = 0L;
     protected static final long KEY_Y_OFFSET = KEY_X_OFFSET + Integer.BYTES;
     protected static final long KEY_Z_OFFSET = KEY_Y_OFFSET + Integer.BYTES;
@@ -73,7 +72,7 @@ public class LinkedInt3HashSet implements AutoCloseable{
     protected long last = 0;
 
     //Used in DynamicGraphMinFixedPoint transform constructor
-    public LinkedInt3HashSet(DynamicGraphMinFixedPoint $1, int $2, float $3, int $4){
+    public LinkedInt3HashSet(DynamicGraphMinFixedPoint $1, int $2, float $3, int $4) {
         this();
     }
 
@@ -156,18 +155,18 @@ public class LinkedInt3HashSet implements AutoCloseable{
                         PlatformDependent.putInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET, y);
                         PlatformDependent.putInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET, z);
 
-                        if(first == 0){
+                        if (first == 0) {
                             first = bucketAddr;
                         }
 
                         //If last is set, set the the last value's pointer to point here and set this pointer to last
-                        if(last != 0){
+                        if (last != 0) {
                             PlatformDependent.putLong(last + NEXT_VALUE_OFFSET, bucketAddr);
                             PlatformDependent.putLong(bucketAddr + PREV_VALUE_OFFSET, last);
                         }
 
                         last = bucketAddr;
-                        
+
                         return bucketAddr;
                     } else {
                         //we've established that there's no matching bucket, but the table is full. let's resize it before allocating a bucket
@@ -207,17 +206,17 @@ public class LinkedInt3HashSet implements AutoCloseable{
         long prevBucket = 0;
         long bucket = first;
 
-        while (bucket != 0){
+        while (bucket != 0) {
             int x = PlatformDependent.getInt(bucket + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
             int y = PlatformDependent.getInt(bucket + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);
             int z = PlatformDependent.getInt(bucket + BUCKET_KEY_OFFSET + KEY_Z_OFFSET);
             long value = PlatformDependent.getLong(bucket + BUCKET_VALUE_OFFSET);
 
             long newBucketAddr;
-            for(long hash = hashPosition(x, y, z), j = 0L; ; j++){
+            for (long hash = hashPosition(x, y, z), j = 0L; ; j++) {
                 newBucketAddr = newTableAddr + ((hash + j) & newMask) * BUCKET_BYTES;
 
-                if(PlatformDependent.getLong(newBucketAddr + BUCKET_VALUE_OFFSET) == 0L){ //if the bucket value is 0, it means the bucket hasn't been assigned yet
+                if (PlatformDependent.getLong(newBucketAddr + BUCKET_VALUE_OFFSET) == 0L) { //if the bucket value is 0, it means the bucket hasn't been assigned yet
                     PlatformDependent.putInt(newBucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET, x);
                     PlatformDependent.putInt(newBucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET, y);
                     PlatformDependent.putInt(newBucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET, z);
@@ -225,9 +224,9 @@ public class LinkedInt3HashSet implements AutoCloseable{
 
                     PlatformDependent.putLong(newBucketAddr + PREV_VALUE_OFFSET, prevBucket);
 
-                    if(prevBucket == 0){
+                    if (prevBucket == 0) {
                         this.first = newBucketAddr;
-                    }else{
+                    } else {
                         PlatformDependent.putLong(prevBucket + NEXT_VALUE_OFFSET, newBucketAddr);
                     }
                     this.last = newBucketAddr;
@@ -259,7 +258,7 @@ public class LinkedInt3HashSet implements AutoCloseable{
 
         long bucket = first;
 
-        while (bucket != 0){
+        while (bucket != 0) {
             int bucketX = PlatformDependent.getInt(bucket + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
             int bucketY = PlatformDependent.getInt(bucket + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);
             int bucketZ = PlatformDependent.getInt(bucket + BUCKET_KEY_OFFSET + KEY_Z_OFFSET);
@@ -339,22 +338,23 @@ public class LinkedInt3HashSet implements AutoCloseable{
         }
     }
 
-    protected void removeBucket(long bucketAddr){
+    protected void removeBucket(long bucketAddr) {
         this.usedBuckets--;
 
         patchRemoval(bucketAddr);
-        if(bucketAddr == this.first){
+        if (bucketAddr == this.first) {
             long newFirst = PlatformDependent.getLong(bucketAddr + NEXT_VALUE_OFFSET);
-            if(newFirst != 0){
+            if (newFirst != 0) {
                 PlatformDependent.putLong(newFirst + PREV_VALUE_OFFSET, 0);
             }
             this.first = newFirst;
         }
 
-        if(bucketAddr == this.last){
+        if (bucketAddr == this.last) {
             long newLast = PlatformDependent.getLong(bucketAddr + PREV_VALUE_OFFSET);
-            if(newLast != 0)
+            if (newLast != 0) {
                 PlatformDependent.putLong(newLast + NEXT_VALUE_OFFSET, 0);
+            }
             this.last = newLast;
         }
     }
@@ -412,32 +412,32 @@ public class LinkedInt3HashSet implements AutoCloseable{
         long ptrPrev = PlatformDependent.getLong(currPtr + PREV_VALUE_OFFSET);
         long ptrNext = PlatformDependent.getLong(currPtr + NEXT_VALUE_OFFSET);
 
-        if(ptrPrev != 0){
+        if (ptrPrev != 0) {
             PlatformDependent.putLong(ptrPrev + NEXT_VALUE_OFFSET, newPtr);
         }
 
-        if(ptrNext != 0){
+        if (ptrNext != 0) {
             PlatformDependent.putLong(ptrNext + PREV_VALUE_OFFSET, newPtr);
         }
 
-        if(currPtr == this.first){
+        if (currPtr == this.first) {
             first = newPtr;
         }
 
-        if(currPtr == this.last){
+        if (currPtr == this.last) {
             this.last = newPtr;
         }
     }
 
-    public void patchRemoval(long ptr){
+    public void patchRemoval(long ptr) {
         long ptrPrev = PlatformDependent.getLong(ptr + PREV_VALUE_OFFSET);
         long ptrNext = PlatformDependent.getLong(ptr + NEXT_VALUE_OFFSET);
 
-        if(ptrPrev != 0){
+        if (ptrPrev != 0) {
             PlatformDependent.putLong(ptrPrev + NEXT_VALUE_OFFSET, ptrNext);
         }
 
-        if(ptrNext != 0){
+        if (ptrNext != 0) {
             PlatformDependent.putLong(ptrNext + PREV_VALUE_OFFSET, ptrPrev);
         }
     }
@@ -469,11 +469,12 @@ public class LinkedInt3HashSet implements AutoCloseable{
     //Cached index of value
     int cachedIndex = -1;
 
-    public int getFirstX(){
-        if(size == 0)
+    public int getFirstX() {
+        if (size == 0) {
             throw new NoSuchElementException();
+        }
 
-        if(cachedIndex == -1){
+        if (cachedIndex == -1) {
             getFirstSetBitInFirstBucket();
         }
 
@@ -482,11 +483,13 @@ public class LinkedInt3HashSet implements AutoCloseable{
         int dx = cachedIndex >> (BUCKET_AXIS_BITS * 2);
         return (x << BUCKET_AXIS_BITS) + dx;
     }
-    public int getFirstY(){
-        if(size == 0)
-            throw new NoSuchElementException();
 
-        if(cachedIndex == -1){
+    public int getFirstY() {
+        if (size == 0) {
+            throw new NoSuchElementException();
+        }
+
+        if (cachedIndex == -1) {
             getFirstSetBitInFirstBucket();
         }
 
@@ -495,11 +498,13 @@ public class LinkedInt3HashSet implements AutoCloseable{
         int dy = (cachedIndex >> BUCKET_AXIS_BITS) & BUCKET_AXIS_MASK;
         return (y << BUCKET_AXIS_BITS) + dy;
     }
-    public int getFirstZ(){
-        if(size == 0)
-            throw new NoSuchElementException();
 
-        if(cachedIndex == -1){
+    public int getFirstZ() {
+        if (size == 0) {
+            throw new NoSuchElementException();
+        }
+
+        if (cachedIndex == -1) {
             getFirstSetBitInFirstBucket();
         }
 
@@ -509,11 +514,12 @@ public class LinkedInt3HashSet implements AutoCloseable{
         return (z << BUCKET_AXIS_BITS) + dz;
     }
 
-    public void removeFirstValue(){
-        if(size == 0)
+    public void removeFirstValue() {
+        if (size == 0) {
             throw new NoSuchElementException();
+        }
 
-        if(cachedIndex == -1){
+        if (cachedIndex == -1) {
             getFirstSetBitInFirstBucket();
         }
 
@@ -523,19 +529,19 @@ public class LinkedInt3HashSet implements AutoCloseable{
 
         this.size--;
 
-        if(value == 0){
+        if (value == 0) {
             long pos = (this.first - tableAddr) / BUCKET_BYTES;
             removeBucket(this.first);
             this.shiftBuckets(tableAddr, pos, tableSize - 1L);
 
             cachedIndex = -1;
-        }else{
+        } else {
             PlatformDependent.putLong(first + BUCKET_VALUE_OFFSET, value);
             getFirstSetBitInFirstBucket(cachedIndex);
         }
     }
 
-    protected void getFirstSetBitInFirstBucket(){
+    protected void getFirstSetBitInFirstBucket() {
         getFirstSetBitInFirstBucket(0);
     }
 
@@ -591,19 +597,19 @@ public class LinkedInt3HashSet implements AutoCloseable{
 
     //These methods probably won't be used by any CC code but should help ensure some compatibility if other mods access the light engine
 
-    public boolean add(long l){
+    public boolean add(long l) {
         return add(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
     }
 
-    public boolean contains(long l){
+    public boolean contains(long l) {
         return contains(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
     }
 
-    public boolean remove(long l){
+    public boolean remove(long l) {
         return remove(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
     }
 
-    public long removeFirstLong(){
+    public long removeFirstLong() {
         int x = getFirstX();
         int y = getFirstY();
         int z = getFirstZ();
@@ -614,7 +620,7 @@ public class LinkedInt3HashSet implements AutoCloseable{
 
     //Should only be used during tests
 
-    public XYZTriple[] toArray(){
+    public XYZTriple[] toArray() {
         XYZTriple[] arr = new XYZTriple[(int) size];
 
         MutableInt i = new MutableInt(0);
@@ -622,11 +628,13 @@ public class LinkedInt3HashSet implements AutoCloseable{
             arr[i.getAndIncrement()] = new XYZTriple(x, y, z);
         });
 
-        if(i.getValue() != size){
+        if (i.getValue() != size) {
             throw new IllegalStateException("Size mismatch");
         }
 
         return arr;
     }
-    public static record XYZTriple(int x, int y, int z){}
+
+    public static record XYZTriple(int x, int y, int z) {
+    }
 }

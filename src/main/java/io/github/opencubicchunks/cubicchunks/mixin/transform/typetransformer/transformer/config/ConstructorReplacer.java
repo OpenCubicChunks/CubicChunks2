@@ -7,7 +7,6 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tra
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -34,14 +33,14 @@ public record ConstructorReplacer(String originalDesc, Map<String, String> repla
         for (AbstractInsnNode insn : originalCode) {
             if (insn instanceof LabelNode labelNode) {
                 newCode.add(labelCopies.get(labelNode));
-            }else if(insn instanceof TypeInsnNode typeInsnNode) {
+            } else if (insn instanceof TypeInsnNode typeInsnNode) {
                 String desc = typeInsnNode.desc;
                 if (replacements.containsKey(desc)) {
                     desc = replacements.get(desc);
                 }
 
                 newCode.add(new TypeInsnNode(typeInsnNode.getOpcode(), desc));
-            }else if(insn instanceof MethodInsnNode methodInsnNode) {
+            } else if (insn instanceof MethodInsnNode methodInsnNode) {
                 Type owner = Type.getObjectType(methodInsnNode.owner);
                 Type[] args = Type.getArgumentTypes(methodInsnNode.desc);
 
@@ -49,7 +48,7 @@ public record ConstructorReplacer(String originalDesc, Map<String, String> repla
                     owner = Type.getObjectType(replacements.get(owner.getInternalName()));
                 }
 
-                for(int i = 0; i < args.length; i++) {
+                for (int i = 0; i < args.length; i++) {
                     if (replacements.containsKey(args[i].getInternalName())) {
                         args[i] = Type.getObjectType(replacements.get(args[i].getInternalName()));
                     }
@@ -65,20 +64,7 @@ public record ConstructorReplacer(String originalDesc, Map<String, String> repla
                 }
 
                 newCode.add(new MethodInsnNode(opcode, owner.getInternalName(), methodInsnNode.name, Type.getMethodDescriptor(Type.getReturnType(methodInsnNode.desc), args), itf));
-            }/*else if(insn instanceof FieldInsnNode fieldInsnNode){
-                Type owner = Type.getObjectType(fieldInsnNode.owner);
-                Type type = Type.getType(fieldInsnNode.desc);
-
-                if (replacements.containsKey(owner.getInternalName())) {
-                    owner = Type.getObjectType(replacements.get(owner.getInternalName()));
-                }
-
-                if (replacements.containsKey(type.getInternalName())) {
-                    type = Type.getObjectType(replacements.get(type.getInternalName()));
-                }
-
-                newCode.add(new FieldInsnNode(fieldInsnNode.getOpcode(), owner.getInternalName(), fieldInsnNode.name, type.getDescriptor()));
-            }*/ else {
+            } else {
                 newCode.add(insn.clone(labelCopies));
             }
         }

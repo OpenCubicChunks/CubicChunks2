@@ -3,37 +3,27 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.ARRAY;
 import static org.objectweb.asm.Type.OBJECT;
-import static org.objectweb.asm.Type.getMethodType;
 import static org.objectweb.asm.Type.getObjectType;
 import static org.objectweb.asm.Type.getType;
 import static org.objectweb.asm.commons.Method.getMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import com.google.common.collect.Sets;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
-import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.launch.common.MappingConfiguration;
-import net.fabricmc.mapping.tree.TinyTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -59,7 +49,6 @@ import org.objectweb.asm.tree.VarInsnNode;
 public class MainTransformer {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final boolean IS_DEV = Utils.isDev();
-    private static final Set<String> warningsCalled = new HashSet<>();
     public static final Config TRANSFORM_CONFIG;
 
     public static void transformChunkHolder(ClassNode targetClass) {
@@ -373,7 +362,7 @@ public class MainTransformer {
             )), "getRandomPosWithinCube");
 
         methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_1923"),
-                getMethod("long method_8324()")), "asLong"); // toLong
+            getMethod("long method_8324()")), "asLong"); // toLong
 
         methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_1923"),
             getMethod("long method_8331(int, int)")), "asLong"); // asLong
@@ -400,7 +389,7 @@ public class MainTransformer {
     }
 
     public static void transformDynamicGraphMinFixedPoint(ClassNode targetClass) {
-        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass,  true);
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
 
         transformer.analyzeAllMethods();
 
@@ -472,7 +461,7 @@ public class MainTransformer {
         return l;
     }
 
-    public static void transformLayerLightEngine(ClassNode targetClass){
+    public static void transformLayerLightEngine(ClassNode targetClass) {
         TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
 
         transformer.analyzeAllMethods();
@@ -481,7 +470,7 @@ public class MainTransformer {
         transformer.callMagicSuperConstructor();
     }
 
-    public static void transformSectionPos(ClassNode targetClass){
+    public static void transformSectionPos(ClassNode targetClass) {
         TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
 
         ClassMethod blockToSection = remapMethod(
@@ -499,7 +488,7 @@ public class MainTransformer {
         transformer.cleanUpTransform();
     }
 
-    public static void defaultTransform(ClassNode targetClass){
+    public static void defaultTransform(ClassNode targetClass) {
         TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
 
         transformer.analyzeAllMethods();
@@ -520,7 +509,7 @@ public class MainTransformer {
         );
 
         MethodNode setLevelNode = targetClass.methods.stream().filter(m -> m.name.equals(setLevel.method.getName()) && m.desc.equals(setLevel.method.getDescriptor())).findFirst().get();
-        if(setLevelNode == null){
+        if (setLevelNode == null) {
             throw new RuntimeException("Could not find setLevel method");
         }
 
@@ -534,10 +523,10 @@ public class MainTransformer {
         );
 
         AbstractInsnNode sectionsAffectedByLightUpdatesNode = setLevelNode.instructions.getFirst();
-        while(sectionsAffectedByLightUpdatesNode != null){
-            if(sectionsAffectedByLightUpdatesNode.getOpcode() == GETFIELD){
+        while (sectionsAffectedByLightUpdatesNode != null) {
+            if (sectionsAffectedByLightUpdatesNode.getOpcode() == GETFIELD) {
                 FieldInsnNode fieldInsnNode = (FieldInsnNode) sectionsAffectedByLightUpdatesNode;
-                if(fieldInsnNode.owner.equals(sectionsAffectedByLightUpdates.owner.getInternalName()) && fieldInsnNode.name.equals(sectionsAffectedByLightUpdates.name)){
+                if (fieldInsnNode.owner.equals(sectionsAffectedByLightUpdates.owner.getInternalName()) && fieldInsnNode.name.equals(sectionsAffectedByLightUpdates.name)) {
                     break;
                 }
             }
@@ -546,7 +535,7 @@ public class MainTransformer {
 
         //Find the LLOAD_1 instruction that comes after sectionsAffectedByLightUpdatesNode
         AbstractInsnNode load1Node = sectionsAffectedByLightUpdatesNode.getNext();
-        while(load1Node != null && load1Node.getOpcode() != LLOAD){
+        while (load1Node != null && load1Node.getOpcode() != LLOAD) {
             load1Node = load1Node.getNext();
         }
 
@@ -580,8 +569,9 @@ public class MainTransformer {
 
         AbstractInsnNode blockPosOffsetCall = load1Node;
         while (blockPosOffsetCall != null) {
-            if(blockPosOffsetCall instanceof MethodInsnNode methodCall){
-                if(methodCall.owner.equals(blockPosOffset.owner.getInternalName()) && methodCall.name.equals(blockPosOffset.method.getName()) && methodCall.desc.equals(blockPosOffset.method.getDescriptor())){
+            if (blockPosOffsetCall instanceof MethodInsnNode methodCall) {
+                if (methodCall.owner.equals(blockPosOffset.owner.getInternalName()) && methodCall.name.equals(blockPosOffset.method.getName()) && methodCall.desc.equals(
+                    blockPosOffset.method.getDescriptor())) {
                     break;
                 }
             }
@@ -590,15 +580,17 @@ public class MainTransformer {
 
         AbstractInsnNode blockToSectionCall = blockPosOffsetCall.getNext();
         while (blockToSectionCall != null) {
-            if(blockToSectionCall instanceof MethodInsnNode methodCall){
-                if(methodCall.owner.equals(blockToSection.owner.getInternalName()) && methodCall.name.equals(blockToSection.method.getName()) && methodCall.desc.equals(blockToSection.method.getDescriptor())){
+            if (blockToSectionCall instanceof MethodInsnNode methodCall) {
+                if (methodCall.owner.equals(blockToSection.owner.getInternalName()) && methodCall.name.equals(blockToSection.method.getName()) && methodCall.desc.equals(
+                    blockToSection.method.getDescriptor())) {
                     break;
                 }
             }
             blockToSectionCall = blockToSectionCall.getNext();
         }
 
-        MethodInsnNode sectionOffset = new MethodInsnNode(INVOKESTATIC, sectionPosOffset.owner.getInternalName(), sectionPosOffset.method.getName(), sectionPosOffset.method.getDescriptor(), false);
+        MethodInsnNode sectionOffset =
+            new MethodInsnNode(INVOKESTATIC, sectionPosOffset.owner.getInternalName(), sectionPosOffset.method.getName(), sectionPosOffset.method.getDescriptor(), false);
 
         setLevelNode.instructions.insert(blockToSectionCall, sectionOffset);
         setLevelNode.instructions.remove(blockToSectionCall);
@@ -609,9 +601,8 @@ public class MainTransformer {
 
     /**
      * Create a static accessor method for a given method we created on a class.
-     *
-     * e.g. if we had created a method {@code public boolean bar(int, int)} on a class {@code Foo},
-     * this method would create a method {@code public static boolean bar(Foo, int, int)}.
+     * <p>
+     * e.g. if we had created a method {@code public boolean bar(int, int)} on a class {@code Foo}, this method would create a method {@code public static boolean bar(Foo, int, int)}.
      *
      * @param node class of the method
      * @param newMethod method to create a static accessor for
@@ -645,6 +636,7 @@ public class MainTransformer {
      * @param methodRedirectsIn map of method substitutions
      * @param fieldRedirectsIn map of field substitutions
      * @param typeRedirectsIn map of type substitutions
+     *
      * @return the cloned method
      */
     private static MethodNode cloneAndApplyRedirects(ClassNode node, ClassMethod existingMethodIn, String newName,
@@ -969,14 +961,13 @@ public class MainTransformer {
     }
 
 
-
     static {
         //Load config
-        try{
+        try {
             InputStream is = MainTransformer.class.getResourceAsStream("/type-transform.json");
             TRANSFORM_CONFIG = ConfigLoader.loadConfig(is);
             is.close();
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException("Couldn't load transform config", e);
         }
     }

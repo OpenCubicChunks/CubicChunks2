@@ -30,10 +30,10 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
 
     @Override
     public boolean containsKey(Object key) {
-        if(key instanceof Ancestralizable method){
-            for(Type subType: hierarchy.ancestry(method.getAssociatedType())){
+        if (key instanceof Ancestralizable method) {
+            for (Type subType : hierarchy.ancestry(method.getAssociatedType())) {
                 Ancestralizable id = method.withType(subType);
-                if(map.containsKey(id)){
+                if (map.containsKey(id)) {
                     return true;
                 }
             }
@@ -49,15 +49,15 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
 
     @Override
     public T get(Object key) {
-        if(key instanceof Ancestralizable method){
-            if(hierarchy.getNode(method.getAssociatedType()) == null){
+        if (key instanceof Ancestralizable method) {
+            if (hierarchy.getNode(method.getAssociatedType()) == null) {
                 return map.get(method);
             }
 
-            for(Type subType: hierarchy.ancestry(method.getAssociatedType())){
+            for (Type subType : hierarchy.ancestry(method.getAssociatedType())) {
                 Ancestralizable id = method.withType(subType);
                 T value = map.get(id);
-                if(value != null){
+                if (value != null) {
                     return value;
                 }
             }
@@ -72,10 +72,10 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
         HierarchyTree.Node current = hierarchy.getNode(key.getAssociatedType());
 
         HierarchyTree.Node[] nodes = keySet()
-                .stream()
-                .filter(val -> val.equalsWithoutType(key) && get(val).equals(value))
-                .map(val -> hierarchy.getNode(val.getAssociatedType()))
-                .toArray(HierarchyTree.Node[]::new);
+            .stream()
+            .filter(val -> val.equalsWithoutType(key) && get(val).equals(value))
+            .map(val -> hierarchy.getNode(val.getAssociatedType()))
+            .toArray(HierarchyTree.Node[]::new);
 
         return map.put(key, value);
     }
@@ -83,9 +83,9 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
     /**
      * Checks if all the objects' <em>identities</em> are the same
      */
-    private static boolean areAllEqual(Object a, Object... others){
-        for(Object o: others){
-            if(a != o){
+    private static boolean areAllEqual(Object a, Object... others) {
+        for (Object o : others) {
+            if (a != o) {
                 return false;
             }
         }
@@ -94,11 +94,11 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
 
     @Override
     public T remove(Object key) {
-        if(key instanceof Ancestralizable method){
-            for(Type subType: hierarchy.ancestry(method.getAssociatedType())){
+        if (key instanceof Ancestralizable method) {
+            for (Type subType : hierarchy.ancestry(method.getAssociatedType())) {
                 Ancestralizable<?> id = method.withType(subType);
                 T value = map.remove(key);
-                if(value != null){
+                if (value != null) {
                     return value;
                 }
             }

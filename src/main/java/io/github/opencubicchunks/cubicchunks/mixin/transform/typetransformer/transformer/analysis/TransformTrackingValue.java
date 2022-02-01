@@ -19,6 +19,8 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.analysis.Value;
 
 public class TransformTrackingValue implements Value {
+    final Set<UnresolvedMethodTransform> possibleTransformChecks = new HashSet<>(); //Used to track possible transform checks
+
     private final Type type;
     private final Set<AbstractInsnNode> source;
     private final Set<Integer> localVars; //Used uniquely for parameters
@@ -32,9 +34,8 @@ public class TransformTrackingValue implements Value {
     private final TransformSubtype transform;
 
     private final Set<TransformTrackingValue> valuesWithSameType = new HashSet<>();
-    final Set<UnresolvedMethodTransform> possibleTransformChecks = new HashSet<>(); //Used to track possible transform checks
 
-    public TransformTrackingValue(Type type, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues){
+    public TransformTrackingValue(Type type, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
         this.type = type;
         this.source = new HashSet<>();
         this.localVars = new HashSet<>();
@@ -45,7 +46,7 @@ public class TransformTrackingValue implements Value {
         this.transform.setSubType(TransformSubtype.getSubType(type));
     }
 
-    public TransformTrackingValue(Type type, int localVar, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues){
+    public TransformTrackingValue(Type type, int localVar, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
         this.type = type;
         this.source = new HashSet<>();
         this.localVars = new HashSet<>();
@@ -57,7 +58,7 @@ public class TransformTrackingValue implements Value {
         this.transform.setSubType(TransformSubtype.getSubType(type));
     }
 
-    public TransformTrackingValue(Type type, AbstractInsnNode source, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues){
+    public TransformTrackingValue(Type type, AbstractInsnNode source, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
         this(type, fieldPseudoValues);
         this.source.add(source);
     }
@@ -75,7 +76,8 @@ public class TransformTrackingValue implements Value {
         this.transform.setSubType(TransformSubtype.getSubType(type));
     }
 
-    public TransformTrackingValue(Type type, Set<AbstractInsnNode> source, Set<Integer> localVars, TransformSubtype transform, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues){
+    public TransformTrackingValue(Type type, Set<AbstractInsnNode> source, Set<Integer> localVars, TransformSubtype transform,
+                                  AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
         this.type = type;
         this.source = source;
         this.localVars = localVars;
@@ -86,8 +88,8 @@ public class TransformTrackingValue implements Value {
         this.transform.setSubType(TransformSubtype.getSubType(type));
     }
 
-    public TransformTrackingValue merge(TransformTrackingValue other){
-        if(transform.getTransformType() != null && other.transform.getTransformType() != null && transform.getTransformType() != other.transform.getTransformType()){
+    public TransformTrackingValue merge(TransformTrackingValue other) {
+        if (transform.getTransformType() != null && other.transform.getTransformType() != null && transform.getTransformType() != other.transform.getTransformType()) {
             throw new RuntimeException("Merging incompatible values. (Different transform types had already been assigned)");
         }
 
@@ -95,10 +97,10 @@ public class TransformTrackingValue implements Value {
 
         TransformTrackingValue newValue = new TransformTrackingValue(
             type,
-                union(source, other.source),
-                union(localVars, other.localVars),
-                transform,
-                pseudoValues
+            union(source, other.source),
+            union(localVars, other.localVars),
+            transform,
+            pseudoValues
         );
 
         newValue.mergedFrom.add(this);
@@ -110,16 +112,16 @@ public class TransformTrackingValue implements Value {
         return newValue;
     }
 
-    public TransformType getTransformType(){
+    public TransformType getTransformType() {
         return transform.getTransformType();
     }
 
-    public void setTransformType(TransformType transformType){
-        if(this.transform.getTransformType() != null && transformType != this.transform.getTransformType()){
+    public void setTransformType(TransformType transformType) {
+        if (this.transform.getTransformType() != null && transformType != this.transform.getTransformType()) {
             throw new RuntimeException("Transform subType already set");
         }
 
-        if(this.transform.getTransformType() == transformType){
+        if (this.transform.getTransformType() == transformType) {
             return;
         }
 
@@ -135,7 +137,7 @@ public class TransformTrackingValue implements Value {
         Set<TransformTrackingValue> copy = new HashSet<>(valuesWithSameType);
         valuesWithSameType.clear(); //To prevent infinite recursion
 
-        for(TransformTrackingValue value : copy){
+        for (TransformTrackingValue value : copy) {
             value.setTransformType(newType);
         }
 
@@ -143,20 +145,20 @@ public class TransformTrackingValue implements Value {
         int dimension = ASMUtil.getDimensions(this.type) - ASMUtil.getDimensions(rawType);
         this.transform.setArrayDimensionality(dimension);
 
-        for(UnresolvedMethodTransform check : possibleTransformChecks){
+        for (UnresolvedMethodTransform check : possibleTransformChecks) {
             int validity = check.check();
-            if(validity == -1){
+            if (validity == -1) {
                 check.reject();
-            }else if(validity == 1){
+            } else if (validity == 1) {
                 check.accept();
             }
         }
 
-        if(fieldSources.size() > 0){
-            for(FieldSource source : fieldSources){
+        if (fieldSources.size() > 0) {
+            for (FieldSource source : fieldSources) {
                 //System.out.println("Field " + source.root() + " is now " + newType);
                 FieldID id = new FieldID(Type.getObjectType(source.classNode()), source.fieldName(), Type.getType(source.fieldDesc()));
-                if(pseudoValues.containsKey(id)){
+                if (pseudoValues.containsKey(id)) {
                     TransformTrackingValue value = pseudoValues.get(id);
                     //value.transform.setArrayDimensionality(source.arrayDepth());
                     value.setTransformType(newType);
@@ -165,11 +167,11 @@ public class TransformTrackingValue implements Value {
         }
     }
 
-    public void addFieldSource(FieldSource fieldSource){
+    public void addFieldSource(FieldSource fieldSource) {
         fieldSources.add(fieldSource);
     }
 
-    public void addFieldSources(Set<FieldSource> fieldSources){
+    public void addFieldSources(Set<FieldSource> fieldSources) {
         this.fieldSources.addAll(fieldSources);
     }
 
@@ -177,7 +179,7 @@ public class TransformTrackingValue implements Value {
         return fieldSources;
     }
 
-    public void addPossibleTransformCheck(UnresolvedMethodTransform transformCheck){
+    public void addPossibleTransformCheck(UnresolvedMethodTransform transformCheck) {
         possibleTransformChecks.add(transformCheck);
     }
 
@@ -191,14 +193,14 @@ public class TransformTrackingValue implements Value {
         if (o == null || getClass() != o.getClass()) return false;
         TransformTrackingValue that = (TransformTrackingValue) o;
         return Objects.equals(type, that.type) && Objects.equals(source, that.source) && Objects
-                .equals(consumers, that.consumers);
+            .equals(consumers, that.consumers);
     }
 
     @Override public int hashCode() {
         return Objects.hash(type, source, localVars, consumers, transform);
     }
 
-    public static <T> Set<T> union(Set<T> first, Set<T> second){
+    public static <T> Set<T> union(Set<T> first, Set<T> second) {
         Set<T> union = new HashSet<>(first);
         union.addAll(second);
         return union;
@@ -224,16 +226,16 @@ public class TransformTrackingValue implements Value {
         consumers.add(consumer);
     }
 
-    public Set<TransformTrackingValue> getAllRelatedValues(){
+    public Set<TransformTrackingValue> getAllRelatedValues() {
         Set<TransformTrackingValue> relatedValues = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
 
         Set<TransformTrackingValue> newValues = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
         newValues.addAll(mergedTo);
         newValues.add(this);
 
-        while(!newValues.isEmpty()){
+        while (!newValues.isEmpty()) {
             Set<TransformTrackingValue> nextValues = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
-            for(TransformTrackingValue value : newValues){
+            for (TransformTrackingValue value : newValues) {
                 relatedValues.add(value);
                 nextValues.addAll(value.mergedFrom);
                 nextValues.addAll(value.mergedTo);
@@ -246,15 +248,15 @@ public class TransformTrackingValue implements Value {
         return relatedValues;
     }
 
-    public Set<TransformTrackingValue> getFurthestAncestors(){
+    public Set<TransformTrackingValue> getFurthestAncestors() {
         Queue<TransformTrackingValue> toCheck = new LinkedList<>();
         Set<TransformTrackingValue> furthestAncestors = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
 
         toCheck.add(this);
 
-        while(!toCheck.isEmpty()){
+        while (!toCheck.isEmpty()) {
             TransformTrackingValue value = toCheck.poll();
-            if(value.mergedFrom.isEmpty()){
+            if (value.mergedFrom.isEmpty()) {
                 furthestAncestors.add(value);
             }
 
@@ -264,25 +266,25 @@ public class TransformTrackingValue implements Value {
         return furthestAncestors;
     }
 
-    public static void setSameType(TransformTrackingValue first, TransformTrackingValue second){
-        if(first.type == null || second.type == null){
+    public static void setSameType(TransformTrackingValue first, TransformTrackingValue second) {
+        if (first.type == null || second.type == null) {
             //System.err.println("WARNING: Attempted to set same subType on null subType");
             return;
         }
 
-        if(first.getTransformType() == null && second.getTransformType() == null){
+        if (first.getTransformType() == null && second.getTransformType() == null) {
             first.valuesWithSameType.add(second);
             second.valuesWithSameType.add(first);
             return;
         }
 
-        if(first.getTransformType() != null && second.getTransformType() != null && first.getTransformType() != second.getTransformType()){
+        if (first.getTransformType() != null && second.getTransformType() != null && first.getTransformType() != second.getTransformType()) {
             throw new RuntimeException("Merging incompatible values. (Different types had already been assigned)");
         }
 
-        if(first.getTransformType() != null){
+        if (first.getTransformType() != null) {
             second.getTransformTypeRef().setValue(first.getTransformType());
-        }else if(second.getTransformType() != null){
+        } else if (second.getTransformType() != null) {
             first.getTransformTypeRef().setValue(second.getTransformType());
         }
     }
@@ -293,21 +295,21 @@ public class TransformTrackingValue implements Value {
 
     @Override
     public String toString() {
-        if(type == null){
+        if (type == null) {
             return "null";
         }
         StringBuilder sb = new StringBuilder(type.toString());
 
-        if(transform.getTransformType() != null){
+        if (transform.getTransformType() != null) {
             sb.append(" (").append(transform).append(")");
         }
 
-        if(fieldSources.size() > 0){
+        if (fieldSources.size() > 0) {
             sb.append(" (from ");
             int i = 0;
-            for(FieldSource source : fieldSources){
+            for (FieldSource source : fieldSources) {
                 sb.append(source.toString());
-                if(i < fieldSources.size() - 1){
+                if (i < fieldSources.size() - 1) {
                     sb.append(", ");
                 }
                 i++;
@@ -323,14 +325,14 @@ public class TransformTrackingValue implements Value {
     }
 
     public int getTransformedSize() {
-        if(transform.getTransformType() == null){
+        if (transform.getTransformType() == null) {
             return getSize();
-        }else{
+        } else {
             return transform.getTransformedSize();
         }
     }
 
-    public List<Type> transformedTypes(){
+    public List<Type> transformedTypes() {
         return this.transform.transformedTypes(this.type);
     }
 }

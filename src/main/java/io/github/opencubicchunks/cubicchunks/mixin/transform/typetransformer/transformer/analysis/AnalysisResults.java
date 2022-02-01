@@ -37,7 +37,7 @@ public record AnalysisResults(MethodNode methodNode, TransformSubtype[] argTypes
 
     public String getNewDesc() {
         TransformSubtype[] types = argTypes;
-        if(!ASMUtil.isStatic(methodNode)) {
+        if (!ASMUtil.isStatic(methodNode)) {
             types = new TransformSubtype[types.length - 1];
             System.arraycopy(argTypes, 1, types, 0, types.length);
         }

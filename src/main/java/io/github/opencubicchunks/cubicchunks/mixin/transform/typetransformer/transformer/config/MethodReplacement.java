@@ -11,8 +11,8 @@ public class MethodReplacement {
     private final BytecodeFactory finalizer;
     private final List<Integer>[] finalizerIndices;
 
-    public MethodReplacement(BytecodeFactory factory){
-        this.bytecodeFactories = new BytecodeFactory[]{factory};
+    public MethodReplacement(BytecodeFactory factory) {
+        this.bytecodeFactories = new BytecodeFactory[] { factory };
         this.parameterIndexes = null;
         this.changeParameters = false;
         this.finalizer = null;

@@ -7,17 +7,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.datafixers.util.Pair;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.VariableManager;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import net.fabricmc.loader.api.MappingResolver;
@@ -25,13 +20,11 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-public class JSONBytecodeFactory implements BytecodeFactory{
+public class JSONBytecodeFactory implements BytecodeFactory {
     private static final String NAMESPACE = "intermediary";
 
     private static final String[] VAR_INSNS = {
@@ -52,30 +45,30 @@ public class JSONBytecodeFactory implements BytecodeFactory{
     private final List<BiConsumer<InsnList, int[]>> instructionGenerators = new ArrayList<>();
     private final List<Type> varTypes = new ArrayList<>();
 
-    public JSONBytecodeFactory(JsonArray data, MappingResolver mappings, Map<String, MethodID> methodIDMap){
+    public JSONBytecodeFactory(JsonArray data, MappingResolver mappings, Map<String, MethodID> methodIDMap) {
         //Find all variable names
         Map<String, Integer> varNames = new HashMap<>();
 
-        for(JsonElement element: data){
-            if(element.isJsonPrimitive()){
+        for (JsonElement element : data) {
+            if (element.isJsonPrimitive()) {
                 String name = element.getAsString();
-                for(int i = 0; i < VAR_INSNS.length; i++){
+                for (int i = 0; i < VAR_INSNS.length; i++) {
                     String insnName = VAR_INSNS[i];
-                    if(name.startsWith(insnName)){
+                    if (name.startsWith(insnName)) {
                         String namePart = name.substring(insnName.length() + 1);
 
-                        if(!namePart.matches("\\{[0-9a-zA-Z_]+}")){
+                        if (!namePart.matches("\\{[0-9a-zA-Z_]+}")) {
                             throw new IllegalArgumentException("Variables instructions must be of the form 'OPCODE {NAME}'");
                         }
 
                         String actualName = namePart.substring(1, namePart.length() - 1);
                         Type t = TYPES[i];
 
-                        if(varNames.containsKey(actualName)){
-                            if(!varTypes.get(varNames.get(actualName)).equals(t)){
+                        if (varNames.containsKey(actualName)) {
+                            if (!varTypes.get(varNames.get(actualName)).equals(t)) {
                                 throw new IllegalArgumentException("Variable " + actualName + " has already been defined with a different type");
                             }
-                        }else {
+                        } else {
                             varNames.put(actualName, varNames.size());
                             varTypes.add(t);
                         }
@@ -86,10 +79,10 @@ public class JSONBytecodeFactory implements BytecodeFactory{
 
         InsnList insns = new InsnList();
 
-        for(JsonElement element: data){
-            if(element.isJsonPrimitive()){
+        for (JsonElement element : data) {
+            if (element.isJsonPrimitive()) {
                 instructionGenerators.add(Objects.requireNonNull(createInstructionFactoryFromName(element.getAsString(), varNames)));
-            }else{
+            } else {
                 instructionGenerators.add(Objects.requireNonNull(createInstructionFactoryFromObject(element.getAsJsonObject(), mappings, methodIDMap)));
             }
         }
@@ -98,15 +91,15 @@ public class JSONBytecodeFactory implements BytecodeFactory{
     private BiConsumer<InsnList, int[]> createInstructionFactoryFromObject(JsonObject object, MappingResolver mappings, Map<String, MethodID> methodIDMap) {
         String type = object.get("type").getAsString();
 
-        if(type.equals("INVOKEVIRTUAL") || type.equals("INVOKESTATIC") || type.equals("INVOKESPECIAL") || type.equals("INVOKEINTERFACE")){
+        if (type.equals("INVOKEVIRTUAL") || type.equals("INVOKESTATIC") || type.equals("INVOKESPECIAL") || type.equals("INVOKEINTERFACE")) {
             JsonElement method = object.get("method");
             MethodID methodID = null;
 
-            if(method.isJsonPrimitive()){
+            if (method.isJsonPrimitive()) {
                 methodID = methodIDMap.get(method.getAsString());
             }
 
-            if(methodID == null){
+            if (methodID == null) {
                 MethodID.CallType callType = switch (type) {
                     case "INVOKEVIRTUAL" -> MethodID.CallType.VIRTUAL;
                     case "INVOKESTATIC" -> MethodID.CallType.STATIC;
@@ -122,46 +115,56 @@ public class JSONBytecodeFactory implements BytecodeFactory{
             return (insnList, __) -> {
                 insnList.add(finalMethodID.callNode());
             };
-        }else if(type.equals("LDC")){
+        } else if (type.equals("LDC")) {
             String constantType = object.get("constant_type").getAsString();
 
             JsonElement element = object.get("value");
 
-            if(constantType.equals("string")){
+            if (constantType.equals("string")) {
                 return (insnList, __) -> insnList.add(new LdcInsnNode(element.getAsString()));
-            }else if(constantType.equals("long")){
+            } else if (constantType.equals("long")) {
                 long value = element.getAsLong();
-                if(value == 0) return (insnList, __) -> insnList.add(new InsnNode(Opcodes.LCONST_0));
-                else if(value == 1) return (insnList, __) -> insnList.add(new InsnNode(Opcodes.LCONST_1));
+                if (value == 0) {
+                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.LCONST_0));
+                } else if (value == 1) {
+                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.LCONST_1));
+                }
 
                 return (insnList, __) -> insnList.add(new LdcInsnNode(value));
-            }else if(constantType.equals("int")){
+            } else if (constantType.equals("int")) {
                 int value = element.getAsInt();
 
-                if(value >= -1 && value <= 5){
+                if (value >= -1 && value <= 5) {
                     return (insnList, __) -> insnList.add(new InsnNode(Opcodes.ICONST_0 + value));
                 }
 
                 return (insnList, __) -> insnList.add(new LdcInsnNode(value));
-            }else if(constantType.equals("double")){
+            } else if (constantType.equals("double")) {
                 double value = element.getAsDouble();
 
-                if(value == 0) return (insnList, __) -> insnList.add(new InsnNode(Opcodes.DCONST_0));
-                else if(value == 1) return (insnList, __) -> insnList.add(new InsnNode(Opcodes.DCONST_1));
+                if (value == 0) {
+                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.DCONST_0));
+                } else if (value == 1) {
+                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.DCONST_1));
+                }
 
                 return (insnList, __) -> insnList.add(new LdcInsnNode(value));
-            }else if(constantType.equals("float")){
+            } else if (constantType.equals("float")) {
                 float value = element.getAsFloat();
 
-                if(value == 0) return (insnList, __) -> insnList.add(new InsnNode(Opcodes.FCONST_0));
-                else if(value == 1) return (insnList, __) -> insnList.add(new InsnNode(Opcodes.FCONST_1));
-                else if(value == 2) return (insnList, __) -> insnList.add(new InsnNode(Opcodes.FCONST_2));
+                if (value == 0) {
+                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.FCONST_0));
+                } else if (value == 1) {
+                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.FCONST_1));
+                } else if (value == 2) {
+                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.FCONST_2));
+                }
 
                 return (insnList, __) -> insnList.add(new LdcInsnNode(value));
-            }else{
+            } else {
                 throw new IllegalStateException("Illegal entry for 'constant_type' (" + constantType + ")");
             }
-        }else if(type.equals("NEW") || type.equals("ANEWARRAY") || type.equals("CHECKCAST") || type.equals("INSTANCEOF")){
+        } else if (type.equals("NEW") || type.equals("ANEWARRAY") || type.equals("CHECKCAST") || type.equals("INSTANCEOF")) {
             JsonElement classNameJson = object.get("class");
             Type t = Type.getObjectType(classNameJson.getAsString());
             Type mappedType = ConfigLoader.remapType(t, mappings, false);
@@ -184,7 +187,7 @@ public class JSONBytecodeFactory implements BytecodeFactory{
 
     private BiConsumer<InsnList, int[]> createInstructionFactoryFromName(String insnName, Map<String, Integer> varNames) {
         for (int i = 0; i < VAR_INSNS.length; i++) {
-            if(insnName.startsWith(VAR_INSNS[i])){
+            if (insnName.startsWith(VAR_INSNS[i])) {
                 String varInsnName = VAR_INSNS[i];
                 String varName = insnName.substring(varInsnName.length() + 2, insnName.length() - 1);
                 int varIndex = varNames.get(varName);
@@ -199,8 +202,8 @@ public class JSONBytecodeFactory implements BytecodeFactory{
         return (insnList, indexes) -> insnList.add(new InsnNode(opcode));
     }
 
-    private int opcodeFromName(String name){
-        return switch (name){
+    private int opcodeFromName(String name) {
+        return switch (name) {
             case "NOP" -> NOP;
             case "ACONST_NULL" -> ACONST_NULL;
             case "ICONST_M1" -> ICONST_M1;
@@ -322,7 +325,7 @@ public class JSONBytecodeFactory implements BytecodeFactory{
 
         InsnList insnList = new InsnList();
 
-        for(var generator: instructionGenerators){
+        for (var generator : instructionGenerators) {
             generator.accept(insnList, vars);
         }
 

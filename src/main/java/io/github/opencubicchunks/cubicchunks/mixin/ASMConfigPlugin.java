@@ -13,7 +13,6 @@ import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
-import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -67,7 +66,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             MainTransformer.transformNaturalSpawner(targetClass);
         }
 
-        if(!modified){
+        if (!modified) {
             return;
         }
 

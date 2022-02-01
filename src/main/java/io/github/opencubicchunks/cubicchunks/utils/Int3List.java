@@ -8,7 +8,7 @@ import io.netty.util.internal.PlatformDependent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 
-public class Int3List implements AutoCloseable{
+public class Int3List implements AutoCloseable {
     protected static final long X_VALUE_OFFSET = 0;
     protected static final long Y_VALUE_OFFSET = X_VALUE_OFFSET + Integer.BYTES;
     protected static final long Z_VALUE_OFFSET = Y_VALUE_OFFSET + Integer.BYTES;
@@ -29,18 +29,18 @@ public class Int3List implements AutoCloseable{
     protected int capacity;
     protected int size;
 
-    public Int3List(){
+    public Int3List() {
         this.capacity = DEFAULT_CAPACITY;
         this.size = 0;
     }
 
-    public boolean add(int x, int y, int z){
+    public boolean add(int x, int y, int z) {
         long arrayAddr = this.arrayAddr;
-        if(this.arrayAddr == 0){
+        if (this.arrayAddr == 0) {
             arrayAddr = this.arrayAddr = allocateTable(capacity);
         }
 
-        if(this.size >= this.capacity){
+        if (this.size >= this.capacity) {
             arrayAddr = resize();
         }
 
@@ -54,13 +54,13 @@ public class Int3List implements AutoCloseable{
         return true;
     }
 
-    public void set(int index, int x, int y, int z){
-        if(index >= this.size){
+    public void set(int index, int x, int y, int z) {
+        if (index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
         long arrayAddr = this.arrayAddr;
-        if(this.arrayAddr == 0){
+        if (this.arrayAddr == 0) {
             arrayAddr = this.arrayAddr = allocateTable(capacity);
         }
 
@@ -70,23 +70,23 @@ public class Int3List implements AutoCloseable{
         PlatformDependent.putInt(putAt + Z_VALUE_OFFSET, z);
     }
 
-    public void insert(int index, int x, int y, int z){
-        if(index > this.size){
+    public void insert(int index, int x, int y, int z) {
+        if (index > this.size) {
             throw new IndexOutOfBoundsException();
         }
 
         long arrayAddr = this.arrayAddr;
-        if(this.arrayAddr == 0){
+        if (this.arrayAddr == 0) {
             arrayAddr = this.arrayAddr = allocateTable(capacity);
         }
 
-        if(size >= capacity){
+        if (size >= capacity) {
             resizeAndInsert(index, x, y, z);
             return;
         }
 
         //Shift all values that come after it
-        for(int j = size - 1; j >= index; j--){
+        for (int j = size - 1; j >= index; j--) {
             long copyFrom = arrayAddr + j * VALUE_SIZE;
             long copyTo = copyFrom + VALUE_SIZE;
 
@@ -97,18 +97,18 @@ public class Int3List implements AutoCloseable{
         set(index, x, y, z);
     }
 
-    public void remove(int index){
-        if(index >= this.size){
+    public void remove(int index) {
+        if (index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
         long arrayAddr = this.arrayAddr;
-        if(this.arrayAddr == 0){
+        if (this.arrayAddr == 0) {
             arrayAddr = this.arrayAddr = allocateTable(capacity);
         }
 
         //Shift all values back one
-        for(int j = index + 1; j < size; j++){
+        for (int j = index + 1; j < size; j++) {
             long copyFrom = arrayAddr + j * VALUE_SIZE;
             long copyTo = copyFrom - VALUE_SIZE;
 
@@ -118,27 +118,28 @@ public class Int3List implements AutoCloseable{
         this.size--;
     }
 
-    public void addAll(Collection<Vec3i> positions){
+    public void addAll(Collection<Vec3i> positions) {
         int necessaryCapacity = this.size + positions.size();
 
-        if(necessaryCapacity > capacity){
+        if (necessaryCapacity > capacity) {
             resizeToFit((int) (necessaryCapacity * 1.5f));
         }
 
         int start = this.size;
         this.size += positions.size();
 
-        Iterator<Vec3i> iterator = positions.iterator();;
+        Iterator<Vec3i> iterator = positions.iterator();
+        ;
 
-        for(;start < this.size; start++){
+        for (; start < this.size; start++) {
             Vec3i item = iterator.next();
             set(start, item.getX(), item.getY(), item.getZ());
         }
     }
 
-    public boolean remove(int x, int y, int z){
-        for(int index = 0; index < size; index++){
-            if(getX(index) == x && getY(index) == y && getZ(index) == z){
+    public boolean remove(int x, int y, int z) {
+        for (int index = 0; index < size; index++) {
+            if (getX(index) == x && getY(index) == y && getZ(index) == z) {
                 remove(index);
                 return true;
             }
@@ -146,68 +147,68 @@ public class Int3List implements AutoCloseable{
         return false;
     }
 
-    public Vec3i[] toArray(){
+    public Vec3i[] toArray() {
         Vec3i[] array = new Vec3i[size];
 
-        for(int i = 0; i < size; i++){
+        for (int i = 0; i < size; i++) {
             array[i] = getVec3i(i);
         }
 
         return array;
     }
 
-    public long[] toLongArray(){
+    public long[] toLongArray() {
         long[] array = new long[size];
 
-        for(int i = 0; i < size; i++){
+        for (int i = 0; i < size; i++) {
             array[i] = getAsBlockPos(i);
         }
 
         return array;
     }
 
-    public int getX(int index){
-        if(index >= this.size){
+    public int getX(int index) {
+        if (index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
-        if(this.arrayAddr == 0){
+        if (this.arrayAddr == 0) {
             this.arrayAddr = allocateTable(capacity);
         }
 
         return PlatformDependent.getInt(arrayAddr + index * VALUE_SIZE + X_VALUE_OFFSET);
     }
 
-    public int getY(int index){
-        if(index >= this.size){
+    public int getY(int index) {
+        if (index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
-        if(this.arrayAddr == 0){
+        if (this.arrayAddr == 0) {
             this.arrayAddr = allocateTable(capacity);
         }
 
         return PlatformDependent.getInt(arrayAddr + index * VALUE_SIZE + Y_VALUE_OFFSET);
     }
 
-    public int getZ(int index){
-        if(index >= this.size){
+    public int getZ(int index) {
+        if (index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
-        if(this.arrayAddr == 0){
+        if (this.arrayAddr == 0) {
             this.arrayAddr = allocateTable(capacity);
         }
 
         return PlatformDependent.getInt(arrayAddr + index * VALUE_SIZE + Z_VALUE_OFFSET);
     }
 
-    public long getAsBlockPos(int index){
-        if(index >= this.size){
+    public long getAsBlockPos(int index) {
+        if (index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
-        if(this.arrayAddr == 0){
+        if (this.arrayAddr == 0) {
             this.arrayAddr = allocateTable(capacity);
         }
 
@@ -218,12 +219,12 @@ public class Int3List implements AutoCloseable{
         );
     }
 
-    public Vec3i getVec3i(int index){
-        if(index >= this.size){
+    public Vec3i getVec3i(int index) {
+        if (index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
-        if(this.arrayAddr == 0){
+        if (this.arrayAddr == 0) {
             this.arrayAddr = allocateTable(capacity);
         }
 
@@ -234,29 +235,29 @@ public class Int3List implements AutoCloseable{
         );
     }
 
-    public void forEach(LongConsumer consumer){
-        for(int i = 0; i < size; i++){
+    public void forEach(LongConsumer consumer) {
+        for (int i = 0; i < size; i++) {
             consumer.accept(getAsBlockPos(i));
         }
     }
 
-    public void forEach(XYZConsumer consumer){
-        for(int i = 0; i < size; i++){
+    public void forEach(XYZConsumer consumer) {
+        for (int i = 0; i < size; i++) {
             consumer.accept(getX(i), getY(i), getZ(i));
         }
     }
 
-    public int size(){
+    public int size() {
         return size;
     }
 
-    private long resizeToFit(int capacity){
+    private long resizeToFit(int capacity) {
         this.capacity = capacity;
         return this.arrayAddr = PlatformDependent.reallocateMemory(this.arrayAddr, capacity * VALUE_SIZE);
     }
 
     private void resizeAndInsert(int index, int x, int y, int z) {
-        while(this.capacity <= this.size){
+        while (this.capacity <= this.size) {
             this.capacity <<= 1;
         }
 
@@ -273,7 +274,7 @@ public class Int3List implements AutoCloseable{
     }
 
     private long resize() {
-        while(this.capacity <= this.size){
+        while (this.capacity <= this.size) {
             this.capacity <<= 1;
         }
 
@@ -287,18 +288,18 @@ public class Int3List implements AutoCloseable{
     }
 
     @Override
-    public void close(){
-        if(closed) return;
+    public void close() {
+        if (closed) return;
 
         closed = true;
-        if(arrayAddr != 0L){
+        if (arrayAddr != 0L) {
             PlatformDependent.freeMemory(arrayAddr);
         }
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public void finalize(){
+    public void finalize() {
         close();
     }
 

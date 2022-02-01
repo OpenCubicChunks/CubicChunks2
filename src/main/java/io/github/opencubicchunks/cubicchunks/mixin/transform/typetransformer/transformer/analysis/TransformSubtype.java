@@ -23,6 +23,10 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class TransformSubtype {
+    private static final Set<Type> REGULAR_TYPES = new HashSet<>();
+    private static final Set<Type> CONSUMER_TYPES = new HashSet<>();
+    private static final Set<Type> PREDICATE_TYPES = new HashSet<>();
+
     private final TransformTypePtr transformType;
     private int arrayDimensionality;
     private SubType subtype;
@@ -53,12 +57,21 @@ public class TransformSubtype {
         this.arrayDimensionality = arrayDimensionality;
     }
 
-    public static TransformSubtype createDefault() {
-        return new TransformSubtype(new TransformTypePtr(null), 0, SubType.NONE);
-    }
-
     public void setSubType(SubType transformSubType) {
         this.subtype = transformSubType;
+    }
+
+    public static void init(Config config) {
+        for (var entry : config.getTypes().entrySet()) {
+            var subType = entry.getValue();
+            REGULAR_TYPES.add(subType.getFrom());
+            CONSUMER_TYPES.add(subType.getOriginalConsumerType());
+            PREDICATE_TYPES.add(subType.getOriginalPredicateType());
+        }
+    }
+
+    public static TransformSubtype createDefault() {
+        return new TransformSubtype(new TransformTypePtr(null), 0, SubType.NONE);
     }
 
     public static TransformSubtype fromString(String s, Map<String, TransformType> transformLookup) {
@@ -74,13 +87,13 @@ public class TransformSubtype {
         TransformType transformType = transformLookup.get(parts[0]);
         if (parts.length == 1) {
             subType = SubType.NONE;
-        }else{
+        } else {
             subType = SubType.fromString(parts[1]);
         }
         return new TransformSubtype(new TransformTypePtr(transformType), arrDimensionality, subType);
     }
 
-    public static TransformSubtype of(TransformType subType){
+    public static TransformSubtype of(TransformType subType) {
         return new TransformSubtype(new TransformTypePtr(subType), 0, SubType.NONE);
     }
 
@@ -89,26 +102,26 @@ public class TransformSubtype {
     }
 
     public Type getRawType(TransformType transformType) {
-        return switch (this.subtype){
+        return switch (this.subtype) {
             case NONE -> transformType.getFrom();
             case PREDICATE -> transformType.getOriginalPredicateType();
             case CONSUMER -> transformType.getOriginalConsumerType();
         };
     }
 
-    public static SubType getSubType(Type subType){
-        while(true) {
-            if (regularTypes.contains(subType)) {
+    public static SubType getSubType(Type subType) {
+        while (true) {
+            if (REGULAR_TYPES.contains(subType)) {
                 return SubType.NONE;
-            } else if (consumerTypes.contains(subType)) {
+            } else if (CONSUMER_TYPES.contains(subType)) {
                 return SubType.CONSUMER;
-            } else if (predicateTypes.contains(subType)) {
+            } else if (PREDICATE_TYPES.contains(subType)) {
                 return SubType.PREDICATE;
             }
 
-            if(subType.getSort() != Type.ARRAY){
+            if (subType.getSort() != Type.ARRAY) {
                 break;
-            }else{
+            } else {
                 subType = subType.getElementType();
             }
         }
@@ -118,34 +131,34 @@ public class TransformSubtype {
     }
 
     public Type getSingleType() {
-        if(subtype == SubType.NONE && transformType.getValue().getTo().length != 1){
+        if (subtype == SubType.NONE && transformType.getValue().getTo().length != 1) {
             throw new IllegalStateException("Cannot get single subType for " + this);
         }
 
         Type baseType;
-        if(subtype == SubType.NONE){
+        if (subtype == SubType.NONE) {
             baseType = transformType.getValue().getTo()[0];
-        }else if(subtype == SubType.CONSUMER){
+        } else if (subtype == SubType.CONSUMER) {
             baseType = transformType.getValue().getTransformedConsumerType();
-        }else {
+        } else {
             baseType = transformType.getValue().getTransformedPredicateType();
         }
 
-        if(arrayDimensionality == 0){
+        if (arrayDimensionality == 0) {
             return baseType;
-        }else{
+        } else {
             return Type.getType("[".repeat(arrayDimensionality) + baseType.getDescriptor());
         }
     }
 
     //Does not work with array dimensionality
-    private List<Type> transformedTypes(){
+    private List<Type> transformedTypes() {
         List<Type> types = new ArrayList<>();
-        if(subtype == SubType.NONE){
+        if (subtype == SubType.NONE) {
             types.addAll(Arrays.asList(transformType.getValue().getTo()));
-        }else if(subtype == SubType.CONSUMER){
+        } else if (subtype == SubType.CONSUMER) {
             types.add(transformType.getValue().getTransformedConsumerType());
-        }else {
+        } else {
             types.add(transformType.getValue().getTransformedPredicateType());
         }
 
@@ -153,15 +166,15 @@ public class TransformSubtype {
     }
 
     public int getTransformedSize() {
-        if(subtype == SubType.NONE){
+        if (subtype == SubType.NONE) {
             return transformType.getValue().getTransformedSize();
-        }else{
+        } else {
             return 1;
         }
     }
 
-    public List<Type> transformedTypes(Type subType){
-        if(transformType.getValue() == null){
+    public List<Type> transformedTypes(Type subType) {
+        if (transformType.getValue() == null) {
             return List.of(subType);
         }
         return transformedTypes();
@@ -201,10 +214,10 @@ public class TransformSubtype {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        if(transformType.getValue() == null){
-            if(subtype == SubType.NONE){
+        if (transformType.getValue() == null) {
+            if (subtype == SubType.NONE) {
                 return "No transform";
-            }else{
+            } else {
                 sb.append(subtype.name().toLowerCase(Locale.ROOT));
                 sb.append(" candidate");
                 return sb.toString();
@@ -213,13 +226,13 @@ public class TransformSubtype {
 
         sb.append(transformType.getValue());
 
-        if(subtype != SubType.NONE){
+        if (subtype != SubType.NONE) {
             sb.append(" ");
             sb.append(subtype.name().toLowerCase(Locale.ROOT));
         }
 
-        if(arrayDimensionality > 0){
-            for(int i = 0; i < arrayDimensionality; i++){
+        if (arrayDimensionality > 0) {
+            for (int i = 0; i < arrayDimensionality; i++) {
                 sb.append("[]");
             }
         }
@@ -229,24 +242,26 @@ public class TransformSubtype {
 
     /**
      * Converts a value into the transformed value
+     *
      * @param originalSupplier The supplier of the original value
      * @param transformers A set. This should be unique per-class.
      * @param className The name of the class being transformed.
+     *
      * @return The transformed value
      */
-    public InsnList convertToTransformed(Supplier<InsnList> originalSupplier, Set<MethodNode> transformers, String className){
-        if(transformType.getValue() == null){
+    public InsnList convertToTransformed(Supplier<InsnList> originalSupplier, Set<MethodNode> transformers, String className) {
+        if (transformType.getValue() == null) {
             //No transform needed
             return originalSupplier.get();
         }
 
-        if(arrayDimensionality != 0){
+        if (arrayDimensionality != 0) {
             throw new IllegalStateException("Not supported yet");
         }
 
-        if(subtype == SubType.NONE){
+        if (subtype == SubType.NONE) {
             return transformType.getValue().convertToTransformed(originalSupplier);
-        }else if(subtype == SubType.CONSUMER || subtype == SubType.PREDICATE){
+        } else if (subtype == SubType.CONSUMER || subtype == SubType.PREDICATE) {
             /*
              * Example:
              *   LongConsumer c = ...;
@@ -265,13 +280,13 @@ public class TransformSubtype {
             Type originalLambdaType;
             Type transformedLambdaType;
 
-            if(subtype == SubType.CONSUMER){
+            if (subtype == SubType.CONSUMER) {
                 returnType = Type.VOID_TYPE;
                 transformerType = "consumer";
                 methodName = "accept";
                 originalLambdaType = transformType.getValue().getOriginalConsumerType();
                 transformedLambdaType = transformType.getValue().getTransformedConsumerType();
-            }else{
+            } else {
                 returnType = Type.BOOLEAN_TYPE;
                 transformerType = "predicate";
                 methodName = "test";
@@ -286,13 +301,13 @@ public class TransformSubtype {
 
             //Find if the transformer has already been created
             MethodNode transformer = null;
-            for(MethodNode mn : transformers){
-                if(mn.name.equals(transformerName)){
+            for (MethodNode mn : transformers) {
+                if (mn.name.equals(transformerName)) {
                     transformer = mn;
                 }
             }
 
-            if(transformer == null){
+            if (transformer == null) {
                 /*
                  * This is the lambda method that the call will get passed to. For the above example this would be:
                  * private static void lambdaTransformer_consumer_blockpos(LongConsumer c, int x, int y, int z){
@@ -305,7 +320,7 @@ public class TransformSubtype {
                 StringBuilder descBuilder = new StringBuilder();
                 descBuilder.append("(");
                 descBuilder.append(originalLambdaType.getDescriptor());
-                for(Type t: transformType.getValue().getTo()){
+                for (Type t : transformType.getValue().getTo()) {
                     descBuilder.append(t.getDescriptor());
                 }
                 descBuilder.append(")");
@@ -319,7 +334,7 @@ public class TransformSubtype {
 
                 //Load transformed values
                 int index = 1;
-                for(Type t: transformType.getValue().getTo()){
+                for (Type t : transformType.getValue().getTo()) {
                     l.add(new VarInsnNode(t.getOpcode(Opcodes.ILOAD), index));
                     index += t.getSize();
                 }
@@ -343,36 +358,24 @@ public class TransformSubtype {
             Handle transformerHandle = new Handle(Opcodes.H_INVOKESTATIC, className, transformer.name, transformer.desc, false);
 
             list.add(new InvokeDynamicInsnNode(
-                    methodName,
-                    "(" + originalLambdaType.getDescriptor() + ")" + transformedLambdaType.getDescriptor(),
-                    new Handle(
-                            Opcodes.H_INVOKESTATIC,
-                            "java/lang/invoke/LambdaMetafactory",
-                            "metafactory",
-                            "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
-                            false
-                    ),
-                    Type.getMethodType(returnType, transformType.getValue().getTo()),
-                    transformerHandle,
-                    Type.getMethodType(returnType, transformType.getValue().getTo())
+                methodName,
+                "(" + originalLambdaType.getDescriptor() + ")" + transformedLambdaType.getDescriptor(),
+                new Handle(
+                    Opcodes.H_INVOKESTATIC,
+                    "java/lang/invoke/LambdaMetafactory",
+                    "metafactory",
+                    "(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;"
+                        + "Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
+                    false
+                ),
+                Type.getMethodType(returnType, transformType.getValue().getTo()),
+                transformerHandle,
+                Type.getMethodType(returnType, transformType.getValue().getTo())
             ));
 
             return list;
         }
 
         throw new IllegalArgumentException("Unsupported subtype: " + subtype);
-    }
-
-    private static final Set<Type> regularTypes = new HashSet<>();
-    private static final Set<Type> consumerTypes = new HashSet<>();
-    private static final Set<Type> predicateTypes = new HashSet<>();
-
-    public static void init(Config config){
-        for(var entry: config.getTypes().entrySet()){
-            var subType = entry.getValue();
-            regularTypes.add(subType.getFrom());
-            consumerTypes.add(subType.getOriginalConsumerType());
-            predicateTypes.add(subType.getOriginalPredicateType());
-        }
     }
 }

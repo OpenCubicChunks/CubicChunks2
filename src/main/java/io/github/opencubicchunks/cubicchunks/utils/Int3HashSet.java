@@ -426,15 +426,15 @@ public class Int3HashSet implements AutoCloseable {
 
     //These methods probably won't be used by any CC code but should help ensure some compatibility with other mods and vanilla code
 
-    public boolean add(long l){
+    public boolean add(long l) {
         return add(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
     }
 
-    public boolean contains(long l){
+    public boolean contains(long l) {
         return contains(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
     }
 
-    public boolean remove(long l){
+    public boolean remove(long l) {
         return remove(BlockPos.getX(l), BlockPos.getY(l), BlockPos.getZ(l));
     }
 }

@@ -4,8 +4,6 @@ import static org.objectweb.asm.Opcodes.*;
 
 import java.util.function.Function;
 
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingInterpreter;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingValue;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -34,11 +32,11 @@ public class ASMUtil {
         Type[] argTypes = Type.getArgumentTypes(desc);
 
         int size = 0;
-        if(!isStatic) {
+        if (!isStatic) {
             size++;
         }
 
-        for(Type subType : argTypes) {
+        for (Type subType : argTypes) {
             size += subType.getSize();
         }
 
@@ -53,30 +51,30 @@ public class ASMUtil {
         Type[] argTypes = Type.getArgumentTypes(desc);
 
         int size = argTypes.length;
-        if(!isStatic) {
+        if (!isStatic) {
             size++;
         }
 
         return size;
     }
 
-    public static <T> void varIndicesToArgIndices(T[] varArr, T[] argArr, String desc, boolean isStatic){
+    public static <T> void varIndicesToArgIndices(T[] varArr, T[] argArr, String desc, boolean isStatic) {
         Type[] argTypes = Type.getArgumentTypes(desc);
         int staticOffset = isStatic ? 0 : 1;
-        if(argArr.length != argTypes.length + staticOffset){
+        if (argArr.length != argTypes.length + staticOffset) {
             throw new IllegalArgumentException("argArr.length != argTypes.length");
         }
 
         int varIndex = 0;
         int argIndex = 0;
 
-        if(!isStatic){
+        if (!isStatic) {
             argArr[0] = varArr[0];
             varIndex++;
             argIndex++;
         }
 
-        for(Type subType: argTypes){
+        for (Type subType : argTypes) {
             argArr[argIndex] = varArr[varIndex];
             varIndex += subType.getSize();
             argIndex++;
@@ -86,7 +84,7 @@ public class ASMUtil {
     public static String onlyClassName(String name) {
         name = name.replace('/', '.');
         int index = name.lastIndexOf('.');
-        if(index == -1) {
+        if (index == -1) {
             return name;
         }
         return name.substring(index + 1);
@@ -103,20 +101,23 @@ public class ASMUtil {
             case FLOAD, FSTORE -> Type.FLOAT_TYPE;
             case ILOAD, ISTORE -> Type.INT_TYPE;
             case LLOAD, LSTORE -> Type.LONG_TYPE;
-            default -> {throw new UnsupportedOperationException("Opcode " + opcode + " is not supported yet!");}
+            default -> {
+                throw new UnsupportedOperationException("Opcode " + opcode + " is not supported yet!");
+            }
         };
     }
 
     public static int stackConsumed(AbstractInsnNode insn) {
-        if(insn instanceof MethodInsnNode methodCall){
+        if (insn instanceof MethodInsnNode methodCall) {
             return argumentCount(methodCall.desc, methodCall.getOpcode() == INVOKESTATIC);
-        }else if(insn instanceof InvokeDynamicInsnNode dynamicCall){
+        } else if (insn instanceof InvokeDynamicInsnNode dynamicCall) {
             return argumentCount(dynamicCall.desc, true);
-        }else{
+        } else {
             return switch (insn.getOpcode()) {
                 case ISTORE, LSTORE, FSTORE, DSTORE, ASTORE, ANEWARRAY, ARETURN, ARRAYLENGTH, ATHROW, CHECKCAST, D2F, D2I, D2L, DNEG, DRETURN, F2D, F2I, F2L, FNEG, FRETURN, GETFIELD,
                     TABLESWITCH, PUTSTATIC, POP2, L2I, L2F, LNEG, LRETURN, MONITORENTER, MONITOREXIT, POP, I2B, I2C, I2D, I2F, I2L, I2S, INEG, IRETURN, L2D, DUP -> 1;
-                case AALOAD, BALOAD, CALOAD, DADD, DALOAD, DCMPG, DCMPL, DDIV, DMUL, DREM, DSUB, FADD, FALOAD, FCMPG, FCMPL, FDIV, FMUL, FREM, FSUB, SALOAD, PUTFIELD, LSHR, LSUB, LALOAD, LCMP, LDIV, LMUL, LOR, LREM, LSHL, LUSHR, LXOR, LADD, IADD, IALOAD, IAND, IDIV, IMUL, IOR, IREM, ISHL, ISHR, ISUB, IUSHR, IXOR -> 2;
+                case AALOAD, BALOAD, CALOAD, DADD, DALOAD, DCMPG, DCMPL, DDIV, DMUL, DREM, DSUB, FADD, FALOAD, FCMPG, FCMPL, FDIV, FMUL, FREM, FSUB, SALOAD, PUTFIELD, LSHR, LSUB, LALOAD,
+                    LCMP, LDIV, LMUL, LOR, LREM, LSHL, LUSHR, LXOR, LADD, IADD, IALOAD, IAND, IDIV, IMUL, IOR, IREM, ISHL, ISHR, ISUB, IUSHR, IXOR -> 2;
                 case AASTORE, BASTORE, CASTORE, DASTORE, FASTORE, SASTORE, LASTORE, IASTORE -> 3;
                 default -> 0;
             };
@@ -124,36 +125,37 @@ public class ASMUtil {
     }
 
     public static boolean isConstant(AbstractInsnNode insn) {
-        if(insn instanceof LdcInsnNode){
+        if (insn instanceof LdcInsnNode) {
             return true;
-        }else if(insn instanceof IntInsnNode){
+        } else if (insn instanceof IntInsnNode) {
             return true;
         }
 
         int opcode = insn.getOpcode();
-        return opcode == ICONST_M1 || opcode == ICONST_0 || opcode == ICONST_1 || opcode == ICONST_2 || opcode == ICONST_3 || opcode == ICONST_4 || opcode == ICONST_5 || opcode == LCONST_0 || opcode == LCONST_1 || opcode == FCONST_0 || opcode == FCONST_1 || opcode == FCONST_2 || opcode == DCONST_0 || opcode == DCONST_1;
+        return opcode == ICONST_M1 || opcode == ICONST_0 || opcode == ICONST_1 || opcode == ICONST_2 || opcode == ICONST_3 || opcode == ICONST_4 || opcode == ICONST_5 || opcode == LCONST_0
+            || opcode == LCONST_1 || opcode == FCONST_0 || opcode == FCONST_1 || opcode == FCONST_2 || opcode == DCONST_0 || opcode == DCONST_1;
     }
 
-    public static int getCompare(Type subType){
+    public static int getCompare(Type subType) {
         if (subType == Type.FLOAT_TYPE) {
             return FCMPL;
-        }else if (subType == Type.DOUBLE_TYPE) {
+        } else if (subType == Type.DOUBLE_TYPE) {
             return DCMPL;
-        }else if (subType == Type.LONG_TYPE) {
+        } else if (subType == Type.LONG_TYPE) {
             return LCMP;
-        }else {
+        } else {
             throw new IllegalArgumentException("Type " + subType + " is not allowed!");
         }
     }
 
     public static Object getConstant(AbstractInsnNode insn) {
-        if(!isConstant(insn)) {
+        if (!isConstant(insn)) {
             throw new IllegalArgumentException("Not a constant instruction!");
         }
 
-        if(insn instanceof LdcInsnNode cst){
+        if (insn instanceof LdcInsnNode cst) {
             return cst.cst;
-        }else if(insn instanceof IntInsnNode cst){
+        } else if (insn instanceof IntInsnNode cst) {
             return cst.operand;
         }
 
@@ -174,39 +176,41 @@ public class ASMUtil {
             case FCONST_2 -> 2.0f;
             case DCONST_0 -> 0.0;
             case DCONST_1 -> 1.0;
-            default -> {throw new UnsupportedOperationException("Opcode " + opcode + " is not supported!");}
+            default -> {
+                throw new UnsupportedOperationException("Opcode " + opcode + " is not supported!");
+            }
         };
     }
 
-    public static MethodNode copy(MethodNode original){
+    public static MethodNode copy(MethodNode original) {
         ClassNode classNode = new ClassNode();
         original.accept(classNode);
         return classNode.methods.get(0);
     }
 
-    public static void renameInstructions(ClassNode classNode, String previousName, String newName){
-        for(MethodNode method : classNode.methods){
-            for(AbstractInsnNode insn : method.instructions.toArray()){
-                if(insn instanceof MethodInsnNode methodCall){
-                    if(methodCall.owner.equals(previousName)){
+    public static void renameInstructions(ClassNode classNode, String previousName, String newName) {
+        for (MethodNode method : classNode.methods) {
+            for (AbstractInsnNode insn : method.instructions.toArray()) {
+                if (insn instanceof MethodInsnNode methodCall) {
+                    if (methodCall.owner.equals(previousName)) {
                         methodCall.owner = newName;
                     }
 
                     Type[] args = Type.getArgumentTypes(methodCall.desc);
-                    for(int i = 0; i < args.length; i++){
-                        if(args[i].getClassName().replace('.', '/').equals(previousName)){
+                    for (int i = 0; i < args.length; i++) {
+                        if (args[i].getClassName().replace('.', '/').equals(previousName)) {
                             args[i] = Type.getObjectType(newName);
                         }
                     }
                     methodCall.desc = Type.getMethodDescriptor(Type.getReturnType(methodCall.desc), args);
-                }else if(insn instanceof FieldInsnNode field){
-                    if(field.owner.equals(previousName)){
+                } else if (insn instanceof FieldInsnNode field) {
+                    if (field.owner.equals(previousName)) {
                         field.owner = newName;
                     }
-                }else if(insn instanceof InvokeDynamicInsnNode dynamicCall){
+                } else if (insn instanceof InvokeDynamicInsnNode dynamicCall) {
                     Type[] args = Type.getArgumentTypes(dynamicCall.desc);
-                    for(int i = 0; i < args.length; i++){
-                        if(args[i].getClassName().replace('.', '/').equals(previousName)){
+                    for (int i = 0; i < args.length; i++) {
+                        if (args[i].getClassName().replace('.', '/').equals(previousName)) {
                             args[i] = Type.getObjectType(newName);
                         }
                     }
@@ -214,36 +218,36 @@ public class ASMUtil {
 
                     for (int i = 0; i < dynamicCall.bsmArgs.length; i++) {
                         Object arg = dynamicCall.bsmArgs[i];
-                        if (arg instanceof Handle handle){
+                        if (arg instanceof Handle handle) {
                             int tag = handle.getTag();
                             String owner = handle.getOwner();
                             String name = handle.getName();
                             String desc = handle.getDesc();
                             boolean itf = handle.isInterface();
 
-                            if(owner.equals(previousName)){
+                            if (owner.equals(previousName)) {
                                 owner = newName;
                             }
 
                             Type[] types = Type.getArgumentTypes(desc);
-                            for(int j = 0; j < types.length; j++){
-                                if(types[j].getClassName().replace('.', '/').equals(previousName)){
+                            for (int j = 0; j < types.length; j++) {
+                                if (types[j].getClassName().replace('.', '/').equals(previousName)) {
                                     types[j] = Type.getObjectType(newName);
                                 }
                             }
                             desc = Type.getMethodDescriptor(Type.getReturnType(desc), types);
 
                             dynamicCall.bsmArgs[i] = new Handle(tag, owner, name, desc, itf);
-                        }else if(arg instanceof Type subType){
-                            if(subType.getSort() == Type.METHOD){
+                        } else if (arg instanceof Type subType) {
+                            if (subType.getSort() == Type.METHOD) {
                                 Type[] types = Type.getArgumentTypes(subType.getDescriptor());
-                                for(int j = 0; j < types.length; j++){
-                                    if(types[j].getClassName().replace('.', '/').equals(previousName)){
+                                for (int j = 0; j < types.length; j++) {
+                                    if (types[j].getClassName().replace('.', '/').equals(previousName)) {
                                         types[j] = Type.getObjectType(newName);
                                     }
                                 }
                                 dynamicCall.bsmArgs[i] = Type.getMethodType(Type.getReturnType(subType.getDescriptor()), types);
-                            }else if(subType.getClassName().replace('.', '/').equals(previousName)){
+                            } else if (subType.getClassName().replace('.', '/').equals(previousName)) {
                                 dynamicCall.bsmArgs[i] = Type.getObjectType(newName);
                             }
                         }
@@ -277,7 +281,7 @@ public class ASMUtil {
                     if (fieldInsn.owner.equals(owner) && fieldInsn.name.equals(name) && fieldInsn.desc.equals(desc)) {
                         fieldInsn.desc = newType.getDescriptor();
 
-                        if(fieldInsn.getOpcode() == GETFIELD || fieldInsn.getOpcode() == GETSTATIC){
+                        if (fieldInsn.getOpcode() == GETFIELD || fieldInsn.getOpcode() == GETSTATIC) {
                             method.instructions.insert(insn, postLoad.apply(method));
                         }
                     }
@@ -287,32 +291,35 @@ public class ASMUtil {
 
     }
 
-    public static int getDimensions(Type t){
-        if(t.getSort() == Type.ARRAY){
+    public static int getDimensions(Type t) {
+        if (t.getSort() == Type.ARRAY) {
             return t.getDimensions();
-        }else{
+        } else {
             return 0;
         }
     }
 
     /**
      * Creates a series of instructions which compares two values and jumps if a criterion is met.
+     *
      * @param type The types that are being compared.
-     * @param opcode Either {@link Opcodes#IF_ICMPEQ} or {@link Opcodes#IF_ICMPNE}. If it is the first, it will jump if the two values are equal. If it is the second, it will jump if the two values are not equal.
+     * @param opcode Either {@link Opcodes#IF_ICMPEQ} or {@link Opcodes#IF_ICMPNE}. If it is the first, it will jump if the two values are equal. If it is the second, it will jump if the
+     *     two values are not equal.
      * @param label The label to jump to if the criterion is met.
+     *
      * @return The instructions. This assumes that the two values are on the stack.
      */
-    public static InsnList generateCompareAndJump(Type type, int opcode, LabelNode label){
+    public static InsnList generateCompareAndJump(Type type, int opcode, LabelNode label) {
         InsnList list = new InsnList();
-        if(type.getSort() == Type.OBJECT){
+        if (type.getSort() == Type.OBJECT) {
             list.add(new JumpInsnNode(type.getOpcode(opcode), label)); //IF_ACMPEQ or IF_ACMPNE
-        }else if(type == Type.INT_TYPE){
+        } else if (type == Type.INT_TYPE) {
             list.add(new JumpInsnNode(opcode, label)); //IF_ICMPEQ or IF_ICMPNE
-        }else{
+        } else {
             list.add(new InsnNode(getCompare(type)));
-            if(opcode == IF_ICMPEQ){
+            if (opcode == IF_ICMPEQ) {
                 list.add(new JumpInsnNode(IFEQ, label));
-            }else{
+            } else {
                 list.add(new JumpInsnNode(IFNE, label));
             }
         }
@@ -321,35 +328,37 @@ public class ASMUtil {
 
     /**
      * Converts an instruction into a human-readable string. This is not made to be fast, but it is meant to be used for debugging.
+     *
      * @param instruction The instruction.
+     *
      * @return The string.
      */
-    public static String textify(AbstractInsnNode instruction){
+    public static String textify(AbstractInsnNode instruction) {
         StringBuilder builder = new StringBuilder();
         textify(instruction, builder);
         return builder.toString();
     }
 
     private static void textify(AbstractInsnNode instruction, StringBuilder builder) {
-        if(instruction instanceof LabelNode labelNode){
+        if (instruction instanceof LabelNode labelNode) {
             builder.append(labelNode.getLabel().toString()).append(": ");
-        }else if(instruction instanceof LineNumberNode lineNumberNode){
+        } else if (instruction instanceof LineNumberNode lineNumberNode) {
             builder.append("Line ").append(lineNumberNode.line).append(": ");
-        }else if(instruction instanceof FrameNode frameNode){
+        } else if (instruction instanceof FrameNode frameNode) {
             builder.append("Frame Node");
-        }else{
+        } else {
             builder.append(opcodeName(instruction.getOpcode()).toLowerCase()).append(" ");
-            if(instruction instanceof FieldInsnNode fieldInsnNode){
+            if (instruction instanceof FieldInsnNode fieldInsnNode) {
                 builder.append(fieldInsnNode.owner).append(".").append(fieldInsnNode.name).append(" ").append(fieldInsnNode.desc);
-            }else if(instruction instanceof MethodInsnNode methodInsnNode){
+            } else if (instruction instanceof MethodInsnNode methodInsnNode) {
                 builder.append(methodInsnNode.owner).append(".").append(methodInsnNode.name).append(" ").append(methodInsnNode.desc);
-            }else if(instruction instanceof TableSwitchInsnNode tableSwitchInsnNode){
+            } else if (instruction instanceof TableSwitchInsnNode tableSwitchInsnNode) {
                 builder.append("TableSwitchInsnNode");
-            }else if(instruction instanceof LookupSwitchInsnNode lookupSwitchInsnNode){
+            } else if (instruction instanceof LookupSwitchInsnNode lookupSwitchInsnNode) {
                 builder.append("LookupSwitchInsnNode");
-            }else if(instruction instanceof IntInsnNode intInsnNode){
+            } else if (instruction instanceof IntInsnNode intInsnNode) {
                 builder.append(intInsnNode.operand);
-            }else if(instruction instanceof LdcInsnNode ldcInsnNode){
+            } else if (instruction instanceof LdcInsnNode ldcInsnNode) {
                 builder.append(ldcInsnNode.cst);
             }
         }
@@ -357,7 +366,9 @@ public class ASMUtil {
 
     /**
      * Get the name of a JVM Opcode
+     *
      * @param opcode The opcode as an integer
+     *
      * @return The mnemonic of the opcode
      */
     public static String opcodeName(int opcode) {
@@ -521,43 +532,45 @@ public class ASMUtil {
     }
 
     /**
-     * Returns the amount of values that are pushed onto the stack by the given opcode. This will usually be 0 or 1 but some DUP and SWAPs can have higher values (up to six).
-     * If you know that none of the instructions are DUP_X2, DUP2, DUP2_X1, DUP2_X2, POP2 you can use the {@link #numValuesReturnedBasic(AbstractInsnNode)} method instead which does not
-     * require the frame.
+     * Returns the amount of values that are pushed onto the stack by the given opcode. This will usually be 0 or 1 but some DUP and SWAPs can have higher values (up to six). If you know
+     * that none of the instructions are DUP_X2, DUP2, DUP2_X1, DUP2_X2, POP2 you can use the {@link #numValuesReturnedBasic(AbstractInsnNode)} method instead which does not require the
+     * frame.
+     *
      * @param frame
      * @param insnNode
+     *
      * @return
      */
     public static int numValuesReturned(Frame<?> frame, AbstractInsnNode insnNode) {
         //Manage DUP and SWAPs
         int opcode = insnNode.getOpcode();
         int top = frame.getStackSize();
-        if(opcode == DUP){
+        if (opcode == DUP) {
             return 2;
-        }else if(opcode == DUP_X1){
+        } else if (opcode == DUP_X1) {
             return 3;
-        }else if(opcode == DUP_X2){
+        } else if (opcode == DUP_X2) {
             Value value2 = frame.getStack(top - 2);
-            if(value2.getSize() == 2){
+            if (value2.getSize() == 2) {
                 return 3;
-            }else{
+            } else {
                 return 4;
             }
-        }else if(opcode == DUP2){
+        } else if (opcode == DUP2) {
             Value value1 = frame.getStack(top - 1);
-            if(value1.getSize() == 2){
+            if (value1.getSize() == 2) {
                 return 2;
-            }else{
+            } else {
                 return 4;
             }
-        }else if(opcode == DUP2_X1){
+        } else if (opcode == DUP2_X1) {
             Value value1 = frame.getStack(top - 1);
-            if(value1.getSize() == 2){
+            if (value1.getSize() == 2) {
                 return 3;
-            }else{
+            } else {
                 return 5;
             }
-        }else if(opcode == DUP2_X2){
+        } else if (opcode == DUP2_X2) {
             /*
              Here are the forms of the instruction:
              The rows are the forms, the columns are the value nums from https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-6.html and the number is the computational type of the
@@ -571,28 +584,28 @@ public class ASMUtil {
              */
 
             Value value1 = frame.getStack(top - 1);
-            if(value1.getSize() == 2){
+            if (value1.getSize() == 2) {
                 Value value2 = frame.getStack(top - 2);
-                if(value2.getSize() == 2){
+                if (value2.getSize() == 2) {
                     return 3; //Form 4
-                }else {
+                } else {
                     return 4; //Form 2
                 }
-            }else{
+            } else {
                 Value value3 = frame.getStack(top - 3);
-                if(value3.getSize() == 2){
+                if (value3.getSize() == 2) {
                     return 5; //Form 3
-                }else {
+                } else {
                     return 6; //Form 1
                 }
             }
-        }else if(opcode == SWAP){
+        } else if (opcode == SWAP) {
             return 2;
-        }else if(opcode == POP2){
+        } else if (opcode == POP2) {
             Value value1 = frame.getStack(top - 1);
-            if(value1.getSize() == 2){
+            if (value1.getSize() == 2) {
                 return 1;
-            }else{
+            } else {
                 return 2;
             }
         }
@@ -602,7 +615,7 @@ public class ASMUtil {
     }
 
     private static int numValuesReturnedBasic(AbstractInsnNode insnNode) {
-        if(insnNode.getOpcode() == -1){
+        if (insnNode.getOpcode() == -1) {
             return 0;
         }
 
@@ -611,7 +624,7 @@ public class ASMUtil {
                 DNEG, DREM, DSUB, F2D, F2I, F2L, FADD, FALOAD, FCMPG, FCMPL, FCONST_0, FCONST_1, FCONST_2, FDIV, FLOAD, FMUL, FNEG, FREM, FSUB, GETFIELD, GETSTATIC, I2B, I2C, I2D, I2F,
                 I2L, I2S, IADD, IALOAD, IAND, ICONST_0, ICONST_1, ICONST_2, ICONST_3, ICONST_4, ICONST_5, ICONST_M1, IDIV, ILOAD, IMUL, INEG, INSTANCEOF, IOR, IREM, ISHL, ISHR, ISUB,
                 IUSHR, IXOR, JSR, L2D, L2F, L2I, LADD, LALOAD, LAND, LCMP, LCONST_0, LCONST_1, LDC, LDIV, LLOAD, LMUL, LNEG, LOR, LREM, LSHL, LSHR, LSUB, LUSHR, LXOR, MULTIANEWARRAY, NEW,
-                NEWARRAY, SALOAD, SIPUSH-> 1;
+                NEWARRAY, SALOAD, SIPUSH -> 1;
             case AASTORE, ARETURN, ASTORE, ATHROW, BASTORE, CASTORE, DRETURN, DSTORE, FASTORE, FRETURN, FSTORE, GOTO, IASTORE, IF_ACMPEQ, IF_ACMPNE, IF_ICMPEQ, IF_ICMPNE, IF_ICMPGE,
                 IF_ICMPLE, IF_ICMPGT, IF_ICMPLT, IFEQ, IFNE, IFGE, IFLE, IFGT, IFLT, IFNONNULL, IFNULL, IINC, IRETURN, ISTORE, LASTORE, LOOKUPSWITCH, TABLESWITCH, LRETURN, LSTORE,
                 MONITORENTER, MONITOREXIT, NOP, POP, PUTFIELD, PUTSTATIC, RET, RETURN, SASTORE -> 0;
@@ -623,11 +636,11 @@ public class ASMUtil {
             case DUP2_X2 -> throw new IllegalArgumentException("DUP2_X2 is not supported. Use numValueReturned instead");
             case POP2 -> throw new IllegalArgumentException("POP2 is not supported. Use numValueReturned instead");
             default -> {
-                if(insnNode instanceof MethodInsnNode methodCall){
+                if (insnNode instanceof MethodInsnNode methodCall) {
                     yield Type.getReturnType(methodCall.desc) == Type.VOID_TYPE ? 0 : 1;
-                }else if(insnNode instanceof InvokeDynamicInsnNode methodCall){
+                } else if (insnNode instanceof InvokeDynamicInsnNode methodCall) {
                     yield Type.getReturnType(methodCall.desc) == Type.VOID_TYPE ? 0 : 1;
-                }else{
+                } else {
                     throw new IllegalArgumentException("Unsupported instruction: " + insnNode.getClass().getSimpleName());
                 }
             }

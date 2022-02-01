@@ -30,8 +30,6 @@ public class Config {
     private TransformTrackingInterpreter interpreter;
     private Analyzer<TransformTrackingValue> analyzer;
 
-    public final Map<String, ClassNode> generatedClasses = new HashMap<>();
-
     public Config(HierarchyTree hierarchy, Map<String, TransformType> transformTypeMap, AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo,
                   Map<Type, ClassTransformInfo> classes,
                   Map<Type, InvokerInfo> invokers) {
@@ -44,18 +42,18 @@ public class Config {
         TransformSubtype.init(this);
     }
 
-    public void print(PrintStream out){
+    public void print(PrintStream out) {
         System.out.println("Hierarchy:");
         hierarchy.print(out);
 
-        for(Map.Entry<String, TransformType> entry : types.entrySet()){
+        for (Map.Entry<String, TransformType> entry : types.entrySet()) {
             out.println(entry.getValue());
         }
 
         System.out.println("\nMethod Parameter Info:");
 
-        for(Map.Entry<MethodID, List<MethodParameterInfo>> entry : methodParameterInfo.entrySet()){
-            for(MethodParameterInfo info : entry.getValue()){
+        for (Map.Entry<MethodID, List<MethodParameterInfo>> entry : methodParameterInfo.entrySet()) {
+            for (MethodParameterInfo info : entry.getValue()) {
                 out.println(info);
             }
         }
@@ -73,24 +71,24 @@ public class Config {
         return methodParameterInfo;
     }
 
-    public TransformTrackingInterpreter getInterpreter(){
-        if(interpreter == null){
+    public TransformTrackingInterpreter getInterpreter() {
+        if (interpreter == null) {
             interpreter = new TransformTrackingInterpreter(Opcodes.ASM9, this);
         }
 
         return interpreter;
     }
 
-    public Analyzer<TransformTrackingValue> getAnalyzer(){
-        if(analyzer == null){
+    public Analyzer<TransformTrackingValue> getAnalyzer() {
+        if (analyzer == null) {
             makeAnalyzer();
         }
 
         return analyzer;
     }
 
-    public void makeAnalyzer(){
-        analyzer = new Analyzer<>(getInterpreter()){
+    public void makeAnalyzer() {
+        analyzer = new Analyzer<>(getInterpreter()) {
             @Override protected Frame<TransformTrackingValue> newFrame(int numLocals, int numStack) {
                 return new DuplicatorFrame<>(numLocals, numStack);
             }
@@ -110,20 +108,17 @@ public class Config {
     }
 
     /**
-     * Makes DUP instructions (DUP, DUP_X1, SWAP, etc...) actually make duplicates for all values
-     * e.g
-     * Old:
-     *  [Value@1] -> [Value@1, Value@2 (copyOperation(Value@1))]
-     * New:
-     *  [Value@1] -> [Value@2 (copyOperation(Value@1)), Value@3 (copyOperation(Value@1))]
+     * Makes DUP instructions (DUP, DUP_X1, SWAP, etc...) actually make duplicates for all values e.g Old: [Value@1] -> [Value@1, Value@2 (copyOperation(Value@1))] New: [Value@1] -> [Value@2
+     * (copyOperation(Value@1)), Value@3 (copyOperation(Value@1))]
+     *
      * @param <T>
      */
-    private static final class DuplicatorFrame<T extends Value> extends Frame<T>{
-        public DuplicatorFrame(int numLocals, int maxStack) {
+    private static final class DuplicatorFrame<T extends Value> extends Frame<T> {
+        DuplicatorFrame(int numLocals, int maxStack) {
             super(numLocals, maxStack);
         }
 
-        public DuplicatorFrame(Frame<? extends T> frame) {
+        DuplicatorFrame(Frame<? extends T> frame) {
             super(frame);
         }
 
@@ -244,7 +239,7 @@ public class Config {
                     value1 = pop();
                     value2 = pop();
 
-                    if(value1.getSize() == 2 || value2.getSize() == 2) {
+                    if (value1.getSize() == 2 || value2.getSize() == 2) {
                         throw new AnalyzerException(insn, "SWAP expects values of size 1");
                     }
 

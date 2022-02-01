@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
 import javax.annotation.Nullable;
 
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;

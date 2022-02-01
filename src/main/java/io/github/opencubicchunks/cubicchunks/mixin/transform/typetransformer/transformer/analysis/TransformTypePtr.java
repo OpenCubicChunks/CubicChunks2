@@ -9,6 +9,10 @@ public class TransformTypePtr {
     private TransformType value;
     private final Set<TransformTrackingValue> trackingValues = new HashSet<>();
 
+    public TransformTypePtr(TransformType value) {
+        this.value = value;
+    }
+
     public void addTrackingValue(TransformTrackingValue trackingValue) {
         trackingValues.add(trackingValue);
     }
@@ -27,16 +31,12 @@ public class TransformTypePtr {
         TransformType oldType = this.value;
         this.value = value;
 
-        if(oldType != value) {
+        if (oldType != value) {
             updateType(oldType, value);
         }
     }
 
     public TransformType getValue() {
         return value;
-    }
-
-    public TransformTypePtr(TransformType value) {
-        this.value = value;
     }
 }

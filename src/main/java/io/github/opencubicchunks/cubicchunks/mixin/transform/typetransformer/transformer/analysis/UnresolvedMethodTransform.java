@@ -2,16 +2,16 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tr
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodParameterInfo;
 
-public record UnresolvedMethodTransform(MethodParameterInfo transform, TransformTrackingValue returnValue, TransformTrackingValue[] parameters){
-    public int check(){
+public record UnresolvedMethodTransform(MethodParameterInfo transform, TransformTrackingValue returnValue, TransformTrackingValue[] parameters) {
+    public int check() {
         return transform.getTransformCondition().checkValidity(returnValue, parameters);
     }
 
-    public void reject(){
-        if(returnValue != null) {
+    public void reject() {
+        if (returnValue != null) {
             returnValue.possibleTransformChecks.remove(this);
         }
-        for(TransformTrackingValue value: parameters){
+        for (TransformTrackingValue value : parameters) {
             value.possibleTransformChecks.remove(this);
         }
     }
@@ -25,7 +25,7 @@ public record UnresolvedMethodTransform(MethodParameterInfo transform, Transform
             value.possibleTransformChecks.clear();
         }
 
-        if(returnValue != null) {
+        if (returnValue != null) {
             if (transform.getReturnType() != null) {
                 returnValue.getTransformTypeRef().setValue(transform.getReturnType().getTransformType());
 

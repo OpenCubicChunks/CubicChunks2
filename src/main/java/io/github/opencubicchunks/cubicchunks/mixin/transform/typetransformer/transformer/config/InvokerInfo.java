@@ -35,7 +35,7 @@ public class InvokerInfo {
         return methods;
     }
 
-    public record InvokerMethodInfo(TransformSubtype[] argTypes, String mixinMethodName, String targetMethodName, String desc){
+    public record InvokerMethodInfo(TransformSubtype[] argTypes, String mixinMethodName, String targetMethodName, String desc) {
         public void addReplacementTo(AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo, InvokerInfo invokerInfo) {
             TransformSubtype[] argTypes = this.argTypes;
             Type[] originalTypes = Type.getArgumentTypes(desc);
@@ -67,14 +67,14 @@ public class InvokerInfo {
             //Generate minimums
             List<MethodTransformChecker.Minimum> minimums = new ArrayList<>();
 
-            for(int j = 0; j < argTypes.length; j++){
-                if(argTypes[j].getTransformType() != null){
+            for (int j = 0; j < argTypes.length; j++) {
+                if (argTypes[j].getTransformType() != null) {
                     TransformSubtype[] min = new TransformSubtype[newArgTypes.length];
 
-                    for(int k = 0; k < min.length; k++){
-                        if(k != j + 1){
+                    for (int k = 0; k < min.length; k++) {
+                        if (k != j + 1) {
                             min[k] = TransformSubtype.of(null);
-                        }else{
+                        } else {
                             min[k] = argTypes[j];
                         }
                     }
@@ -95,21 +95,21 @@ public class InvokerInfo {
         }
 
         private BytecodeFactory generateReplacement(String newDesc, List<Type> transformedTypes, InvokerInfo invokerInfo) {
-            if(transformedTypes.size() == 0){
+            if (transformedTypes.size() == 0) {
                 return (__) -> {
                     InsnList list = new InsnList();
                     list.add(new TypeInsnNode(Opcodes.CHECKCAST, invokerInfo.targetClass.getInternalName()));
                     list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, invokerInfo.targetClass.getInternalName(), targetMethodName, newDesc, false));
                     return list;
                 };
-            }else{
+            } else {
                 return (varAllocator) -> {
                     InsnList insnList = new InsnList();
 
                     //Save the arguments in variables
                     //Step 1: Allocate vars
                     List<Integer> vars = new ArrayList<>();
-                    for(Type t: transformedTypes){
+                    for (Type t : transformedTypes) {
                         vars.add(varAllocator.apply(t));
                     }
 
@@ -122,7 +122,7 @@ public class InvokerInfo {
                     insnList.add(new TypeInsnNode(Opcodes.CHECKCAST, invokerInfo.targetClass.getInternalName()));
 
                     //Load the arguments back
-                    for(int i = 0; i < vars.size(); i++){
+                    for (int i = 0; i < vars.size(); i++) {
                         insnList.add(new VarInsnNode(transformedTypes.get(i).getOpcode(Opcodes.ILOAD), vars.get(i)));
                     }
 

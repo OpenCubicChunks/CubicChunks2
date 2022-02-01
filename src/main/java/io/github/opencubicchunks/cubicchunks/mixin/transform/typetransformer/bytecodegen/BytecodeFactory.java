@@ -11,7 +11,9 @@ import org.objectweb.asm.tree.InsnList;
 public interface BytecodeFactory {
     /**
      * Generates a bytecode instruction list.
+     *
      * @param variableAllocator A function which, when given a type, returns an appropriate variable slot for that type.
+     *
      * @return A bytecode instruction list.
      */
     InsnList generate(Function<Type, Integer> variableAllocator);

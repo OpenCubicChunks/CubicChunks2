@@ -50,16 +50,14 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     /**
      * Constructs a new {@link Interpreter}.
      *
-     * @param api the ASM API version supported by this interpreter. Must be one of {@link
-     *            Opcodes#ASM4}, {@link Opcodes#ASM5}, {@link
-     *            Opcodes#ASM6} or {@link Opcodes#ASM7}.
+     * @param api the ASM API version supported by this interpreter. Must be one of {@link Opcodes#ASM4}, {@link Opcodes#ASM5}, {@link Opcodes#ASM6} or {@link Opcodes#ASM7}.
      */
     public TransformTrackingInterpreter(int api, Config config) {
         super(api);
         this.config = config;
     }
 
-    public void reset(){
+    public void reset() {
         parameterOverrides.clear();
         transforming = null;
     }
@@ -70,19 +68,19 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
 
     @Override
     public TransformTrackingValue newValue(Type subType) {
-        if(subType == null){
+        if (subType == null) {
             return new TransformTrackingValue(null, fieldBindings);
         }
-        if(subType.getSort() == Type.VOID) return null;
-        if(subType.getSort() == Type.METHOD) throw new RuntimeException("Method subType not supported");
+        if (subType.getSort() == Type.VOID) return null;
+        if (subType.getSort() == Type.METHOD) throw new RuntimeException("Method subType not supported");
         return new TransformTrackingValue(subType, fieldBindings);
     }
 
     @Override
     public TransformTrackingValue newParameterValue(boolean isInstanceMethod, int local, Type subType) {
-        if(subType == Type.VOID_TYPE) return null;
+        if (subType == Type.VOID_TYPE) return null;
         TransformTrackingValue value = new TransformTrackingValue(subType, local, fieldBindings);
-        if(parameterOverrides.containsKey(local)){
+        if (parameterOverrides.containsKey(local)) {
             value.setTransformType(parameterOverrides.get(local));
         }
         return value;
@@ -90,10 +88,10 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
 
     @Override
     public TransformTrackingValue newOperation(AbstractInsnNode insn) throws AnalyzerException {
-        return switch (insn.getOpcode()){
+        return switch (insn.getOpcode()) {
             case Opcodes.ACONST_NULL -> new TransformTrackingValue(BasicInterpreter.NULL_TYPE, insn, fieldBindings);
             case Opcodes.ICONST_M1, Opcodes.ICONST_0, Opcodes.ICONST_1, Opcodes.ICONST_2, Opcodes.ICONST_3,
-                    Opcodes.ICONST_4, Opcodes.ICONST_5 -> new TransformTrackingValue(Type.INT_TYPE, insn, fieldBindings);
+                Opcodes.ICONST_4, Opcodes.ICONST_5 -> new TransformTrackingValue(Type.INT_TYPE, insn, fieldBindings);
             case Opcodes.LCONST_0, Opcodes.LCONST_1 -> new TransformTrackingValue(Type.LONG_TYPE, insn, fieldBindings);
             case Opcodes.FCONST_0, Opcodes.FCONST_1, Opcodes.FCONST_2 -> new TransformTrackingValue(Type.FLOAT_TYPE, insn, fieldBindings);
             case Opcodes.DCONST_0, Opcodes.DCONST_1 -> new TransformTrackingValue(Type.DOUBLE_TYPE, insn, fieldBindings);
@@ -102,15 +100,15 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             case Opcodes.LDC -> {
                 Object value = ((LdcInsnNode) insn).cst;
                 if (value instanceof Integer) {
-                    yield  new TransformTrackingValue(Type.INT_TYPE, insn, fieldBindings);
+                    yield new TransformTrackingValue(Type.INT_TYPE, insn, fieldBindings);
                 } else if (value instanceof Float) {
-                    yield  new TransformTrackingValue(Type.FLOAT_TYPE, insn, fieldBindings);
+                    yield new TransformTrackingValue(Type.FLOAT_TYPE, insn, fieldBindings);
                 } else if (value instanceof Long) {
-                    yield  new TransformTrackingValue(Type.LONG_TYPE, insn, fieldBindings);
+                    yield new TransformTrackingValue(Type.LONG_TYPE, insn, fieldBindings);
                 } else if (value instanceof Double) {
-                    yield  new TransformTrackingValue(Type.DOUBLE_TYPE, insn, fieldBindings);
+                    yield new TransformTrackingValue(Type.DOUBLE_TYPE, insn, fieldBindings);
                 } else if (value instanceof String) {
-                    yield  new TransformTrackingValue(Type.getObjectType("java/lang/String"), insn, fieldBindings);
+                    yield new TransformTrackingValue(Type.getObjectType("java/lang/String"), insn, fieldBindings);
                 } else if (value instanceof Type) {
                     int sort = ((Type) value).getSort();
                     if (sort == Type.OBJECT || sort == Type.ARRAY) {
@@ -132,10 +130,10 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
 
     @Override
     //Because of the custom Frame (defined in Config$DuplicatorFrame) this method may be called multiple times for the same instruction-value pair
-    public TransformTrackingValue copyOperation(AbstractInsnNode insn, TransformTrackingValue value){
-        if(insn instanceof VarInsnNode varInsn){
+    public TransformTrackingValue copyOperation(AbstractInsnNode insn, TransformTrackingValue value) {
+        if (insn instanceof VarInsnNode varInsn) {
             return new TransformTrackingValue(value.getType(), insn, varInsn.var, value.getTransform(), fieldBindings);
-        }else {
+        } else {
             consumeBy(value, insn);
             return new TransformTrackingValue(value.getType(), Set.of(insn), value.getLocalVars(), value.getTransform(), fieldBindings);
         }
@@ -185,16 +183,16 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             case ARETURN:
             case PUTSTATIC:
                 return null;
-            case GETFIELD:{
+            case GETFIELD: {
                 FieldInsnNode fieldInsnNode = (FieldInsnNode) insn;
                 TransformTrackingValue fieldValue = new TransformTrackingValue(Type.getType(((FieldInsnNode) insn).desc), insn, fieldBindings);
                 FieldSource fieldSource = new FieldSource(fieldInsnNode.owner, fieldInsnNode.name, fieldInsnNode.desc, 0);
                 fieldValue.addFieldSource(fieldSource);
 
-                if(fieldInsnNode.owner.equals(currentClass.name)){
+                if (fieldInsnNode.owner.equals(currentClass.name)) {
                     FieldID fieldAndDesc = new FieldID(Type.getObjectType(fieldInsnNode.owner), fieldInsnNode.name, Type.getType(fieldInsnNode.desc));
                     TransformTrackingValue fieldBinding = fieldBindings.get(fieldAndDesc);
-                    if(fieldBinding != null) {
+                    if (fieldBinding != null) {
                         TransformTrackingValue.setSameType(fieldValue, fieldBinding);
                     }
                 }
@@ -267,7 +265,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             case IOR:
             case IXOR:
                 value = new TransformTrackingValue(Type.INT_TYPE, insn, fieldBindings);
-                if(insn.getOpcode() == IALOAD || insn.getOpcode() == BALOAD || insn.getOpcode() == CALOAD || insn.getOpcode() == SALOAD) {
+                if (insn.getOpcode() == IALOAD || insn.getOpcode() == BALOAD || insn.getOpcode() == CALOAD || insn.getOpcode() == SALOAD) {
                     deepenFieldSource(value1, value);
                 }
                 return value;
@@ -278,7 +276,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             case FDIV:
             case FREM:
                 value = new TransformTrackingValue(Type.FLOAT_TYPE, insn, fieldBindings);
-                if(insn.getOpcode() == FALOAD) {
+                if (insn.getOpcode() == FALOAD) {
                     deepenFieldSource(value1, value);
                 }
                 return value;
@@ -295,7 +293,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             case LOR:
             case LXOR:
                 value = new TransformTrackingValue(Type.LONG_TYPE, insn, fieldBindings);
-                if(insn.getOpcode() == LALOAD) {
+                if (insn.getOpcode() == LALOAD) {
                     deepenFieldSource(value1, value);
                 }
                 return value;
@@ -306,7 +304,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             case DDIV:
             case DREM:
                 value = new TransformTrackingValue(Type.DOUBLE_TYPE, insn, fieldBindings);
-                if(insn.getOpcode() == DALOAD) {
+                if (insn.getOpcode() == DALOAD) {
                     deepenFieldSource(value1, value);
                 }
                 return value;
@@ -337,7 +335,8 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     @Override
-    public TransformTrackingValue ternaryOperation(AbstractInsnNode insn, TransformTrackingValue value1, TransformTrackingValue value2, TransformTrackingValue value3) throws AnalyzerException {
+    public TransformTrackingValue ternaryOperation(AbstractInsnNode insn, TransformTrackingValue value1, TransformTrackingValue value2, TransformTrackingValue value3)
+        throws AnalyzerException {
         consumeBy(value1, insn);
         consumeBy(value2, insn);
         consumeBy(value3, insn);
@@ -346,7 +345,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
 
     @Override
     public TransformTrackingValue naryOperation(AbstractInsnNode insn, List<? extends TransformTrackingValue> values) throws AnalyzerException {
-        for(TransformTrackingValue value : values){
+        for (TransformTrackingValue value : values) {
             consumeBy(value, insn);
         }
 
@@ -361,7 +360,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             TransformTrackingValue ret = new TransformTrackingValue(subType, insn, fieldBindings);
 
             //Make sure this is LambdaMetafactory.metafactory
-            if(node.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory") && node.bsm.getName().equals("metafactory")){
+            if (node.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory") && node.bsm.getName().equals("metafactory")) {
                 //Bind values
                 Handle referenceMethod = (Handle) node.bsmArgs[1];
                 MethodID.CallType callType = switch (referenceMethod.getTag()) {
@@ -373,36 +372,36 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
                 };
                 MethodID methodID = new MethodID(referenceMethod.getOwner(), referenceMethod.getName(), referenceMethod.getDesc(), callType);
 
-                if(resultLookup.containsKey(methodID)){
+                if (resultLookup.containsKey(methodID)) {
                     bindValuesToMethod(resultLookup.get(methodID), 0, values.toArray(new TransformTrackingValue[0]));
-                }else{
+                } else {
                     futureMethodBindings.computeIfAbsent(methodID, k -> new ArrayList<>()).add(
-                            new FutureMethodBinding(0, values.toArray(new TransformTrackingValue[0]))
+                        new FutureMethodBinding(0, values.toArray(new TransformTrackingValue[0]))
                     );
                 }
 
                 boolean isTransformPredicate = ret.getTransform().getSubtype() == TransformSubtype.SubType.PREDICATE;
                 boolean isTransformConsumer = ret.getTransform().getSubtype() == TransformSubtype.SubType.CONSUMER;
 
-                if(isTransformConsumer && isTransformPredicate){
+                if (isTransformConsumer && isTransformPredicate) {
                     throw new RuntimeException("A subType cannot be both a predicate and a consumer. This is a bug in the configuration ('subType-transform.json').");
                 }
 
-                if(isTransformConsumer || isTransformPredicate) {
+                if (isTransformConsumer || isTransformPredicate) {
                     int offset = values.size();
                     offset += callType.getOffset();
 
-                    if(resultLookup.containsKey(methodID)){
+                    if (resultLookup.containsKey(methodID)) {
                         bindValuesToMethod(resultLookup.get(methodID), offset, ret);
-                    }else{
+                    } else {
                         futureMethodBindings.computeIfAbsent(methodID, k -> new ArrayList<>()).add(
-                                new FutureMethodBinding(offset, ret)
+                            new FutureMethodBinding(offset, ret)
                         );
                     }
                 }
             }
 
-            if(subType.getSort() == Type.VOID) return null;
+            if (subType.getSort() == Type.VOID) return null;
 
             return ret;
         } else {
@@ -411,24 +410,24 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
 
             MethodID methodID = new MethodID(methodCall.owner, methodCall.name, methodCall.desc, MethodID.CallType.fromOpcode(opcode));
 
-            if(resultLookup.containsKey(methodID)) {
+            if (resultLookup.containsKey(methodID)) {
                 bindValuesToMethod(resultLookup.get(methodID), 0, values.toArray(new TransformTrackingValue[0]));
-            }else if(methodCall.owner.equals(currentClass.name)){
+            } else if (methodCall.owner.equals(currentClass.name)) {
                 futureMethodBindings.computeIfAbsent(methodID, k -> new ArrayList<>()).add(
-                        new FutureMethodBinding(0, values.toArray(new TransformTrackingValue[0]))
+                    new FutureMethodBinding(0, values.toArray(new TransformTrackingValue[0]))
                 );
             }
 
             List<MethodParameterInfo> possibilities = config.getMethodParameterInfo().get(methodID);
 
-            if(possibilities != null){
+            if (possibilities != null) {
                 TransformTrackingValue returnValue = null;
 
-                if(subType != null){
+                if (subType != null) {
                     returnValue = new TransformTrackingValue(subType, insn, fieldBindings);
                 }
 
-                for(MethodParameterInfo info : possibilities) {
+                for (MethodParameterInfo info : possibilities) {
                     TransformTrackingValue[] parameterValues = new TransformTrackingValue[info.getParameterTypes().length];
                     for (int i = 0; i < values.size(); i++) {
                         parameterValues[i] = values.get(i);
@@ -454,7 +453,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
                 return returnValue;
             }
 
-            if(subType.getSort() == Type.VOID) return null;
+            if (subType.getSort() == Type.VOID) return null;
 
             return new TransformTrackingValue(subType, insn, fieldBindings);
         }
@@ -462,10 +461,10 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
 
     @Override
     public void returnOperation(AbstractInsnNode insn, TransformTrackingValue value, TransformTrackingValue expected) throws AnalyzerException {
-        if(value.getTransformType() != null){
-            if(expected.transformedTypes().size() == 1){
+        if (value.getTransformType() != null) {
+            if (expected.transformedTypes().size() == 1) {
                 returnValues.add(value);
-            }else{
+            } else {
                 throw new AnalyzerException(insn, "Return subType is not single");
             }
         }
@@ -474,7 +473,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
 
     @Override
     public TransformTrackingValue merge(TransformTrackingValue value1, TransformTrackingValue value2) {
-        if(!Objects.equals(value1.getType(), value2.getType())){
+        if (!Objects.equals(value1.getType(), value2.getType())) {
             //System.err.println("WARNING: Merge types are not equal");
             return value1;
         }
@@ -482,7 +481,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         return value1.merge(value2);
     }
 
-    private void consumeBy(TransformTrackingValue value, AbstractInsnNode consumer){
+    private void consumeBy(TransformTrackingValue value, AbstractInsnNode consumer) {
         assert value != null;
         value.consumeBy(consumer);
     }
@@ -492,24 +491,24 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         this.parameterOverrides.putAll(localVarOverrides);
     }
 
-    private static void deepenFieldSource(TransformTrackingValue fieldValue, TransformTrackingValue newValue){
-        for(FieldSource source : fieldValue.getFieldSources()){
+    private static void deepenFieldSource(TransformTrackingValue fieldValue, TransformTrackingValue newValue) {
+        for (FieldSource source : fieldValue.getFieldSources()) {
             newValue.addFieldSource(source.deeper());
         }
 
         TransformTrackingValue.setSameType(fieldValue, newValue);
     }
 
-    public static void bindValuesToMethod(AnalysisResults methodResults, int parameterOffset, TransformTrackingValue... parameters){
+    public static void bindValuesToMethod(AnalysisResults methodResults, int parameterOffset, TransformTrackingValue... parameters) {
         Frame<TransformTrackingValue> firstFrame = methodResults.frames()[0];
 
         Type[] argumentTypes = Type.getArgumentTypes(methodResults.methodNode().desc);
         Type[] allTypes;
-        if(!ASMUtil.isStatic(methodResults.methodNode())){
+        if (!ASMUtil.isStatic(methodResults.methodNode())) {
             allTypes = new Type[argumentTypes.length + 1];
             allTypes[0] = Type.getObjectType("java/lang/Object"); //The actual subType doesn't matter
             System.arraycopy(argumentTypes, 0, allTypes, 1, argumentTypes.length);
-        }else{
+        } else {
             allTypes = argumentTypes;
         }
 
@@ -520,8 +519,8 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             varIndex += allTypes[i].getSize();
         }
 
-        for(Type parameterType : allTypes){
-            if(paramIndex >= parameters.length){ //This can happen for invokedynamic
+        for (Type parameterType : allTypes) {
+            if (paramIndex >= parameters.length) { //This can happen for invokedynamic
                 break;
             }
             TransformTrackingValue.setSameType(firstFrame.getLocal(varIndex), parameters[paramIndex]);
