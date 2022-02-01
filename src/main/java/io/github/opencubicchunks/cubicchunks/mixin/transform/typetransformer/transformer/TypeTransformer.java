@@ -37,6 +37,7 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMa
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
+import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -181,40 +182,7 @@ public class TypeTransformer {
         markSynthetic(newMethod, "AUTO-TRANSFORMED", methodNode.name + methodNode.desc);
 
         if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0) {
-            //If the method is abstract, we don't need to transform its code, just it's descriptor
-            TransformSubtype[] actualParameters = new TransformSubtype[results.argTypes().length - 1];
-            System.arraycopy(results.argTypes(), 1, actualParameters, 0, actualParameters.length);
-
-            String oldDesc = methodNode.desc;
-
-            //Change descriptor
-            newMethod.desc = MethodParameterInfo.getNewDesc(TransformSubtype.of(null), actualParameters, methodNode.desc);
-
-            if (oldDesc.equals(newMethod.desc)) {
-                newMethod.name += MIX;
-            }
-
-            System.out.println("Transformed method '" + methodID + "' in " + (System.currentTimeMillis() - start) + "ms");
-
-            //Create the parameter name table
-            if (newMethod.parameters != null) {
-                List<ParameterNode> newParameters = new ArrayList<>();
-                for (int i = 0; i < newMethod.parameters.size(); i++) {
-                    ParameterNode parameterNode = newMethod.parameters.get(i);
-                    TransformSubtype parameterType = actualParameters[i];
-
-                    if (parameterType.getTransformType() == null || !parameterType.getSubtype().equals(TransformSubtype.SubType.NONE)) {
-                        //There is no transform type for this parameter, so we don't need to change it
-                        newParameters.add(parameterNode);
-                    } else {
-                        //There is a transform type for this parameter, so we need to change it
-                        for (String suffix : parameterType.getTransformType().getPostfix()) {
-                            newParameters.add(new ParameterNode(parameterNode.name + suffix, parameterNode.access));
-                        }
-                    }
-                }
-                newMethod.parameters = newParameters;
-            }
+            transformDescriptorForAbstractMethod(methodNode, start, methodID, results, newMethod);
             return;
         }
 
@@ -261,44 +229,14 @@ public class TypeTransformer {
         //Resolve the method parameter infos
         MethodParameterInfo[] methodInfos = new MethodParameterInfo[insns.length];
         Type t = Type.getObjectType(classNode.name);
-        for (int i = 0; i < insns.length; i++) {
-            AbstractInsnNode insn = instructions[i];
-            Frame<TransformTrackingValue> frame = frames[i];
-            if (insn instanceof MethodInsnNode methodCall) {
-                MethodID calledMethod = MethodID.from(methodCall);
-
-                TransformTrackingValue returnValue = null;
-                if (calledMethod.getDescriptor().getReturnType() != Type.VOID_TYPE) {
-                    returnValue = ASMUtil.getTop(frames[i + 1]);
-                }
-
-                int argCount = ASMUtil.argumentCount(calledMethod.getDescriptor().getDescriptor(), calledMethod.isStatic());
-                TransformTrackingValue[] args = new TransformTrackingValue[argCount];
-                for (int j = 0; j < args.length; j++) {
-                    args[j] = frame.getStack(frame.getStackSize() - argCount + j);
-                }
-
-                //Lookup the possible method transforms
-                List<MethodParameterInfo> infos = config.getMethodParameterInfo().get(calledMethod);
-
-                if (infos != null) {
-                    //Check all possible transforms to see if any of them match
-                    for (MethodParameterInfo info : infos) {
-                        if (info.getTransformCondition().checkValidity(returnValue, args) == 1) {
-                            methodInfos[i] = info;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+        getAllMethodInfo(insns, instructions, frames, methodInfos);
 
         //Create context
         TransformContext context =
             new TransformContext(newMethod, results, instructions, expandedEmitter, expandedConsumer, new boolean[insns.length], syntheticEmitters, vars, varTypes, varCreator, indexLookup,
                 methodInfos);
 
-        detectAllRemovedEmitters(newMethod, context);
+        detectAllRemovedEmitters(context);
 
         createEmitters(context);
 
@@ -307,441 +245,15 @@ public class TypeTransformer {
         System.out.println("Transformed method '" + methodID + "' in " + (System.currentTimeMillis() - start) + "ms");
     }
 
-    /**
-     * Finds all emitters that need to be removed and marks them as such.
-     * <br><br>
-     * What is a removed emitter?<br> In certain cases, multiple values will need to be used out of their normal order. For example, <code>var1</code> and <code>var2</code> both have
-     * transform-type long -> (int "x", int "y", int "z"). If some code does <code>var1 == var2</code> then the transformed code needs to do <code>var1_x == var2_x && var1_y == var2_y &&
-     * var1_z == var2_z</code>. This means var1_x has to be loaded and then var2_x and then var1_y etc... This means we can't just expand the two emitters normally. That would leave the
-     * stack with [var1_x, var1_y, var1_z, var2_x, var2_y, var2_z] and comparing that would need a lot of stack magic (DUP, SWAP, etc...). So what we do is remove these emitters from the
-     * code and instead create BytecodeFactories that allow the values to be generated in any order that is needed.
-     *
-     * @param newMethod The method to transform
-     * @param context The transform context
-     */
-    private void detectAllRemovedEmitters(MethodNode newMethod, TransformContext context) {
-        boolean[] prev;
-        Frame<TransformTrackingValue>[] frames = context.analysisResults().frames();
-
-        //This code keeps trying to find new removed emitters until it can't find any more.
-
-        do {
-            //Keep detecting new ones until we don't find any more
-            prev = Arrays.copyOf(context.removedEmitter(), context.removedEmitter().length);
-
-            for (int i = 0; i < context.removedEmitter().length; i++) {
-                AbstractInsnNode instruction = context.instructions()[i];
-                Frame<TransformTrackingValue> frame = frames[i];
-
-                if (frame == null) continue;
-
-                int consumed = ASMUtil.stackConsumed(instruction);
-                int opcode = instruction.getOpcode();
-
-                if (instruction instanceof MethodInsnNode methodCall) {
-                    MethodParameterInfo info = context.methodInfos()[i];
-                    if (info != null && info.getReplacement() != null) {
-                        if (info.getReplacement().changeParameters()) {
-                            //If any method parameters are changed we remove all of it's emitters
-                            for (int j = 0; j < consumed; j++) {
-                                TransformTrackingValue arg = frame.getStack(frame.getStackSize() - consumed + j);
-                                markRemoved(arg, context);
-                            }
-                        }
-                    }
-                } else if (opcode == Opcodes.LCMP || opcode == Opcodes.FCMPL || opcode == Opcodes.FCMPG || opcode == Opcodes.DCMPL || opcode == Opcodes.DCMPG || opcode == Opcodes.IF_ICMPEQ
-                    || opcode == Opcodes.IF_ICMPNE || opcode == Opcodes.IF_ACMPEQ || opcode == Opcodes.IF_ACMPNE) {
-                    //Get two values
-                    TransformTrackingValue left = frame.getStack(frame.getStackSize() - 2);
-                    TransformTrackingValue right = frame.getStack(frame.getStackSize() - 1);
-
-                    //We can assume the two transforms are the same. This check is just to make sure there isn't a bug in the analyzer
-                    if (!left.getTransform().equals(right.getTransform())) {
-                        throw new RuntimeException("The two transforms should be the same");
-                    }
-
-                    //If the transform has more than one subType we will need to separate them so we must remove the emitter
-                    if (left.getTransform().transformedTypes(left.getType()).size() > 1) {
-                        markRemoved(left, context);
-                        markRemoved(right, context);
-                    }
-                }
-
-                //If any of the values used by any instruction are removed we need to remove all the other values emitters
-                boolean remove = false;
-                for (int j = 0; j < consumed; j++) {
-                    TransformTrackingValue arg = frame.getStack(frame.getStackSize() - consumed + j);
-                    if (isRemoved(arg, context)) {
-                        remove = true;
-                        break;
-                    }
-                }
-
-                if (remove) {
-                    for (int j = 0; j < consumed; j++) {
-                        TransformTrackingValue arg = frame.getStack(frame.getStackSize() - consumed + j);
-                        markRemoved(arg, context);
-                    }
-                }
-            }
-        } while (!Arrays.equals(prev, context.removedEmitter()));
-
-        //This is just a debug check
-
-        for (int i = 0; i < context.removedEmitter().length; i++) {
-            AbstractInsnNode instruction = context.instructions()[i];
-            Frame<TransformTrackingValue> frame = frames[i];
-
-            int consumed = ASMUtil.stackConsumed(instruction);
-
-            if (consumed < 1) continue;
-
-            boolean allRemoved = true;
-            boolean noneRemoved = true;
-
-            for (int j = 0; j < consumed; j++) {
-                TransformTrackingValue arg = frame.getStack(frame.getStackSize() - consumed + j);
-                if (isRemoved(arg, context)) {
-                    noneRemoved = false;
-                } else {
-                    allRemoved = false;
-                }
-            }
-
-            if (!(allRemoved || noneRemoved)) {
-                throw new RuntimeException("The instruction " + instruction + " has a stack that is not all removed or none removed");
-            }
+    public void transformMethod(String name, String desc) {
+        MethodNode methodNode = classNode.methods.stream().filter(m -> m.name.equals(name) && m.desc.equals(desc)).findAny().orElse(null);
+        if (methodNode == null) {
+            throw new RuntimeException("Method " + name + desc + " not found in class " + classNode.name);
         }
-    }
-
-    /**
-     * Creates the synthetic emitters mentioned in {@link #detectAllRemovedEmitters(MethodNode, TransformContext)}
-     *
-     * @param context Transform context
-     */
-    private void createEmitters(TransformContext context) {
-        // If a value can come from multiple paths of execution we need to store it in a temporary variable (because it is simpler). (May use more than one variable for transform type
-        // expansions)
-
-        Map<AbstractInsnNode, int[][]> tempVariables = new HashMap<>();
-
-        Map<TransformTrackingValue, int[]> variableSlots = new HashMap<>();
-
-        for (int i = 0; i < context.instructions.length; i++) {
-            if (context.removedEmitter()[i]) {
-                AbstractInsnNode instruction = context.instructions()[i];
-                Frame<TransformTrackingValue> frame = context.analysisResults().frames()[i];
-                Frame<TransformTrackingValue> nextFrame = context.analysisResults().frames()[i + 1];
-
-                int amountValuesGenerated = ASMUtil.numValuesReturned(frame, instruction);
-                TransformTrackingValue[] values = new TransformTrackingValue[amountValuesGenerated];
-
-                int[][] saveInto = new int[amountValuesGenerated][];
-
-                for (int j = 0; j < amountValuesGenerated; j++) {
-                    TransformTrackingValue value = values[j] = nextFrame.getStack(nextFrame.getStackSize() - amountValuesGenerated + j);
-                    if (variableSlots.containsKey(value)) {
-                        saveInto[j] = variableSlots.get(value);
-                    } else {
-                        //Check if we need to create a save slot
-                        Set<TransformTrackingValue> relatedValues = value.getAllRelatedValues();
-
-                        Set<AbstractInsnNode> allPossibleSources = relatedValues.stream().map(TransformTrackingValue::getSource).reduce(new HashSet<>(), (a, b) -> {
-                            a.addAll(b);
-                            return a;
-                        }).stream().map(context::getActual).collect(Collectors.toSet());
-
-                        Set<AbstractInsnNode> allPossibleConsumers = relatedValues.stream().map(TransformTrackingValue::getConsumers).reduce(new HashSet<>(), (a, b) -> {
-                            a.addAll(b);
-                            return a;
-                        }).stream().map(context::getActual).collect(Collectors.toSet());
-
-                        //Just a debug check
-                        if (!allPossibleSources.contains(instruction)) {
-                            throw new RuntimeException("The value " + value + " is not related to the instruction " + instruction);
-                        }
-
-                        if (allPossibleSources.size() > 1) {
-                            //We need to create a temporary variable
-                            //We find the earliest and last instructions that create/use this instruction
-                            int earliest = Integer.MAX_VALUE;
-                            int last = Integer.MIN_VALUE;
-
-                            for (AbstractInsnNode source : allPossibleSources) {
-                                int index = context.indexLookup().get(source);
-
-                                if (index < earliest) {
-                                    earliest = index;
-                                }
-
-                                if (index > last) {
-                                    last = index;
-                                }
-                            }
-
-                            for (AbstractInsnNode consumer : allPossibleConsumers) {
-                                int index = context.indexLookup().get(consumer);
-
-                                if (index > last) {
-                                    last = index;
-                                }
-
-                                if (index < earliest) {
-                                    earliest = index;
-                                }
-                            }
-
-                            List<Type> types = value.transformedTypes();
-                            int[] saveSlots = new int[types.size()];
-
-                            for (int k = 0; k < types.size(); k++) {
-                                saveSlots[k] = context.variableManager.allocate(earliest, last, types.get(k));
-                            }
-
-                            variableSlots.put(value, saveSlots);
-                            saveInto[j] = saveSlots;
-                        }
-                    }
-                }
-
-                tempVariables.put(instruction, saveInto);
-            }
-        }
-
-        for (int i = 0; i < context.instructions.length; i++) {
-            if (context.removedEmitter()[i]) {
-                generateEmitter(context, tempVariables, i);
-            }
-        }
-    }
-
-    private void generateEmitter(TransformContext context, Map<AbstractInsnNode, int[][]> tempVariables, int index) {
-        AbstractInsnNode instruction = context.instructions[index];
-        Frame<TransformTrackingValue> frame = context.analysisResults.frames()[index];
-        Frame<TransformTrackingValue> nextFrame = context.analysisResults.frames()[index + 1];
-
-        int[][] saveSlots = tempVariables.get(instruction);
-
-        int numValuesToSave = ASMUtil.numValuesReturned(nextFrame, instruction);
-
-        TransformTrackingValue[] valuesToSave = new TransformTrackingValue[numValuesToSave];
-        for (int i = 0; i < numValuesToSave; i++) {
-            valuesToSave[i] = nextFrame.getStack(nextFrame.getStackSize() - numValuesToSave + i);
-        }
-
-        if (numValuesToSave > 1) {
-            //We save them all into local variables to make our lives easier
-            InsnList store = new InsnList();
-            BytecodeFactory[][] syntheticEmitters = new BytecodeFactory[numValuesToSave][];
-
-            for (int i = 0; i < numValuesToSave; i++) {
-                Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[i], saveSlots == null ? null : saveSlots[i]);
-                store.add(storeAndLoad.getFirst().generate(t -> context.variableManager.allocate(index, index + 1, t)));
-                syntheticEmitters[i] = storeAndLoad.getSecond();
-            }
-
-            //Insert the store
-            context.target.instructions.insert(instruction, store);
-
-            context.syntheticEmitters[index] = syntheticEmitters;
-        } else {
-            if (saveSlots != null && saveSlots[0] != null) {
-                //We NEED to save the value into a local variable
-                Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[0], saveSlots[0]);
-                context.target.instructions.insert(instruction, storeAndLoad.getFirst().generate(t -> context.variableManager.allocate(index, index + 1, t)));
-                context.syntheticEmitters[index] = new BytecodeFactory[][] {
-                    storeAndLoad.getSecond()
-                };
-            } else {
-                boolean useDefault = true;
-                context.syntheticEmitters[index] = new BytecodeFactory[1][];
-
-                if (instruction instanceof VarInsnNode varNode) {
-                    //Will be a load
-                    int slot = varNode.var;
-                    //Check that the value is in the slot at every point that we would need it
-                    boolean canUseVar = true;
-
-                    TransformTrackingValue varValue = frame.getLocal(slot); //The actual value in the slot does not have the same identity as the one on the stack in the next frame
-
-                    for (AbstractInsnNode consumer : valuesToSave[0].getConsumers()) {
-                        int insnIndex = context.indexLookup().get(consumer);
-                        Frame<TransformTrackingValue> consumerFrame = context.analysisResults.frames()[insnIndex];
-                        if (consumerFrame.getLocal(slot) != varValue) {
-                            canUseVar = false;
-                            break;
-                        }
-                    }
-
-                    if (canUseVar) {
-                        useDefault = false;
-                        int newSlot = context.varLookup[index][slot];
-
-                        List<Type> transformTypes = valuesToSave[0].transformedTypes();
-
-                        BytecodeFactory[] loads = new BytecodeFactory[transformTypes.size()];
-                        for (int i = 0; i < loads.length; i++) {
-                            int finalI = i;
-                            int finalSlot = newSlot;
-                            loads[i] = (Function<Type, Integer> variableAllocator) -> {
-                                InsnList list = new InsnList();
-                                list.add(new VarInsnNode(transformTypes.get(finalI).getOpcode(Opcodes.ILOAD), finalSlot));
-                                return list;
-                            };
-                            newSlot += transformTypes.get(i).getSize();
-                        }
-
-                        context.syntheticEmitters[index][0] = loads;
-
-                        //Remove the original load
-                        context.target.instructions.remove(instruction);
-                    }
-                } else if (ASMUtil.isConstant(instruction)) {
-                    useDefault = false;
-
-                    //If it is a constant we can just copy it
-                    Object constant = ASMUtil.getConstant(instruction);
-
-                    context.target.instructions.remove(instruction);
-
-                    //Still need to expand it
-                    if (valuesToSave[0].getTransformType() != null && valuesToSave[0].getTransform().getSubtype() == TransformSubtype.SubType.NONE) {
-                        BytecodeFactory[] expansion = valuesToSave[0].getTransformType().getConstantReplacements().get(constant);
-                        if (expansion == null) {
-                            throw new IllegalStateException("No expansion for constant " + constant + " of type " + valuesToSave[0].getTransformType());
-                        }
-                        context.syntheticEmitters[index][0] = expansion;
-                    } else {
-                        context.syntheticEmitters[index][0] = new BytecodeFactory[] { new ConstantFactory(constant) };
-                    }
-                }
-
-                if (useDefault) {
-                    //We need to save the value into a local variable
-                    Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[0], null);
-                    context.target.instructions.insert(instruction, storeAndLoad.getFirst().generate(t -> context.variableManager.allocate(index, index + 1, t)));
-                    context.syntheticEmitters[index][0] = storeAndLoad.getSecond();
-                }
-            }
-        }
-    }
-
-    private Pair<BytecodeFactory, BytecodeFactory[]> makeStoreAndLoad(TransformContext context, TransformTrackingValue value, @Nullable int[] slots) {
-        if (slots == null) {
-            //Make slots
-            slots = new int[value.transformedTypes().size()];
-
-            //Get extent of value
-            int earliest = Integer.MAX_VALUE;
-            int last = Integer.MIN_VALUE;
-
-            Set<TransformTrackingValue> relatedValues = value.getAllRelatedValues();
-
-            Set<AbstractInsnNode> allPossibleSources = relatedValues.stream().map(TransformTrackingValue::getSource).reduce(new HashSet<>(), (a, b) -> {
-                a.addAll(b);
-                return a;
-            });
-
-            Set<AbstractInsnNode> allPossibleConsumers = relatedValues.stream().map(TransformTrackingValue::getConsumers).reduce(new HashSet<>(), (a, b) -> {
-                a.addAll(b);
-                return a;
-            });
-
-            for (AbstractInsnNode source : allPossibleSources) {
-                int index = context.indexLookup().get(source);
-
-                if (index < earliest) {
-                    earliest = index;
-                }
-
-                if (index > last) {
-                    last = index;
-                }
-            }
-
-            for (AbstractInsnNode consumer : allPossibleConsumers) {
-                int index = context.indexLookup().get(consumer);
-
-                if (index > last) {
-                    last = index;
-                }
-
-                if (index < earliest) {
-                    earliest = index;
-                }
-            }
-
-            List<Type> types = value.transformedTypes();
-
-            for (int k = 0; k < types.size(); k++) {
-                slots[k] = context.variableManager.allocate(earliest, last, types.get(k));
-            }
-        }
-
-        int[] finalSlots = slots;
-        List<Type> types = value.transformedTypes();
-        BytecodeFactory store = (Function<Type, Integer> variableAllocator) -> {
-            InsnList list = new InsnList();
-            for (int i = finalSlots.length - 1; i >= 0; i--) {
-                int slot = finalSlots[i];
-                Type type = types.get(i);
-                list.add(new VarInsnNode(type.getOpcode(Opcodes.ISTORE), slot));
-            }
-            return list;
-        };
-
-        BytecodeFactory[] load = new BytecodeFactory[types.size()];
-        for (int i = 0; i < types.size(); i++) {
-            Type type = types.get(i);
-            int finalI = i;
-            load[i] = (Function<Type, Integer> variableAllocator) -> {
-                InsnList list = new InsnList();
-                list.add(new VarInsnNode(type.getOpcode(Opcodes.ILOAD), finalSlots[finalI]));
-                return list;
-            };
-        }
-
-        return new Pair<>(store, load);
-    }
-
-    /**
-     * Determine if the given value's emitters are removed
-     *
-     * @param value The value to check
-     * @param context Transform context
-     *
-     * @return True if the value's emitters are removed, false otherwise
-     */
-    private boolean isRemoved(TransformTrackingValue value, TransformContext context) {
-        boolean isAllRemoved = true;
-        boolean isAllPresent = true;
-
-        for (AbstractInsnNode source : value.getSource()) {
-            int sourceIndex = context.indexLookup().get(source);
-            if (context.removedEmitter()[sourceIndex]) {
-                isAllPresent = false;
-            } else {
-                isAllRemoved = false;
-            }
-        }
-
-        if (!(isAllPresent || isAllRemoved)) {
-            throw new IllegalStateException("Value is neither all present nor all removed");
-        }
-
-        return isAllRemoved;
-    }
-
-    /**
-     * Marks all the emitters of the given value as removed
-     *
-     * @param value The value whose emitters to mark as removed
-     * @param context Transform context
-     */
-    private void markRemoved(TransformTrackingValue value, TransformContext context) {
-        for (AbstractInsnNode source : value.getSource()) {
-            int sourceIndex = context.indexLookup().get(source);
-            context.removedEmitter()[sourceIndex] = true;
+        try {
+            transformMethod(methodNode);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to transform method " + name + desc, e);
         }
     }
 
@@ -775,10 +287,10 @@ public class TypeTransformer {
         }
 
         //Change variable names to make it easier to debug
-        modifyVariableTable(methodNode, context);
+        modifyLVT(methodNode, context);
 
         //Change the code
-        modifyCode(methodNode, context);
+        modifyCode(context);
 
         if (!ASMUtil.isStatic(methodNode)) {
             if (renamed) {
@@ -859,13 +371,520 @@ public class TypeTransformer {
         }
     }
 
+
+    private void getAllMethodInfo(AbstractInsnNode[] insns, AbstractInsnNode[] instructions, Frame<TransformTrackingValue>[] frames, MethodParameterInfo[] methodInfos) {
+        for (int i = 0; i < insns.length; i++) {
+            AbstractInsnNode insn = instructions[i];
+            Frame<TransformTrackingValue> frame = frames[i];
+            if (insn instanceof MethodInsnNode methodCall) {
+                MethodID calledMethod = MethodID.from(methodCall);
+
+                TransformTrackingValue returnValue = null;
+                if (calledMethod.getDescriptor().getReturnType() != Type.VOID_TYPE) {
+                    returnValue = ASMUtil.getTop(frames[i + 1]);
+                }
+
+                int argCount = ASMUtil.argumentCount(calledMethod.getDescriptor().getDescriptor(), calledMethod.isStatic());
+                TransformTrackingValue[] args = new TransformTrackingValue[argCount];
+                for (int j = 0; j < args.length; j++) {
+                    args[j] = frame.getStack(frame.getStackSize() - argCount + j);
+                }
+
+                //Lookup the possible method transforms
+                List<MethodParameterInfo> infos = config.getMethodParameterInfo().get(calledMethod);
+
+                if (infos != null) {
+                    //Check all possible transforms to see if any of them match
+                    for (MethodParameterInfo info : infos) {
+                        if (info.getTransformCondition().checkValidity(returnValue, args) == 1) {
+                            methodInfos[i] = info;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void transformDescriptorForAbstractMethod(MethodNode methodNode, long start, MethodID methodID, AnalysisResults results, MethodNode newMethod) {
+        //If the method is abstract, we don't need to transform its code, just it's descriptor
+        TransformSubtype[] actualParameters = new TransformSubtype[results.argTypes().length - 1];
+        System.arraycopy(results.argTypes(), 1, actualParameters, 0, actualParameters.length);
+
+        String oldDesc = methodNode.desc;
+
+        //Change descriptor
+        newMethod.desc = MethodParameterInfo.getNewDesc(TransformSubtype.of(null), actualParameters, methodNode.desc);
+
+        if (oldDesc.equals(newMethod.desc)) {
+            newMethod.name += MIX;
+        }
+
+        System.out.println("Transformed method '" + methodID + "' in " + (System.currentTimeMillis() - start) + "ms");
+
+        //Create the parameter name table
+        if (newMethod.parameters != null) {
+            List<ParameterNode> newParameters = new ArrayList<>();
+            for (int i = 0; i < newMethod.parameters.size(); i++) {
+                ParameterNode parameterNode = newMethod.parameters.get(i);
+                TransformSubtype parameterType = actualParameters[i];
+
+                if (parameterType.getTransformType() == null || !parameterType.getSubtype().equals(TransformSubtype.SubType.NONE)) {
+                    //There is no transform type for this parameter, so we don't need to change it
+                    newParameters.add(parameterNode);
+                } else {
+                    //There is a transform type for this parameter, so we need to change it
+                    for (String suffix : parameterType.getTransformType().getPostfix()) {
+                        newParameters.add(new ParameterNode(parameterNode.name + suffix, parameterNode.access));
+                    }
+                }
+            }
+            newMethod.parameters = newParameters;
+        }
+        return;
+    }
+
+    /**
+     * Finds all emitters that need to be removed and marks them as such.
+     * <br><br>
+     * What is a removed emitter?<br> In certain cases, multiple values will need to be used out of their normal order. For example, <code>var1</code> and <code>var2</code> both have
+     * transform-type long -> (int "x", int "y", int "z"). If some code does <code>var1 == var2</code> then the transformed code needs to do <code>var1_x == var2_x && var1_y == var2_y &&
+     * var1_z == var2_z</code>. This means var1_x has to be loaded and then var2_x and then var1_y etc... This means we can't just expand the two emitters normally. That would leave the
+     * stack with [var1_x, var1_y, var1_z, var2_x, var2_y, var2_z] and comparing that would need a lot of stack magic (DUP, SWAP, etc...). So what we do is remove these emitters from the
+     * code and instead create BytecodeFactories that allow the values to be generated in any order that is needed.
+     *
+     * @param context The transform context
+     */
+    private void detectAllRemovedEmitters(TransformContext context) {
+        boolean[] prev;
+        Frame<TransformTrackingValue>[] frames = context.analysisResults().frames();
+
+        //This code keeps trying to find new removed emitters until it can't find any more.
+
+        do {
+            //Keep detecting new ones until we don't find any more
+            prev = Arrays.copyOf(context.removedEmitter(), context.removedEmitter().length);
+
+            for (int i = 0; i < context.removedEmitter().length; i++) {
+                AbstractInsnNode instruction = context.instructions()[i];
+                Frame<TransformTrackingValue> frame = frames[i];
+
+                if (frame == null) continue;
+
+                int consumed = ASMUtil.stackConsumed(instruction);
+                int opcode = instruction.getOpcode();
+
+                if (instruction instanceof MethodInsnNode) {
+                    MethodParameterInfo info = context.methodInfos()[i];
+                    if (info != null && info.getReplacement() != null) {
+                        if (info.getReplacement().changeParameters()) {
+                            //If any method parameters are changed we remove all of it's emitters
+                            for (int j = 0; j < consumed; j++) {
+                                TransformTrackingValue arg = frame.getStack(frame.getStackSize() - consumed + j);
+                                markRemoved(arg, context);
+                            }
+                        }
+                    }
+                } else if (isACompare(opcode)) {
+                    //Get two values
+                    TransformTrackingValue left = frame.getStack(frame.getStackSize() - 2);
+                    TransformTrackingValue right = frame.getStack(frame.getStackSize() - 1);
+
+                    //We can assume the two transforms are the same. This check is just to make sure there isn't a bug in the analyzer
+                    if (!left.getTransform().equals(right.getTransform())) {
+                        throw new RuntimeException("The two transforms should be the same");
+                    }
+
+                    //If the transform has more than one subType we will need to separate them so we must remove the emitter
+                    if (left.getTransform().transformedTypes(left.getType()).size() > 1) {
+                        markRemoved(left, context);
+                        markRemoved(right, context);
+                    }
+                }
+
+                //If any of the values used by any instruction are removed we need to remove all the other values emitters
+                boolean remove = false;
+                for (int j = 0; j < consumed; j++) {
+                    TransformTrackingValue arg = frame.getStack(frame.getStackSize() - consumed + j);
+                    if (isRemoved(arg, context)) {
+                        remove = true;
+                        break;
+                    }
+                }
+
+                if (remove) {
+                    for (int j = 0; j < consumed; j++) {
+                        TransformTrackingValue arg = frame.getStack(frame.getStackSize() - consumed + j);
+                        markRemoved(arg, context);
+                    }
+                }
+            }
+        } while (!Arrays.equals(prev, context.removedEmitter()));
+    }
+
+    private boolean isACompare(int opcode) {
+        return opcode == Opcodes.LCMP || opcode == Opcodes.FCMPL || opcode == Opcodes.FCMPG || opcode == Opcodes.DCMPL || opcode == Opcodes.DCMPG || opcode == Opcodes.IF_ICMPEQ
+            || opcode == Opcodes.IF_ICMPNE || opcode == Opcodes.IF_ACMPEQ || opcode == Opcodes.IF_ACMPNE;
+    }
+
+    /**
+     * Creates the synthetic emitters mentioned in {@link #detectAllRemovedEmitters(TransformContext)}
+     *
+     * @param context Transform context
+     */
+    private void createEmitters(TransformContext context) {
+        // If a value can come from multiple paths of execution we need to store it in a temporary variable (because it is simpler). (May use more than one variable for transform type
+        // expansions)
+
+        Map<AbstractInsnNode, int[][]> tempVariables = new HashMap<>();
+
+        Map<TransformTrackingValue, int[]> variableSlots = new HashMap<>();
+
+        for (int i = 0; i < context.instructions.length; i++) {
+            if (context.removedEmitter()[i]) {
+                allocateVariableForEmitter(context, tempVariables, variableSlots, i);
+            }
+        }
+
+        for (int i = 0; i < context.instructions.length; i++) {
+            if (context.removedEmitter()[i]) {
+                generateEmitter(context, tempVariables, i);
+            }
+        }
+    }
+
+    private void allocateVariableForEmitter(TransformContext context, Map<AbstractInsnNode, int[][]> tempVariables, Map<TransformTrackingValue, int[]> variableSlots, int i) {
+        AbstractInsnNode instruction = context.instructions()[i];
+        Frame<TransformTrackingValue> frame = context.analysisResults().frames()[i];
+        Frame<TransformTrackingValue> nextFrame = context.analysisResults().frames()[i + 1];
+
+        int amountValuesGenerated = ASMUtil.numValuesReturned(frame, instruction);
+
+        int[][] saveInto = new int[amountValuesGenerated][];
+
+        for (int j = 0; j < amountValuesGenerated; j++) {
+            TransformTrackingValue value = nextFrame.getStack(nextFrame.getStackSize() - amountValuesGenerated + j);
+            if (variableSlots.containsKey(value)) {
+                saveInto[j] = variableSlots.get(value);
+            } else {
+                //Check if we need to create a save slot
+                Set<TransformTrackingValue> relatedValues = value.getAllRelatedValues();
+
+                Set<AbstractInsnNode> allPossibleSources = relatedValues.stream().map(TransformTrackingValue::getSource).reduce(new HashSet<>(), (a, b) -> {
+                    a.addAll(b);
+                    return a;
+                }).stream().map(context::getActual).collect(Collectors.toSet());
+
+                Set<AbstractInsnNode> allPossibleConsumers = relatedValues.stream().map(TransformTrackingValue::getConsumers).reduce(new HashSet<>(), (a, b) -> {
+                    a.addAll(b);
+                    return a;
+                }).stream().map(context::getActual).collect(Collectors.toSet());
+
+                //Just a debug check
+                if (!allPossibleSources.contains(instruction)) {
+                    throw new RuntimeException("The value " + value + " is not related to the instruction " + instruction);
+                }
+
+                if (allPossibleSources.size() > 1) {
+                    //We need to create a temporary variable
+                    //We find the earliest and last instructions that create/use this instruction
+                    int earliest = Integer.MAX_VALUE;
+                    int last = Integer.MIN_VALUE;
+
+                    for (AbstractInsnNode source : allPossibleSources) {
+                        int index = context.indexLookup().get(source);
+
+                        if (index < earliest) {
+                            earliest = index;
+                        }
+
+                        if (index > last) {
+                            last = index;
+                        }
+                    }
+
+                    for (AbstractInsnNode consumer : allPossibleConsumers) {
+                        int index = context.indexLookup().get(consumer);
+
+                        if (index > last) {
+                            last = index;
+                        }
+
+                        if (index < earliest) {
+                            earliest = index;
+                        }
+                    }
+
+                    List<Type> types = value.transformedTypes();
+                    int[] saveSlots = new int[types.size()];
+
+                    for (int k = 0; k < types.size(); k++) {
+                        saveSlots[k] = context.variableManager.allocate(earliest, last, types.get(k));
+                    }
+
+                    variableSlots.put(value, saveSlots);
+                    saveInto[j] = saveSlots;
+                }
+            }
+        }
+
+        tempVariables.put(instruction, saveInto);
+    }
+
+    private void generateEmitter(TransformContext context, Map<AbstractInsnNode, int[][]> tempVariables, int index) {
+        AbstractInsnNode instruction = context.instructions[index];
+        Frame<TransformTrackingValue> frame = context.analysisResults.frames()[index];
+        Frame<TransformTrackingValue> nextFrame = context.analysisResults.frames()[index + 1];
+
+        int[][] saveSlots = tempVariables.get(instruction);
+
+        int numValuesToSave = ASMUtil.numValuesReturned(nextFrame, instruction);
+
+        TransformTrackingValue[] valuesToSave = new TransformTrackingValue[numValuesToSave];
+        for (int i = 0; i < numValuesToSave; i++) {
+            valuesToSave[i] = nextFrame.getStack(nextFrame.getStackSize() - numValuesToSave + i);
+        }
+
+        if (numValuesToSave > 1) {
+            //We save them all into local variables to make our lives easier
+            InsnList store = new InsnList();
+            BytecodeFactory[][] syntheticEmitters = new BytecodeFactory[numValuesToSave][];
+
+            for (int i = 0; i < numValuesToSave; i++) {
+                Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[i], saveSlots == null ? null : saveSlots[i]);
+                store.add(storeAndLoad.getFirst().generate(t -> context.variableManager.allocate(index, index + 1, t)));
+                syntheticEmitters[i] = storeAndLoad.getSecond();
+            }
+
+            //Insert the store
+            context.target.instructions.insert(instruction, store);
+
+            context.syntheticEmitters[index] = syntheticEmitters;
+        } else {
+            if (saveSlots != null && saveSlots[0] != null) {
+                //We NEED to save the value into a local variable
+                Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[0], saveSlots[0]);
+                context.target.instructions.insert(instruction, storeAndLoad.getFirst().generate(t -> context.variableManager.allocate(index, index + 1, t)));
+                context.syntheticEmitters[index] = new BytecodeFactory[][] {
+                    storeAndLoad.getSecond()
+                };
+            } else {
+                boolean useDefault = true;
+                context.syntheticEmitters[index] = new BytecodeFactory[1][];
+
+                if (instruction instanceof VarInsnNode varNode) {
+                    useDefault = generateEmitterForVarLoad(context, index, instruction, frame, valuesToSave, useDefault, varNode);
+                } else if (ASMUtil.isConstant(instruction)) {
+                    useDefault = generateEmitterForConstant(context, index, instruction, valuesToSave);
+                }
+
+                if (useDefault) {
+                    //We need to save the value into a local variable
+                    Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[0], null);
+                    context.target.instructions.insert(instruction, storeAndLoad.getFirst().generate(t -> context.variableManager.allocate(index, index + 1, t)));
+                    context.syntheticEmitters[index][0] = storeAndLoad.getSecond();
+                }
+            }
+        }
+    }
+
+    private boolean generateEmitterForVarLoad(TransformContext context, int index, AbstractInsnNode instruction, Frame<TransformTrackingValue> frame, TransformTrackingValue[] valuesToSave,
+                                 boolean useDefault, VarInsnNode varNode) {
+        //Will be a load
+        int slot = varNode.var;
+        //Check that the value is in the slot at every point that we would need it
+        boolean canUseVar = true;
+
+        TransformTrackingValue varValue = frame.getLocal(slot); //The actual value in the slot does not have the same identity as the one on the stack in the next frame
+
+        for (AbstractInsnNode consumer : valuesToSave[0].getConsumers()) {
+            int insnIndex = context.indexLookup().get(consumer);
+            Frame<TransformTrackingValue> consumerFrame = context.analysisResults.frames()[insnIndex];
+            if (consumerFrame.getLocal(slot) != varValue) {
+                canUseVar = false;
+                break;
+            }
+        }
+
+        if (canUseVar) {
+            useDefault = false;
+            int newSlot = context.varLookup[index][slot];
+
+            List<Type> transformTypes = valuesToSave[0].transformedTypes();
+
+            BytecodeFactory[] loads = new BytecodeFactory[transformTypes.size()];
+            for (int i = 0; i < loads.length; i++) {
+                int finalI = i;
+                int finalSlot = newSlot;
+                loads[i] = (Function<Type, Integer> variableAllocator) -> {
+                    InsnList list = new InsnList();
+                    list.add(new VarInsnNode(transformTypes.get(finalI).getOpcode(Opcodes.ILOAD), finalSlot));
+                    return list;
+                };
+                newSlot += transformTypes.get(i).getSize();
+            }
+
+            context.syntheticEmitters[index][0] = loads;
+
+            //Remove the original load
+            context.target.instructions.remove(instruction);
+        }
+        return useDefault;
+    }
+
+    private boolean generateEmitterForConstant(TransformContext context, int index, AbstractInsnNode instruction, TransformTrackingValue[] valuesToSave) {
+        boolean useDefault;
+        useDefault = false;
+
+        //If it is a constant we can just copy it
+        Object constant = ASMUtil.getConstant(instruction);
+
+        context.target.instructions.remove(instruction);
+
+        //Still need to expand it
+        if (valuesToSave[0].getTransformType() != null && valuesToSave[0].getTransform().getSubtype() == TransformSubtype.SubType.NONE) {
+            BytecodeFactory[] expansion = valuesToSave[0].getTransformType().getConstantReplacements().get(constant);
+            if (expansion == null) {
+                throw new IllegalStateException("No expansion for constant " + constant + " of type " + valuesToSave[0].getTransformType());
+            }
+            context.syntheticEmitters[index][0] = expansion;
+        } else {
+            context.syntheticEmitters[index][0] = new BytecodeFactory[] { new ConstantFactory(constant) };
+        }
+        return useDefault;
+    }
+
+    private Pair<BytecodeFactory, BytecodeFactory[]> makeStoreAndLoad(TransformContext context, TransformTrackingValue value, @Nullable int[] slots) {
+        if (slots == null) {
+            //Make slots
+            slots = makeSlots(context, value);
+        }
+
+        int[] finalSlots = slots;
+        List<Type> types = value.transformedTypes();
+        BytecodeFactory store = (Function<Type, Integer> variableAllocator) -> {
+            InsnList list = new InsnList();
+            for (int i = finalSlots.length - 1; i >= 0; i--) {
+                int slot = finalSlots[i];
+                Type type = types.get(i);
+                list.add(new VarInsnNode(type.getOpcode(Opcodes.ISTORE), slot));
+            }
+            return list;
+        };
+
+        BytecodeFactory[] load = new BytecodeFactory[types.size()];
+        for (int i = 0; i < types.size(); i++) {
+            Type type = types.get(i);
+            int finalI = i;
+            load[i] = (Function<Type, Integer> variableAllocator) -> {
+                InsnList list = new InsnList();
+                list.add(new VarInsnNode(type.getOpcode(Opcodes.ILOAD), finalSlots[finalI]));
+                return list;
+            };
+        }
+
+        return new Pair<>(store, load);
+    }
+
+    @NotNull private int[] makeSlots(TransformContext context, TransformTrackingValue value) {
+        @Nullable int[] slots;
+        slots = new int[value.transformedTypes().size()];
+
+        //Get extent of value
+        int earliest = Integer.MAX_VALUE;
+        int last = Integer.MIN_VALUE;
+
+        Set<TransformTrackingValue> relatedValues = value.getAllRelatedValues();
+
+        Set<AbstractInsnNode> allPossibleSources = relatedValues.stream().map(TransformTrackingValue::getSource).reduce(new HashSet<>(), (a, b) -> {
+            a.addAll(b);
+            return a;
+        });
+
+        Set<AbstractInsnNode> allPossibleConsumers = relatedValues.stream().map(TransformTrackingValue::getConsumers).reduce(new HashSet<>(), (a, b) -> {
+            a.addAll(b);
+            return a;
+        });
+
+        for (AbstractInsnNode source : allPossibleSources) {
+            int index = context.indexLookup().get(source);
+
+            if (index < earliest) {
+                earliest = index;
+            }
+
+            if (index > last) {
+                last = index;
+            }
+        }
+
+        for (AbstractInsnNode consumer : allPossibleConsumers) {
+            int index = context.indexLookup().get(consumer);
+
+            if (index > last) {
+                last = index;
+            }
+
+            if (index < earliest) {
+                earliest = index;
+            }
+        }
+
+        List<Type> types = value.transformedTypes();
+
+        for (int k = 0; k < types.size(); k++) {
+            slots[k] = context.variableManager.allocate(earliest, last, types.get(k));
+        }
+        return slots;
+    }
+
+    /**
+     * Determine if the given value's emitters are removed
+     *
+     * @param value The value to check
+     * @param context Transform context
+     *
+     * @return True if the value's emitters are removed, false otherwise
+     */
+    private boolean isRemoved(TransformTrackingValue value, TransformContext context) {
+        boolean isAllRemoved = true;
+        boolean isAllPresent = true;
+
+        for (AbstractInsnNode source : value.getSource()) {
+            int sourceIndex = context.indexLookup().get(source);
+            if (context.removedEmitter()[sourceIndex]) {
+                isAllPresent = false;
+            } else {
+                isAllRemoved = false;
+            }
+        }
+
+        if (!(isAllPresent || isAllRemoved)) {
+            throw new IllegalStateException("Value is neither all present nor all removed");
+        }
+
+        return isAllRemoved;
+    }
+
+    /**
+     * Marks all the emitters of the given value as removed
+     *
+     * @param value The value whose emitters to mark as removed
+     * @param context Transform context
+     */
+    private void markRemoved(TransformTrackingValue value, TransformContext context) {
+        for (AbstractInsnNode source : value.getSource()) {
+            int sourceIndex = context.indexLookup().get(source);
+            context.removedEmitter()[sourceIndex] = true;
+        }
+    }
+
     /**
      * Modifies the code of the method to use the transformed types instead of the original types
      *
-     * @param methodNode The method to modify
      * @param context The context of the transformation
      */
-    private void modifyCode(MethodNode methodNode, TransformContext context) {
+    private void modifyCode(TransformContext context) {
         AbstractInsnNode[] instructions = context.instructions();
         Frame<TransformTrackingValue>[] frames = context.analysisResults().frames();
 
@@ -887,392 +906,426 @@ public class TypeTransformer {
                 int opcode = instruction.getOpcode();
 
                 if (instruction instanceof MethodInsnNode methodCall) {
-                    MethodID methodID = MethodID.from(methodCall);
-
-                    //Get the return value (if it exists). It is on the top of the stack if the next frame
-                    TransformTrackingValue returnValue = null;
-                    if (methodID.getDescriptor().getReturnType() != Type.VOID_TYPE) {
-                        returnValue = ASMUtil.getTop(frames[i + 1]);
-                    }
-
-                    //Get all the values that are passed to the method call
-                    int argCount = ASMUtil.argumentCount(methodID.getDescriptor().getDescriptor(), methodID.isStatic());
-                    TransformTrackingValue[] args = new TransformTrackingValue[argCount];
-                    for (int j = 0; j < args.length; j++) {
-                        args[j] = frame.getStack(frame.getStackSize() - argCount + j);
-                    }
-
-                    //Find replacement information for the method call
-                    MethodParameterInfo info = context.methodInfos[i];
-                    if (info != null && info.getReplacement() != null) {
-
-                        applyReplacement(context, methodCall, info, args);
-
-                        if (info.getReplacement().changeParameters()) {
-                            //Because the replacement itself is already taking care of having all the values on the stack, we don't need to do anything, or we'll just have every value
-                            // being duplicated
-                            ensureValuesAreOnStack = false;
-                        }
-                    } else {
-                        //If there is none, we create a default transform
-                        if (returnValue != null && returnValue.getTransform().transformedTypes(returnValue.getType()).size() > 1) {
-                            throw new IllegalStateException("Cannot generate default replacement for method with multiple return types '" + methodID + "'");
-                        }
-
-                        applyDefaultReplacement(context, methodCall, returnValue, args);
-                    }
+                    ensureValuesAreOnStack = transformMethodCall(context, frames, i, frame, ensureValuesAreOnStack, methodCall);
                 } else if (instruction instanceof VarInsnNode varNode) {
-                    /*
-                     * There are two reasons this is needed.
-                     * 1. Some values take up different amount of variable slots because of their transforms, so we need to shift all variables accesses'
-                     * 2. When actually storing or loading a transformed value, we need to store all of it's transformed values correctly
-                     */
-
-                    //Get the shifted variable index
-                    int originalVarIndex = varNode.var;
-                    int newVarIndex = context.varLookup()[i][originalVarIndex];
-
-                    //Base opcode makes it easier to determine what kind of instruction we are dealing with
-                    int baseOpcode = switch (varNode.getOpcode()) {
-                        case Opcodes.ALOAD, Opcodes.ILOAD, Opcodes.FLOAD, Opcodes.DLOAD, Opcodes.LLOAD -> Opcodes.ILOAD;
-                        case Opcodes.ASTORE, Opcodes.ISTORE, Opcodes.FSTORE, Opcodes.DSTORE, Opcodes.LSTORE -> Opcodes.ISTORE;
-                        default -> throw new IllegalStateException("Unknown opcode: " + varNode.getOpcode());
-                    };
-
-                    //If the variable is being loaded, it is in the current frame, if it is being stored, it will be in the next frame
-                    TransformSubtype varType = context.varTypes()[i + (baseOpcode == Opcodes.ISTORE ? 1 : 0)][originalVarIndex];
-                    //Get the actual types that need to be stored or loaded
-                    List<Type> types = varType.transformedTypes(ASMUtil.getType(varNode.getOpcode()));
-
-                    //Get the indices for each of these types
-                    List<Integer> vars = new ArrayList<>();
-                    for (Type subType : types) {
-                        vars.add(newVarIndex);
-                        newVarIndex += subType.getSize();
-                    }
-
-                    /*
-                     * If the variable is being stored we must reverse the order of the types.
-                     * This is because in the following code if a and b have transform-type long -> (int "x", int "y", int "z"):
-                     *
-                     * long b = a;
-                     *
-                     * The loading of a would get expanded to something like:
-                     * ILOAD 3 Stack: [] -> [a_x]
-                     * ILOAD 4 Stack: [a_x] -> [a_x, a_y]
-                     * ILOAD 5 Stack: [a_x, a_y] -> [a_x, a_y, a_z]
-                     *
-                     * If the storing into b was in the same order it would be:
-                     * ISTORE 3 Stack: [a_x, a_y, a_z] -> [a_x, a_y] (a_z gets stored into b_x)
-                     * ISTORE 4 Stack: [a_x, a_y] -> [a_x] (a_y gets stored into b_y)
-                     * ISTORE 5 Stack: [a_x] -> [] (a_x gets stored into b_z)
-                     * And so we see that this ordering is wrong.
-                     *
-                     * To fix this, we reverse the order of the types.
-                     * The previous example becomes:
-                     * ISTORE 5 Stack: [a_x, a_y, a_z] -> [a_x, a_y] (a_z gets stored into b_z)
-                     * ISTORE 4 Stack: [a_x, a_y] -> [a_x] (a_y gets stored into b_y)
-                     * ISTORE 3 Stack: [a_x] -> [] (a_x gets stored into b_x)
-                     */
-                    if (baseOpcode == Opcodes.ISTORE) {
-                        Collections.reverse(types);
-                        Collections.reverse(vars);
-                    }
-
-                    //For the first operation we can just modify the original instruction instead of creating more
-                    varNode.var = vars.get(0);
-                    varNode.setOpcode(types.get(0).getOpcode(baseOpcode));
-
-                    InsnList extra = new InsnList();
-
-                    for (int j = 1; j < types.size(); j++) {
-                        extra.add(new VarInsnNode(types.get(j).getOpcode(baseOpcode), vars.get(j))); //Creating the new instructions
-                    }
-
-                    context.target().instructions.insert(varNode, extra);
+                    transformVarInsn(context, i, varNode);
                 } else if (instruction instanceof IincInsnNode iincNode) {
-                    //We just need to shift the index of the variable because incrementing transformed values is not supported
-                    int originalVarIndex = iincNode.var;
-                    int newVarIndex = context.varLookup()[i][originalVarIndex];
-                    iincNode.var = newVarIndex;
+                    transformIincInsn(context, i, iincNode);
                 } else if (ASMUtil.isConstant(instruction)) {
-                    //Check if value is transformed
-                    ensureValuesAreOnStack = false;
-                    TransformTrackingValue value = ASMUtil.getTop(frames[i + 1]);
-                    if (value.getTransformType() != null) {
-                        if (value.getTransform().getSubtype() != TransformSubtype.SubType.NONE) {
-                            throw new IllegalStateException("Cannot expand constant value of subType " + value.getTransform().getSubtype());
-                        }
-
-                        Object constant = ASMUtil.getConstant(instruction);
-
-                        /*
-                         * Check if there is a given constant replacement for this value an example of this is where Long.MAX_VALUE is used as a marker
-                         * for an invalid position. To convert it to 3int we turn it into (Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE)
-                         */
-                        BytecodeFactory[] replacement = value.getTransformType().getConstantReplacements().get(constant);
-                        if (replacement == null) {
-                            throw new IllegalStateException("Cannot expand constant value of subType " + value.getTransformType());
-                        }
-
-                        InsnList newInstructions = new InsnList();
-                        for (BytecodeFactory factory : replacement) {
-                            int finalI = i;
-                            newInstructions.add(factory.generate(t -> context.variableManager.allocate(finalI, finalI + 1, t)));
-                        }
-
-                        context.target().instructions.insert(instruction, newInstructions);
-                        context.target().instructions.remove(instruction); //Remove the original instruction
-                    }
-                } else if (
-                    opcode == Opcodes.IF_ACMPEQ || opcode == Opcodes.IF_ACMPNE || opcode == Opcodes.IF_ICMPEQ || opcode == Opcodes.IF_ICMPNE ||
-                        opcode == Opcodes.LCMP || opcode == Opcodes.FCMPL || opcode == Opcodes.FCMPG || opcode == Opcodes.DCMPL || opcode == Opcodes.DCMPG
-                ) {
-                    /*
-                     * Transforms for equality comparisons
-                     * How it works:
-                     *
-                     * If these values have transform-type long -> (int "x", int "y", int "z")
-                     *
-                     * LLOAD 1
-                     * LLOAD 2
-                     * LCMP
-                     * IF_EQ -> LABEL
-                     * ...
-                     * LABEL:
-                     * ...
-                     *
-                     * Becomes
-                     *
-                     * ILOAD 1
-                     * ILOAD 4
-                     * IF_ICMPNE -> FAILURE
-                     * ILOAD 2
-                     * ILOAD 5
-                     * IF_ICMPNE -> FAILURE
-                     * ILOAD 3
-                     * ILOAD 6
-                     * IF_ICMPEQ -> SUCCESS
-                     * FAILURE:
-                     * ...
-                     * SUCCESS:
-                     * ...
-                     *
-                     * Similarly
-                     * LLOAD 1
-                     * LLOAD 2
-                     * LCMP
-                     * IF_NE -> LABEL
-                     * ...
-                     * LABEL:
-                     * ...
-                     *
-                     * Becomes
-                     *
-                     * ILOAD 1
-                     * ILOAD 4
-                     * IF_ICMPNE -> SUCCESS
-                     * ILOAD 2
-                     * ILOAD 5
-                     * IF_ICMPNE -> SUCCESS
-                     * ILOAD 3
-                     * ILOAD 6
-                     * IF_ICMPNE -> SUCCESS
-                     * FAILURE:
-                     * ...
-                     * SUCCESS:
-                     * ...
-                     */
-
-                    //Get the actual values that are being compared
-                    TransformTrackingValue left = frame.getStack(frame.getStackSize() - 2);
-                    TransformTrackingValue right = frame.getStack(frame.getStackSize() - 1);
-
-                    JumpInsnNode jump; //The actual jump instruction. Note: LCMP, FCMPL, FCMPG, DCMPL, DCMPG are not jump, instead, the next instruction (IFEQ, IFNE etc..) is jump
-                    int baseOpcode; //The type of comparison. IF_IMCPEQ or IF_ICMPNE
-
-                    //Used to remember to delete CMP instructions
-                    boolean separated = false;
-
-                    if (opcode == Opcodes.LCMP || opcode == Opcodes.FCMPL || opcode == Opcodes.FCMPG || opcode == Opcodes.DCMPL || opcode == Opcodes.DCMPG) {
-                        TransformTrackingValue result =
-                            ASMUtil.getTop(frames[i + 1]); //The result is on the top of the next frame and gets consumer by the jump. This is how we find the jump
-
-                        if (result.getConsumers().size() != 1) {
-                            throw new IllegalStateException("Expected one consumer, found " + result.getConsumers().size());
-                        }
-
-                        //Because the consumers are from the old method we have to call context.getActual
-                        jump = context.getActual((JumpInsnNode) result.getConsumers().iterator().next());
-
-                        baseOpcode = switch (jump.getOpcode()) {
-                            case Opcodes.IFEQ -> Opcodes.IF_ICMPEQ;
-                            case Opcodes.IFNE -> Opcodes.IF_ICMPNE;
-                            default -> throw new IllegalStateException("Unknown opcode: " + jump.getOpcode());
-                        };
-
-                        separated = true;
-                    } else {
-                        jump = context.getActual((JumpInsnNode) instruction); //The instruction is the jump
-
-                        baseOpcode = switch (opcode) {
-                            case Opcodes.IF_ACMPEQ, Opcodes.IF_ICMPEQ -> Opcodes.IF_ICMPEQ;
-                            case Opcodes.IF_ACMPNE, Opcodes.IF_ICMPNE -> Opcodes.IF_ICMPNE;
-                            default -> throw new IllegalStateException("Unknown opcode: " + opcode);
-                        };
-                    }
-
-                    if (!left.getTransform().equals(right.getTransform())) {
-                        throw new IllegalStateException("Expected same transform, found " + left.getTransform() + " and " + right.getTransform());
-                    }
-
-                    //Only modify the jump if both values are transformed
-                    if (left.getTransformType() != null && right.getTransformType() != null) {
-                        ensureValuesAreOnStack = false;
-                        List<Type> types = left.transformedTypes(); //Get the actual types that will be converted
-
-                        if (types.size() == 1) {
-                            InsnList replacement = ASMUtil.generateCompareAndJump(types.get(0), baseOpcode, jump.label);
-                            context.target.instructions.insert(jump, replacement);
-                            context.target.instructions.remove(jump); //Remove the previous jump instruction
-                        } else {
-                            //Get the replacements for each component
-                            BytecodeFactory[] replacementLeft = context.getSyntheticEmitter(left);
-                            BytecodeFactory[] replacementRight = context.getSyntheticEmitter(right);
-
-                            //Create failure and success label
-                            LabelNode success = jump.label;
-                            LabelNode failure = new LabelNode();
-
-                            InsnList newCmp = new InsnList();
-
-                            for (int j = 0; j < types.size(); j++) {
-                                Type subType = types.get(j);
-                                //Load the single components from left and right
-                                final int finalI = i;
-                                newCmp.add(replacementLeft[j].generate(t -> context.variableManager.allocate(finalI, finalI + 1, t)));
-                                newCmp.add(replacementRight[j].generate(t -> context.variableManager.allocate(finalI, finalI + 1, t)));
-
-                                int op = Opcodes.IF_ICMPNE;
-                                LabelNode labelNode = success;
-
-                                if (j == types.size() - 1 && baseOpcode == Opcodes.IF_ICMPEQ) {
-                                    op = Opcodes.IF_ICMPEQ;
-                                }
-
-                                if (j != types.size() - 1 && baseOpcode == Opcodes.IF_ICMPEQ) {
-                                    labelNode = failure;
-                                }
-
-                                //Add jump
-                                newCmp.add(ASMUtil.generateCompareAndJump(subType, op, labelNode));
-                            }
-
-                            //Insert failure label. Success label is already inserted
-                            newCmp.add(failure);
-
-                            //Replace old jump with new jumo
-                            context.target().instructions.insertBefore(jump, newCmp);
-                            context.target().instructions.remove(jump);
-
-                            if (separated) {
-                                context.target().instructions.remove(instruction); //Remove the CMP instruction
-                            }
-                        }
-                    }
+                    ensureValuesAreOnStack = transformConstantInsn(context, frames[i + 1], i, instruction);
+                } else if (isACompare(opcode)) {
+                    ensureValuesAreOnStack = transformConditionalJump(context, frames, i, instruction, frame, opcode);
                 } else if (instruction instanceof InvokeDynamicInsnNode dynamicInsnNode) {
-                    //Check if it LambdaMetafactory.metafactory
-                    if (dynamicInsnNode.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory")) {
-                        Handle methodReference = (Handle) dynamicInsnNode.bsmArgs[1];
-                        boolean isStatic = methodReference.getTag() == Opcodes.H_INVOKESTATIC;
-                        int staticOffset = isStatic ? 0 : 1;
-
-                        //Create new descriptor
-                        Type[] args = Type.getArgumentTypes(dynamicInsnNode.desc);
-                        TransformTrackingValue[] values = new TransformTrackingValue[args.length];
-                        for (int j = 0; j < values.length; j++) {
-                            values[j] = frame.getStack(frame.getStackSize() - args.length + j);
-                        }
-
-                        //The return value (the lambda) is on the top of the stack of the next frame
-                        TransformTrackingValue returnValue = ASMUtil.getTop(frames[i + 1]);
-
-                        dynamicInsnNode.desc = MethodParameterInfo.getNewDesc(returnValue, values, dynamicInsnNode.desc);
-
-                        Type referenceDesc = (Type) dynamicInsnNode.bsmArgs[0]; //Basically lambda parameters
-                        assert referenceDesc.equals(dynamicInsnNode.bsmArgs[2]);
-
-                        String methodName = methodReference.getName();
-                        String methodDesc = methodReference.getDesc();
-                        String methodOwner = methodReference.getOwner();
-                        if (!methodOwner.equals(classNode.name)) {
-                            throw new IllegalStateException("Method reference must be in the same class");
-                        }
-
-                        //Get analysis results of the actual method
-                        //For lookups we do need to use the old owner
-                        MethodID methodID = new MethodID(classNode.name, methodName, methodDesc, MethodID.CallType.VIRTUAL); // call subType doesn't matter
-                        AnalysisResults results = analysisResults.get(methodID);
-                        if (results == null) {
-                            throw new IllegalStateException("Method not analyzed '" + methodID + "'");
-                        }
-
-                        //Create new lambda descriptor
-                        String newDesc = results.getNewDesc();
-                        Type[] newArgs = Type.getArgumentTypes(newDesc);
-                        Type[] referenceArgs = newArgs;
-
-                        Type[] lambdaArgs = new Type[newArgs.length - values.length + staticOffset];
-                        System.arraycopy(newArgs, values.length - staticOffset, lambdaArgs, 0, lambdaArgs.length);
-
-                        String newReferenceDesc = Type.getMethodType(Type.getReturnType(newDesc), referenceArgs).getDescriptor();
-                        String lambdaDesc = Type.getMethodType(Type.getReturnType(newDesc), lambdaArgs).getDescriptor();
-
-                    /*
-                    dynamicInsnNode.bsmArgs[0] = Type.getMethodType(lambdaDesc);
-                    dynamicInsnNode.bsmArgs[1] = new Handle(methodReference.getTag(), methodReference.getOwner(), methodReference.getName(), newReferenceDesc, methodReference.isInterface());
-                    dynamicInsnNode.bsmArgs[2] = dynamicInsnNode.bsmArgs[0];
-                     */
-
-                        dynamicInsnNode.bsmArgs = new Object[] {
-                            Type.getMethodType(lambdaDesc),
-                            new Handle(methodReference.getTag(), methodReference.getOwner(), methodReference.getName(), newReferenceDesc, methodReference.isInterface()),
-                            Type.getMethodType(lambdaDesc)
-                        };
-                    }
+                    transformInvokeDynamicInsn(frames, i, frame, dynamicInsnNode);
                 } else if (opcode == Opcodes.NEW) {
-                    TransformTrackingValue value = ASMUtil.getTop(frames[i + 1]);
-                    TypeInsnNode newInsn = (TypeInsnNode) instruction;
-                    if (value.getTransform().getTransformType() != null) {
-                        newInsn.desc = value.getTransform().getSingleType().getInternalName();
-                    }
+                    transformNewInsn(frames[i + 1], (TypeInsnNode) instruction);
                 }
 
                 if (ensureValuesAreOnStack) {
-                    //We know that either all values are on the stack or none are so we just check the first
-                    int consumers = ASMUtil.stackConsumed(instruction);
-                    int finalI = i;
-                    if (consumers > 0) {
-                        TransformTrackingValue value = ASMUtil.getTop(frame);
-                        int producerIndex = context.indexLookup().get(value.getSource().iterator().next());
-                        if (context.removedEmitter()[producerIndex]) {
-                            //None of the values are on the stack
-                            InsnList load = new InsnList();
-                            for (int j = 0; j < consumers; j++) {
-                                //We just get the emitter of every value and insert it
-                                TransformTrackingValue arg = frame.getStack(frame.getStackSize() - consumers + j);
-                                BytecodeFactory[] emitters = context.getSyntheticEmitter(arg);
-                                for (BytecodeFactory emitter : emitters) {
-                                    load.add(emitter.generate(t -> context.variableManager.allocate(finalI, finalI + 1, t)));
-                                }
-                            }
-                            context.target().instructions.insertBefore(instruction, load);
-                        }
-                    }
+                    loadAllNeededValues(context, i, instruction, frame);
                 }
             } catch (Exception e) {
                 throw new RuntimeException("Error transforming instruction #" + i + ": " + ASMUtil.textify(instructions[i]), e);
             }
+        }
+    }
+
+    private void loadAllNeededValues(TransformContext context, int i, AbstractInsnNode instruction, Frame<TransformTrackingValue> frame) {
+        //We know that either all values are on the stack or none are so we just check the first
+        int consumers = ASMUtil.stackConsumed(instruction);
+        if (consumers > 0) {
+            TransformTrackingValue value = ASMUtil.getTop(frame);
+            int producerIndex = context.indexLookup().get(value.getSource().iterator().next());
+            if (context.removedEmitter()[producerIndex]) {
+                //None of the values are on the stack
+                InsnList load = new InsnList();
+                for (int j = 0; j < consumers; j++) {
+                    //We just get the emitter of every value and insert it
+                    TransformTrackingValue arg = frame.getStack(frame.getStackSize() - consumers + j);
+                    BytecodeFactory[] emitters = context.getSyntheticEmitter(arg);
+                    for (BytecodeFactory emitter : emitters) {
+                        load.add(emitter.generate(t -> context.variableManager.allocate(i, i + 1, t)));
+                    }
+                }
+                context.target().instructions.insertBefore(instruction, load);
+            }
+        }
+    }
+
+    private boolean transformMethodCall(TransformContext context, Frame<TransformTrackingValue>[] frames, int i, Frame<TransformTrackingValue> frame, boolean ensureValuesAreOnStack,
+                                             MethodInsnNode methodCall) {
+        MethodID methodID = MethodID.from(methodCall);
+
+        //Get the return value (if it exists). It is on the top of the stack if the next frame
+        TransformTrackingValue returnValue = null;
+        if (methodID.getDescriptor().getReturnType() != Type.VOID_TYPE) {
+            returnValue = ASMUtil.getTop(frames[i + 1]);
+        }
+
+        //Get all the values that are passed to the method call
+        int argCount = ASMUtil.argumentCount(methodID.getDescriptor().getDescriptor(), methodID.isStatic());
+        TransformTrackingValue[] args = new TransformTrackingValue[argCount];
+        for (int j = 0; j < args.length; j++) {
+            args[j] = frame.getStack(frame.getStackSize() - argCount + j);
+        }
+
+        //Find replacement information for the method call
+        MethodParameterInfo info = context.methodInfos[i];
+        if (info != null && info.getReplacement() != null) {
+
+            applyReplacement(context, methodCall, info, args);
+
+            if (info.getReplacement().changeParameters()) {
+                //Because the replacement itself is already taking care of having all the values on the stack, we don't need to do anything, or we'll just have every value
+                // being duplicated
+                ensureValuesAreOnStack = false;
+            }
+        } else {
+            //If there is none, we create a default transform
+            if (returnValue != null && returnValue.getTransform().transformedTypes(returnValue.getType()).size() > 1) {
+                throw new IllegalStateException("Cannot generate default replacement for method with multiple return types '" + methodID + "'");
+            }
+
+            applyDefaultReplacement(context, methodCall, returnValue, args);
+        }
+        return ensureValuesAreOnStack;
+    }
+
+    private void transformVarInsn(TransformContext context, int i, VarInsnNode varNode) {
+        /*
+         * There are two reasons this is needed.
+         * 1. Some values take up different amount of variable slots because of their transforms, so we need to shift all variables accesses'
+         * 2. When actually storing or loading a transformed value, we need to store all of it's transformed values correctly
+         */
+
+        //Get the shifted variable index
+        int originalVarIndex = varNode.var;
+        int newVarIndex = context.varLookup()[i][originalVarIndex];
+
+        //Base opcode makes it easier to determine what kind of instruction we are dealing with
+        int baseOpcode = switch (varNode.getOpcode()) {
+            case Opcodes.ALOAD, Opcodes.ILOAD, Opcodes.FLOAD, Opcodes.DLOAD, Opcodes.LLOAD -> Opcodes.ILOAD;
+            case Opcodes.ASTORE, Opcodes.ISTORE, Opcodes.FSTORE, Opcodes.DSTORE, Opcodes.LSTORE -> Opcodes.ISTORE;
+            default -> throw new IllegalStateException("Unknown opcode: " + varNode.getOpcode());
+        };
+
+        //If the variable is being loaded, it is in the current frame, if it is being stored, it will be in the next frame
+        TransformSubtype varType = context.varTypes()[i + (baseOpcode == Opcodes.ISTORE ? 1 : 0)][originalVarIndex];
+        //Get the actual types that need to be stored or loaded
+        List<Type> types = varType.transformedTypes(ASMUtil.getType(varNode.getOpcode()));
+
+        //Get the indices for each of these types
+        List<Integer> vars = new ArrayList<>();
+        for (Type subType : types) {
+            vars.add(newVarIndex);
+            newVarIndex += subType.getSize();
+        }
+
+        /*
+         * If the variable is being stored we must reverse the order of the types.
+         * This is because in the following code if a and b have transform-type long -> (int "x", int "y", int "z"):
+         *
+         * long b = a;
+         *
+         * The loading of a would get expanded to something like:
+         * ILOAD 3 Stack: [] -> [a_x]
+         * ILOAD 4 Stack: [a_x] -> [a_x, a_y]
+         * ILOAD 5 Stack: [a_x, a_y] -> [a_x, a_y, a_z]
+         *
+         * If the storing into b was in the same order it would be:
+         * ISTORE 3 Stack: [a_x, a_y, a_z] -> [a_x, a_y] (a_z gets stored into b_x)
+         * ISTORE 4 Stack: [a_x, a_y] -> [a_x] (a_y gets stored into b_y)
+         * ISTORE 5 Stack: [a_x] -> [] (a_x gets stored into b_z)
+         * And so we see that this ordering is wrong.
+         *
+         * To fix this, we reverse the order of the types.
+         * The previous example becomes:
+         * ISTORE 5 Stack: [a_x, a_y, a_z] -> [a_x, a_y] (a_z gets stored into b_z)
+         * ISTORE 4 Stack: [a_x, a_y] -> [a_x] (a_y gets stored into b_y)
+         * ISTORE 3 Stack: [a_x] -> [] (a_x gets stored into b_x)
+         */
+        if (baseOpcode == Opcodes.ISTORE) {
+            Collections.reverse(types);
+            Collections.reverse(vars);
+        }
+
+        //For the first operation we can just modify the original instruction instead of creating more
+        varNode.var = vars.get(0);
+        varNode.setOpcode(types.get(0).getOpcode(baseOpcode));
+
+        InsnList extra = new InsnList();
+
+        for (int j = 1; j < types.size(); j++) {
+            extra.add(new VarInsnNode(types.get(j).getOpcode(baseOpcode), vars.get(j))); //Creating the new instructions
+        }
+
+        context.target().instructions.insert(varNode, extra);
+    }
+
+    private void transformIincInsn(TransformContext context, int i, IincInsnNode iincNode) {
+        //We just need to shift the index of the variable because incrementing transformed values is not supported
+        int originalVarIndex = iincNode.var;
+        int newVarIndex = context.varLookup()[i][originalVarIndex];
+        iincNode.var = newVarIndex;
+    }
+
+    private boolean transformConstantInsn(TransformContext context, Frame<TransformTrackingValue> frame1, int i, AbstractInsnNode instruction) {
+        boolean ensureValuesAreOnStack; //Check if value is transformed
+        ensureValuesAreOnStack = false;
+        TransformTrackingValue value = ASMUtil.getTop(frame1);
+        if (value.getTransformType() != null) {
+            if (value.getTransform().getSubtype() != TransformSubtype.SubType.NONE) {
+                throw new IllegalStateException("Cannot expand constant value of subType " + value.getTransform().getSubtype());
+            }
+
+            Object constant = ASMUtil.getConstant(instruction);
+
+            /*
+             * Check if there is a given constant replacement for this value an example of this is where Long.MAX_VALUE is used as a marker
+             * for an invalid position. To convert it to 3int we turn it into (Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE)
+             */
+            BytecodeFactory[] replacement = value.getTransformType().getConstantReplacements().get(constant);
+            if (replacement == null) {
+                throw new IllegalStateException("Cannot expand constant value of subType " + value.getTransformType());
+            }
+
+            InsnList newInstructions = new InsnList();
+            for (BytecodeFactory factory : replacement) {
+                int finalI = i;
+                newInstructions.add(factory.generate(t -> context.variableManager.allocate(finalI, finalI + 1, t)));
+            }
+
+            context.target().instructions.insert(instruction, newInstructions);
+            context.target().instructions.remove(instruction); //Remove the original instruction
+        }
+        return ensureValuesAreOnStack;
+    }
+
+    private boolean transformConditionalJump(TransformContext context, Frame<TransformTrackingValue>[] frames, int i, AbstractInsnNode instruction, Frame<TransformTrackingValue> frame,
+                                             int opcode) {
+        /*
+         * Transforms for equality comparisons
+         * How it works:
+         *
+         * If these values have transform-type long -> (int "x", int "y", int "z")
+         *
+         * LLOAD 1
+         * LLOAD 2
+         * LCMP
+         * IF_EQ -> LABEL
+         * ...
+         * LABEL:
+         * ...
+         *
+         * Becomes
+         *
+         * ILOAD 1
+         * ILOAD 4
+         * IF_ICMPNE -> FAILURE
+         * ILOAD 2
+         * ILOAD 5
+         * IF_ICMPNE -> FAILURE
+         * ILOAD 3
+         * ILOAD 6
+         * IF_ICMPEQ -> SUCCESS
+         * FAILURE:
+         * ...
+         * SUCCESS:
+         * ...
+         *
+         * Similarly
+         * LLOAD 1
+         * LLOAD 2
+         * LCMP
+         * IF_NE -> LABEL
+         * ...
+         * LABEL:
+         * ...
+         *
+         * Becomes
+         *
+         * ILOAD 1
+         * ILOAD 4
+         * IF_ICMPNE -> SUCCESS
+         * ILOAD 2
+         * ILOAD 5
+         * IF_ICMPNE -> SUCCESS
+         * ILOAD 3
+         * ILOAD 6
+         * IF_ICMPNE -> SUCCESS
+         * FAILURE:
+         * ...
+         * SUCCESS:
+         * ...
+         */
+
+        //Get the actual values that are being compared
+        TransformTrackingValue left = frame.getStack(frame.getStackSize() - 2);
+        TransformTrackingValue right = frame.getStack(frame.getStackSize() - 1);
+
+        JumpInsnNode jump; //The actual jump instruction. Note: LCMP, FCMPL, FCMPG, DCMPL, DCMPG are not jump, instead, the next instruction (IFEQ, IFNE etc..) is jump
+        int baseOpcode; //The type of comparison. IF_IMCPEQ or IF_ICMPNE
+
+        //Used to remember to delete CMP instructions
+        boolean separated = false;
+
+        if (opcode == Opcodes.LCMP || opcode == Opcodes.FCMPL || opcode == Opcodes.FCMPG || opcode == Opcodes.DCMPL || opcode == Opcodes.DCMPG) {
+            TransformTrackingValue result =
+                ASMUtil.getTop(frames[i + 1]); //The result is on the top of the next frame and gets consumer by the jump. This is how we find the jump
+
+            if (result.getConsumers().size() != 1) {
+                throw new IllegalStateException("Expected one consumer, found " + result.getConsumers().size());
+            }
+
+            //Because the consumers are from the old method we have to call context.getActual
+            jump = context.getActual((JumpInsnNode) result.getConsumers().iterator().next());
+
+            baseOpcode = switch (jump.getOpcode()) {
+                case Opcodes.IFEQ -> Opcodes.IF_ICMPEQ;
+                case Opcodes.IFNE -> Opcodes.IF_ICMPNE;
+                default -> throw new IllegalStateException("Unknown opcode: " + jump.getOpcode());
+            };
+
+            separated = true;
+        } else {
+            jump = context.getActual((JumpInsnNode) instruction); //The instruction is the jump
+
+            baseOpcode = switch (opcode) {
+                case Opcodes.IF_ACMPEQ, Opcodes.IF_ICMPEQ -> Opcodes.IF_ICMPEQ;
+                case Opcodes.IF_ACMPNE, Opcodes.IF_ICMPNE -> Opcodes.IF_ICMPNE;
+                default -> throw new IllegalStateException("Unknown opcode: " + opcode);
+            };
+        }
+
+        if (!left.getTransform().equals(right.getTransform())) {
+            throw new IllegalStateException("Expected same transform, found " + left.getTransform() + " and " + right.getTransform());
+        }
+
+        boolean ensureValuesAreOnStack = true;
+
+        //Only modify the jump if both values are transformed
+        if (left.getTransformType() != null && right.getTransformType() != null) {
+            ensureValuesAreOnStack = false;
+            generateExpandedJump(context, i, instruction, left, right, jump, baseOpcode, separated);
+        }
+        return ensureValuesAreOnStack;
+    }
+
+    private void generateExpandedJump(TransformContext context, int i, AbstractInsnNode instruction, TransformTrackingValue left, TransformTrackingValue right, JumpInsnNode jump,
+                                      int baseOpcode, boolean separated) {
+        List<Type> types = left.transformedTypes(); //Get the actual types that will be converted
+
+        if (types.size() == 1) {
+            InsnList replacement = ASMUtil.generateCompareAndJump(types.get(0), baseOpcode, jump.label);
+            context.target.instructions.insert(jump, replacement);
+            context.target.instructions.remove(jump); //Remove the previous jump instruction
+        } else {
+            //Get the replacements for each component
+            BytecodeFactory[] replacementLeft = context.getSyntheticEmitter(left);
+            BytecodeFactory[] replacementRight = context.getSyntheticEmitter(right);
+
+            //Create failure and success label
+            LabelNode success = jump.label;
+            LabelNode failure = new LabelNode();
+
+            InsnList newCmp = new InsnList();
+
+            for (int j = 0; j < types.size(); j++) {
+                Type subType = types.get(j);
+                //Load the single components from left and right
+                final int finalI = i;
+                newCmp.add(replacementLeft[j].generate(t -> context.variableManager.allocate(finalI, finalI + 1, t)));
+                newCmp.add(replacementRight[j].generate(t -> context.variableManager.allocate(finalI, finalI + 1, t)));
+
+                int op = Opcodes.IF_ICMPNE;
+                LabelNode labelNode = success;
+
+                if (j == types.size() - 1 && baseOpcode == Opcodes.IF_ICMPEQ) {
+                    op = Opcodes.IF_ICMPEQ;
+                }
+
+                if (j != types.size() - 1 && baseOpcode == Opcodes.IF_ICMPEQ) {
+                    labelNode = failure;
+                }
+
+                //Add jump
+                newCmp.add(ASMUtil.generateCompareAndJump(subType, op, labelNode));
+            }
+
+            //Insert failure label. Success label is already inserted
+            newCmp.add(failure);
+
+            //Replace old jump with new jumo
+            context.target().instructions.insertBefore(jump, newCmp);
+            context.target().instructions.remove(jump);
+
+            if (separated) {
+                context.target().instructions.remove(instruction); //Remove the CMP instruction
+            }
+        }
+    }
+
+    private void transformInvokeDynamicInsn(Frame<TransformTrackingValue>[] frames, int i, Frame<TransformTrackingValue> frame, InvokeDynamicInsnNode dynamicInsnNode) {
+        //Check if it LambdaMetafactory.metafactory
+        if (dynamicInsnNode.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory")) {
+            Handle methodReference = (Handle) dynamicInsnNode.bsmArgs[1];
+            boolean isStatic = methodReference.getTag() == Opcodes.H_INVOKESTATIC;
+            int staticOffset = isStatic ? 0 : 1;
+
+            //Create new descriptor
+            Type[] args = Type.getArgumentTypes(dynamicInsnNode.desc);
+            TransformTrackingValue[] values = new TransformTrackingValue[args.length];
+            for (int j = 0; j < values.length; j++) {
+                values[j] = frame.getStack(frame.getStackSize() - args.length + j);
+            }
+
+            //The return value (the lambda) is on the top of the stack of the next frame
+            TransformTrackingValue returnValue = ASMUtil.getTop(frames[i + 1]);
+
+            dynamicInsnNode.desc = MethodParameterInfo.getNewDesc(returnValue, values, dynamicInsnNode.desc);
+
+            Type referenceDesc = (Type) dynamicInsnNode.bsmArgs[0]; //Basically lambda parameters
+            assert referenceDesc.equals(dynamicInsnNode.bsmArgs[2]);
+
+            String methodName = methodReference.getName();
+            String methodDesc = methodReference.getDesc();
+            String methodOwner = methodReference.getOwner();
+            if (!methodOwner.equals(classNode.name)) {
+                throw new IllegalStateException("Method reference must be in the same class");
+            }
+
+            //Get analysis results of the actual method
+            //For lookups we do need to use the old owner
+            MethodID methodID = new MethodID(classNode.name, methodName, methodDesc, MethodID.CallType.VIRTUAL); // call subType doesn't matter
+            AnalysisResults results = analysisResults.get(methodID);
+            if (results == null) {
+                throw new IllegalStateException("Method not analyzed '" + methodID + "'");
+            }
+
+            //Create new lambda descriptor
+            String newDesc = results.getNewDesc();
+            Type[] newArgs = Type.getArgumentTypes(newDesc);
+            Type[] referenceArgs = newArgs;
+
+            Type[] lambdaArgs = new Type[newArgs.length - values.length + staticOffset];
+            System.arraycopy(newArgs, values.length - staticOffset, lambdaArgs, 0, lambdaArgs.length);
+
+            String newReferenceDesc = Type.getMethodType(Type.getReturnType(newDesc), referenceArgs).getDescriptor();
+            String lambdaDesc = Type.getMethodType(Type.getReturnType(newDesc), lambdaArgs).getDescriptor();
+
+            dynamicInsnNode.bsmArgs = new Object[] {
+                Type.getMethodType(lambdaDesc),
+                new Handle(methodReference.getTag(), methodReference.getOwner(), methodReference.getName(), newReferenceDesc, methodReference.isInterface()),
+                Type.getMethodType(lambdaDesc)
+            };
+        }
+    }
+
+    private void transformNewInsn(Frame<TransformTrackingValue> frame1, TypeInsnNode instruction) {
+        TransformTrackingValue value = ASMUtil.getTop(frame1);
+        TypeInsnNode newInsn = instruction;
+        if (value.getTransform().getTransformType() != null) {
+            newInsn.desc = value.getTransform().getSingleType().getInternalName();
         }
     }
 
@@ -1306,57 +1359,66 @@ public class TypeTransformer {
 
         methodCall.desc = newDescriptor;
 
-        if (!isStatic) {
-            //Change the method owner if needed
-            List<Type> types = args[0].transformedTypes();
-            if (types.size() != 1) {
-                throw new IllegalStateException(
-                    "Expected 1 subType but got " + types.size() + ". Define a custom replacement for this method (" + methodCall.owner + "#" + methodCall.name + methodCall.desc + ")");
+        if (isStatic) {
+            return;
+        }
+
+        //Change the method owner if needed
+        List<Type> types = args[0].transformedTypes();
+        if (types.size() != 1) {
+            throw new IllegalStateException(
+                "Expected 1 subType but got " + types.size() + ". Define a custom replacement for this method (" + methodCall.owner + "#" + methodCall.name + methodCall.desc + ")");
+        }
+
+        HierarchyTree hierarchy = config.getHierarchy();
+
+        Type potentionalOwner = types.get(0);
+        if (methodCall.getOpcode() != Opcodes.INVOKESPECIAL) {
+            findOwnerNormal(methodCall, hierarchy, potentionalOwner);
+        } else {
+            findOwnerInvokeSpecial(methodCall, args, hierarchy, potentionalOwner);
+        }
+    }
+
+    private void findOwnerNormal(MethodInsnNode methodCall, HierarchyTree hierarchy, Type potentionalOwner) {
+        int opcode = methodCall.getOpcode();
+
+        if (opcode == Opcodes.INVOKEVIRTUAL || opcode == Opcodes.INVOKEINTERFACE) {
+            if (!potentionalOwner.equals(Type.getObjectType(methodCall.owner))) {
+                boolean isNewTypeInterface = hierarchy.recognisesInterface(potentionalOwner);
+                opcode = isNewTypeInterface ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL;
+
+                methodCall.itf = isNewTypeInterface;
+            }
+        }
+
+        methodCall.owner = potentionalOwner.getInternalName();
+        methodCall.setOpcode(opcode);
+    }
+
+    private void findOwnerInvokeSpecial(MethodInsnNode methodCall, TransformTrackingValue[] args, HierarchyTree hierarchy, Type potentionalOwner) {
+        String currentOwner = methodCall.owner;
+        HierarchyTree.Node current = hierarchy.getNode(Type.getObjectType(currentOwner));
+        HierarchyTree.Node potential = hierarchy.getNode(potentionalOwner);
+        HierarchyTree.Node given = hierarchy.getNode(args[0].getType());
+
+        if (given == null || current == null) {
+            System.err.println("Don't have hierarchy for " + args[0].getType() + " or " + methodCall.owner);
+            methodCall.owner = potentionalOwner.getInternalName();
+        } else if (given.isDirectDescendantOf(current)) {
+            if (potential == null || potential.getParent() == null) {
+                throw new IllegalStateException("Cannot change owner of super call if hierarchy for " + potentionalOwner + " is not defined");
             }
 
-            HierarchyTree hierarchy = config.getHierarchy();
-
-            Type potentionalOwner = types.get(0);
-            if (methodCall.getOpcode() != Opcodes.INVOKESPECIAL) {
-                int opcode = methodCall.getOpcode();
-
-                if (opcode == Opcodes.INVOKEVIRTUAL || opcode == Opcodes.INVOKEINTERFACE) {
-                    if (!potentionalOwner.equals(Type.getObjectType(methodCall.owner))) {
-                        boolean isNewTypeInterface = hierarchy.recognisesInterface(potentionalOwner);
-                        opcode = isNewTypeInterface ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL;
-
-                        methodCall.itf = isNewTypeInterface;
-                    }
-                }
-
-                methodCall.owner = potentionalOwner.getInternalName();
-                methodCall.setOpcode(opcode);
-            } else {
-
-                String currentOwner = methodCall.owner;
-                HierarchyTree.Node current = hierarchy.getNode(Type.getObjectType(currentOwner));
-                HierarchyTree.Node potential = hierarchy.getNode(potentionalOwner);
-                HierarchyTree.Node given = hierarchy.getNode(args[0].getType());
-
-                if (given == null || current == null) {
-                    System.err.println("Don't have hierarchy for " + args[0].getType() + " or " + methodCall.owner);
-                    methodCall.owner = potentionalOwner.getInternalName();
-                } else if (given.isDirectDescendantOf(current)) {
-                    if (potential == null || potential.getParent() == null) {
-                        throw new IllegalStateException("Cannot change owner of super call if hierarchy for " + potentionalOwner + " is not defined");
-                    }
-
-                    Type newOwner = potential.getParent().getValue();
-                    methodCall.owner = newOwner.getInternalName();
-                } else {
-                    methodCall.owner = potentionalOwner.getInternalName();
-                }
-            }
+            Type newOwner = potential.getParent().getValue();
+            methodCall.owner = newOwner.getInternalName();
+        } else {
+            methodCall.owner = potentionalOwner.getInternalName();
         }
     }
 
     /**
-     * Transform a method call who's replacement is given in the config
+     * Transform a method call whose replacement is given in the config
      *
      * @param context Transform context
      * @param methodCall The actual method cal insn
@@ -1399,38 +1461,47 @@ public class TypeTransformer {
         } else {
             //Store all the parameters
             BytecodeFactory[][] paramGenerators = new BytecodeFactory[args.length][];
-            for (int j = 0; j < args.length; j++) {
-                paramGenerators[j] = context.getSyntheticEmitter(args[j]);
-            }
-
             InsnList replacementInstructions = new InsnList();
 
-            for (int j = 0; j < replacement.getBytecodeFactories().length; j++) {
-                //Generate each part of the replacement
-                List<Integer>[] indices = replacement.getParameterIndexes()[j];
-                for (int k = 0; k < indices.length; k++) {
-                    for (int index : indices[k]) {
-                        replacementInstructions.add(paramGenerators[k][index].generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
-                    }
-                }
-                replacementInstructions.add(replacement.getBytecodeFactories()[j].generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
-            }
+            storeParameters(context, args, replacement, insnIndex, paramGenerators, replacementInstructions);
 
             //Call finalizer
             if (replacement.getFinalizer() != null) {
-                List<Integer>[] indices = replacement.getFinalizerIndices();
-                //Add required parameters to finalizer
-                for (int j = 0; j < indices.length; j++) {
-                    for (int index : indices[j]) {
-                        replacementInstructions.add(paramGenerators[j][index].generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
-                    }
-                }
-                replacementInstructions.add(replacement.getFinalizer().generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
+                addFinalizer(context, replacement, insnIndex, paramGenerators, replacementInstructions);
             }
 
             //Step 2: Insert new code
             context.target().instructions.insert(methodCall, replacementInstructions);
             context.target().instructions.remove(methodCall);
+        }
+    }
+
+    private void addFinalizer(TransformContext context, MethodReplacement replacement, int insnIndex, BytecodeFactory[][] paramGenerators, InsnList replacementInstructions) {
+        List<Integer>[] indices = replacement.getFinalizerIndices();
+        //Add required parameters to finalizer
+        for (int j = 0; j < indices.length; j++) {
+            for (int index : indices[j]) {
+                replacementInstructions.add(paramGenerators[j][index].generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
+            }
+        }
+        replacementInstructions.add(replacement.getFinalizer().generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
+    }
+
+    private void storeParameters(TransformContext context, TransformTrackingValue[] args, MethodReplacement replacement, int insnIndex, BytecodeFactory[][] paramGenerators,
+                           InsnList replacementInstructions) {
+        for (int j = 0; j < args.length; j++) {
+            paramGenerators[j] = context.getSyntheticEmitter(args[j]);
+        }
+
+        for (int j = 0; j < replacement.getBytecodeFactories().length; j++) {
+            //Generate each part of the replacement
+            List<Integer>[] indices = replacement.getParameterIndexes()[j];
+            for (int k = 0; k < indices.length; k++) {
+                for (int index : indices[k]) {
+                    replacementInstructions.add(paramGenerators[k][index].generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
+                }
+            }
+            replacementInstructions.add(replacement.getBytecodeFactories()[j].generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
         }
     }
 
@@ -1440,67 +1511,75 @@ public class TypeTransformer {
      * @param methodNode The method to modify
      * @param context The transform context
      */
-    private void modifyVariableTable(MethodNode methodNode, TransformContext context) {
+    private void modifyLVT(MethodNode methodNode, TransformContext context) {
         if (methodNode.localVariables != null) {
-            List<LocalVariableNode> original = methodNode.localVariables;
-            List<LocalVariableNode> newLocalVariables = new ArrayList<>();
-
-            for (LocalVariableNode local : original) {
-                int codeIndex = context.indexLookup().get(local.start); //The index of the first frame with that variable
-                int newIndex = context.varLookup[codeIndex][local.index]; //codeIndex is used to get the newIndex from varLookup
-
-                TransformTrackingValue value = context.analysisResults().frames()[codeIndex].getLocal(local.index); //Get the value of that variable, so we can get its transform
-                if (value.getTransformType() == null || value.getTransform().getSubtype() != TransformSubtype.SubType.NONE) {
-                    String desc;
-                    if (value.getTransformType() == null) {
-                        Type type = value.getType();
-                        if (type == null) {
-                            continue;
-                        } else {
-                            desc = value.getType().getDescriptor();
-                        }
-                    } else {
-                        desc = value.getTransform().getSingleType().getDescriptor();
-                    }
-                    newLocalVariables.add(new LocalVariableNode(local.name, desc, local.signature, local.start, local.end, newIndex));
-                } else {
-                    String[] postfixes = value.getTransformType().getPostfix();
-                    int varIndex = newIndex;
-                    for (int j = 0; j < postfixes.length; j++) {
-                        newLocalVariables.add(
-                            new LocalVariableNode(local.name + postfixes[j], value.getTransformType().getTo()[j].getDescriptor(), local.signature, local.start, local.end, varIndex));
-                        varIndex += value.getTransformType().getTo()[j].getSize();
-                    }
-                }
-            }
-
-            methodNode.localVariables = newLocalVariables;
+            modifyVariableTable(methodNode, context);
         }
 
         //Similar algorithm for parameters
         if (methodNode.parameters != null) {
-            List<ParameterNode> original = methodNode.parameters;
-            List<ParameterNode> newParameters = new ArrayList<>();
-
-            int index = 0;
-            if ((methodNode.access & Opcodes.ACC_STATIC) == 0) {
-                index++;
-            }
-            for (ParameterNode param : original) {
-                TransformTrackingValue value = context.analysisResults.frames()[0].getLocal(index);
-                if (value.getTransformType() == null || value.getTransform().getSubtype() != TransformSubtype.SubType.NONE) {
-                    newParameters.add(new ParameterNode(param.name, param.access));
-                } else {
-                    String[] postfixes = value.getTransformType().getPostfix();
-                    for (String postfix : postfixes) {
-                        newParameters.add(new ParameterNode(param.name + postfix, param.access));
-                    }
-                }
-                index += value.getSize();
-            }
-
-            methodNode.parameters = newParameters;
+            modifyParameterTable(methodNode, context);
         }
+    }
+
+    private void modifyParameterTable(MethodNode methodNode, TransformContext context) {
+        List<ParameterNode> original = methodNode.parameters;
+        List<ParameterNode> newParameters = new ArrayList<>();
+
+        int index = 0;
+        if ((methodNode.access & Opcodes.ACC_STATIC) == 0) {
+            index++;
+        }
+        for (ParameterNode param : original) {
+            TransformTrackingValue value = context.analysisResults.frames()[0].getLocal(index);
+            if (value.getTransformType() == null || value.getTransform().getSubtype() != TransformSubtype.SubType.NONE) {
+                newParameters.add(new ParameterNode(param.name, param.access));
+            } else {
+                String[] postfixes = value.getTransformType().getPostfix();
+                for (String postfix : postfixes) {
+                    newParameters.add(new ParameterNode(param.name + postfix, param.access));
+                }
+            }
+            index += value.getSize();
+        }
+
+        methodNode.parameters = newParameters;
+    }
+
+    private void modifyVariableTable(MethodNode methodNode, TransformContext context) {
+        List<LocalVariableNode> original = methodNode.localVariables;
+        List<LocalVariableNode> newLocalVariables = new ArrayList<>();
+
+        for (LocalVariableNode local : original) {
+            int codeIndex = context.indexLookup().get(local.start); //The index of the first frame with that variable
+            int newIndex = context.varLookup[codeIndex][local.index]; //codeIndex is used to get the newIndex from varLookup
+
+            TransformTrackingValue value = context.analysisResults().frames()[codeIndex].getLocal(local.index); //Get the value of that variable, so we can get its transform
+            if (value.getTransformType() == null || value.getTransform().getSubtype() != TransformSubtype.SubType.NONE) {
+                String desc;
+                if (value.getTransformType() == null) {
+                    Type type = value.getType();
+                    if (type == null) {
+                        continue;
+                    } else {
+                        desc = value.getType().getDescriptor();
+                    }
+                } else {
+                    desc = value.getTransform().getSingleType().getDescriptor();
+                }
+                newLocalVariables.add(new LocalVariableNode(local.name, desc, local.signature, local.start, local.end, newIndex));
+            } else {
+                String[] postfixes = value.getTransformType().getPostfix();
+                int varIndex = newIndex;
+                for (int j = 0; j < postfixes.length; j++) {
+                    newLocalVariables.add(
+                        new LocalVariableNode(local.name + postfixes[j], value.getTransformType().getTo()[j].getDescriptor(), local.signature, local.start, local.end, varIndex));
+                    varIndex += value.getTransformType().getTo()[j].getSize();
+                }
+            }
+        }
+
+        methodNode.localVariables = newLocalVariables;
     }
 
     /**
@@ -1518,62 +1597,7 @@ public class TypeTransformer {
             }
 
             if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0) {
-                //We still want to infer the argument types of abstract methods so we create a single frame whose locals represent the arguments
-                Type[] args = Type.getArgumentTypes(methodNode.desc);
-
-                MethodID methodID = new MethodID(classNode.name, methodNode.name, methodNode.desc, MethodID.CallType.VIRTUAL);
-
-                var typeHints = transformInfo.getTypeHints().get(methodID);
-
-                TransformSubtype[] argTypes = new TransformSubtype[args.length];
-                int index = 1; //Abstract methods can't be static, so they have the 'this' argument
-                for (int i = 0; i < args.length; i++) {
-                    argTypes[i] = TransformSubtype.of(null);
-
-                    if (typeHints != null && typeHints.containsKey(index)) {
-                        argTypes[i] = TransformSubtype.of(typeHints.get(index));
-                    }
-
-                    index += args[i].getSize();
-                }
-
-                Frame<TransformTrackingValue>[] frames = new Frame[1];
-
-                int numLocals = 0;
-                if (!ASMUtil.isStatic(methodNode)) {
-                    numLocals++;
-                }
-                for (Type argType : args) {
-                    numLocals += argType.getSize();
-                }
-                frames[0] = new Frame<>(numLocals, 0);
-
-                int varIndex = 0;
-                if (!ASMUtil.isStatic(methodNode)) {
-                    frames[0].setLocal(varIndex, new TransformTrackingValue(Type.getObjectType(classNode.name), fieldPseudoValues));
-                    varIndex++;
-                }
-
-                int i = 0;
-                for (Type argType : args) {
-                    TransformSubtype copyFrom = argTypes[i];
-                    TransformTrackingValue value = new TransformTrackingValue(argType, fieldPseudoValues);
-                    value.getTransform().setArrayDimensionality(copyFrom.getArrayDimensionality());
-                    value.getTransform().setSubType(copyFrom.getSubtype());
-                    value.setTransformType(copyFrom.getTransformType());
-                    frames[0].setLocal(varIndex, value);
-                    varIndex += argType.getSize();
-                    i++;
-                }
-
-                AnalysisResults results = new AnalysisResults(methodNode, argTypes, frames);
-
-                analysisResults.put(methodID, results);
-
-                //Bind previous calls
-                for (FutureMethodBinding binding : futureMethodBindings.getOrDefault(methodID, List.of())) {
-                    TransformTrackingInterpreter.bindValuesToMethod(results, binding.offset(), binding.parameters());
-                }
+                addDummyValues(methodNode);
 
                 continue;
             }
@@ -1583,22 +1607,85 @@ public class TypeTransformer {
         cleanUpAnalysis();
 
         if (VERBOSE) {
-            for (AnalysisResults results : analysisResults.values()) {
-                results.print(System.out, false);
-            }
-
-            System.out.println("\nField Transforms:");
-
-            for (var entry : fieldPseudoValues.entrySet()) {
-                if (entry.getValue().getTransformType() == null) {
-                    System.out.println(entry.getKey() + ": [NO CHANGE]");
-                } else {
-                    System.out.println(entry.getKey() + ": " + entry.getValue().getTransformType());
-                }
-            }
+            printAnalysisResults();
         }
 
         System.out.println("Finished analysis of " + classNode.name + " in " + (System.currentTimeMillis() - startTime) + "ms");
+    }
+
+    private void printAnalysisResults() {
+        for (AnalysisResults results : analysisResults.values()) {
+            results.print(System.out, false);
+        }
+
+        System.out.println("\nField Transforms:");
+
+        for (var entry : fieldPseudoValues.entrySet()) {
+            if (entry.getValue().getTransformType() == null) {
+                System.out.println(entry.getKey() + ": [NO CHANGE]");
+            } else {
+                System.out.println(entry.getKey() + ": " + entry.getValue().getTransformType());
+            }
+        }
+    }
+
+    private void addDummyValues(MethodNode methodNode) {
+        //We still want to infer the argument types of abstract methods so we create a single frame whose locals represent the arguments
+        Type[] args = Type.getArgumentTypes(methodNode.desc);
+
+        MethodID methodID = new MethodID(classNode.name, methodNode.name, methodNode.desc, MethodID.CallType.VIRTUAL);
+
+        var typeHints = transformInfo.getTypeHints().get(methodID);
+
+        TransformSubtype[] argTypes = new TransformSubtype[args.length];
+        int index = 1; //Abstract methods can't be static, so they have the 'this' argument
+        for (int i = 0; i < args.length; i++) {
+            argTypes[i] = TransformSubtype.of(null);
+
+            if (typeHints != null && typeHints.containsKey(index)) {
+                argTypes[i] = TransformSubtype.of(typeHints.get(index));
+            }
+
+            index += args[i].getSize();
+        }
+
+        Frame<TransformTrackingValue>[] frames = new Frame[1];
+
+        int numLocals = 0;
+        if (!ASMUtil.isStatic(methodNode)) {
+            numLocals++;
+        }
+        for (Type argType : args) {
+            numLocals += argType.getSize();
+        }
+        frames[0] = new Frame<>(numLocals, 0);
+
+        int varIndex = 0;
+        if (!ASMUtil.isStatic(methodNode)) {
+            frames[0].setLocal(varIndex, new TransformTrackingValue(Type.getObjectType(classNode.name), fieldPseudoValues));
+            varIndex++;
+        }
+
+        int i = 0;
+        for (Type argType : args) {
+            TransformSubtype copyFrom = argTypes[i];
+            TransformTrackingValue value = new TransformTrackingValue(argType, fieldPseudoValues);
+            value.getTransform().setArrayDimensionality(copyFrom.getArrayDimensionality());
+            value.getTransform().setSubType(copyFrom.getSubtype());
+            value.setTransformType(copyFrom.getTransformType());
+            frames[0].setLocal(varIndex, value);
+            varIndex += argType.getSize();
+            i++;
+        }
+
+        AnalysisResults results = new AnalysisResults(methodNode, argTypes, frames);
+
+        analysisResults.put(methodID, results);
+
+        //Bind previous calls
+        for (FutureMethodBinding binding : futureMethodBindings.getOrDefault(methodID, List.of())) {
+            TransformTrackingInterpreter.bindValuesToMethod(results, binding.offset(), binding.parameters());
+        }
     }
 
     /**
@@ -1816,18 +1903,6 @@ public class TypeTransformer {
             System.out.println("Analyzed method " + methodID + " in " + (System.currentTimeMillis() - startTime) + "ms");
         } catch (AnalyzerException e) {
             throw new RuntimeException("Analysis failed for method " + methodNode.name, e);
-        }
-    }
-
-    public void transformMethod(String name, String desc) {
-        MethodNode methodNode = classNode.methods.stream().filter(m -> m.name.equals(name) && m.desc.equals(desc)).findAny().orElse(null);
-        if (methodNode == null) {
-            throw new RuntimeException("Method " + name + desc + " not found in class " + classNode.name);
-        }
-        try {
-            transformMethod(methodNode);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to transform method " + name + desc, e);
         }
     }
 

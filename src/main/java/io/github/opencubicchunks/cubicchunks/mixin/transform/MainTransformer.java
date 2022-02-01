@@ -19,6 +19,7 @@ import com.google.common.collect.Sets;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import net.fabricmc.loader.api.MappingResolver;
 import org.apache.logging.log4j.LogManager;
@@ -47,9 +48,9 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class MainTransformer {
+    public static final Config TRANSFORM_CONFIG;
     private static final Logger LOGGER = LogManager.getLogger();
     private static final boolean IS_DEV = Utils.isDev();
-    public static final Config TRANSFORM_CONFIG;
 
     public static void transformChunkHolder(ClassNode targetClass) {
         Map<ClassMethod, String> vanillaToCubic = new HashMap<>();
@@ -508,10 +509,8 @@ public class MainTransformer {
             )
         );
 
-        MethodNode setLevelNode = targetClass.methods.stream().filter(m -> m.name.equals(setLevel.method.getName()) && m.desc.equals(setLevel.method.getDescriptor())).findFirst().get();
-        if (setLevelNode == null) {
-            throw new RuntimeException("Could not find setLevel method");
-        }
+        MethodNode setLevelNode =
+            targetClass.methods.stream().filter(m -> m.name.equals(setLevel.method.getName()) && m.desc.equals(setLevel.method.getDescriptor())).findFirst().orElseThrow();
 
         //Find field access (sectionsAffectedByLightUpdates)
         ClassField sectionsAffectedByLightUpdates = remapField(
@@ -522,24 +521,17 @@ public class MainTransformer {
             )
         );
 
-        AbstractInsnNode sectionsAffectedByLightUpdatesNode = setLevelNode.instructions.getFirst();
-        while (sectionsAffectedByLightUpdatesNode != null) {
-            if (sectionsAffectedByLightUpdatesNode.getOpcode() == GETFIELD) {
-                FieldInsnNode fieldInsnNode = (FieldInsnNode) sectionsAffectedByLightUpdatesNode;
-                if (fieldInsnNode.owner.equals(sectionsAffectedByLightUpdates.owner.getInternalName()) && fieldInsnNode.name.equals(sectionsAffectedByLightUpdates.name)) {
-                    break;
-                }
+        AbstractInsnNode sectionsAffectedByLightUpdatesNode = ASMUtil.getFirstMatch(setLevelNode.instructions, (insn) -> {
+            if (insn.getOpcode() == GETFIELD) {
+                FieldInsnNode fieldInsnNode = (FieldInsnNode) insn;
+                return fieldInsnNode.owner.equals(sectionsAffectedByLightUpdates.owner.getInternalName()) && fieldInsnNode.name.equals(sectionsAffectedByLightUpdates.name);
             }
-            sectionsAffectedByLightUpdatesNode = sectionsAffectedByLightUpdatesNode.getNext();
-        }
+            return false;
+        });
+
 
         //Find the LLOAD_1 instruction that comes after sectionsAffectedByLightUpdatesNode
-        AbstractInsnNode load1Node = sectionsAffectedByLightUpdatesNode.getNext();
-        while (load1Node != null && load1Node.getOpcode() != LLOAD) {
-            load1Node = load1Node.getNext();
-        }
-
-        assert ((VarInsnNode) load1Node).var == 1;
+        AbstractInsnNode load1Node = ASMUtil.getFirstMatch(sectionsAffectedByLightUpdatesNode, (insn) -> insn.getOpcode() == LLOAD && ((VarInsnNode) insn).var == 1);
 
         //Convert to BlockPos (SectionPos.sectionToBlock(J)J)
 
@@ -567,27 +559,23 @@ public class MainTransformer {
             )
         );
 
-        AbstractInsnNode blockPosOffsetCall = load1Node;
-        while (blockPosOffsetCall != null) {
-            if (blockPosOffsetCall instanceof MethodInsnNode methodCall) {
-                if (methodCall.owner.equals(blockPosOffset.owner.getInternalName()) && methodCall.name.equals(blockPosOffset.method.getName()) && methodCall.desc.equals(
-                    blockPosOffset.method.getDescriptor())) {
-                    break;
-                }
+        AbstractInsnNode blockPosOffsetCall = ASMUtil.getFirstMatch(load1Node, (insn) -> {
+            if (insn.getOpcode() == INVOKESTATIC) {
+                MethodInsnNode methodInsnNode = (MethodInsnNode) insn;
+                return methodInsnNode.owner.equals(blockPosOffset.owner.getInternalName()) && methodInsnNode.name.equals(blockPosOffset.method.getName()) && methodInsnNode.desc.equals(
+                    blockPosOffset.method.getDescriptor());
             }
-            blockPosOffsetCall = blockPosOffsetCall.getNext();
-        }
+            return false;
+        });
 
-        AbstractInsnNode blockToSectionCall = blockPosOffsetCall.getNext();
-        while (blockToSectionCall != null) {
-            if (blockToSectionCall instanceof MethodInsnNode methodCall) {
-                if (methodCall.owner.equals(blockToSection.owner.getInternalName()) && methodCall.name.equals(blockToSection.method.getName()) && methodCall.desc.equals(
-                    blockToSection.method.getDescriptor())) {
-                    break;
-                }
+        AbstractInsnNode blockToSectionCall = ASMUtil.getFirstMatch(blockPosOffsetCall, (insn) -> {
+            if (insn.getOpcode() == INVOKESTATIC) {
+                MethodInsnNode methodInsnNode = (MethodInsnNode) insn;
+                return methodInsnNode.owner.equals(blockToSection.owner.getInternalName()) && methodInsnNode.name.equals(blockToSection.method.getName()) && methodInsnNode.desc.equals(
+                    blockToSection.method.getDescriptor());
             }
-            blockToSectionCall = blockToSectionCall.getNext();
-        }
+            return false;
+        });
 
         MethodInsnNode sectionOffset =
             new MethodInsnNode(INVOKESTATIC, sectionPosOffset.owner.getInternalName(), sectionPosOffset.method.getName(), sectionPosOffset.method.getDescriptor(), false);
@@ -881,6 +869,17 @@ public class MainTransformer {
         return lambdaRedirects;
     }
 
+    static {
+        //Load config
+        try {
+            InputStream is = MainTransformer.class.getResourceAsStream("/type-transform.json");
+            TRANSFORM_CONFIG = ConfigLoader.loadConfig(is);
+            is.close();
+        } catch (IOException e) {
+            throw new RuntimeException("Couldn't load transform config", e);
+        }
+    }
+
     public static final class ClassMethod {
         public final Type owner;
         public final Method method;
@@ -957,18 +956,6 @@ public class MainTransformer {
                 ", name='" + name + '\'' +
                 ", desc=" + desc +
                 '}';
-        }
-    }
-
-
-    static {
-        //Load config
-        try {
-            InputStream is = MainTransformer.class.getResourceAsStream("/type-transform.json");
-            TRANSFORM_CONFIG = ConfigLoader.loadConfig(is);
-            is.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Couldn't load transform config", e);
         }
     }
 }

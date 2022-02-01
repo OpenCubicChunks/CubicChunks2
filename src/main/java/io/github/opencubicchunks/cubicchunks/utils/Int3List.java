@@ -118,6 +118,16 @@ public class Int3List implements AutoCloseable {
         this.size--;
     }
 
+    public boolean remove(int x, int y, int z) {
+        for (int index = 0; index < size; index++) {
+            if (getX(index) == x && getY(index) == y && getZ(index) == z) {
+                remove(index);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void addAll(Collection<Vec3i> positions) {
         int necessaryCapacity = this.size + positions.size();
 
@@ -129,22 +139,11 @@ public class Int3List implements AutoCloseable {
         this.size += positions.size();
 
         Iterator<Vec3i> iterator = positions.iterator();
-        ;
 
         for (; start < this.size; start++) {
             Vec3i item = iterator.next();
             set(start, item.getX(), item.getY(), item.getZ());
         }
-    }
-
-    public boolean remove(int x, int y, int z) {
-        for (int index = 0; index < size; index++) {
-            if (getX(index) == x && getY(index) == y && getZ(index) == z) {
-                remove(index);
-                return true;
-            }
-        }
-        return false;
     }
 
     public Vec3i[] toArray() {

@@ -160,8 +160,13 @@
 
         <!-- Metrics -->
 
-        <module name="CyclomaticComplexity"/>
+        <module name="CyclomaticComplexity">
+            <property name="switchBlockAsSingleDecisionPoint" value="true"/>
+            <property name="max" value="15"/>
+            <property name="tokens" value="LITERAL_WHILE , LITERAL_DO , LITERAL_FOR , LITERAL_IF , LITERAL_SWITCH , LITERAL_CASE , LITERAL_CATCH , QUESTION"/>
+        </module>
         <!-- <module name="JavaNCSS"/> TODO fix and enable -->
+
         <module name="NPathComplexity"/>
 
         <!-- Misc -->

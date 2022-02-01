@@ -155,9 +155,9 @@ public class TransformTrackingValue implements Value {
         }
 
         if (fieldSources.size() > 0) {
-            for (FieldSource source : fieldSources) {
+            for (FieldSource fieldSource : fieldSources) {
                 //System.out.println("Field " + source.root() + " is now " + newType);
-                FieldID id = new FieldID(Type.getObjectType(source.classNode()), source.fieldName(), Type.getType(source.fieldDesc()));
+                FieldID id = new FieldID(Type.getObjectType(fieldSource.classNode()), fieldSource.fieldName(), Type.getType(fieldSource.fieldDesc()));
                 if (pseudoValues.containsKey(id)) {
                     TransformTrackingValue value = pseudoValues.get(id);
                     //value.transform.setArrayDimensionality(source.arrayDepth());
@@ -171,8 +171,8 @@ public class TransformTrackingValue implements Value {
         fieldSources.add(fieldSource);
     }
 
-    public void addFieldSources(Set<FieldSource> fieldSources) {
-        this.fieldSources.addAll(fieldSources);
+    public void addFieldSources(Set<FieldSource> sources) {
+        this.fieldSources.addAll(sources);
     }
 
     public Set<FieldSource> getFieldSources() {
@@ -307,8 +307,8 @@ public class TransformTrackingValue implements Value {
         if (fieldSources.size() > 0) {
             sb.append(" (from ");
             int i = 0;
-            for (FieldSource source : fieldSources) {
-                sb.append(source.toString());
+            for (FieldSource fieldSource : fieldSources) {
+                sb.append(fieldSource.toString());
                 if (i < fieldSources.size() - 1) {
                     sb.append(", ");
                 }

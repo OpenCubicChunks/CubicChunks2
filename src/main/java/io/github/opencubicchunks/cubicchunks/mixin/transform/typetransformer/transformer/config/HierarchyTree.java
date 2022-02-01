@@ -74,6 +74,10 @@ public class HierarchyTree {
         this.knownInterfaces.add(itf);
     }
 
+    public void addInterface(Type type) {
+        knownInterfaces.add(type);
+    }
+
     public void add(Class<?> clazz) {
         while (true) {
             Type subType = Type.getType(clazz);
@@ -91,10 +95,6 @@ public class HierarchyTree {
 
     public boolean recognisesInterface(Type potentionalOwner) {
         return knownInterfaces.contains(potentionalOwner);
-    }
-
-    public void addInterface(Type type) {
-        knownInterfaces.add(type);
     }
 
     public static class Node {

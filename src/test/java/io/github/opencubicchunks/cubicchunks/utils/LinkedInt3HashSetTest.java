@@ -1,16 +1,16 @@
 package io.github.opencubicchunks.cubicchunks.utils;
 
-import net.minecraft.core.BlockPos;
-import org.junit.Test;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Random;
 
+import net.minecraft.core.BlockPos;
+import org.junit.Test;
+
 public class LinkedInt3HashSetTest {
     @Test
-    public void test1(){
+    public void test1() {
         LinkedInt3HashSet set = new LinkedInt3HashSet();
 
         set.add(5, 8, -4);
@@ -37,7 +37,7 @@ public class LinkedInt3HashSetTest {
         set.add(0, 2, 3);
         set.add(3, 1, 0);
 
-        assertArrayEquals(new LinkedInt3HashSet.XYZTriple[]{
+        assertArrayEquals(new LinkedInt3HashSet.XYZTriple[] {
             new LinkedInt3HashSet.XYZTriple(0, 0, 0),
             new LinkedInt3HashSet.XYZTriple(0, 0, 1),
             new LinkedInt3HashSet.XYZTriple(0, 2, 3),
@@ -52,7 +52,7 @@ public class LinkedInt3HashSetTest {
     }
 
     @Test
-    public void test2(){
+    public void test2() {
         //Do random shit and see if it crashes
         Random random = new Random();
 
@@ -63,11 +63,11 @@ public class LinkedInt3HashSetTest {
 
         System.out.println("Seed: " + seed);
 
-        for(int i = 0; i < 100000; i++){
+        for (int i = 0; i < 100000; i++) {
 
             int n = random.nextInt(4);
 
-            switch (n){
+            switch (n) {
                 case 0:
                 case 3:
                     set.add(random.nextInt(10), random.nextInt(10), random.nextInt(10));
@@ -76,8 +76,9 @@ public class LinkedInt3HashSetTest {
                     set.remove(random.nextInt(10), random.nextInt(10), random.nextInt(10));
                     break;
                 case 2:
-                    if(set.size > 0)
+                    if (set.size > 0) {
                         set.removeFirstLong();
+                    }
                     break;
             }
 

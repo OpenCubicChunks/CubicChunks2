@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config;
 
 import java.io.PrintStream;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +12,6 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.tree.analysis.AnalyzerException;
 import org.objectweb.asm.tree.analysis.Frame;

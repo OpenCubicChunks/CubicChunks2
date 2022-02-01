@@ -5,7 +5,6 @@ import static com.google.common.base.Preconditions.checkState;
 import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiConsumer;
-import java.util.function.LongConsumer;
 import java.util.function.ToIntFunction;
 import java.util.stream.IntStream;
 
@@ -56,7 +55,7 @@ public class Int3UByteLinkedHashMapTest {
 
             this.ensureEqual(reference, test);
 
-            for (Iterator<Object2IntMap.Entry<Vec3i>> itr = reference.object2IntEntrySet().iterator(); itr.hasNext(); ) { //remove some positions at random
+            for (Iterator<Object2IntMap.Entry<Vec3i>> itr = reference.object2IntEntrySet().iterator(); itr.hasNext();) { //remove some positions at random
                 Object2IntMap.Entry<Vec3i> entry = itr.next();
                 Vec3i pos = entry.getKey();
                 int value = entry.getIntValue();
@@ -220,36 +219,37 @@ public class Int3UByteLinkedHashMapTest {
 
             this.ensureEqual(reference, test);
 
-            {
-                Int3UByteLinkedHashMap.EntryConsumer callback = (x, y, z, value) -> {
-                    checkState(!test.containsKey(x, y, z));
-                    checkState(reference.containsKey(new Vec3i(x, y, z)));
-                    checkState(reference.getInt(new Vec3i(x, y, z)) == value);
 
-                    checkState(reference.removeInt(new Vec3i(x, y, z)) == value);
+            Int3UByteLinkedHashMap.EntryConsumer callback = (x, y, z, value) -> {
+                checkState(!test.containsKey(x, y, z));
+                checkState(reference.containsKey(new Vec3i(x, y, z)));
+                checkState(reference.getInt(new Vec3i(x, y, z)) == value);
 
-                    if (r.nextBoolean()) { //low chance of inserting a new entry
-                        int nx = rng.applyAsInt(r);
-                        int ny = rng.applyAsInt(r);
-                        int nz = rng.applyAsInt(r);
-                        int nvalue = r.nextInt() & 0xFF;
+                checkState(reference.removeInt(new Vec3i(x, y, z)) == value);
 
-                        int v0 = reference.put(new Vec3i(nx, ny, nz), nvalue);
-                        int v1 = test.put(nx, ny, nz, nvalue);
-                        checkState(v0 == v1);
-                    }
-                };
+                if (r.nextBoolean()) { //low chance of inserting a new entry
+                    int nx = rng.applyAsInt(r);
+                    int ny = rng.applyAsInt(r);
+                    int nz = rng.applyAsInt(r);
+                    int nvalue = r.nextInt() & 0xFF;
 
-                while (test.poll(callback)) {
+                    int v0 = reference.put(new Vec3i(nx, ny, nz), nvalue);
+                    int v1 = test.put(nx, ny, nz, nvalue);
+                    checkState(v0 == v1);
                 }
+            };
+
+            while (test.poll(callback)) {
+                //empty
             }
+
 
             this.ensureEqual(Object2IntMaps.emptyMap(), test);
         }
     }
 
     @Test
-    public void testIterators(){
+    public void testIterators() {
         /*try(Int3UByteLinkedHashMap map = new Int3UByteLinkedHashMap()){
             map.put(0, 0, 1, 5);
             map.put(0, 0, 2, 4);

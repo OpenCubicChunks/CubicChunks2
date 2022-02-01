@@ -101,11 +101,11 @@ public class TransformSubtype {
         return new TransformSubtype(new TransformTypePtr(transformType), 0, SubType.fromString(subType));
     }
 
-    public Type getRawType(TransformType transformType) {
+    public Type getRawType(TransformType transform) {
         return switch (this.subtype) {
-            case NONE -> transformType.getFrom();
-            case PREDICATE -> transformType.getOriginalPredicateType();
-            case CONSUMER -> transformType.getOriginalConsumerType();
+            case NONE -> transform.getFrom();
+            case PREDICATE -> transform.getOriginalPredicateType();
+            case CONSUMER -> transform.getOriginalConsumerType();
         };
     }
 
@@ -165,19 +165,19 @@ public class TransformSubtype {
         return types;
     }
 
+    public List<Type> transformedTypes(Type subType) {
+        if (transformType.getValue() == null) {
+            return List.of(subType);
+        }
+        return transformedTypes();
+    }
+
     public int getTransformedSize() {
         if (subtype == SubType.NONE) {
             return transformType.getValue().getTransformedSize();
         } else {
             return 1;
         }
-    }
-
-    public List<Type> transformedTypes(Type subType) {
-        if (transformType.getValue() == null) {
-            return List.of(subType);
-        }
-        return transformedTypes();
     }
 
     public enum SubType {

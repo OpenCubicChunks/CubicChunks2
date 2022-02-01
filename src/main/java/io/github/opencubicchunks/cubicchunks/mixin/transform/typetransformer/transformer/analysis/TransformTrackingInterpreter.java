@@ -18,6 +18,8 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -353,110 +355,114 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         if (opcode == MULTIANEWARRAY) {
             return new TransformTrackingValue(Type.getType(((MultiANewArrayInsnNode) insn).desc), insn, fieldBindings);
         } else if (opcode == INVOKEDYNAMIC) {
-            //TODO: Handle invokedynamic and subType inference for call sites
-            InvokeDynamicInsnNode node = (InvokeDynamicInsnNode) insn;
-            Type subType = Type.getReturnType(node.desc);
-
-            TransformTrackingValue ret = new TransformTrackingValue(subType, insn, fieldBindings);
-
-            //Make sure this is LambdaMetafactory.metafactory
-            if (node.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory") && node.bsm.getName().equals("metafactory")) {
-                //Bind values
-                Handle referenceMethod = (Handle) node.bsmArgs[1];
-                MethodID.CallType callType = switch (referenceMethod.getTag()) {
-                    case H_INVOKESTATIC -> MethodID.CallType.STATIC;
-                    case H_INVOKEVIRTUAL -> MethodID.CallType.VIRTUAL;
-                    case H_INVOKESPECIAL, H_NEWINVOKESPECIAL -> MethodID.CallType.SPECIAL;
-                    case H_INVOKEINTERFACE -> MethodID.CallType.INTERFACE;
-                    default -> throw new AssertionError();
-                };
-                MethodID methodID = new MethodID(referenceMethod.getOwner(), referenceMethod.getName(), referenceMethod.getDesc(), callType);
-
-                if (resultLookup.containsKey(methodID)) {
-                    bindValuesToMethod(resultLookup.get(methodID), 0, values.toArray(new TransformTrackingValue[0]));
-                } else {
-                    futureMethodBindings.computeIfAbsent(methodID, k -> new ArrayList<>()).add(
-                        new FutureMethodBinding(0, values.toArray(new TransformTrackingValue[0]))
-                    );
-                }
-
-                boolean isTransformPredicate = ret.getTransform().getSubtype() == TransformSubtype.SubType.PREDICATE;
-                boolean isTransformConsumer = ret.getTransform().getSubtype() == TransformSubtype.SubType.CONSUMER;
-
-                if (isTransformConsumer && isTransformPredicate) {
-                    throw new RuntimeException("A subType cannot be both a predicate and a consumer. This is a bug in the configuration ('subType-transform.json').");
-                }
-
-                if (isTransformConsumer || isTransformPredicate) {
-                    int offset = values.size();
-                    offset += callType.getOffset();
-
-                    if (resultLookup.containsKey(methodID)) {
-                        bindValuesToMethod(resultLookup.get(methodID), offset, ret);
-                    } else {
-                        futureMethodBindings.computeIfAbsent(methodID, k -> new ArrayList<>()).add(
-                            new FutureMethodBinding(offset, ret)
-                        );
-                    }
-                }
-            }
-
-            if (subType.getSort() == Type.VOID) return null;
-
-            return ret;
+            return invokeDynamicOperation(insn, values);
         } else {
-            MethodInsnNode methodCall = (MethodInsnNode) insn;
-            Type subType = Type.getReturnType(methodCall.desc);
-
-            MethodID methodID = new MethodID(methodCall.owner, methodCall.name, methodCall.desc, MethodID.CallType.fromOpcode(opcode));
-
-            if (resultLookup.containsKey(methodID)) {
-                bindValuesToMethod(resultLookup.get(methodID), 0, values.toArray(new TransformTrackingValue[0]));
-            } else if (methodCall.owner.equals(currentClass.name)) {
-                futureMethodBindings.computeIfAbsent(methodID, k -> new ArrayList<>()).add(
-                    new FutureMethodBinding(0, values.toArray(new TransformTrackingValue[0]))
-                );
-            }
-
-            List<MethodParameterInfo> possibilities = config.getMethodParameterInfo().get(methodID);
-
-            if (possibilities != null) {
-                TransformTrackingValue returnValue = null;
-
-                if (subType != null) {
-                    returnValue = new TransformTrackingValue(subType, insn, fieldBindings);
-                }
-
-                for (MethodParameterInfo info : possibilities) {
-                    TransformTrackingValue[] parameterValues = new TransformTrackingValue[info.getParameterTypes().length];
-                    for (int i = 0; i < values.size(); i++) {
-                        parameterValues[i] = values.get(i);
-                    }
-
-                    UnresolvedMethodTransform unresolvedTransform = new UnresolvedMethodTransform(info, returnValue, parameterValues);
-
-                    int checkResult = unresolvedTransform.check();
-                    if (checkResult == 0) {
-                        if (returnValue != null) {
-                            returnValue.possibleTransformChecks.add(unresolvedTransform);
-                        }
-
-                        for (TransformTrackingValue parameterValue : parameterValues) {
-                            parameterValue.possibleTransformChecks.add(unresolvedTransform);
-                        }
-                    } else if (checkResult == 1) {
-                        unresolvedTransform.accept();
-                        break;
-                    }
-                }
-
-                return returnValue;
-            }
-
-            if (subType.getSort() == Type.VOID) return null;
-
-            return new TransformTrackingValue(subType, insn, fieldBindings);
+            return methodCallOperation(insn, values, opcode);
         }
+    }
+
+    @Nullable private TransformTrackingValue methodCallOperation(AbstractInsnNode insn, List<? extends TransformTrackingValue> values, int opcode) {
+        MethodInsnNode methodCall = (MethodInsnNode) insn;
+        Type subType = Type.getReturnType(methodCall.desc);
+
+        MethodID methodID = new MethodID(methodCall.owner, methodCall.name, methodCall.desc, MethodID.CallType.fromOpcode(opcode));
+
+        bindValues(methodID, 0, values.toArray(new TransformTrackingValue[0]));
+
+        List<MethodParameterInfo> possibilities = config.getMethodParameterInfo().get(methodID);
+
+        if (possibilities != null) {
+            TransformTrackingValue returnValue = null;
+
+            if (subType != null) {
+                returnValue = new TransformTrackingValue(subType, insn, fieldBindings);
+            }
+
+            for (MethodParameterInfo info : possibilities) {
+                TransformTrackingValue[] parameterValues = new TransformTrackingValue[info.getParameterTypes().length];
+                for (int i = 0; i < values.size(); i++) {
+                    parameterValues[i] = values.get(i);
+                }
+
+                UnresolvedMethodTransform unresolvedTransform = new UnresolvedMethodTransform(info, returnValue, parameterValues);
+
+                int checkResult = unresolvedTransform.check();
+                if (checkResult == 0) {
+                    if (returnValue != null) {
+                        returnValue.possibleTransformChecks.add(unresolvedTransform);
+                    }
+
+                    for (TransformTrackingValue parameterValue : parameterValues) {
+                        parameterValue.possibleTransformChecks.add(unresolvedTransform);
+                    }
+                } else if (checkResult == 1) {
+                    unresolvedTransform.accept();
+                    break;
+                }
+            }
+
+            return returnValue;
+        }
+
+        if (subType.getSort() == Type.VOID) return null;
+
+        return new TransformTrackingValue(subType, insn, fieldBindings);
+    }
+
+    @Nullable private TransformTrackingValue invokeDynamicOperation(AbstractInsnNode insn, List<? extends TransformTrackingValue> values) {
+        //TODO: Handle invokedynamic and subType inference for call sites
+        InvokeDynamicInsnNode node = (InvokeDynamicInsnNode) insn;
+        Type subType = Type.getReturnType(node.desc);
+
+        TransformTrackingValue ret = new TransformTrackingValue(subType, insn, fieldBindings);
+
+        //Make sure this is LambdaMetafactory.metafactory
+        if (node.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory") && node.bsm.getName().equals("metafactory")) {
+            //Bind values
+            Handle referenceMethod = (Handle) node.bsmArgs[1];
+            MethodID.CallType callType = getDynamicCallType(referenceMethod);
+            MethodID methodID = new MethodID(referenceMethod.getOwner(), referenceMethod.getName(), referenceMethod.getDesc(), callType);
+
+            bindValues(methodID, 0, values.toArray(new TransformTrackingValue[0]));
+
+            boolean isTransformPredicate = ret.getTransform().getSubtype() == TransformSubtype.SubType.PREDICATE;
+            boolean isTransformConsumer = ret.getTransform().getSubtype() == TransformSubtype.SubType.CONSUMER;
+
+            if (isTransformConsumer && isTransformPredicate) {
+                throw new RuntimeException("A subType cannot be both a predicate and a consumer. This is a bug in the configuration ('subType-transform.json').");
+            }
+
+            if (isTransformConsumer || isTransformPredicate) {
+                int offset = values.size();
+                offset += callType.getOffset();
+
+                bindValues(methodID, offset, ret);
+            }
+        }
+
+        if (subType.getSort() == Type.VOID) return null;
+
+        return ret;
+    }
+
+    private void bindValues(MethodID methodID, int offset, TransformTrackingValue... values) {
+        if (resultLookup.containsKey(methodID)) {
+            bindValuesToMethod(resultLookup.get(methodID), offset, values);
+        } else {
+            futureMethodBindings.computeIfAbsent(methodID, k -> new ArrayList<>()).add(
+                new FutureMethodBinding(offset, values)
+            );
+        }
+    }
+
+    @NotNull private MethodID.CallType getDynamicCallType(Handle referenceMethod) {
+        return switch (referenceMethod.getTag()) {
+            case H_INVOKESTATIC -> MethodID.CallType.STATIC;
+            case H_INVOKEVIRTUAL -> MethodID.CallType.VIRTUAL;
+            case H_INVOKESPECIAL, H_NEWINVOKESPECIAL -> MethodID.CallType.SPECIAL;
+            case H_INVOKEINTERFACE -> MethodID.CallType.INTERFACE;
+            default -> throw new AssertionError();
+        };
     }
 
     @Override
@@ -533,8 +539,8 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         this.resultLookup = analysisResults;
     }
 
-    public void setFutureBindings(Map<MethodID, List<FutureMethodBinding>> futureMethodBindings) {
-        this.futureMethodBindings = futureMethodBindings;
+    public void setFutureBindings(Map<MethodID, List<FutureMethodBinding>> bindings) {
+        this.futureMethodBindings = bindings;
     }
 
     public void setCurrentClass(ClassNode currentClass) {

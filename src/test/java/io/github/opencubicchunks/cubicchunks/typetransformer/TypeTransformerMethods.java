@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.typetransformer;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -38,14 +37,15 @@ import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 
 /**
- * This class runs the TypeTransformer on all required classes and tracks the methods which are assumed to exist.
- * This test makes the assumption that an untransformed class is completely correct.
+ * This class runs the TypeTransformer on all required classes and tracks the methods which are assumed to exist. This test makes the assumption that an untransformed class is completely
+ * correct.
  */
 public class TypeTransformerMethods {
     private static final boolean LOAD_FROM_MIXIN_OUT = false;
 
-    private static final Path assumedMixinOut = Utils.getGameDir().resolve(".mixin.out/class");
-    private static final Map<String, ClassNode> cachedClasses = new HashMap<>();
+    private static final Path ASSUMED_MIXIN_OUT = Utils.getGameDir().resolve(".mixin.out/class");
+    private static final Map<String, ClassNode> CACHED_CLASSES = new HashMap<>();
+    private static IMixinTransformer transformer;
     private ASMConfigPlugin plugin = new ASMConfigPlugin();
 
     @Test
@@ -75,7 +75,7 @@ public class TypeTransformerMethods {
             for (MethodNode methodNode : classNode.methods) {
                 InsnList instructions = methodNode.instructions;
                 int i = 0;
-                for(AbstractInsnNode instruction : instructions.toArray()) {
+                for (AbstractInsnNode instruction : instructions.toArray()) {
                     int opcode = instruction.getOpcode();
                     if (opcode == Opcodes.INVOKESTATIC || opcode == Opcodes.INVOKEVIRTUAL || opcode == Opcodes.INVOKEINTERFACE || opcode == Opcodes.INVOKESPECIAL) {
                         MethodID methodID = MethodID.from((MethodInsnNode) instruction);
@@ -93,18 +93,18 @@ public class TypeTransformerMethods {
         System.out.println("Identified all used methods");
         Map<MethodID, String> faultyUses = new HashMap<>(); //MethodID -> Reason
 
-        for(MethodID methodID : methodsUsed) {
+        for (MethodID methodID : methodsUsed) {
             String result = checkMethod(methodID);
-            if(result != null) {
+            if (result != null) {
                 faultyUses.put(methodID, result);
             }
         }
 
-        if(!faultyUses.isEmpty()) {
+        if (!faultyUses.isEmpty()) {
             System.out.println("Found faulty uses:");
-            for(Map.Entry<MethodID, String> entry : faultyUses.entrySet()) {
+            for (Map.Entry<MethodID, String> entry : faultyUses.entrySet()) {
                 System.out.println("  - " + entry.getKey() + ": " + entry.getValue());
-                for(String usage : usages.get(entry.getKey())) {
+                for (String usage : usages.get(entry.getKey())) {
                     System.out.println("    - " + usage);
                 }
             }
@@ -122,22 +122,23 @@ public class TypeTransformerMethods {
         boolean isInterface = (classNode.access & Opcodes.ACC_INTERFACE) != 0;
 
         while (true) {
-            Optional<MethodNode> methodNodeOptional = classNode.methods.stream().filter(m -> m.name.equals(methodID.getName()) && m.desc.equals(methodID.getDescriptor().getDescriptor())).findFirst();
+            Optional<MethodNode> methodNodeOptional =
+                classNode.methods.stream().filter(m -> m.name.equals(methodID.getName()) && m.desc.equals(methodID.getDescriptor().getDescriptor())).findFirst();
 
-            if(methodNodeOptional.isPresent()) {
+            if (methodNodeOptional.isPresent()) {
                 earliestDeclaringClass = classNode;
                 earliestDefinition = methodNodeOptional.get();
             }
 
-            if(methodID.getCallType() == MethodID.CallType.SPECIAL){
+            if (methodID.getCallType() == MethodID.CallType.SPECIAL) {
                 break;
             }
 
-            if(classNode.interfaces != null){
+            if (classNode.interfaces != null) {
                 interfacesToCheck.addAll(classNode.interfaces);
             }
 
-            if(classNode.superName == null) {
+            if (classNode.superName == null) {
                 break;
             }
 
@@ -145,13 +146,58 @@ public class TypeTransformerMethods {
         }
 
         //Find all implemented interfaces
+        Set<String> implementedInterfaces = findImplementedInterfaces(interfacesToCheck);
+
+        //Check interfaces
+        for (String interfaceName : implementedInterfaces) {
+            ClassNode interfaceNode = getClassNode(interfaceName);
+            Optional<MethodNode> methodNodeOptional =
+                interfaceNode.methods.stream().filter(m -> m.name.equals(methodID.getName()) && m.desc.equals(methodID.getDescriptor().getDescriptor())).findFirst();
+
+            if (methodNodeOptional.isPresent()) {
+                earliestDeclaringClass = interfaceNode;
+                earliestDefinition = methodNodeOptional.get();
+                break;
+            }
+        }
+
+        if (earliestDeclaringClass == null) {
+            return "No declaration found";
+        }
+
+        return computeAndCheckCallType(methodID, earliestDefinition, isInterface);
+    }
+
+    private String computeAndCheckCallType(MethodID methodID, MethodNode earliestDefinition, boolean isInterface) {
+        boolean isStatic = ASMUtil.isStatic(earliestDefinition);
+        if (isStatic) {
+            isInterface = false;
+        }
+        boolean isVirtual = !isStatic && !isInterface;
+
+        return checkCallType(methodID, isInterface, isStatic, isVirtual);
+    }
+
+    private String checkCallType(MethodID methodID, boolean isInterface, boolean isStatic, boolean isVirtual) {
+        if (isStatic && methodID.getCallType() != MethodID.CallType.STATIC) {
+            return "Static method is not called with INVOKESTATIC";
+        } else if (isInterface && methodID.getCallType() != MethodID.CallType.INTERFACE) {
+            return "Interface method is not called with INVOKEINTERFACE";
+        } else if (isVirtual && (methodID.getCallType() != MethodID.CallType.VIRTUAL && methodID.getCallType() != MethodID.CallType.SPECIAL)) {
+            return "Virtual method is not called with INVOKEVIRTUAL or INVOKESPECIAL";
+        } else {
+            return null;
+        }
+    }
+
+    private Set<String> findImplementedInterfaces(Set<String> interfacesToCheck) {
         Set<String> implementedInterfaces = new HashSet<>();
         Set<String> toCheck = new HashSet<>(interfacesToCheck);
-        while(!toCheck.isEmpty()) {
+        while (!toCheck.isEmpty()) {
             Set<String> newToCheck = new HashSet<>();
-            for(String interfaceName : toCheck) {
+            for (String interfaceName : toCheck) {
                 ClassNode interfaceNode = getClassNode(interfaceName);
-                if(interfaceNode.interfaces != null) {
+                if (interfaceNode.interfaces != null) {
                     newToCheck.addAll(interfaceNode.interfaces);
                 }
             }
@@ -159,58 +205,27 @@ public class TypeTransformerMethods {
             toCheck = newToCheck;
             toCheck.removeAll(implementedInterfaces);
         }
-
-        //Check interfaces
-        for(String interfaceName : implementedInterfaces) {
-            ClassNode interfaceNode = getClassNode(interfaceName);
-            Optional<MethodNode> methodNodeOptional = interfaceNode.methods.stream().filter(m -> m.name.equals(methodID.getName()) && m.desc.equals(methodID.getDescriptor().getDescriptor())).findFirst();
-
-            if(methodNodeOptional.isPresent()) {
-                earliestDeclaringClass = interfaceNode;
-                earliestDefinition = methodNodeOptional.get();
-                break;
-            }
-        }
-
-        if(earliestDeclaringClass == null) {
-            return "No declaration found";
-        }
-
-        boolean isStatic = ASMUtil.isStatic(earliestDefinition);
-        if(isStatic){
-            isInterface = false;
-        }
-        boolean isVirtual = !isStatic && !isInterface;
-
-        if(isStatic && methodID.getCallType() != MethodID.CallType.STATIC) {
-            return "Static method is not called with INVOKESTATIC";
-        }else if(isInterface && methodID.getCallType() != MethodID.CallType.INTERFACE) {
-            return "Interface method is not called with INVOKEINTERFACE";
-        }else if(isVirtual && (methodID.getCallType() != MethodID.CallType.VIRTUAL && methodID.getCallType() != MethodID.CallType.SPECIAL)) {
-            return "Virtual method is not called with INVOKEVIRTUAL or INVOKESPECIAL";
-        }
-
-        return null;
+        return implementedInterfaces;
     }
 
     private ClassNode getClassNode(String className) {
         className = className.replace('.', '/');
 
-        ClassNode classNode = cachedClasses.get(className);
+        ClassNode classNode = CACHED_CLASSES.get(className);
 
-        if(classNode == null){
+        if (classNode == null) {
 
-            if(LOAD_FROM_MIXIN_OUT) {
+            if (LOAD_FROM_MIXIN_OUT) {
                 classNode = loadClassNodeFromMixinOut(className);
             }
 
-            if(classNode == null){
+            if (classNode == null) {
                 System.err.println("Couldn't find class " + className + " in .mixin.out");
                 classNode = loadClassNodeFromClassPath(className);
                 plugin.postApply(className.replace('/', '.'), classNode, null, null);
             }
 
-            cachedClasses.put(className, classNode);
+            CACHED_CLASSES.put(className, classNode);
         }
 
         return classNode;
@@ -235,21 +250,21 @@ public class TypeTransformerMethods {
             throw new RuntimeException("Could not read class " + className, e);
         }
 
-        cachedClasses.put(className, classNode);
+        CACHED_CLASSES.put(className, classNode);
 
         return classNode;
     }
 
-    private ClassNode loadClassNodeFromMixinOut(String className){
+    private ClassNode loadClassNodeFromMixinOut(String className) {
         try {
-            InputStream is = Files.newInputStream(assumedMixinOut.resolve(className + ".class"));
+            InputStream is = Files.newInputStream(ASSUMED_MIXIN_OUT.resolve(className + ".class"));
 
             ClassNode classNode = new ClassNode();
             ClassReader classReader = new ClassReader(is);
             classReader.accept(classNode, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
             return classNode;
-        }catch (IOException e){
+        } catch (IOException e) {
             return null;
         }
     }
@@ -261,10 +276,8 @@ public class TypeTransformerMethods {
         CheckClassAdapter.verify(new ClassReader(verifyWriter.toByteArray()), false, new PrintWriter(System.out));
     }
 
-    private static IMixinTransformer transformer;
-
-    private IMixinTransformer getMixinTransformer(){
-        if(transformer == null){
+    private IMixinTransformer getMixinTransformer() {
+        if (transformer == null) {
             makeTransformer();
         }
 

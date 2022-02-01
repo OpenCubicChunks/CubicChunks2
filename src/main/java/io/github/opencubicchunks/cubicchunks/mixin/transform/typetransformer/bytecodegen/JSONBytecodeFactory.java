@@ -16,11 +16,11 @@ import com.google.gson.JsonObject;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import net.fabricmc.loader.api.MappingResolver;
+import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
@@ -92,97 +92,79 @@ public class JSONBytecodeFactory implements BytecodeFactory {
         String type = object.get("type").getAsString();
 
         if (type.equals("INVOKEVIRTUAL") || type.equals("INVOKESTATIC") || type.equals("INVOKESPECIAL") || type.equals("INVOKEINTERFACE")) {
-            JsonElement method = object.get("method");
-            MethodID methodID = null;
-
-            if (method.isJsonPrimitive()) {
-                methodID = methodIDMap.get(method.getAsString());
-            }
-
-            if (methodID == null) {
-                MethodID.CallType callType = switch (type) {
-                    case "INVOKEVIRTUAL" -> MethodID.CallType.VIRTUAL;
-                    case "INVOKESTATIC" -> MethodID.CallType.STATIC;
-                    case "INVOKESPECIAL" -> MethodID.CallType.SPECIAL;
-                    case "INVOKEINTERFACE" -> MethodID.CallType.INTERFACE;
-
-                    default -> throw new IllegalArgumentException("Invalid call type: " + type); //This will never be reached but the compiler gets angry if it isn't here
-                };
-                methodID = ConfigLoader.loadMethodID(method, mappings, callType);
-            }
-
-            MethodID finalMethodID = methodID;
-            return (insnList, __) -> {
-                insnList.add(finalMethodID.callNode());
-            };
+            return generateMethodCall(object, mappings, methodIDMap, type);
         } else if (type.equals("LDC")) {
-            String constantType = object.get("constant_type").getAsString();
-
-            JsonElement element = object.get("value");
-
-            if (constantType.equals("string")) {
-                return (insnList, __) -> insnList.add(new LdcInsnNode(element.getAsString()));
-            } else if (constantType.equals("long")) {
-                long value = element.getAsLong();
-                if (value == 0) {
-                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.LCONST_0));
-                } else if (value == 1) {
-                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.LCONST_1));
-                }
-
-                return (insnList, __) -> insnList.add(new LdcInsnNode(value));
-            } else if (constantType.equals("int")) {
-                int value = element.getAsInt();
-
-                if (value >= -1 && value <= 5) {
-                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.ICONST_0 + value));
-                }
-
-                return (insnList, __) -> insnList.add(new LdcInsnNode(value));
-            } else if (constantType.equals("double")) {
-                double value = element.getAsDouble();
-
-                if (value == 0) {
-                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.DCONST_0));
-                } else if (value == 1) {
-                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.DCONST_1));
-                }
-
-                return (insnList, __) -> insnList.add(new LdcInsnNode(value));
-            } else if (constantType.equals("float")) {
-                float value = element.getAsFloat();
-
-                if (value == 0) {
-                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.FCONST_0));
-                } else if (value == 1) {
-                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.FCONST_1));
-                } else if (value == 2) {
-                    return (insnList, __) -> insnList.add(new InsnNode(Opcodes.FCONST_2));
-                }
-
-                return (insnList, __) -> insnList.add(new LdcInsnNode(value));
-            } else {
-                throw new IllegalStateException("Illegal entry for 'constant_type' (" + constantType + ")");
-            }
+            return generateConstantInsn(object);
         } else if (type.equals("NEW") || type.equals("ANEWARRAY") || type.equals("CHECKCAST") || type.equals("INSTANCEOF")) {
-            JsonElement classNameJson = object.get("class");
-            Type t = Type.getObjectType(classNameJson.getAsString());
-            Type mappedType = ConfigLoader.remapType(t, mappings, false);
-
-            int opcode = switch (type) {
-                case "NEW" -> Opcodes.NEW;
-                case "ANEWARRAY" -> Opcodes.ANEWARRAY;
-                case "CHECKCAST" -> Opcodes.CHECKCAST;
-                case "INSTANCEOF" -> Opcodes.INSTANCEOF;
-                default -> {
-                    throw new IllegalArgumentException("Impossible to reach this point");
-                }
-            };
-
-            return (insnList, __) -> insnList.add(new TypeInsnNode(opcode, mappedType.getInternalName()));
+            return generateTypeInsn(object, mappings, type);
         }
 
         return null;
+    }
+
+    @NotNull private BiConsumer<InsnList, int[]> generateMethodCall(JsonObject object, MappingResolver mappings, Map<String, MethodID> methodIDMap, String type) {
+        JsonElement method = object.get("method");
+        MethodID methodID = null;
+
+        if (method.isJsonPrimitive()) {
+            methodID = methodIDMap.get(method.getAsString());
+        }
+
+        if (methodID == null) {
+            MethodID.CallType callType = switch (type) {
+                case "INVOKEVIRTUAL" -> MethodID.CallType.VIRTUAL;
+                case "INVOKESTATIC" -> MethodID.CallType.STATIC;
+                case "INVOKESPECIAL" -> MethodID.CallType.SPECIAL;
+                case "INVOKEINTERFACE" -> MethodID.CallType.INTERFACE;
+
+                default -> throw new IllegalArgumentException("Invalid call type: " + type); //This will never be reached but the compiler gets angry if it isn't here
+            };
+            methodID = ConfigLoader.loadMethodID(method, mappings, callType);
+        }
+
+        MethodID finalMethodID = methodID;
+        return (insnList, __) -> {
+            insnList.add(finalMethodID.callNode());
+        };
+    }
+
+    @NotNull private BiConsumer<InsnList, int[]> generateConstantInsn(JsonObject object) {
+        String constantType = object.get("constant_type").getAsString();
+
+        JsonElement element = object.get("value");
+
+        Object constant = switch (constantType) {
+            case "string" -> element.getAsString();
+            case "int" -> element.getAsInt();
+            case "float" -> element.getAsFloat();
+            case "long" -> element.getAsLong();
+            case "double" -> element.getAsDouble();
+            default -> throw new IllegalArgumentException("Invalid constant type: " + constantType);
+        };
+
+        InstructionFactory generator = new ConstantFactory(constant);
+
+        return (insnList, __) -> {
+            insnList.add(generator.create());
+        };
+    }
+
+    @NotNull private BiConsumer<InsnList, int[]> generateTypeInsn(JsonObject object, MappingResolver mappings, String type) {
+        JsonElement classNameJson = object.get("class");
+        Type t = Type.getObjectType(classNameJson.getAsString());
+        Type mappedType = ConfigLoader.remapType(t, mappings, false);
+
+        int opcode = switch (type) {
+            case "NEW" -> Opcodes.NEW;
+            case "ANEWARRAY" -> Opcodes.ANEWARRAY;
+            case "CHECKCAST" -> Opcodes.CHECKCAST;
+            case "INSTANCEOF" -> Opcodes.INSTANCEOF;
+            default -> {
+                throw new IllegalArgumentException("Impossible to reach this point");
+            }
+        };
+
+        return (insnList, __) -> insnList.add(new TypeInsnNode(opcode, mappedType.getInternalName()));
     }
 
     private BiConsumer<InsnList, int[]> createInstructionFactoryFromName(String insnName, Map<String, Integer> varNames) {
