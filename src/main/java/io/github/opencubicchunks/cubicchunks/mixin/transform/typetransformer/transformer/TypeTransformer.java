@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tr
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +17,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import com.mojang.datafixers.util.Pair;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.BytecodeFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.ConstantFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.AnalysisResults;
@@ -39,7 +37,6 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMa
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -66,13 +63,16 @@ import org.objectweb.asm.tree.analysis.Frame;
 //TODO: Duplicated classes do not pass class verification
 
 /**
- * This class is responsible for transforming the methods and fields of a single class according to the configuration. See {@link io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader}
+ * This class is responsible for transforming the methods and fields of a single class according to the configuration. See
+ * {@link io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader}
  * <br><br>
  * <b>Definitions:</b>
  * <ul>Emitter: Any instruction that pushes one or more values onto the stack</ul>
  * <ul>Consumer: Any instruction that pops one or more values from the stack</ul>
  */
 public class TypeTransformer {
+    public static final boolean VERBOSE = true;
+
     //Directory where the transformed classes will be written to for debugging purposes
     private static final Path OUT_DIR = Utils.getGameDir().resolve("transformed");
     //Postfix that gets appended to some names to prevent conflicts
@@ -143,7 +143,6 @@ public class TypeTransformer {
      */
     public void cleanUpTransform(){
         //Add methods that need to be added
-
         classNode.methods.addAll(lambdaTransformers);
         classNode.methods.addAll(newMethods);
 
@@ -179,10 +178,6 @@ public class TypeTransformer {
         //Add it to newMethods so that it gets added later and doesn't cause a ConcurrentModificationException if iterating over the methods.
         newMethods.add(newMethod);
         markSynthetic(newMethod, "AUTO-TRANSFORMED", methodNode.name + methodNode.desc);
-
-        if(newMethod == null){
-            throw new RuntimeException("Method " + methodID + " not found in new class");
-        }
 
         if((methodNode.access & Opcodes.ACC_ABSTRACT) != 0){
             //If the method is abstract, we don't need to transform its code, just it's descriptor
@@ -423,7 +418,7 @@ public class TypeTransformer {
      * @param context Transform context
      */
     private void createEmitters(TransformContext context) {
-        //If a value cna come from multiple paths of execution we need to store it in a temporary variable (because it is simpler). (May use more than one variable for transform type
+        // If a value can come from multiple paths of execution we need to store it in a temporary variable (because it is simpler). (May use more than one variable for transform type
         // expansions)
 
         Map<AbstractInsnNode, int[][]> tempVariables = new HashMap<>();
@@ -1575,19 +1570,21 @@ public class TypeTransformer {
 
         cleanUpAnalysis();
 
-        for(AnalysisResults results: analysisResults.values()){
-            results.print(System.out, false);
-        }
-
-        /*System.out.println("\nField Transforms:");
-
-        for(var entry: fieldPseudoValues.entrySet()){
-            if(entry.getValue().getTransformType() == null){
-                System.out.println(entry.getKey() + ": [NO CHANGE]");
-            }else{
-                System.out.println(entry.getKey() + ": " + entry.getValue().getTransformType());
+        if(VERBOSE) {
+            for (AnalysisResults results : analysisResults.values()) {
+                results.print(System.out, false);
             }
-        }*/
+
+            System.out.println("\nField Transforms:");
+
+            for (var entry : fieldPseudoValues.entrySet()) {
+                if (entry.getValue().getTransformType() == null) {
+                    System.out.println(entry.getKey() + ": [NO CHANGE]");
+                } else {
+                    System.out.println(entry.getKey() + ": " + entry.getValue().getTransformType());
+                }
+            }
+        }
 
         System.out.println("Finished analysis of " + classNode.name + " in " + (System.currentTimeMillis() - startTime) + "ms");
     }
@@ -1808,18 +1805,6 @@ public class TypeTransformer {
         }
     }
 
-    public void saveTransformedClass(){
-        Path outputPath = OUT_DIR.resolve(classNode.name + ".class");
-        try {
-            Files.createDirectories(outputPath.getParent());
-            ClassWriter writer = new ClassWriter(0);
-            classNode.accept(writer);
-            Files.write(outputPath, writer.toByteArray());
-        }catch (IOException e){
-            throw new RuntimeException("Failed to save transformed class", e);
-        }
-    }
-
     public void transformMethod(String name, String desc) {
         MethodNode methodNode = classNode.methods.stream().filter(m -> m.name.equals(name) && m.desc.equals(desc)).findAny().orElse(null);
         if(methodNode == null){
@@ -1829,46 +1814,6 @@ public class TypeTransformer {
             transformMethod(methodNode);
         }catch (Exception e){
             throw new RuntimeException("Failed to transform method " + name + desc, e);
-        }
-    }
-
-    public void transformMethod(String name) {
-        List<MethodNode> methods = classNode.methods.stream().filter(m -> m.name.equals(name)).toList();
-        if(methods.isEmpty()){
-            throw new RuntimeException("Method " + name + " not found in class " + classNode.name);
-        }else if(methods.size() > 1){
-            throw new RuntimeException("Multiple methods named " + name + " found in class " + classNode.name);
-        }else{
-            try{
-                transformMethod(methods.get(0));
-            }catch (Exception e){
-                throw new RuntimeException("Failed to transform method " + name + methods.get(0).desc, e);
-            }
-        }
-    }
-
-    public Class<?> loadTransformedClass() {
-        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-        classNode.accept(writer);
-        byte[] bytes = writer.toByteArray();
-
-        String targetName = classNode.name.replace('/', '.');
-
-        ClassLoader classLoader = new ClassLoader(this.getClass().getClassLoader()) {
-            @Override
-            public Class<?> loadClass(String name) throws ClassNotFoundException {
-                if(name.equals(targetName)) {
-                    return defineClass(name, bytes, 0, bytes.length);
-                }else{
-                    return super.loadClass(name);
-                }
-            }
-        };
-
-        try {
-            return classLoader.loadClass(targetName);
-        }catch (ClassNotFoundException e){
-            throw new RuntimeException("Failed to load transformed class", e);
         }
     }
 
@@ -1992,7 +1937,28 @@ public class TypeTransformer {
                 || node.getOpcode() == Opcodes.FRETURN
                 || node.getOpcode() == Opcodes.DRETURN
                 || node.getOpcode() == Opcodes.LRETURN) {
-                instructions.insertBefore(node, insn.generate(null));
+
+                //Since we are inserting code right before the return statement, there are no live variables, so we can use whatever variables we want.
+                //For tidyness reasons we won't replace params
+
+                int base = ASMUtil.isStatic(methodNode) ? 0 : 1;
+                for(Type t: Type.getArgumentTypes(methodNode.desc)){
+                    base += t.getSize();
+                }
+
+                int finalBase = base;
+                Function<Type, Integer> varAllocator = new Function<>() {
+                    int curr = finalBase;
+
+                    @Override
+                    public Integer apply(Type type) {
+                        int slot = curr;
+                        curr += type.getSize();
+                        return slot;
+                    }
+                };
+
+                instructions.insertBefore(node, insn.generate(varAllocator));
             }
         }
     }

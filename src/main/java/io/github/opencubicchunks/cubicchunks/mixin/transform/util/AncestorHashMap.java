@@ -51,7 +51,6 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
     public T get(Object key) {
         if(key instanceof Ancestralizable method){
             if(hierarchy.getNode(method.getAssociatedType()) == null){
-                //System.err.println("Warning: Hierarchy of " + method.getAssociatedType() + " is not known!");
                 return map.get(method);
             }
 
@@ -77,37 +76,6 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
                 .filter(val -> val.equalsWithoutType(key) && get(val).equals(value))
                 .map(val -> hierarchy.getNode(val.getAssociatedType()))
                 .toArray(HierarchyTree.Node[]::new);
-
-        /*if(nodes.length == 0){
-            return map.put(key, value);
-        }else{
-            //Get common ancestor. (This isn't the most efficient method (far from it), but it's the easiest to implement)
-            for (int i = 0; i < nodes.length; i++) {
-                HierarchyTree.Node second = nodes[i];
-
-                int minDepth = Math.min(current.getDepth(), second.getDepth());
-
-                while (current.getDepth() != minDepth) {
-                    current = current.getParent();
-                }
-
-                while (second.getDepth() != minDepth) {
-                    second = second.getParent();
-                }
-
-                while (current != second) {
-                    current = current.getParent();
-                    second = second.getParent();
-                }
-
-                if(current.getDepth() != 0) {
-                    U prev = key.withType(nodes[i].getValue());
-                    T v = map.remove(prev);
-                    map.put(key.withType(current.getValue()), value);
-                    return v;
-                }
-            }
-        }*/
 
         return map.put(key, value);
     }

@@ -184,16 +184,6 @@ public class ASMUtil {
         return classNode.methods.get(0);
     }
 
-    public static int getActualSize(InsnList insns){
-        int size = 1;
-        AbstractInsnNode node = insns.getFirst();
-        while(node != null){
-            size++;
-            node = node.getNext();
-        }
-        return size;
-    }
-
     public static void renameInstructions(ClassNode classNode, String previousName, String newName){
         for(MethodNode method : classNode.methods){
             for(AbstractInsnNode insn : method.instructions.toArray()){

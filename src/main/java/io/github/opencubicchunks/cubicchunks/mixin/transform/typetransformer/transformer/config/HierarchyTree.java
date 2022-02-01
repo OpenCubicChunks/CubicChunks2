@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
 
 public class HierarchyTree {
@@ -141,12 +142,12 @@ public class HierarchyTree {
         }
 
         @Override
-        public Iterator<Type> iterator() {
+        public @NotNull Iterator<Type> iterator() {
             return new AncestorIterator(node);
         }
 
-        private class AncestorIterator implements Iterator<Type> {
-            private Node current = node;
+        private static class AncestorIterator implements Iterator<Type> {
+            private Node current;
             private int interfaceIndex = -1;
 
             public AncestorIterator(Node node) {
@@ -157,13 +158,6 @@ public class HierarchyTree {
             public boolean hasNext() {
                 return current != null;
             }
-
-            /*@Override
-            public Type next() {
-                Type next = current.value;
-                current = current.parent;
-                return next;
-            }*/
 
             @Override
             public Type next(){

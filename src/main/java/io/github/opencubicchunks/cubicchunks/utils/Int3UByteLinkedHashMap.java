@@ -963,6 +963,8 @@ public class Int3UByteLinkedHashMap implements AutoCloseable {
     @ApiStatus.Internal
     @Deprecated
     public void defaultReturnValue(byte b){
-        //This is intentionally left blank
+        if(b != -1){
+            throw new IllegalStateException("Default return value is not -1");
+        }
     }
 }
