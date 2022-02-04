@@ -969,7 +969,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             this.updatePlayerCubePos(player); //This also sends the vanilla packet, as player#ManagedSectionPos is changed in this method.
             if (!cannotGenerateChunks) {
                 this.distanceManager.addPlayer(SectionPos.of(player), player); //Vanilla
-                ((CubicDistanceManager) this.distanceManager).addCubePlayer(CubePos.from(SectionPos.of(player)), player);
             }
         } else {
             SectionPos managedSectionPos = player.getLastSectionPos(); //Vanilla
@@ -977,7 +976,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             this.playerMap.removePlayer(cubePos.asChunkPos().toLong(), player);
             if (!cannotGenerateChunksTracker) {
                 this.distanceManager.removePlayer(managedSectionPos, player); //Vanilla
-                ((CubicDistanceManager) this.distanceManager).removeCubePlayer(cubePos, player);
             }
         }
 
@@ -1045,15 +1043,12 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             // remove player is generation was allowed on last update
             if (!prevNoGenerate) {
                 this.distanceManager.removePlayer(managedSectionPos, player);
-                ((CubicDistanceManager) this.distanceManager).removeCubePlayer(cubePosManaged, player);
-
             }
 
             // update the position if generation is allowed now
             if (!nowNoGenerate) {
                 // we are mixin into this method, so it should work as this:
                 this.distanceManager.addPlayer(newSectionPos, player); //Vanilla
-                ((CubicDistanceManager) this.distanceManager).addCubePlayer(newCubePos, player);
             }
 
             if (!prevNoGenerate && nowNoGenerate) {

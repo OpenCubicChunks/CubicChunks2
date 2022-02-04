@@ -31,6 +31,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.DistanceManager;
@@ -213,18 +214,25 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
         }
     }
 
-    // TODO: vanilla versions of these use section pos, can we just mix into them?
-    @Override
-    public void addCubePlayer(CubePos cubePos, ServerPlayer player) {
-        long cubePosLong = cubePos.asLong();
+    @Inject(method = "addPlayer", at = @At("RETURN"))
+    public void addCubePlayer(SectionPos sectionPos, ServerPlayer player, CallbackInfo ci) {
+        long cubePosLong = CubePos.asLong(
+            Coords.sectionToCube(sectionPos.getX()),
+            Coords.sectionToCube(sectionPos.getY()),
+            Coords.sectionToCube(sectionPos.getZ())
+        );
         this.playersPerCube.computeIfAbsent(cubePosLong, (pos) -> new ObjectOpenHashSet<>()).add(player);
         this.naturalSpawnCubeCounter.updateSourceLevel(cubePosLong, 0, true);
         this.cubicPlayerTicketManager.updateSourceLevel(cubePosLong, 0, true);
     }
 
-    @Override
-    public void removeCubePlayer(CubePos cubePos, ServerPlayer player) {
-        long cubePosLong = cubePos.asLong();
+    @Inject(method = "removePlayer", at = @At("RETURN"))
+    public void removeCubePlayer(SectionPos sectionPos, ServerPlayer player, CallbackInfo ci) {
+        long cubePosLong = CubePos.asLong(
+            Coords.sectionToCube(sectionPos.getX()),
+            Coords.sectionToCube(sectionPos.getY()),
+            Coords.sectionToCube(sectionPos.getZ())
+        );
         ObjectSet<ServerPlayer> playersInCube = this.playersPerCube.get(cubePosLong);
         playersInCube.remove(player);
         if (playersInCube.isEmpty()) {
