@@ -216,6 +216,9 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
 
     @Inject(method = "addPlayer", at = @At("RETURN"))
     public void addCubePlayer(SectionPos sectionPos, ServerPlayer player, CallbackInfo ci) {
+        if (!isCubic) {
+            return;
+        }
         long cubePosLong = CubePos.asLong(
             Coords.sectionToCube(sectionPos.getX()),
             Coords.sectionToCube(sectionPos.getY()),
@@ -228,6 +231,9 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
 
     @Inject(method = "removePlayer", at = @At("RETURN"))
     public void removeCubePlayer(SectionPos sectionPos, ServerPlayer player, CallbackInfo ci) {
+        if (!isCubic) {
+            return;
+        }
         long cubePosLong = CubePos.asLong(
             Coords.sectionToCube(sectionPos.getX()),
             Coords.sectionToCube(sectionPos.getY()),
