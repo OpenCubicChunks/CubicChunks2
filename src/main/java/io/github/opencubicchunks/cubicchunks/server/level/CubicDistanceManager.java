@@ -43,12 +43,6 @@ public interface CubicDistanceManager {
     // updateChunkForced
     void updateCubeForced(CubePos pos, boolean add);
 
-    // addPlayer
-    void addCubePlayer(CubePos cubePos, ServerPlayer player);
-
-    // removePlayer
-    void removeCubePlayer(CubePos cubePosIn, ServerPlayer player);
-
     // getNaturalSpawnChunkCount
     int getNaturalSpawnCubeCount();
 
