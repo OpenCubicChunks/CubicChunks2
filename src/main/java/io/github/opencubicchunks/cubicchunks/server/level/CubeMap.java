@@ -2,6 +2,7 @@ package io.github.opencubicchunks.cubicchunks.server.level;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 
@@ -32,6 +33,15 @@ public interface CubeMap {
     // implemented by ASM in MainTransformer
     @Nullable
     ChunkHolder updateCubeScheduling(long cubePosIn, int newLevel, @Nullable ChunkHolder holder, int oldLevel);
+
+    // implemented by ASM
+    void processCubeUnloads(BooleanSupplier shouldKeepTicking);
+
+    // implemented by ASM
+    void saveAllCubes(boolean flush);
+
+    // implemented by ASM
+    boolean cubeSave(CubeAccess cube);
 
     void setServerChunkCache(ServerChunkCache cache);
 
