@@ -119,13 +119,14 @@ public class SurfaceTrackerSection {
      * Updates any positions that are dirty (used for unloading section)
      */
     public void updateDirtyHeights() {
-        if(!isAnyDirty())
+        if (!isAnyDirty()) {
             return;
+        }
 
         for (int z = 0; z < WIDTH_BLOCKS; z++) {
             for (int x = 0; x < WIDTH_BLOCKS; x++) {
                 int idx = index(x, z);
-                if(isDirty(idx)) {
+                if (isDirty(idx)) {
                     updateHeight(x, z, idx);
                 }
             }
@@ -212,7 +213,7 @@ public class SurfaceTrackerSection {
             return;
         }
 
-        if(heightmapType == -1) { //TODO: need to add lighting predicate (optimisation)
+        if (heightmapType == -1) { //TODO: need to add lighting predicate (optimisation)
             markDirty(x, z);
             return;
         }
@@ -247,7 +248,7 @@ public class SurfaceTrackerSection {
         if (this.scale == 0) {
             //Don't need to mark this cube-scale section as dirty, as it should have been updated on unload
             newNode.sectionLoaded(this, localSectionX, localSectionZ);
-            if(this.parent != null) {
+            if (this.parent != null) {
                 this.onLoad(localSectionX, localSectionZ);
             }
             return;
@@ -262,13 +263,13 @@ public class SurfaceTrackerSection {
             int newScale = scale - 1;
             //TODO: load from save here, instead of always creating
             SurfaceTrackerSection newOrLoadedSection = createNewChild(newScale, newScaledY, newNode);
-            if(newOrLoadedSection != null) { //always load all direct child sections
+            if (newOrLoadedSection != null) { //always load all direct child sections
                 newOrLoadedSection.parent = this;
-                if(newOrLoadedSection.scale == 0) {
+                if (newOrLoadedSection.scale == 0) {
                     newOrLoadedSection.cubeOrNodes = newNode;
                 }
             } else {
-                if(i == idx) { //only create new section if section was directly required by cube
+                if (i == idx) { //only create new section if section was directly required by cube
                     newOrLoadedSection = createNewChild(newScale, newScaledY, newNode);
                     Arrays.fill(newOrLoadedSection.dirtyPositions, -1); //new section created, mark as entirely dirty!
                 }
@@ -283,8 +284,8 @@ public class SurfaceTrackerSection {
      * Recursively marks any parent positions as dirty if they are below this node's positions
      */
     private void onLoad(int localSectionX, int localSectionZ) {
-        for (int z = SectionPos.sectionToBlockCoord(localSectionZ), zMax = z+WIDTH_BLOCKS; z < zMax; z++) {
-            for (int x = SectionPos.sectionToBlockCoord(localSectionX), xMax = x+WIDTH_BLOCKS; x < xMax; x++) {
+        for (int z = SectionPos.sectionToBlockCoord(localSectionZ), zMax = z + WIDTH_BLOCKS; z < zMax; z++) {
+            for (int x = SectionPos.sectionToBlockCoord(localSectionX), xMax = x + WIDTH_BLOCKS; x < xMax; x++) {
                 this.parent.markTreeDirtyIfRequired(x, z, this.getHeight(x, z));
             }
         }

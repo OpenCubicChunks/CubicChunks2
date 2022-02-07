@@ -245,17 +245,17 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
     @Override public void sectionLoaded(SurfaceTrackerSection surfaceTrackerSection, int localSectionX, int localSectionZ) {
         int idx = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
 
-        if(surfaceTrackerSection.getRawType() == -1) { //light
+        if (surfaceTrackerSection.getRawType() == -1) { //light
             this.lightHeightmaps[idx] = (LightSurfaceTrackerSection) surfaceTrackerSection;
         } else { // normal heightmap
             this.heightmaps.computeIfAbsent(surfaceTrackerSection.getType(),
-                type -> new SurfaceTrackerSection[DIAMETER_IN_SECTIONS*DIAMETER_IN_SECTIONS]
+                type -> new SurfaceTrackerSection[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS]
             )[idx] = surfaceTrackerSection;
         }
     }
 
     @Override public int getHighest(int x, int z, byte heightmapType) {
-        if(heightmapType == -1) { //light
+        if (heightmapType == -1) { //light
             return getHighestLight(x, z);
         } else { //normal heightmaps
             int maxY = Integer.MIN_VALUE;

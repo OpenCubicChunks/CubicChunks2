@@ -193,6 +193,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     @Shadow @Final private PoiManager poiManager;
 
+    @Shadow @Final private Long2ObjectLinkedOpenHashMap<ChunkHolder> updatingChunkMap;
+
     @Shadow private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleChunkMap;
 
     @Shadow protected abstract boolean skipPlayer(ServerPlayer player);
@@ -211,8 +213,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Shadow private static void postLoadProtoChunk(ServerLevel serverLevel, List<CompoundTag> list) {
         throw new Error("Mixin didn't apply");
     }
-
-    @Shadow @Final private Long2ObjectLinkedOpenHashMap<ChunkHolder> updatingChunkMap;
 
     @SuppressWarnings("UnresolvedMixinReference") @Redirect(method = "<init>", at = @At(value = "NEW", target = "net/minecraft/server/level/ChunkMap$DistanceManager"))
     private ChunkMap.DistanceManager setIsCubic(ChunkMap chunkMap, Executor executor, Executor executor2, ServerLevel levelArg) {
