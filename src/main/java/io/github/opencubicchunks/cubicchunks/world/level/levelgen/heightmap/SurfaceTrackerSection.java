@@ -1,15 +1,14 @@
 package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap;
 
-import java.util.Arrays;
-import java.util.function.Predicate;
+import java.util.function.IntPredicate;
 
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
+import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.util.BitStorage;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 public class SurfaceTrackerSection {
@@ -24,8 +23,8 @@ public class SurfaceTrackerSection {
 
     // Use width of 16 to match columns.
     public static final int WIDTH_BLOCKS = 16;
-
-    private static final Heightmap.Types[] HEIGHTMAP_TYPES = Heightmap.Types.values();
+    public static final int SCALE_0_NODE_HEIGHT = CubeAccess.DIAMETER_IN_BLOCKS;
+    public static final int SCALE_0_NODE_BITS = MathUtil.log2(CubeAccess.DIAMETER_IN_BLOCKS);
 
     /** Number of bits needed to represent height (excluding null) at scale zero (i.e. log2(scale0 height)) */
     private static final int BASE_SIZE_BITS = CubeAccess.SIZE_BITS;
@@ -39,51 +38,63 @@ public class SurfaceTrackerSection {
      */
     protected final int scaledY;
     protected final byte scale;
-    private final byte heightmapType;
+    protected final byte heightmapType;
+
+    protected boolean required;
 
     public SurfaceTrackerSection(Heightmap.Types types) {
-        this(MAX_SCALE, 0, null, types);
+        this(MAX_SCALE, 0, null, (byte) types.ordinal());
     }
 
-    public SurfaceTrackerSection(int scale, int scaledY, SurfaceTrackerSection parent, Heightmap.Types types) {
-        this(scale, scaledY, parent, null, types);
+    public SurfaceTrackerSection(int scale, int scaledY, SurfaceTrackerSection parent, byte heightmapType) {
+        this(scale, scaledY, parent, null, heightmapType);
     }
 
-    public SurfaceTrackerSection(int scale, int scaledY, SurfaceTrackerSection parent, CubeAccess cube, Heightmap.Types types) {
-//      super((ChunkAccess) cube, types);
+    public SurfaceTrackerSection(int scale, int scaledY, SurfaceTrackerSection parent, HeightmapNode node, byte heightmapType) {
+//      super((ChunkAccess) node, types);
         // +1 in bit size to make room for null values
         this.heights = new BitStorage(BASE_SIZE_BITS + 1 + scale * NODE_COUNT_BITS, WIDTH_BLOCKS * WIDTH_BLOCKS);
         this.dirtyPositions = new long[WIDTH_BLOCKS * WIDTH_BLOCKS / Long.SIZE];
         this.parent = parent;
-        this.cubeOrNodes = scale == 0 ? cube : new SurfaceTrackerSection[NODE_COUNT];
+        this.cubeOrNodes = scale == 0 ? node : new SurfaceTrackerSection[scale == MAX_SCALE ? 2 : NODE_COUNT];
         this.scaledY = scaledY;
         this.scale = (byte) scale;
-        this.heightmapType = (byte) types.ordinal();
+        this.heightmapType = heightmapType;
+    }
+
+    /**
+     * Implemented here for derived classes to override, eg: {@link LightSurfaceTrackerSection#createNewChild(int, int, HeightmapNode)}
+     */
+    protected SurfaceTrackerSection createNewChild(int newScale, int newScaledY, HeightmapNode cube) {
+        if (newScale == 0) {
+            return new SurfaceTrackerSection(newScale, newScaledY, this, cube, this.heightmapType);
+        } else {
+            return new SurfaceTrackerSection(newScale, newScaledY, this, this.heightmapType);
+        }
     }
 
     /**
      * Get the height for a given position. Recomputes the height if the column is marked dirty in this section.
-     * x and z are global coordinates.
+     * x and z are <b>GLOBAL</b> coordinates (cube local is also fine, but section/chunk local is WRONG).
      */
     public int getHeight(int x, int z) {
         int idx = index(x, z);
-        if (!isDirty(idx)) {
-            int relativeY = heights.get(idx);
-            return relToAbsY(relativeY, scaledY, scale);
+        if (isDirty(idx)) {
+            return updateHeight(x, z, idx);
         }
+        int relativeY = heights.get(idx);
+        return relToAbsY(relativeY, scaledY, scale);
+    }
 
+    /**
+     * Updates height for given position, and returns the new (global) height
+     */
+    protected int updateHeight(int x, int z, int idx) {
         synchronized(this) {
             int maxY = Integer.MIN_VALUE;
             if (scale == 0) {
-                CubeAccess cube = (CubeAccess) cubeOrNodes;
-                Predicate<BlockState> isOpaque = HEIGHTMAP_TYPES[this.heightmapType].isOpaque();
-                for (int dy = CubeAccess.DIAMETER_IN_BLOCKS - 1; dy >= 0; dy--) {
-                    if (isOpaque.test(cube.getBlockState(x, dy, z))) {
-                        int minY = scaledY * CubeAccess.DIAMETER_IN_BLOCKS;
-                        maxY = minY + dy;
-                        break;
-                    }
-                }
+                HeightmapNode node = (HeightmapNode) cubeOrNodes;
+                maxY = node.getHighest(x, z, this.heightmapType);
             } else {
                 SurfaceTrackerSection[] nodes = (SurfaceTrackerSection[]) cubeOrNodes;
                 for (int i = nodes.length - 1; i >= 0; i--) {
@@ -104,6 +115,51 @@ public class SurfaceTrackerSection {
         }
     }
 
+    /**
+     * Updates any positions that are dirty (used for unloading section)
+     */
+    public void updateDirtyHeights() {
+        if (!isAnyDirty()) {
+            return;
+        }
+
+        for (int z = 0; z < WIDTH_BLOCKS; z++) {
+            for (int x = 0; x < WIDTH_BLOCKS; x++) {
+                int idx = index(x, z);
+                if (isDirty(idx)) {
+                    updateHeight(x, z, idx);
+                }
+            }
+        }
+    }
+
+    public void markAllDirtyAndTreeIfRequired() {
+        assert dirtyPositions.length == 4;
+
+        dirtyPositions[0] = -1;
+        dirtyPositions[1] = -1;
+        dirtyPositions[2] = -1;
+        dirtyPositions[3] = -1;
+
+        for (int z = 0; z < WIDTH_BLOCKS; z++) {
+            for (int x = 0; x < WIDTH_BLOCKS; x++) {
+                // here we mark the tree dirty if their positions are below the top block of this cube
+                this.markTreeDirtyIfRequired(x, z, relToAbsY(SCALE_0_NODE_HEIGHT << this.scale, this.scaledY, this.scale) + 1);
+            }
+        }
+    }
+
+    /** Returns if any position in the SurfaceTrackerSection is dirty*/
+    public boolean isAnyDirty() {
+        assert dirtyPositions.length == 4;
+
+        long l = 0;
+        l |= dirtyPositions[0];
+        l |= dirtyPositions[1];
+        l |= dirtyPositions[2];
+        l |= dirtyPositions[3];
+        return l != 0;
+    }
 
     /** Returns if this SurfaceTrackerSection is dirty at the specified index */
     protected boolean isDirty(int idx) {
@@ -129,7 +185,7 @@ public class SurfaceTrackerSection {
     }
 
     /** Sets this and parents dirty if new height > existing height */
-    private void markTreeDirtyIfRequired(int x, int z, int newHeight) {
+    protected void markTreeDirtyIfRequired(int x, int z, int newHeight) {
         if (newHeight > relToAbsY(heights.get(index(x, z)), scaledY, scale) || isDirty(index(x, z))) {
             setDirty(index(x, z));
             if (this.parent != null) {
@@ -142,8 +198,9 @@ public class SurfaceTrackerSection {
      * Updates the internal heightmap for this SurfaceTracker section, and any parents who are also affected by it
      *
      * Should only be called on scale 0 heightmaps
+     * @param isOpaquePredicate takes heightmap type
      */
-    public void onSetBlock(int x, int y, int z, BlockState state) {
+    public void onSetBlock(int x, int y, int z, IntPredicate isOpaquePredicate) {
         int index = index(x, z);
         if (isDirty(index)) {
             return;
@@ -156,13 +213,17 @@ public class SurfaceTrackerSection {
             return;
         }
 
-        boolean opaque = HEIGHTMAP_TYPES[heightmapType].isOpaque().test(state);
+        if (heightmapType == -1) { //TODO: need to add lighting predicate (optimisation)
+            markDirty(x, z);
+            return;
+        }
+        boolean opaque = isOpaquePredicate.test(this.heightmapType);
         if (globalY > height) {
             if (!opaque) {
                 return;
             }
 
-            if (parent != null) {
+            if (parent != null) { //parent can only be null in a ProtoCube, or a MAX_SCALE section
                 //only mark parents dirty if the Y is above their current height
                 this.parent.markTreeDirtyIfRequired(x, z, y);
             }
@@ -175,61 +236,42 @@ public class SurfaceTrackerSection {
         }
     }
 
-    public void unloadCube(CubeAccess cube) {
-        if (this.cubeOrNodes == null) {
-            throw new IllegalStateException("Attempting to unload cube " + cube.getCubePos() + " from an unloaded surface tracker section");
-        }
-        // TODO: handle unloading with saving
-        if (scale == 0) {
-            this.cubeOrNodes = null;
-        } else {
-            boolean canUnload = true;
-            for (SurfaceTrackerSection section : ((SurfaceTrackerSection[]) this.cubeOrNodes)) {
-                if (section != null) {
-                    canUnload = false;
-                    break;
-                }
-            }
-            if (canUnload && parent != null) {
-                this.cubeOrNodes = null;
-            }
-        }
-        if (this.parent == null) {
-            return;
-        }
-        if (this.cubeOrNodes == null) {
-            int idx = indexOfRawHeightNode(cube.getCubePos().getY(), parent.scale, parent.scaledY);
-            ((SurfaceTrackerSection[]) this.parent.cubeOrNodes)[idx] = null;
-        }
-        this.parent.unloadCube(cube);
-        if (this.cubeOrNodes == null) {
-            this.parent = null;
-        }
-    }
-
-    public void loadCube(int sectionX, int sectionZ, CubeAccess newCube, boolean markDirty) {
-        if (this.cubeOrNodes == null) {
-            throw new IllegalStateException("Attempting to load cube " + newCube.getCubePos() + " into an unloaded surface tracker section");
-        }
-        if (markDirty) {
-            Arrays.fill(dirtyPositions, -1);
+    /**
+     * @param localSectionX
+     * @param localSectionZ
+     * @param newNode
+     */
+    public synchronized void loadCube(int localSectionX, int localSectionZ, HeightmapNode newNode) {
+        if (this.scale != 0 && this.cubeOrNodes == null) {
+            throw new IllegalStateException("Attempting to load node " + newNode + " into an unloaded surface tracker section");
         }
         if (this.scale == 0) {
-            newCube.loadHeightmapSection(this, sectionX, sectionZ);
+            //Don't need to mark this cube-scale section as dirty, as it should have been updated on unload
+            newNode.sectionLoaded(this, localSectionX, localSectionZ);
+            if (this.parent != null) {
+                this.markAllDirtyAndTreeIfRequired();
+            }
             return;
         }
-        int idx = indexOfRawHeightNode(newCube.getCubePos().getY(), scale, scaledY);
+        int idx = indexOfRawHeightNode(newNode.getNodeY(), scale, scaledY);
         SurfaceTrackerSection[] nodes = (SurfaceTrackerSection[]) cubeOrNodes;
         for (int i = 0; i < nodes.length; i++) {
             if (nodes[i] != null) {
                 continue;
             }
             int newScaledY = indexToScaledY(i, scale, scaledY);
-            SurfaceTrackerSection newMap = loadNode(newScaledY, scale - 1, newCube, i == idx);
-            nodes[i] = newMap;
+            int newScale = scale - 1;
+            //TODO: load from save here, instead of always creating
+            SurfaceTrackerSection newOrLoadedSection;
+            if (i == idx) {
+                newOrLoadedSection = createNewChild(newScale, newScaledY, newNode);
+            } else {
+                newOrLoadedSection = null;
+            }
+            nodes[i] = newOrLoadedSection;
         }
         assert nodes[idx] != null;
-        nodes[idx].loadCube(sectionX, sectionZ, newCube, markDirty);
+        nodes[idx].loadCube(localSectionX, localSectionZ, newNode);
     }
 
     @Nullable
@@ -259,24 +301,16 @@ public class SurfaceTrackerSection {
         return node.getCubeNode(y);
     }
 
-    public CubeAccess getCube() {
-        return (CubeAccess) cubeOrNodes;
+    public HeightmapNode getNode() {
+        return (HeightmapNode) cubeOrNodes;
     }
 
     public Heightmap.Types getType() {
         return Heightmap.Types.values()[heightmapType];
     }
 
-    @Nullable
-    protected SurfaceTrackerSection loadNode(int newScaledY, int sectionScale, CubeAccess newCube, boolean create) {
-        // TODO: loading from disk
-        if (!create) {
-            return null;
-        }
-        if (sectionScale == 0) {
-            return new SurfaceTrackerSection(sectionScale, newScaledY, this, newCube, HEIGHTMAP_TYPES[this.heightmapType]);
-        }
-        return new SurfaceTrackerSection(sectionScale, newScaledY, this, HEIGHTMAP_TYPES[this.heightmapType]);
+    public byte getRawType() {
+        return heightmapType;
     }
 
     /** Get position x/z index within a column, from global/local pos */
@@ -322,7 +356,7 @@ public class SurfaceTrackerSection {
         if (relativeY == 0) {
             return Integer.MIN_VALUE;
         }
-        return relativeY - 1 + scaledYBottomY(scaledY, scale) * CubeAccess.DIAMETER_IN_BLOCKS;
+        return relativeY - 1 + scaledYBottomY(scaledY, scale) * SCALE_0_NODE_HEIGHT;
     }
 
     /** Get the relative y coordinate for a given absoluteY, scaledY and scale */
@@ -331,7 +365,7 @@ public class SurfaceTrackerSection {
         if (absoluteY == Integer.MIN_VALUE) {
             return 0;
         }
-        return absoluteY + 1 - scaledYBottomY(scaledY, scale) * CubeAccess.DIAMETER_IN_BLOCKS;
+        return absoluteY + 1 - scaledYBottomY(scaledY, scale) * SCALE_0_NODE_HEIGHT;
     }
 
     public void writeData(int mainX, int mainZ, BitStorage data, int minValue) {
