@@ -43,7 +43,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(SectionStorage.class) //TODO: Consider vanilla dimensions
+@Mixin(SectionStorage.class)
 public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
 
     @Shadow @Final private static Logger LOGGER;
