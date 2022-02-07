@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.github.opencubicchunks.cubicchunks.config.CommonConfig;
 import io.github.opencubicchunks.cubicchunks.config.EarlyConfig;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.StripedBiomeSource;
 import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
@@ -46,7 +47,7 @@ public class CubicChunks implements ModInitializer {
         set.put("minecraft:the_end", CubicLevelHeightAccessor.WorldStyle.CHUNK);
     });
 
-    private static final Config CONFIG = new Config();
+    private static final CommonConfig CONFIG = CommonConfig.getConfig();
 
     public CubicChunks() {
         if (!(CubeMap.class.isAssignableFrom(ChunkMap.class))) {
@@ -68,7 +69,7 @@ public class CubicChunks implements ModInitializer {
         CubicFeatures.init();
     }
 
-    public static Config config() {
+    public static CommonConfig config() {
         return CONFIG;
     }
 
@@ -78,22 +79,5 @@ public class CubicChunks implements ModInitializer {
 
         Registry.register(Registry.BIOME_SOURCE, new ResourceLocation(MODID, "stripes"), StripedBiomeSource.CODEC);
 //        Registry.register(Registry.CHUNK_GENERATOR, new ResourceLocation(MODID, "generator"), CCNoiseBasedChunkGenerator.CODEC);
-    }
-
-    //TODO: Implement a file for this.
-    public static class Config {
-        public ClientConfig client = new ClientConfig();
-        public CommonConfig common = new CommonConfig();
-
-        public void markDirty() {
-        }
-
-        public static class ClientConfig {
-            public int verticalViewDistance = 8;
-        }
-
-        public static class CommonConfig {
-            public boolean generateNewWorldsAsCC = true;
-        }
     }
 }

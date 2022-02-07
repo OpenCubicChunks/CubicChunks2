@@ -10,11 +10,6 @@ import javax.annotation.Nullable;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.Config;
-import com.electronwill.nightconfig.core.file.FileNotFoundAction;
-import com.electronwill.nightconfig.core.io.ParsingMode;
-import com.electronwill.nightconfig.core.io.WritingMode;
-import com.electronwill.nightconfig.toml.TomlParser;
-import com.electronwill.nightconfig.toml.TomlWriter;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LevelStorageAccessAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
@@ -22,7 +17,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelStorageSource;
 
-public class ServerConfig {
+public class ServerConfig extends BaseConfig {
     private static final String FILE_PATH = "serverconfig/cubicchunks.toml";
 
     private static final String KEY_WORLDSTYLES = "worldStyles";
@@ -89,41 +84,6 @@ public class ServerConfig {
         write(configPath, createDefaultConfig());
     }
 
-    private static void write(File configPath, CommentedConfig config) {
-        var writer = new TomlWriter();
-        writer.write(config, configPath, WritingMode.REPLACE);
-    }
-
-    // TODO might want this in a util class somewhere, as it might be used for other configs as well
-    //      possibly other methods as well
-    private static void updateConfig(Config target, Config newValues) {
-        for (Map.Entry<String, Object> entry : target.valueMap().entrySet()) {
-            var key = entry.getKey();
-            var value = entry.getValue();
-            var newValue = newValues.get(key);
-            if (value instanceof Config) {
-                if (newValue instanceof Config) {
-                    // Recursively update sub-configs
-                    updateConfig(((Config) value), ((Config) newValue));
-                }
-            } else {
-                // Note that this doesn't handle values having incorrect types - TODO should it?
-                if (newValue != null) {
-                    entry.setValue(newValue);
-                }
-            }
-        }
-    }
-
-    private static void read(File configPath, CommentedConfig config) {
-        var parser = new TomlParser();
-        // We parse the config separately and then merge it, so that new keys get added and unnecessary keys are discarded
-        // ParsingMode.MERGE doesn't support nested configs
-        var parsedConfig = CommentedConfig.inMemory();
-        parser.parse(configPath, parsedConfig, ParsingMode.REPLACE, FileNotFoundAction.THROW_ERROR);
-        updateConfig(config, parsedConfig);
-    }
-
     @Nullable public static ServerConfig getConfig(LevelStorageSource.LevelStorageAccess levelStorageAccess) {
         File configPath = getConfigPath(((LevelStorageAccessAccess) levelStorageAccess).getLevelPath());
         if (configPath.exists()) {
@@ -138,7 +98,7 @@ public class ServerConfig {
     }
 
     public static void generateConfigIfNecessary(LevelStorageSource.LevelStorageAccess levelStorageAccess) {
-        if (CubicChunks.config().common.generateNewWorldsAsCC) {
+        if (CubicChunks.config().shouldGenerateNewWorldsAsCC()) {
             CubicChunks.LOGGER.info("New worlds are configured to generate as CC; creating CC config file");
             var rootFolderPath = ((LevelStorageAccessAccess) levelStorageAccess).getLevelPath();
             ServerConfig.createConfig(rootFolderPath);

@@ -19,9 +19,9 @@ public class MixinVideoSettingsScreen {
 
     private static final ProgressOption VERTICAL_RENDER_DISTANCE = new ProgressOption("options.verticalRenderDistance", 2.0D,
         (Minecraft.getInstance().is64Bit() && Runtime.getRuntime().maxMemory() >= 1000000000L) ? 32.0 : 16.0D, 1.0F, (gameOptions) -> {
-        return (double) CubicChunks.config().client.verticalViewDistance;
+        return (double) CubicChunks.config().getVerticalViewDistance();
     }, (gameOptions, viewDistance) -> {
-        CubicChunks.config().client.verticalViewDistance = viewDistance.intValue();
+        CubicChunks.config().setVerticalViewDistance(viewDistance.intValue());
         CubicChunks.config().markDirty();
         Minecraft.getInstance().levelRenderer.needsUpdate();
     }, (gameOptions, option) -> {
