@@ -38,12 +38,14 @@ import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Interpreter;
 
+/**
+ * An interpreter which infers transforms that should be applied to values
+ */
 public class TransformTrackingInterpreter extends Interpreter<TransformTrackingValue> {
     private final Config config;
     private final Map<Integer, TransformType> parameterOverrides = new HashMap<>();
     private final Set<TransformTrackingValue> returnValues = new HashSet<>();
 
-    private Type transforming;
     private Map<MethodID, AnalysisResults> resultLookup = new HashMap<>();
     private Map<MethodID, List<FutureMethodBinding>> futureMethodBindings;
     private ClassNode currentClass;
@@ -60,16 +62,10 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     public void reset() {
-        parameterOverrides.clear();
-        transforming = null;
-    }
-
-    public void setTransforming(Type transforming) {
-        this.transforming = transforming;
     }
 
     @Override
-    public TransformTrackingValue newValue(Type subType) {
+    public @Nullable TransformTrackingValue newValue(@Nullable Type subType) {
         if (subType == null) {
             return new TransformTrackingValue(null, fieldBindings);
         }
@@ -79,7 +75,8 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     @Override
-    public TransformTrackingValue newParameterValue(boolean isInstanceMethod, int local, Type subType) {
+    public @Nullable TransformTrackingValue newParameterValue(boolean isInstanceMethod, int local, Type subType) {
+        //Use parameter overrides to try to get the types
         if (subType == Type.VOID_TYPE) return null;
         TransformTrackingValue value = new TransformTrackingValue(subType, local, fieldBindings);
         if (parameterOverrides.containsKey(local)) {
@@ -142,7 +139,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     @Override
-    public TransformTrackingValue unaryOperation(AbstractInsnNode insn, TransformTrackingValue value) throws AnalyzerException {
+    public @Nullable TransformTrackingValue unaryOperation(AbstractInsnNode insn, TransformTrackingValue value) throws AnalyzerException {
         consumeBy(value, insn);
 
         switch (insn.getOpcode()) {
@@ -154,6 +151,8 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             case I2B:
             case I2C:
             case I2S:
+            case INSTANCEOF:
+            case ARRAYLENGTH:
                 return new TransformTrackingValue(Type.INT_TYPE, insn, fieldBindings);
             case FNEG:
             case I2F:
@@ -186,6 +185,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             case PUTSTATIC:
                 return null;
             case GETFIELD: {
+                //Add field source and set the value to have the same transform as the field
                 FieldInsnNode fieldInsnNode = (FieldInsnNode) insn;
                 TransformTrackingValue fieldValue = new TransformTrackingValue(Type.getType(((FieldInsnNode) insn).desc), insn, fieldBindings);
                 FieldSource fieldSource = new FieldSource(fieldInsnNode.owner, fieldInsnNode.name, fieldInsnNode.desc, 0);
@@ -225,14 +225,10 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
                 throw new AnalyzerException(insn, "Invalid array subType");
             case ANEWARRAY:
                 return new TransformTrackingValue(Type.getType("[" + Type.getObjectType(((TypeInsnNode) insn).desc)), insn, fieldBindings);
-            case ARRAYLENGTH:
-                return new TransformTrackingValue(Type.INT_TYPE, insn, fieldBindings);
             case ATHROW:
                 return null;
             case CHECKCAST:
                 return new TransformTrackingValue(Type.getObjectType(((TypeInsnNode) insn).desc), insn, fieldBindings);
-            case INSTANCEOF:
-                return new TransformTrackingValue(Type.INT_TYPE, insn, fieldBindings);
             case MONITORENTER:
             case MONITOREXIT:
             case IFNULL:
@@ -244,7 +240,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     @Override
-    public TransformTrackingValue binaryOperation(AbstractInsnNode insn, TransformTrackingValue value1, TransformTrackingValue value2) throws AnalyzerException {
+    public @Nullable TransformTrackingValue binaryOperation(AbstractInsnNode insn, TransformTrackingValue value1, TransformTrackingValue value2) throws AnalyzerException {
         consumeBy(value1, insn);
         consumeBy(value2, insn);
 
@@ -337,8 +333,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     @Override
-    public TransformTrackingValue ternaryOperation(AbstractInsnNode insn, TransformTrackingValue value1, TransformTrackingValue value2, TransformTrackingValue value3)
-        throws AnalyzerException {
+    public @Nullable TransformTrackingValue ternaryOperation(AbstractInsnNode insn, TransformTrackingValue value1, TransformTrackingValue value2, TransformTrackingValue value3) {
         consumeBy(value1, insn);
         consumeBy(value2, insn);
         consumeBy(value3, insn);
@@ -346,7 +341,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     @Override
-    public TransformTrackingValue naryOperation(AbstractInsnNode insn, List<? extends TransformTrackingValue> values) throws AnalyzerException {
+    public @Nullable TransformTrackingValue naryOperation(AbstractInsnNode insn, List<? extends TransformTrackingValue> values) throws AnalyzerException {
         for (TransformTrackingValue value : values) {
             consumeBy(value, insn);
         }
@@ -362,6 +357,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     @Nullable private TransformTrackingValue methodCallOperation(AbstractInsnNode insn, List<? extends TransformTrackingValue> values, int opcode) {
+        //Create bindings to the method parameters
         MethodInsnNode methodCall = (MethodInsnNode) insn;
         Type subType = Type.getReturnType(methodCall.desc);
 
@@ -410,7 +406,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     @Nullable private TransformTrackingValue invokeDynamicOperation(AbstractInsnNode insn, List<? extends TransformTrackingValue> values) {
-        //TODO: Handle invokedynamic and subType inference for call sites
+        //Bind the lambda captured parameters and lambda types
         InvokeDynamicInsnNode node = (InvokeDynamicInsnNode) insn;
         Type subType = Type.getReturnType(node.desc);
 
@@ -445,6 +441,8 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         return ret;
     }
 
+    //Sets the values to have the same types as the method parameters. If the method hasn't
+    //been analyzed, it will bind them later.
     private void bindValues(MethodID methodID, int offset, TransformTrackingValue... values) {
         if (resultLookup.containsKey(methodID)) {
             bindValuesToMethod(resultLookup.get(methodID), offset, values);
@@ -471,6 +469,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             if (expected.transformedTypes().size() == 1) {
                 returnValues.add(value);
             } else {
+                //A method cannot return multiple values.
                 throw new AnalyzerException(insn, "Return subType is not single");
             }
         }
@@ -487,8 +486,8 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         return value1.merge(value2);
     }
 
+    //Mark the value as being consumed by the instructions
     private void consumeBy(TransformTrackingValue value, AbstractInsnNode consumer) {
-        assert value != null;
         value.consumeBy(consumer);
     }
 
@@ -511,6 +510,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         Type[] argumentTypes = Type.getArgumentTypes(methodResults.methodNode().desc);
         Type[] allTypes;
         if (!ASMUtil.isStatic(methodResults.methodNode())) {
+            //Remove the first element because it represents 'this'
             allTypes = new Type[argumentTypes.length + 1];
             allTypes[0] = Type.getObjectType("java/lang/Object"); //The actual subType doesn't matter
             System.arraycopy(argumentTypes, 0, allTypes, 1, argumentTypes.length);

@@ -70,7 +70,7 @@ public class ConfigLoader {
             String name = obj.get("name").getAsString();
 
             String targetName = obj.get("target").getAsString();
-            Type target = remapType(Type.getObjectType(targetName), map, false);
+            Type target = remapType(Type.getObjectType(targetName), map);
 
             JsonArray methods = obj.get("methods").getAsJsonArray();
             List<InvokerInfo.InvokerMethodInfo> methodInfos = new ArrayList<>();
@@ -112,7 +112,7 @@ public class ConfigLoader {
         Map<Type, ClassTransformInfo> classInfo = new HashMap<>();
         for (JsonElement element : arr) {
             JsonObject obj = element.getAsJsonObject();
-            Type type = remapType(Type.getObjectType(obj.get("class").getAsString()), map, false);
+            Type type = remapType(Type.getObjectType(obj.get("class").getAsString()), map);
 
             JsonArray typeHintsArr = obj.get("type_hints").getAsJsonArray();
             Map<MethodID, Map<Integer, TransformType>> typeHints = new AncestorHashMap<>(hierarchy);
@@ -142,8 +142,8 @@ public class ConfigLoader {
 
                     Map<String, String> replacements = new HashMap<>();
                     for (Map.Entry<String, JsonElement> replacement : constructorReplacerObj.get("type_replacements").getAsJsonObject().entrySet()) {
-                        Type type1 = remapType(Type.getObjectType(replacement.getKey()), map, false);
-                        Type type2 = remapType(Type.getObjectType(replacement.getValue().getAsString()), map, false);
+                        Type type1 = remapType(Type.getObjectType(replacement.getKey()), map);
+                        Type type2 = remapType(Type.getObjectType(replacement.getValue().getAsString()), map);
 
                         replacements.put(type1.getInternalName(), type2.getInternalName());
                     }
@@ -164,17 +164,17 @@ public class ConfigLoader {
             if (entry.getKey().equals("extra_interfaces")) {
                 JsonArray arr = entry.getValue().getAsJsonArray();
                 for (JsonElement element : arr) {
-                    Type type = remapType(Type.getObjectType(element.getAsString()), map, false);
+                    Type type = remapType(Type.getObjectType(element.getAsString()), map);
                     hierarchy.addInterface(type);
                 }
             } else if (entry.getKey().equals("__interfaces")) {
                 JsonArray arr = entry.getValue().getAsJsonArray();
                 for (JsonElement element : arr) {
-                    Type type = remapType(Type.getObjectType(element.getAsString()), map, false);
+                    Type type = remapType(Type.getObjectType(element.getAsString()), map);
                     hierarchy.addInterface(type, parent);
                 }
             } else {
-                Type type = remapType(Type.getObjectType(entry.getKey()), map, false);
+                Type type = remapType(Type.getObjectType(entry.getKey()), map);
                 hierarchy.addNode(type, parent);
                 loadHierarchy(hierarchy, entry.getValue().getAsJsonObject(), map, type);
             }
@@ -419,11 +419,11 @@ public class ConfigLoader {
                 throw new IllegalArgumentException("Transform type id cannot contain spaces");
             }
 
-            Type original = remapType(Type.getType(obj.get("original").getAsString()), map, false);
+            Type original = remapType(Type.getType(obj.get("original").getAsString()), map);
             JsonArray transformedTypesArray = obj.get("transformed").getAsJsonArray();
             Type[] transformedTypes = new Type[transformedTypesArray.size()];
             for (int i = 0; i < transformedTypesArray.size(); i++) {
-                transformedTypes[i] = remapType(Type.getType(transformedTypesArray.get(i).getAsString()), map, false);
+                transformedTypes[i] = remapType(Type.getType(transformedTypesArray.get(i).getAsString()), map);
             }
 
             JsonElement fromOriginalJson = obj.get("from_original");
@@ -486,7 +486,7 @@ public class ConfigLoader {
         if (typeElement == null) {
             return null;
         }
-        return remapType(Type.getObjectType(typeElement.getAsString()), map, false);
+        return remapType(Type.getObjectType(typeElement.getAsString()), map);
     }
 
     @NotNull private static String[] loadPostfix(JsonObject obj, String id, Type[] transformedTypes) {
@@ -587,7 +587,7 @@ public class ConfigLoader {
         return methodIDMap;
     }
 
-    public static MethodID loadMethodID(JsonElement method, @Nullable MappingResolver map, MethodID.@Nullable CallType defaultCallType) {
+    public static MethodID loadMethodID(JsonElement method, @Nullable MappingResolver map, @Nullable MethodID.CallType defaultCallType) {
         MethodID methodID;
         if (method.isJsonPrimitive()) {
             String id = method.getAsString();
@@ -649,7 +649,7 @@ public class ConfigLoader {
 
     public static MethodID remapMethod(MethodID methodID, @NotNull MappingResolver map) {
         //Map owner
-        Type mappedOwner = remapType(methodID.getOwner(), map, false);
+        Type mappedOwner = remapType(methodID.getOwner(), map);
 
         //Map name
         String mappedName = map.mapMethodName("intermediary",
@@ -662,27 +662,24 @@ public class ConfigLoader {
 
         Type[] mappedArgs = new Type[args.length];
         for (int i = 0; i < args.length; i++) {
-            mappedArgs[i] = remapType(args[i], map, false);
+            mappedArgs[i] = remapType(args[i], map);
         }
 
-        Type mappedReturnType = remapType(returnType, map, false);
+        Type mappedReturnType = remapType(returnType, map);
 
         Type mappedDesc = Type.getMethodType(mappedReturnType, mappedArgs);
 
         return new MethodID(mappedOwner, mappedName, mappedDesc, methodID.getCallType());
     }
 
-    public static Type remapType(Type type, @NotNull MappingResolver map, boolean warnIfNotPresent) {
+    public static Type remapType(Type type, MappingResolver map) {
         if (type.getSort() == Type.ARRAY) {
-            Type componentType = remapType(type.getElementType(), map, warnIfNotPresent);
+            Type componentType = remapType(type.getElementType(), map);
             return Type.getType("[" + componentType.getDescriptor());
         } else if (type.getSort() == Type.OBJECT) {
             String unmapped = type.getClassName();
             String mapped = map.mapClassName("intermediary", unmapped);
             if (mapped == null) {
-                if (warnIfNotPresent) {
-                    System.err.println("Could not remap type: " + unmapped);
-                }
                 return type;
             }
             return Type.getObjectType(mapped.replace('.', '/'));

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 
 public class HierarchyTree {
@@ -60,7 +61,7 @@ public class HierarchyTree {
         return lookup.values();
     }
 
-    public Node getNode(Type owner) {
+    public @Nullable Node getNode(Type owner) {
         return lookup.get(owner);
     }
 

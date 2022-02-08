@@ -48,7 +48,7 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
     }
 
     @Override
-    public T get(Object key) {
+    public @Nullable T get(Object key) {
         if (key instanceof Ancestralizable method) {
             if (hierarchy.getNode(method.getAssociatedType()) == null) {
                 return map.get(method);
@@ -69,30 +69,11 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
     @Nullable
     @Override
     public T put(U key, T value) {
-        HierarchyTree.Node current = hierarchy.getNode(key.getAssociatedType());
-
-        HierarchyTree.Node[] nodes = keySet()
-            .stream()
-            .filter(val -> val.equalsWithoutType(key) && get(val).equals(value))
-            .map(val -> hierarchy.getNode(val.getAssociatedType()))
-            .toArray(HierarchyTree.Node[]::new);
-
         return map.put(key, value);
     }
 
-    /**
-     * Checks if all the objects' <em>identities</em> are the same
-     */
-    private static boolean areAllEqual(Object a, Object... others) {
-        for (Object o : others) {
-            if (a != o) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     @Override
+    @Nullable
     public T remove(Object key) {
         if (key instanceof Ancestralizable method) {
             for (Type subType : hierarchy.ancestry(method.getAssociatedType())) {

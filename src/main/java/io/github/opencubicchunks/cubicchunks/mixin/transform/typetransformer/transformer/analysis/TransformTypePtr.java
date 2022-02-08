@@ -4,12 +4,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
+import org.jetbrains.annotations.Nullable;
 
 public class TransformTypePtr {
-    private TransformType value;
+    private @Nullable TransformType value;
     private final Set<TransformTrackingValue> trackingValues = new HashSet<>();
 
-    public TransformTypePtr(TransformType value) {
+    public TransformTypePtr(@Nullable TransformType value) {
         this.value = value;
     }
 
@@ -17,7 +18,7 @@ public class TransformTypePtr {
         trackingValues.add(trackingValue);
     }
 
-    private void updateType(TransformType oldType, TransformType newType) {
+    private void updateType(@Nullable TransformType oldType, TransformType newType) {
         if (oldType == newType) {
             return;
         }
@@ -36,7 +37,7 @@ public class TransformTypePtr {
         }
     }
 
-    public TransformType getValue() {
+    public @Nullable TransformType getValue() {
         return value;
     }
 }

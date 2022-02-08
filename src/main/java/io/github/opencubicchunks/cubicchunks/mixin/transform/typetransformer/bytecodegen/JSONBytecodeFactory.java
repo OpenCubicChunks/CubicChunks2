@@ -16,7 +16,6 @@ import com.google.gson.JsonObject;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import net.fabricmc.loader.api.MappingResolver;
-import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
@@ -25,36 +24,48 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class JSONBytecodeFactory implements BytecodeFactory {
-    private static final String NAMESPACE = "intermediary";
-
+    //The names of the JVM instructions that affect local variables
     private static final String[] VAR_INSNS = {
         "ILOAD", "LLOAD", "FLOAD", "DLOAD", "ALOAD",
         "ISTORE", "LSTORE", "FSTORE", "DSTORE", "ASTORE"
     };
 
+    //The corresponding types
     private static final Type[] TYPES = {
         Type.INT_TYPE, Type.LONG_TYPE, Type.FLOAT_TYPE, Type.DOUBLE_TYPE, Type.getType(Object.class),
         Type.INT_TYPE, Type.LONG_TYPE, Type.FLOAT_TYPE, Type.DOUBLE_TYPE, Type.getType(Object.class)
     };
 
+    //The actual opcodes
     private static final int[] VAR_OPCODES = {
         ILOAD, LLOAD, FLOAD, DLOAD, ALOAD,
         ISTORE, LSTORE, FSTORE, DSTORE, ASTORE
     };
 
+    //Every instruction is added individually to the InsnList. The int array is an array with slots for variables
     private final List<BiConsumer<InsnList, int[]>> instructionGenerators = new ArrayList<>();
+    //The types of the variable. These correspond to the array passed to the functions above
     private final List<Type> varTypes = new ArrayList<>();
 
+    /**
+     * Creates a new JSONBytecodeFactory
+     * @param data A JSONArray where each element corresponds to an instruction. Simple instructions are represented by a single string, while
+     *             instructions that have parameters are represented by a JSONObject.
+     * @param mappings The mappings used to remap types to their current names
+     * @param methodIDMap A map of method names to their MethodID (method definitions)
+     */
     public JSONBytecodeFactory(JsonArray data, MappingResolver mappings, Map<String, MethodID> methodIDMap) {
         //Find all variable names
         Map<String, Integer> varNames = new HashMap<>();
 
         for (JsonElement element : data) {
+            //Check if it is a var instruction (begins with one of the VAR_INSNS)
             if (element.isJsonPrimitive()) {
                 String name = element.getAsString();
                 for (int i = 0; i < VAR_INSNS.length; i++) {
                     String insnName = VAR_INSNS[i];
                     if (name.startsWith(insnName)) {
+                        //Extract the variable name. In this instruction ("ILOAD {x}"), the variable name is "x"
                         String namePart = name.substring(insnName.length() + 1);
 
                         if (!namePart.matches("\\{[0-9a-zA-Z_]+}")) {
@@ -64,11 +75,14 @@ public class JSONBytecodeFactory implements BytecodeFactory {
                         String actualName = namePart.substring(1, namePart.length() - 1);
                         Type t = TYPES[i];
 
+                        //Check if the variable name is already in use
                         if (varNames.containsKey(actualName)) {
+                            //The variable name has already been seen. If it has a different type, throw an exception
                             if (!varTypes.get(varNames.get(actualName)).equals(t)) {
                                 throw new IllegalArgumentException("Variable " + actualName + " has already been defined with a different type");
                             }
                         } else {
+                            //Store variable name and type
                             varNames.put(actualName, varNames.size());
                             varTypes.add(t);
                         }
@@ -77,12 +91,13 @@ public class JSONBytecodeFactory implements BytecodeFactory {
             }
         }
 
-        InsnList insns = new InsnList();
-
+        //Create each InstructionFactory
         for (JsonElement element : data) {
             if (element.isJsonPrimitive()) {
+                //It is a simple instruction (a string)
                 instructionGenerators.add(Objects.requireNonNull(createInstructionFactoryFromName(element.getAsString(), varNames)));
             } else {
+                //It is a complex instruction
                 instructionGenerators.add(Objects.requireNonNull(createInstructionFactoryFromObject(element.getAsJsonObject(), mappings, methodIDMap)));
             }
         }
@@ -102,15 +117,17 @@ public class JSONBytecodeFactory implements BytecodeFactory {
         return null;
     }
 
-    @NotNull private BiConsumer<InsnList, int[]> generateMethodCall(JsonObject object, MappingResolver mappings, Map<String, MethodID> methodIDMap, String type) {
+    private BiConsumer<InsnList, int[]> generateMethodCall(JsonObject object, MappingResolver mappings, Map<String, MethodID> methodIDMap, String type) {
         JsonElement method = object.get("method");
         MethodID methodID = null;
 
         if (method.isJsonPrimitive()) {
+            //Check if method is in method definitions
             methodID = methodIDMap.get(method.getAsString());
         }
 
         if (methodID == null) {
+            //If we haven't found it, we get the call type
             MethodID.CallType callType = switch (type) {
                 case "INVOKEVIRTUAL" -> MethodID.CallType.VIRTUAL;
                 case "INVOKESTATIC" -> MethodID.CallType.STATIC;
@@ -119,6 +136,7 @@ public class JSONBytecodeFactory implements BytecodeFactory {
 
                 default -> throw new IllegalArgumentException("Invalid call type: " + type); //This will never be reached but the compiler gets angry if it isn't here
             };
+
             methodID = ConfigLoader.loadMethodID(method, mappings, callType);
         }
 
@@ -128,7 +146,8 @@ public class JSONBytecodeFactory implements BytecodeFactory {
         };
     }
 
-    @NotNull private BiConsumer<InsnList, int[]> generateConstantInsn(JsonObject object) {
+    private BiConsumer<InsnList, int[]> generateConstantInsn(JsonObject object) {
+        //We just need to get the constant type and then we can just use ConstantFactory
         String constantType = object.get("constant_type").getAsString();
 
         JsonElement element = object.get("value");
@@ -149,10 +168,11 @@ public class JSONBytecodeFactory implements BytecodeFactory {
         };
     }
 
-    @NotNull private BiConsumer<InsnList, int[]> generateTypeInsn(JsonObject object, MappingResolver mappings, String type) {
+    private BiConsumer<InsnList, int[]> generateTypeInsn(JsonObject object, MappingResolver mappings, String type) {
+        //We just need to get the type
         JsonElement classNameJson = object.get("class");
         Type t = Type.getObjectType(classNameJson.getAsString());
-        Type mappedType = ConfigLoader.remapType(t, mappings, false);
+        Type mappedType = ConfigLoader.remapType(t, mappings);
 
         int opcode = switch (type) {
             case "NEW" -> Opcodes.NEW;
@@ -168,6 +188,7 @@ public class JSONBytecodeFactory implements BytecodeFactory {
     }
 
     private BiConsumer<InsnList, int[]> createInstructionFactoryFromName(String insnName, Map<String, Integer> varNames) {
+        //Check if it is a var insn (in the format "<instruction_name> {<var-name>}")
         for (int i = 0; i < VAR_INSNS.length; i++) {
             if (insnName.startsWith(VAR_INSNS[i])) {
                 String varInsnName = VAR_INSNS[i];
@@ -175,7 +196,8 @@ public class JSONBytecodeFactory implements BytecodeFactory {
                 int varIndex = varNames.get(varName);
                 int opcode = VAR_OPCODES[i];
 
-                return (insnList, indexes) -> insnList.add(new VarInsnNode(opcode, indexes[varIndex]));
+                //The actual variable slot can be fetched from the variable indices array
+                return (insnList, variableIndices) -> insnList.add(new VarInsnNode(opcode, variableIndices[varIndex]));
             }
         }
 
@@ -185,6 +207,8 @@ public class JSONBytecodeFactory implements BytecodeFactory {
     }
 
     private int opcodeFromName(String name) {
+        //Since simple instructions have no parameters we just need the opcode
+
         return switch (name) {
             case "NOP" -> NOP;
             case "ACONST_NULL" -> ACONST_NULL;
@@ -299,6 +323,8 @@ public class JSONBytecodeFactory implements BytecodeFactory {
 
     @Override
     public InsnList generate(Function<Type, Integer> varAllocator) {
+        //When generating the instruction list, we first allocate all the variables and create the variable index array
+
         int[] vars = new int[this.varTypes.size()];
 
         for (int i = 0; i < this.varTypes.size(); i++) {

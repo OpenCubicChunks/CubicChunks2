@@ -209,7 +209,7 @@ public class TypeTransformer {
             maxLocals = Math.max(maxLocals, newIndex);
         }
 
-        VariableManager varCreator = new VariableManager(maxLocals, insns.length);
+        VariableAllocator varCreator = new VariableAllocator(maxLocals, insns.length);
 
         //Analysis results come from the original method, and we need to transform the new method, so we need to be able to get the new instructions that correspond to the old ones
         Map<AbstractInsnNode, Integer> indexLookup = new HashMap<>();
@@ -619,7 +619,7 @@ public class TypeTransformer {
                     int[] saveSlots = new int[types.size()];
 
                     for (int k = 0; k < types.size(); k++) {
-                        saveSlots[k] = context.variableManager.allocate(earliest, last, types.get(k));
+                        saveSlots[k] = context.variableAllocator.allocate(earliest, last, types.get(k));
                     }
 
                     variableSlots.put(value, saveSlots);
@@ -652,7 +652,7 @@ public class TypeTransformer {
 
             for (int i = 0; i < numValuesToSave; i++) {
                 Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[i], saveSlots == null ? null : saveSlots[i]);
-                store.add(storeAndLoad.getFirst().generate(t -> context.variableManager.allocate(index, index + 1, t)));
+                store.add(storeAndLoad.getFirst().generate(t -> context.variableAllocator.allocate(index, index + 1, t)));
                 syntheticEmitters[i] = storeAndLoad.getSecond();
             }
 
@@ -664,7 +664,7 @@ public class TypeTransformer {
             if (saveSlots != null && saveSlots[0] != null) {
                 //We NEED to save the value into a local variable
                 Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[0], saveSlots[0]);
-                context.target.instructions.insert(instruction, storeAndLoad.getFirst().generate(t -> context.variableManager.allocate(index, index + 1, t)));
+                context.target.instructions.insert(instruction, storeAndLoad.getFirst().generate(t -> context.variableAllocator.allocate(index, index + 1, t)));
                 context.syntheticEmitters[index] = new BytecodeFactory[][] {
                     storeAndLoad.getSecond()
                 };
@@ -681,7 +681,7 @@ public class TypeTransformer {
                 if (useDefault) {
                     //We need to save the value into a local variable
                     Pair<BytecodeFactory, BytecodeFactory[]> storeAndLoad = makeStoreAndLoad(context, valuesToSave[0], null);
-                    context.target.instructions.insert(instruction, storeAndLoad.getFirst().generate(t -> context.variableManager.allocate(index, index + 1, t)));
+                    context.target.instructions.insert(instruction, storeAndLoad.getFirst().generate(t -> context.variableAllocator.allocate(index, index + 1, t)));
                     context.syntheticEmitters[index][0] = storeAndLoad.getSecond();
                 }
             }
@@ -833,7 +833,7 @@ public class TypeTransformer {
         List<Type> types = value.transformedTypes();
 
         for (int k = 0; k < types.size(); k++) {
-            slots[k] = context.variableManager.allocate(earliest, last, types.get(k));
+            slots[k] = context.variableAllocator.allocate(earliest, last, types.get(k));
         }
         return slots;
     }
@@ -944,7 +944,7 @@ public class TypeTransformer {
                     TransformTrackingValue arg = frame.getStack(frame.getStackSize() - consumers + j);
                     BytecodeFactory[] emitters = context.getSyntheticEmitter(arg);
                     for (BytecodeFactory emitter : emitters) {
-                        load.add(emitter.generate(t -> context.variableManager.allocate(i, i + 1, t)));
+                        load.add(emitter.generate(t -> context.variableAllocator.allocate(i, i + 1, t)));
                     }
                 }
                 context.target().instructions.insertBefore(instruction, load);
@@ -1092,7 +1092,7 @@ public class TypeTransformer {
             InsnList newInstructions = new InsnList();
             for (BytecodeFactory factory : replacement) {
                 int finalI = i;
-                newInstructions.add(factory.generate(t -> context.variableManager.allocate(finalI, finalI + 1, t)));
+                newInstructions.add(factory.generate(t -> context.variableAllocator.allocate(finalI, finalI + 1, t)));
             }
 
             context.target().instructions.insert(instruction, newInstructions);
@@ -1234,8 +1234,8 @@ public class TypeTransformer {
                 Type subType = types.get(j);
                 //Load the single components from left and right
                 final int finalI = i;
-                newCmp.add(replacementLeft[j].generate(t -> context.variableManager.allocate(finalI, finalI + 1, t)));
-                newCmp.add(replacementRight[j].generate(t -> context.variableManager.allocate(finalI, finalI + 1, t)));
+                newCmp.add(replacementLeft[j].generate(t -> context.variableAllocator.allocate(finalI, finalI + 1, t)));
+                newCmp.add(replacementRight[j].generate(t -> context.variableAllocator.allocate(finalI, finalI + 1, t)));
 
                 int op = Opcodes.IF_ICMPNE;
                 LabelNode labelNode = success;
@@ -1456,7 +1456,7 @@ public class TypeTransformer {
 
         if (allValuesOnStack) {
             //Simply remove the method call and replace it
-            context.target().instructions.insert(methodCall, replacement.getBytecodeFactories()[0].generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
+            context.target().instructions.insert(methodCall, replacement.getBytecodeFactories()[0].generate(t -> context.variableAllocator.allocate(insnIndex, insnIndex + 1, t)));
             context.target().instructions.remove(methodCall);
         } else {
             //Store all the parameters
@@ -1481,10 +1481,10 @@ public class TypeTransformer {
         //Add required parameters to finalizer
         for (int j = 0; j < indices.length; j++) {
             for (int index : indices[j]) {
-                replacementInstructions.add(paramGenerators[j][index].generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
+                replacementInstructions.add(paramGenerators[j][index].generate(t -> context.variableAllocator.allocate(insnIndex, insnIndex + 1, t)));
             }
         }
-        replacementInstructions.add(replacement.getFinalizer().generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
+        replacementInstructions.add(replacement.getFinalizer().generate(t -> context.variableAllocator.allocate(insnIndex, insnIndex + 1, t)));
     }
 
     private void storeParameters(TransformContext context, TransformTrackingValue[] args, MethodReplacement replacement, int insnIndex, BytecodeFactory[][] paramGenerators,
@@ -1498,10 +1498,10 @@ public class TypeTransformer {
             List<Integer>[] indices = replacement.getParameterIndexes()[j];
             for (int k = 0; k < indices.length; k++) {
                 for (int index : indices[k]) {
-                    replacementInstructions.add(paramGenerators[k][index].generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
+                    replacementInstructions.add(paramGenerators[k][index].generate(t -> context.variableAllocator.allocate(insnIndex, insnIndex + 1, t)));
                 }
             }
-            replacementInstructions.add(replacement.getBytecodeFactories()[j].generate(t -> context.variableManager.allocate(insnIndex, insnIndex + 1, t)));
+            replacementInstructions.add(replacement.getBytecodeFactories()[j].generate(t -> context.variableAllocator.allocate(insnIndex, insnIndex + 1, t)));
         }
     }
 
@@ -1860,7 +1860,6 @@ public class TypeTransformer {
         config.getInterpreter().setFutureBindings(futureMethodBindings);
         config.getInterpreter().setCurrentClass(classNode);
         config.getInterpreter().setFieldBindings(fieldPseudoValues);
-        config.getInterpreter().setTransforming(Type.getObjectType(classNode.name));
 
         MethodID methodID = new MethodID(classNode.name, methodNode.name, methodNode.desc, null);
 
@@ -2201,14 +2200,14 @@ public class TypeTransformer {
      *     element of the array will push the element of that transform type onto the stack. So for a value with transform type int -> (int "x", long "y", String "name"). The first element
      *     will push the int 'x' onto the stack, the second element will push the long 'y' onto the stack, and the third element will push the String 'name' onto the stack.
      * @param varLookup Stores the new index of a variable. varLookup[insnIndex][oldVarIndex] gives the new var index.
-     * @param variableManager The variable manager allows for the creation of new variables.
+     * @param variableAllocator The variable manager allows for the creation of new variables.
      * @param indexLookup A map from instruction object to index in the instructions array. This map contains keys for the instructions of both the old and new methods. This is useful
      *     mainly because TransformTrackingValue.getSource() will return instructions from the old method and to manipulate the InsnList of the new method (which is a linked list) we need an
      *     element which is in that InsnList.
      * @param methodInfos If an instruction is a method invocation, this will store information about how to transform it.
      */
     private record TransformContext(MethodNode target, AnalysisResults analysisResults, AbstractInsnNode[] instructions, boolean[] expandedEmitter, boolean[] expandedConsumer,
-                                    boolean[] removedEmitter, BytecodeFactory[][][] syntheticEmitters, int[][] varLookup, TransformSubtype[][] varTypes, VariableManager variableManager,
+                                    boolean[] removedEmitter, BytecodeFactory[][][] syntheticEmitters, int[][] varLookup, TransformSubtype[][] varTypes, VariableAllocator variableAllocator,
                                     Map<AbstractInsnNode, Integer> indexLookup,
                                     MethodParameterInfo[] methodInfos) {
 

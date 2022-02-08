@@ -8,7 +8,7 @@ import org.objectweb.asm.Type;
 /**
  * This class allows for the creation of new local variables for a method. This class is by no means made to be efficient but it works
  */
-public class VariableManager {
+public class VariableAllocator {
     private final int baseline; //The maxLocals of the original method. No variable will be allocated in this range
     private final int maxLength; //The length of the instructions
     private final List<boolean[]> variables = new ArrayList<>(); //Stores which slots are used for each frame
@@ -19,7 +19,7 @@ public class VariableManager {
      * @param maxLocals The maxLocals of the method
      * @param maxLength The length of the instructions
      */
-    public VariableManager(int maxLocals, int maxLength) {
+    public VariableAllocator(int maxLocals, int maxLength) {
         this.baseline = maxLocals;
         this.maxLength = maxLength;
     }

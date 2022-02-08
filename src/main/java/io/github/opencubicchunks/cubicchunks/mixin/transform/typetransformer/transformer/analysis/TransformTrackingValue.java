@@ -2,10 +2,8 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tr
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.Set;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
@@ -14,14 +12,19 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMa
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import net.minecraft.Util;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.analysis.Value;
 
+/**
+ * A value that infers its transform type and tracks the instructions that created it, consumed it and
+ * the fields it comes from
+ */
 public class TransformTrackingValue implements Value {
     final Set<UnresolvedMethodTransform> possibleTransformChecks = new HashSet<>(); //Used to track possible transform checks
 
-    private final Type type;
+    private final @Nullable Type type;
     private final Set<AbstractInsnNode> source;
     private final Set<Integer> localVars; //Used uniquely for parameters
     private final Set<AbstractInsnNode> consumers = new HashSet<>(); //Any instruction which "consumes" this value
@@ -35,7 +38,7 @@ public class TransformTrackingValue implements Value {
 
     private final Set<TransformTrackingValue> valuesWithSameType = new HashSet<>();
 
-    public TransformTrackingValue(Type type, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
+    public TransformTrackingValue(@Nullable Type type, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
         this.type = type;
         this.source = new HashSet<>();
         this.localVars = new HashSet<>();
@@ -46,7 +49,7 @@ public class TransformTrackingValue implements Value {
         this.transform.setSubType(TransformSubtype.getSubType(type));
     }
 
-    public TransformTrackingValue(Type type, int localVar, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
+    public TransformTrackingValue(@Nullable Type type, int localVar, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
         this.type = type;
         this.source = new HashSet<>();
         this.localVars = new HashSet<>();
@@ -58,12 +61,12 @@ public class TransformTrackingValue implements Value {
         this.transform.setSubType(TransformSubtype.getSubType(type));
     }
 
-    public TransformTrackingValue(Type type, AbstractInsnNode source, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
+    public TransformTrackingValue(@Nullable Type type, AbstractInsnNode source, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
         this(type, fieldPseudoValues);
         this.source.add(source);
     }
 
-    public TransformTrackingValue(Type type, AbstractInsnNode insn, int var, TransformSubtype transform, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
+    public TransformTrackingValue(@Nullable Type type, AbstractInsnNode insn, int var, TransformSubtype transform, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
         this.type = type;
         this.source = new HashSet<>();
         this.source.add(insn);
@@ -76,7 +79,7 @@ public class TransformTrackingValue implements Value {
         this.transform.setSubType(TransformSubtype.getSubType(type));
     }
 
-    public TransformTrackingValue(Type type, Set<AbstractInsnNode> source, Set<Integer> localVars, TransformSubtype transform,
+    public TransformTrackingValue(@Nullable Type type, Set<AbstractInsnNode> source, Set<Integer> localVars, TransformSubtype transform,
                                   AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
         this.type = type;
         this.source = source;
@@ -112,7 +115,7 @@ public class TransformTrackingValue implements Value {
         return newValue;
     }
 
-    public TransformType getTransformType() {
+    public @Nullable TransformType getTransformType() {
         return transform.getTransformType();
     }
 
@@ -132,7 +135,7 @@ public class TransformTrackingValue implements Value {
         this.transform.getTransformTypePtr().setValue(transformType);
     }
 
-    public void updateType(TransformType oldType, TransformType newType) {
+    public void updateType(@Nullable TransformType oldType, TransformType newType) {
         //Set appropriate array dimensions
         Set<TransformTrackingValue> copy = new HashSet<>(valuesWithSameType);
         valuesWithSameType.clear(); //To prevent infinite recursion
@@ -246,24 +249,6 @@ public class TransformTrackingValue implements Value {
         }
 
         return relatedValues;
-    }
-
-    public Set<TransformTrackingValue> getFurthestAncestors() {
-        Queue<TransformTrackingValue> toCheck = new LinkedList<>();
-        Set<TransformTrackingValue> furthestAncestors = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
-
-        toCheck.add(this);
-
-        while (!toCheck.isEmpty()) {
-            TransformTrackingValue value = toCheck.poll();
-            if (value.mergedFrom.isEmpty()) {
-                furthestAncestors.add(value);
-            }
-
-            toCheck.addAll(value.mergedFrom);
-        }
-
-        return furthestAncestors;
     }
 
     public static void setSameType(TransformTrackingValue first, TransformTrackingValue second) {

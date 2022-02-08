@@ -4,6 +4,7 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tra
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingValue;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 
 public class MethodParameterInfo {
@@ -68,7 +69,7 @@ public class MethodParameterInfo {
         return method;
     }
 
-    public TransformSubtype getReturnType() {
+    public @Nullable TransformSubtype getReturnType() {
         return returnType;
     }
 

@@ -7,8 +7,18 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.Frame;
 
+/**
+ * Holds the results of the analysis of a single method.
+ * @param methodNode The method these results are for
+ * @param argTypes The deduced transformed types of the parameters of the method.
+ * If the method is not static, this includes information for the 'this' parameter
+ */
 public record AnalysisResults(MethodNode methodNode, TransformSubtype[] argTypes, Frame<TransformTrackingValue>[] frames) {
-
+    /**
+     * Prints information about the analysis results.
+     * @param out Where to print the information.
+     * @param printFrames Whether information should be printed for every frame.
+     */
     public void print(PrintStream out, boolean printFrames) {
         out.println("Analysis Results for " + methodNode.name);
         out.println("  Arg Types:");
@@ -35,9 +45,15 @@ public record AnalysisResults(MethodNode methodNode, TransformSubtype[] argTypes
         }
     }
 
+    /**
+     * Creates the new description using the transformed argument types
+     * @return A descriptor as a string
+     */
     public String getNewDesc() {
         TransformSubtype[] types = argTypes;
         if (!ASMUtil.isStatic(methodNode)) {
+            //If the method is not static then the first element of this.types is the 'this' argument.
+            //This argument is not shown is method descriptors, so we must exclude it
             types = new TransformSubtype[types.length - 1];
             System.arraycopy(argTypes, 1, types, 0, types.length);
         }

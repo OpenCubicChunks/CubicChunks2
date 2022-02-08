@@ -6,9 +6,16 @@ import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 
+/**
+ * An instruction factory which creates an instruction which creates a provided constant
+ */
 public class ConstantFactory implements InstructionFactory {
     private final Object value;
 
+    /**
+     * Creates a new constant factory
+     * @param value The value of the constant that this factory will create
+     */
     public ConstantFactory(Object value) {
         this.value = value;
     }
