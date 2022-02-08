@@ -1,8 +1,6 @@
 package io.github.opencubicchunks.cubicchunks;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
 
 import io.github.opencubicchunks.cubicchunks.config.CommonConfig;
 import io.github.opencubicchunks.cubicchunks.config.EarlyConfig;
@@ -11,10 +9,8 @@ import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicFeatureDecorators;
 import io.github.opencubicchunks.cubicchunks.network.PacketDispatcher;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.SharedConstants;
-import net.minecraft.Util;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ChunkMap;
@@ -40,12 +36,6 @@ public class CubicChunks implements ModInitializer {
     public static final Logger LOGGER = LogManager.getLogger();
 
     public static final String PROTOCOL_VERSION = "0";
-
-    public static final Map<String, CubicLevelHeightAccessor.WorldStyle> DIMENSION_TO_WORLD_STYLE = Util.make(new HashMap<>(), (set) -> {
-        set.put("minecraft:overworld", CubicLevelHeightAccessor.WorldStyle.CUBIC);
-        set.put("minecraft:the_nether", CubicLevelHeightAccessor.WorldStyle.CUBIC);
-        set.put("minecraft:the_end", CubicLevelHeightAccessor.WorldStyle.CHUNK);
-    });
 
     private static final CommonConfig CONFIG = CommonConfig.getConfig();
 
