@@ -400,68 +400,6 @@ public class MainTransformer {
         transformer.transformAllMethods();
     }
 
-    private static InsnList makeDynGraphConstructor() {
-        LabelNode l1 = new LabelNode();
-        LabelNode l2 = new LabelNode();
-        LabelNode l3 = new LabelNode();
-
-        InsnList l = new InsnList();
-        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        l.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false));
-        l.add(new VarInsnNode(Opcodes.ILOAD, 1));
-        l.add(new IntInsnNode(Opcodes.SIPUSH, 254));
-        l.add(new JumpInsnNode(Opcodes.IF_ICMPLT, l1));
-        l.add(new TypeInsnNode(Opcodes.NEW, "java/lang/IllegalArgumentException"));
-        l.add(new InsnNode(Opcodes.DUP));
-        l.add(new LdcInsnNode("Level count must be < 254."));
-        l.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/lang/IllegalArgumentException", "<init>", "(Ljava/lang/String;)V", false));
-        l.add(new InsnNode(Opcodes.ATHROW));
-        l.add(l1);
-        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        l.add(new VarInsnNode(Opcodes.ILOAD, 1));
-        l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "levelCount", "I"));
-        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        l.add(new VarInsnNode(Opcodes.ILOAD, 1));
-        l.add(new TypeInsnNode(Opcodes.ANEWARRAY, "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet"));
-        //l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "queues",
-        // "[Lio/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet;
-        // "));
-        l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "queues", "Ljava/lang/Object;"));
-        l.add(new InsnNode(Opcodes.ICONST_0));
-        l.add(new VarInsnNode(Opcodes.ISTORE, 4));
-        l.add(l3);
-        l.add(new VarInsnNode(Opcodes.ILOAD, 4));
-        l.add(new VarInsnNode(Opcodes.ILOAD, 1));
-        l.add(new JumpInsnNode(Opcodes.IF_ICMPGE, l2));
-        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        //l.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "queues",
-        // "[Lio/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet;
-        // "));
-        l.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "queues", "Ljava/lang/Object;"));
-        l.add(new TypeInsnNode(Opcodes.CHECKCAST, "[Lio/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet;"));
-        l.add(new VarInsnNode(Opcodes.ILOAD, 4));
-        l.add(new TypeInsnNode(Opcodes.NEW, "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet"));
-        l.add(new InsnNode(Opcodes.DUP));
-        l.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet", "<init>", "()V", false));
-        l.add(new InsnNode(Opcodes.AASTORE));
-        l.add(new IincInsnNode(4, 1));
-        l.add(new JumpInsnNode(Opcodes.GOTO, l3));
-        l.add(l2);
-        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        l.add(new TypeInsnNode(Opcodes.NEW, "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap"));
-        l.add(new InsnNode(Opcodes.DUP));
-        l.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap", "<init>", "()V", false));
-        //l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "computedLevels",
-        // "Lio/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap;
-        // "));
-        l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "computedLevels", "Ljava/lang/Object;"));
-        l.add(new VarInsnNode(Opcodes.ALOAD, 0));
-        l.add(new VarInsnNode(Opcodes.ILOAD, 1));
-        l.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint", "firstQueuedLevel", "I"));
-        l.add(new InsnNode(Opcodes.RETURN));
-        return l;
-    }
-
     public static void transformLayerLightEngine(ClassNode targetClass) {
         TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
 

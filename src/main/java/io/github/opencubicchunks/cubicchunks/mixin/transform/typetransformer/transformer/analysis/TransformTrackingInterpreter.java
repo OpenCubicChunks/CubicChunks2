@@ -62,6 +62,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     public void reset() {
+        parameterOverrides.clear();
     }
 
     @Override

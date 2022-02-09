@@ -2,12 +2,13 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tr
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingValue;
+import org.jetbrains.annotations.Nullable;
 
 public class MethodTransformChecker {
     private final MethodParameterInfo target;
-    private final Minimum[] minimums;
+    private final @Nullable Minimum[] minimums;
 
-    public MethodTransformChecker(MethodParameterInfo target, Minimum[] minimums) {
+    public MethodTransformChecker(MethodParameterInfo target, @Nullable Minimum[] minimums) {
         this.target = target;
         this.minimums = minimums;
     }
@@ -20,7 +21,7 @@ public class MethodTransformChecker {
      *
      * @return -1 if they are incompatible, 0 if they are compatible, 1 if they should be transformed
      */
-    public int checkValidity(TransformTrackingValue returnValue, TransformTrackingValue... parameters) {
+    public int checkValidity(@Nullable TransformTrackingValue returnValue, TransformTrackingValue... parameters) {
         //First check if it is still possible
         if (returnValue != null) {
             if (!isApplicable(returnValue.getTransform(), target.getReturnType())) {
@@ -49,7 +50,11 @@ public class MethodTransformChecker {
         return 1;
     }
 
-    private static boolean isApplicable(TransformSubtype current, TransformSubtype target) {
+    private static boolean isApplicable(TransformSubtype current, @Nullable TransformSubtype target) {
+        if(target == null) {
+            return true;
+        }
+
         if (current.getTransformType() == null) {
             return true;
         }
