@@ -2,10 +2,15 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.util;
 
 import static org.objectweb.asm.Opcodes.*;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -635,5 +640,68 @@ public class ASMUtil {
             current = current.getNext();
         }
         return null;
+    }
+
+    public static ClassNode loadClassNode(Class<?> clazz) {
+        return loadClassNode(clazz.getName().replace('.', '/') + ".class");
+    }
+
+    public static ClassNode loadClassNode(String path) {
+        try {
+            ClassNode classNode = new ClassNode();
+            InputStream is = ClassLoader.getSystemResourceAsStream(path);
+            if (is == null) {
+                throw new IllegalArgumentException("Could not find class: " + path);
+            }
+            ClassReader classReader = new ClassReader(is);
+            classReader.accept(classNode, 0);
+            return classNode;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static MethodNode getMethod(ClassNode classNode, Predicate<MethodNode> condition) {
+        //Ensure there us only one match
+
+        List<MethodNode> matches = new ArrayList<>();
+        for (MethodNode method : classNode.methods) {
+            if (condition.test(method)) {
+                matches.add(method);
+            }
+        }
+
+        if (matches.size() != 1) {
+            throw new IllegalArgumentException("Expected one match, but found " + matches.size());
+        }
+
+        return matches.get(0);
+    }
+
+    public static record MethodCondition(String name, @Nullable String desc) implements Predicate<MethodNode> {
+        @Override
+        public boolean test(MethodNode methodNode) {
+            if (!methodNode.name.equals(name)) {
+                return false;
+            }
+
+            if (desc != null && !methodNode.desc.equals(desc)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        public boolean testMethodID(MethodID id) {
+            if (!id.getName().equals(name)) {
+                return false;
+            }
+
+            if (desc != null && !id.getDescriptor().getDescriptor().equals(desc)) {
+                return false;
+            }
+
+            return true;
+        }
     }
 }

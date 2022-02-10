@@ -26,7 +26,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Handle;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.MethodRemapper;
@@ -34,17 +33,10 @@ import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.IincInsnNode;
-import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class MainTransformer {
@@ -435,6 +427,12 @@ public class MainTransformer {
     }
 
     public static void transformLayerLightSectionStorage(ClassNode targetClass) {
+        fixLayerLightSectionStorage(targetClass);
+
+        defaultTransform(targetClass);
+    }
+
+    public static void fixLayerLightSectionStorage(ClassNode targetClass) {
         //400% performance improvement and all the vanilla lighting bugs go away with this one simple trick
 
         //Find setLevel
@@ -522,7 +520,6 @@ public class MainTransformer {
         setLevelNode.instructions.remove(blockToSectionCall);
         setLevelNode.instructions.remove(blockPosOffsetCall);
 
-        defaultTransform(targetClass);
     }
 
     /**

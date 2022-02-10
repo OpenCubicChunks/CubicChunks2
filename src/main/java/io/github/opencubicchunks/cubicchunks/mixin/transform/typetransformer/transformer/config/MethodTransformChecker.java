@@ -51,7 +51,7 @@ public class MethodTransformChecker {
     }
 
     private static boolean isApplicable(TransformSubtype current, @Nullable TransformSubtype target) {
-        if(target == null) {
+        if (target == null) {
             return true;
         }
 
