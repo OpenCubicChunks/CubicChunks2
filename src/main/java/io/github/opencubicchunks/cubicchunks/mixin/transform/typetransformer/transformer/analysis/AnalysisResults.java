@@ -58,6 +58,6 @@ public record AnalysisResults(MethodNode methodNode, TransformSubtype[] argTypes
             System.arraycopy(argTypes, 1, types, 0, types.length);
         }
 
-        return MethodParameterInfo.getNewDesc(TransformSubtype.of(null), types, methodNode.desc);
+        return MethodParameterInfo.getNewDesc(TransformSubtype.createDefault(), types, methodNode.desc);
     }
 }

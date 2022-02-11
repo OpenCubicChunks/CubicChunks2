@@ -12,15 +12,15 @@ public class MethodParameterInfo {
     private final TransformSubtype returnType;
     private final TransformSubtype[] parameterTypes;
     private final MethodTransformChecker transformCondition;
-    private final MethodReplacement replacement;
+    private final @Nullable MethodReplacement replacement;
 
     public MethodParameterInfo(MethodID method, @NotNull TransformSubtype returnType, @NotNull TransformSubtype[] parameterTypes, MethodTransformChecker.Minimum[] minimums,
-                               MethodReplacement replacement) {
+                               @Nullable MethodReplacement replacement) {
         this.method = method;
         this.returnType = returnType;
-        this.parameterTypes = parameterTypes;
         this.transformCondition = new MethodTransformChecker(this, minimums);
         this.replacement = replacement;
+        this.parameterTypes = parameterTypes;
     }
 
     @Override
@@ -81,7 +81,7 @@ public class MethodParameterInfo {
         return transformCondition;
     }
 
-    public MethodReplacement getReplacement() {
+    public @Nullable MethodReplacement getReplacement() {
         return replacement;
     }
 

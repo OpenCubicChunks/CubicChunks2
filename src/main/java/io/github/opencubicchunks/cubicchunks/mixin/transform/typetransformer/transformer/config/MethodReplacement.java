@@ -1,8 +1,12 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.BytecodeFactory;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
+import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.Type;
 
 public class MethodReplacement {
     private final BytecodeFactory[] bytecodeFactories;
@@ -11,12 +15,27 @@ public class MethodReplacement {
     private final BytecodeFactory finalizer;
     private final List<Integer>[] finalizerIndices;
 
-    public MethodReplacement(BytecodeFactory factory) {
+    public MethodReplacement(BytecodeFactory factory, TransformSubtype[] argTypes) {
         this.bytecodeFactories = new BytecodeFactory[] { factory };
-        this.parameterIndexes = null;
         this.changeParameters = false;
         this.finalizer = null;
         this.finalizerIndices = null;
+
+        //Compute default indices
+        this.parameterIndexes = new List[1][argTypes.length];
+
+        for (int i = 0; i < argTypes.length; i++) {
+            List<Integer> indices = new ArrayList<>(1);
+            parameterIndexes[0][i] = indices;
+
+            if (argTypes[i].getTransformType() == null) {
+                indices.add(0);
+            } else {
+                for (int j = 0; j < argTypes[i].transformedTypes(Type.VOID_TYPE).size(); j++) {
+                    indices.add(j);
+                }
+            }
+        }
     }
 
     public MethodReplacement(BytecodeFactory[] bytecodeFactories, List<Integer>[][] parameterIndexes) {
@@ -43,15 +62,15 @@ public class MethodReplacement {
         return changeParameters;
     }
 
-    public List<Integer>[][] getParameterIndexes() {
+    public @Nullable List<Integer>[][] getParameterIndices() {
         return parameterIndexes;
     }
 
-    public BytecodeFactory getFinalizer() {
+    public @Nullable BytecodeFactory getFinalizer() {
         return finalizer;
     }
 
-    public List<Integer>[] getFinalizerIndices() {
+    public @Nullable List<Integer>[] getFinalizerIndices() {
         return finalizerIndices;
     }
 }

@@ -2,6 +2,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tr
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import org.objectweb.asm.Type;
 
@@ -164,5 +165,18 @@ public class VariableAllocator {
         } else {
             return allocateSingle(minIndex, maxIndex);
         }
+    }
+
+    public static Function<Type, Integer> makeBasicAllocator(int baseline) {
+        return new Function<>() {
+            int curr = baseline;
+
+            @Override
+            public Integer apply(Type type) {
+                int index = curr;
+                curr += type.getSize();
+                return index;
+            }
+        };
     }
 }

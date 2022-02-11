@@ -60,7 +60,7 @@ public class InvokerInfo {
 
             //Generate the actual argTypes array who's first element is `this`
             TransformSubtype[] newArgTypes = new TransformSubtype[argTypes.length + 1];
-            newArgTypes[0] = TransformSubtype.of(null);
+            newArgTypes[0] = TransformSubtype.createDefault();
             System.arraycopy(argTypes, 0, newArgTypes, 1, argTypes.length);
 
             //Generate minimums
@@ -72,22 +72,22 @@ public class InvokerInfo {
 
                     for (int k = 0; k < min.length; k++) {
                         if (k != j + 1) {
-                            min[k] = TransformSubtype.of(null);
+                            min[k] = TransformSubtype.createDefault();
                         } else {
                             min[k] = argTypes[j];
                         }
                     }
 
-                    minimums.add(new MethodTransformChecker.Minimum(TransformSubtype.of(null), min));
+                    minimums.add(new MethodTransformChecker.Minimum(TransformSubtype.createDefault(), min));
                 }
             }
 
             MethodParameterInfo info = new MethodParameterInfo(
                 methodID,
-                TransformSubtype.of(null),
+                TransformSubtype.createDefault(),
                 newArgTypes,
                 minimums.toArray(new MethodTransformChecker.Minimum[0]),
-                new MethodReplacement(replacement)
+                new MethodReplacement(replacement, newArgTypes)
             );
 
             parameterInfo.computeIfAbsent(methodID, k -> new ArrayList<>()).add(info);

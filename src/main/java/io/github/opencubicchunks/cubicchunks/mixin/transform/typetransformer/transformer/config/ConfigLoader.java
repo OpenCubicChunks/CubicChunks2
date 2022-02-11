@@ -93,7 +93,7 @@ public class ConfigLoader {
                 }
 
                 for (; i < transformTypes.length; i++) {
-                    transformTypes[i] = TransformSubtype.of(null);
+                    transformTypes[i] = TransformSubtype.createDefault();
                 }
 
                 methodInfos.add(new InvokerInfo.InvokerMethodInfo(transformTypes, method.getName(), targetMethod, method.getDescriptor()));
@@ -202,7 +202,7 @@ public class ConfigLoader {
                 JsonArray paramsJson = possibility.get("parameters").getAsJsonArray();
                 TransformSubtype[] params = loadParameterTypes(transformTypes, paramsJson);
 
-                TransformSubtype returnType = TransformSubtype.of(null);
+                TransformSubtype returnType = TransformSubtype.createDefault();
                 JsonElement returnTypeJson = possibility.get("return");
 
                 if (returnTypeJson != null) {
@@ -246,12 +246,17 @@ public class ConfigLoader {
 
     @NotNull private static TransformSubtype[] loadParameterTypes(Map<String, TransformType> transformTypes, JsonArray paramsJson) {
         TransformSubtype[] params = new TransformSubtype[paramsJson.size()];
+
         for (int i = 0; i < paramsJson.size(); i++) {
             JsonElement param = paramsJson.get(i);
             if (param.isJsonPrimitive()) {
                 params[i] = TransformSubtype.fromString(param.getAsString(), transformTypes);
+            } else if (param.isJsonNull()) {
+                params[i] = TransformSubtype.createDefault();
             }
         }
+
+
         return params;
     }
 
@@ -327,7 +332,7 @@ public class ConfigLoader {
                 if (minimum.has("return")) {
                     minimumReturnType = TransformSubtype.fromString(minimum.get("return").getAsString(), transformTypes);
                 } else {
-                    minimumReturnType = TransformSubtype.of(null);
+                    minimumReturnType = TransformSubtype.createDefault();
                 }
 
                 TransformSubtype[] argTypes = new TransformSubtype[minimum.get("parameters").getAsJsonArray().size()];
@@ -336,7 +341,7 @@ public class ConfigLoader {
                     if (!argType.isJsonNull()) {
                         argTypes[j] = TransformSubtype.fromString(argType.getAsString(), transformTypes);
                     } else {
-                        argTypes[j] = TransformSubtype.of(null);
+                        argTypes[j] = TransformSubtype.createDefault();
                     }
                 }
 

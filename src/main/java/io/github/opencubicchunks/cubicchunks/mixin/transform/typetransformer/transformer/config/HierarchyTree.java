@@ -98,11 +98,15 @@ public class HierarchyTree {
         return knownInterfaces.contains(potentionalOwner);
     }
 
+    public Set<Type> getKnownInterfaces() {
+        return knownInterfaces;
+    }
+
     public static class Node {
         private final Type value;
         private final Set<Node> children = new HashSet<>();
         private final List<Type> interfaces = new ArrayList<>(4);
-        private Node parent = null;
+        private @Nullable Node parent = null;
         private final int depth;
 
         public Node(Type value, int depth) {
@@ -118,7 +122,7 @@ public class HierarchyTree {
             return children;
         }
 
-        public Node getParent() {
+        public @Nullable Node getParent() {
             return parent;
         }
 
@@ -128,6 +132,10 @@ public class HierarchyTree {
 
         public void addInterface(Type subType) {
             interfaces.add(subType);
+        }
+
+        public List<Type> getInterfaces() {
+            return interfaces;
         }
 
         public boolean isDirectDescendantOf(Node potentialParent) {

@@ -275,7 +275,7 @@ public class TypeTransformer {
         }
 
         //Change descriptor
-        String newDescriptor = MethodParameterInfo.getNewDesc(TransformSubtype.of(null), actualParameters, methodNode.desc);
+        String newDescriptor = MethodParameterInfo.getNewDesc(TransformSubtype.createDefault(), actualParameters, methodNode.desc);
         methodNode.desc = newDescriptor;
 
         boolean renamed = false;
@@ -414,7 +414,7 @@ public class TypeTransformer {
         String oldDesc = methodNode.desc;
 
         //Change descriptor
-        newMethod.desc = MethodParameterInfo.getNewDesc(TransformSubtype.of(null), actualParameters, methodNode.desc);
+        newMethod.desc = MethodParameterInfo.getNewDesc(TransformSubtype.createDefault(), actualParameters, methodNode.desc);
 
         if (oldDesc.equals(newMethod.desc)) {
             newMethod.name += MIX;
@@ -1343,7 +1343,7 @@ public class TypeTransformer {
         //Get the actual values passed to the method. If the method is not static then the first value is the instance
         boolean isStatic = (methodCall.getOpcode() == Opcodes.INVOKESTATIC);
         int staticOffset = isStatic ? 0 : 1;
-        TransformSubtype returnType = TransformSubtype.of(null);
+        TransformSubtype returnType = TransformSubtype.createDefault();
         TransformSubtype[] argTypes = new TransformSubtype[args.length - staticOffset];
 
         if (returnValue != null) {
@@ -1495,7 +1495,7 @@ public class TypeTransformer {
 
         for (int j = 0; j < replacement.getBytecodeFactories().length; j++) {
             //Generate each part of the replacement
-            List<Integer>[] indices = replacement.getParameterIndexes()[j];
+            List<Integer>[] indices = replacement.getParameterIndices()[j];
             for (int k = 0; k < indices.length; k++) {
                 for (int index : indices[k]) {
                     replacementInstructions.add(paramGenerators[k][index].generate(t -> context.variableAllocator.allocate(insnIndex, insnIndex + 1, t)));
@@ -1640,7 +1640,7 @@ public class TypeTransformer {
         TransformSubtype[] argTypes = new TransformSubtype[args.length];
         int index = 1; //Abstract methods can't be static, so they have the 'this' argument
         for (int i = 0; i < args.length; i++) {
-            argTypes[i] = TransformSubtype.of(null);
+            argTypes[i] = TransformSubtype.createDefault();
 
             if (typeHints != null && typeHints.containsKey(index)) {
                 argTypes[i] = TransformSubtype.of(typeHints.get(index));
@@ -1704,7 +1704,7 @@ public class TypeTransformer {
             for (int i = 0; i < varTypes.length; i++) {
                 TransformTrackingValue local = firstFrame.getLocal(i);
                 if (local == null) {
-                    varTypes[i] = TransformSubtype.of(null);
+                    varTypes[i] = TransformSubtype.createDefault();
                 } else {
                     varTypes[i] = local.getTransform();
                 }

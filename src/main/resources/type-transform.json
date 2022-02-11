@@ -532,25 +532,27 @@
         }
       },
 
-      "java/lang/AbstractCollection": {
-        "it/unimi/dsi/fastutil/longs/AbstractLongCollection": {
-          "it/unimi/dsi/fastutil/longs/AbstractLongSet": {
-            "it/unimi/dsi/fastutil/longs/AbstractLongSortedSet": {
-              "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet": {},
-              "__interfaces": ["it/unimi/dsi/fastutil/longs/LongSortedSet"]
-            },
-            "__interfaces": ["it/unimi/dsi/fastutil/longs/LongSet", "java/lang/Cloneable"]
-          },
+      "java/util/AbstractCollection": {
           "it/unimi/dsi/fastutil/longs/AbstractLongCollection": {
-            "it/unimi/dsi/fastutil/longs/AbstractLongList": {
-              "it/unimi/dsi/fastutil/longs/LongArrayList": {},
-              "__interfaces": ["it/unimi/dsi/fastutil/longs/LongList", "it/unimi/dst/fastutil/longs/LongStack"]
-            },
-            "__interfaces": ["it/unimi/dsi/fastutil/longs/LongCollection"]
+              "it/unimi/dsi/fastutil/longs/AbstractLongSet": {
+                  "it/unimi/dsi/fastutil/longs/AbstractLongSortedSet": {
+                      "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet": {},
+                      "__interfaces": [
+                          "it/unimi/dsi/fastutil/longs/LongSortedSet"
+                      ]
+                  },
+                  "__interfaces": [
+                      "it/unimi/dsi/fastutil/longs/LongSet",
+                      "java/lang/Cloneable"
+                  ]
+              },
+              "it/unimi/dsi/fastutil/longs/AbstractLongList": {
+                  "it/unimi/dsi/fastutil/longs/LongArrayList": {},
+                  "__interfaces": ["it/unimi/dsi/fastutil/longs/LongList", "it/unimi/dsi/fastutil/longs/LongStack"]
+              },
+              "__interfaces": ["it/unimi/dsi/fastutil/longs/LongCollection"]
           },
-          "__interfaces": ["it/unimi/dsi/fastutil/longs/LongCollection"]
-        },
-        "__interfaces": ["java/util/Collection"]
+          "__interfaces": ["java/util/Collection"]
       },
 
       "it/unimi/dsi/fastutil/longs/Long2ByteMap": {
