@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -36,6 +37,7 @@ import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
@@ -71,6 +73,8 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -218,13 +222,15 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         this.setAllStarts(protoCube.getAllCubeStructureStarts());
         this.setAllReferences(protoCube.getAllReferences());
 
+        this.heightmaps.putAll(protoCube.getCubeHeightmaps());
+
         LightSurfaceTrackerSection[] protoCubeLightHeightmaps = protoCube.getLightHeightmaps();
         for (int i = 0; i < CubeAccess.CHUNK_COUNT; i++) {
             this.lightHeightmaps[i] = protoCubeLightHeightmaps[i];
             if (this.lightHeightmaps[i] == null) {
                 System.out.println("Got a null light heightmap while upgrading from CubePrimer at " + this.cubePos);
             } else {
-                this.lightHeightmaps[i].upgradeCube(this);
+                this.lightHeightmaps[i].upgradeNode(this);
             }
         }
 
@@ -232,9 +238,83 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         this.dirty = true;
     }
 
-    @Override public void setLightHeightmapSection(LightSurfaceTrackerSection section, int localSectionX, int localSectionZ) {
+    @Override public Map<Heightmap.Types, SurfaceTrackerSection[]> getCubeHeightmaps() {
+        return this.heightmaps;
+    }
+
+    @Override public void sectionLoaded(SurfaceTrackerSection surfaceTrackerSection, int localSectionX, int localSectionZ) {
         int idx = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
-        this.lightHeightmaps[idx] = section;
+
+        if (surfaceTrackerSection.getRawType() == -1) { //light
+            this.lightHeightmaps[idx] = (LightSurfaceTrackerSection) surfaceTrackerSection;
+        } else { // normal heightmap
+            this.heightmaps.computeIfAbsent(surfaceTrackerSection.getType(),
+                type -> new SurfaceTrackerSection[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS]
+            )[idx] = surfaceTrackerSection;
+        }
+    }
+
+    @Override public int getHighest(int x, int z, byte heightmapType) {
+        if (heightmapType == -1) { //light
+            return getHighestLight(x, z);
+        } else { //normal heightmaps
+            int maxY = Integer.MIN_VALUE;
+            for (int dy = CubeAccess.DIAMETER_IN_BLOCKS - 1; dy >= 0; dy--) {
+                if (SurfaceTrackerWrapper.HEIGHTMAP_TYPES[heightmapType].isOpaque().test(this.getBlockState(x, dy, z))) {
+                    int minY = this.cubePos.getY() * DIAMETER_IN_BLOCKS;
+                    maxY = minY + dy;
+                    break;
+                }
+            }
+            return maxY;
+        }
+    }
+
+    public int getHighestLight(int x, int z) {
+        int maxY = Integer.MIN_VALUE;
+
+        int xSection = blockToCubeLocalSection(x);
+        int zSection = blockToCubeLocalSection(z);
+
+        int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
+        LightSurfaceTrackerSection sectionAbove = this.lightHeightmaps[idx].getSectionAbove();
+
+        int dy = CubeAccess.DIAMETER_IN_BLOCKS - 1;
+
+        // TODO unknown behavior for occlusion on a loading boundary (i.e. sectionAbove == null)
+        BlockState above = sectionAbove == null ? Blocks.AIR.defaultBlockState() : ((CubeAccess) sectionAbove.getNode()).getBlockState(x, 0, z);
+        BlockState state = this.getBlockState(x, dy, z);
+
+        // note that this BlockPos relies on `cubePos.blockY` returning correct results when the local coord is not inside the cube
+        VoxelShape voxelShapeAbove = sectionAbove == null
+            ? Shapes.empty()
+            : this.getShape(above, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy + 1), cubePos.blockZ(z)), Direction.DOWN);
+        VoxelShape voxelShape = this.getShape(state, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy), cubePos.blockZ(z)), Direction.UP);
+
+        while (dy >= 0) {
+            int lightBlock = state.getLightBlock(this, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy), cubePos.blockZ(z)));
+            if (lightBlock > 0 || Shapes.faceShapeOccludes(voxelShapeAbove, voxelShape)) {
+                int minY = this.cubePos.getY() * CubeAccess.DIAMETER_IN_BLOCKS;
+                maxY = minY + dy;
+                break;
+            }
+            dy--;
+            if (dy >= 0) {
+                above = state;
+                state = this.getBlockState(x, dy, z);
+                voxelShapeAbove = this.getShape(above, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy + 1), cubePos.blockZ(z)), Direction.DOWN);
+                voxelShape = this.getShape(state, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy), cubePos.blockZ(z)), Direction.UP);
+            }
+        }
+        return maxY;
+    }
+
+    protected VoxelShape getShape(BlockState blockState, BlockPos pos, Direction facing) {
+        return blockState.canOcclude() && blockState.useShapeForLightOcclusion() ? blockState.getFaceOcclusionShape(this, pos, facing) : Shapes.empty();
+    }
+
+    @Override public int getNodeY() {
+        return this.cubePos.getY();
     }
 
     @Deprecated @Override public ChunkPos getPos() {
@@ -298,10 +378,14 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
 
             int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
 
-            this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING)[idx].onSetBlock(localX, pos.getY(), localZ, newState);
-            this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES)[idx].onSetBlock(localX, pos.getY(), localZ, newState);
-            this.heightmaps.get(Heightmap.Types.OCEAN_FLOOR)[idx].onSetBlock(localX, pos.getY(), localZ, newState);
-            this.heightmaps.get(Heightmap.Types.WORLD_SURFACE)[idx].onSetBlock(localX, pos.getY(), localZ, newState);
+            IntPredicate isOpaquePredicate = SurfaceTrackerWrapper.opaquePredicateForState(newState);
+
+            this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING)[idx].onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
+            this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES)[idx].onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
+            this.heightmaps.get(Heightmap.Types.OCEAN_FLOOR)[idx].onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
+            this.heightmaps.get(Heightmap.Types.WORLD_SURFACE)[idx].onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
+
+            this.lightHeightmaps[idx].onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
         }
 
         boolean hadBlockEntity = oldState.hasBlockEntity();
@@ -814,12 +898,6 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
 
     @Override public Heightmap getOrCreateHeightmapUnprimed(Heightmap.Types type) {
         throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override public void loadHeightmapSection(SurfaceTrackerSection section, int localSectionX, int localSectionZ) {
-        int idx = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
-
-        this.heightmaps.computeIfAbsent(section.getType(), t -> new SurfaceTrackerSection[CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS])[idx] = section;
     }
 
     @Override public int getCubeLocalHeight(Heightmap.Types type, int x, int z) {

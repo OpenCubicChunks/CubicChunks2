@@ -2,14 +2,22 @@ package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap;
 
 import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
 
+import java.util.function.IntPredicate;
+
+
+import javax.annotation.Nullable;
+
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.HeightmapAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
+import org.apache.commons.lang3.NotImplementedException;
 
 public class SurfaceTrackerWrapper extends Heightmap {
+    public static final Heightmap.Types[] HEIGHTMAP_TYPES = Heightmap.Types.values();
+
     protected final SurfaceTrackerSection surfaceTracker;
     /** global x of min block in column */
     protected final int dx;
@@ -18,6 +26,7 @@ public class SurfaceTrackerWrapper extends Heightmap {
 
     public SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types) {
         super(chunkAccess, types);
+        //noinspection ConstantConditions
         ((HeightmapAccess) this).setIsOpaque(null);
         this.surfaceTracker = new SurfaceTrackerSection(types);
         this.dx = sectionToMinBlock(chunkAccess.getPos().x);
@@ -26,6 +35,7 @@ public class SurfaceTrackerWrapper extends Heightmap {
 
     protected SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types, SurfaceTrackerSection root) {
         super(chunkAccess, types);
+        //noinspection ConstantConditions
         ((HeightmapAccess) this).setIsOpaque(null);
         this.surfaceTracker = root;
         this.dx = sectionToMinBlock(chunkAccess.getPos().x);
@@ -42,7 +52,7 @@ public class SurfaceTrackerWrapper extends Heightmap {
      */
     @Override
     public boolean update(int columnLocalX, int globalY, int columnLocalZ, BlockState blockState) {
-        surfaceTracker.getCubeNode(blockToCube(globalY)).onSetBlock(dx + columnLocalX, globalY, dz + columnLocalZ, blockState);
+        surfaceTracker.getCubeNode(blockToCube(globalY)).onSetBlock(dx + columnLocalX, globalY, dz + columnLocalZ, opaquePredicateForState(blockState));
         // We always return false, because the result is never used anywhere anyway (by either vanilla or us)
         return false;
     }
@@ -65,12 +75,26 @@ public class SurfaceTrackerWrapper extends Heightmap {
         return data.getRaw();
     }
 
-    public void loadCube(CubeAccess cube) {
-        // TODO loading should only cause marking as dirty if not loading from save file
-        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), cube, true);
+    public synchronized void loadCube(CubeAccess cube) {
+        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), cube);
     }
 
-    public void unloadCube(CubeAccess cube) {
-        this.surfaceTracker.getCubeNode(cube.getCubePos().getY()).unloadCube(cube);
+    @Nullable
+    public SurfaceTrackerSection getCubeNode(int cubeY) {
+        return surfaceTracker.getCubeNode(cubeY);
+    }
+
+    public SurfaceTrackerSection getSurfaceTrackerSection() {
+        return this.surfaceTracker;
+    }
+
+    public static IntPredicate opaquePredicateForState(BlockState blockState) {
+        return heightmapType -> {
+            if (heightmapType == -1) {
+                throw new NotImplementedException("Currently we are always marking light as dirty, so this should never be reached");
+            } else {
+                return HEIGHTMAP_TYPES[heightmapType].isOpaque().test(blockState);
+            }
+        };
     }
 }

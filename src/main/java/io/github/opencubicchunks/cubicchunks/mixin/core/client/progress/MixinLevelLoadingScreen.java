@@ -7,9 +7,9 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.progress.StoringChunkProgressListener;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,12 +31,11 @@ public class MixinLevelLoadingScreen extends Screen {
     private static void renderCubes(PoseStack mStack, StoringChunkProgressListener trackerParam,
                                     int xBase, int yBase, int scale, int spacing, CallbackInfo ci) {
 
-        ClientLevel level = Minecraft.getInstance().level;
-        if (level != null) {
-            if (!((CubicLevelHeightAccessor) level).isCubic()) {
-                return;
-            }
+        Level level = Minecraft.getInstance().getSingleplayerServer().overworld();
+        if (level == null || !((CubicLevelHeightAccessor) level).isCubic()) {
+            return;
         }
+
         ci.cancel();
         CubicLevelLoadingScreen.doRender(mStack, trackerParam, xBase, yBase, scale, spacing, COLORS);
     }

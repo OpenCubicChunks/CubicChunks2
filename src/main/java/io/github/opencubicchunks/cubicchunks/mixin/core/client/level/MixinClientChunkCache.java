@@ -52,7 +52,7 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
             return;
         }
 
-        this.cubeArray = new ClientCubeCacheStorage(adjustCubeViewDistance(viewDistance), adjustCubeViewDistance(CubicChunks.config().client.verticalViewDistance), this.level);
+        this.cubeArray = new ClientCubeCacheStorage(adjustCubeViewDistance(viewDistance), adjustCubeViewDistance(CubicChunks.config().getVerticalViewDistance()), this.level);
         this.emptyLevelCube = new EmptyLevelCube(level);
     }
 

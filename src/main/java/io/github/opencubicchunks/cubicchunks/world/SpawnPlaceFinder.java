@@ -39,14 +39,13 @@ public final class SpawnPlaceFinder {
             return null;
         }
         assert findNonEmpty(level, maxPos) == null && findNonEmpty(level, minPos) != null;
-        BlockPos foundPos = bisect(level, minPos.below(MIN_FREE_SPACE_SPAWN), maxPos.above(MIN_FREE_SPACE_SPAWN));
-        if (foundPos != null && checkValid && !level.getBlockState(foundPos).is(BlockTags.VALID_SPAWN)) {
+        BlockPos groundPos = bisect(level, minPos.below(MIN_FREE_SPACE_SPAWN), maxPos.above(MIN_FREE_SPACE_SPAWN));
+        if (checkValid && !level.getBlockState(groundPos).is(BlockTags.VALID_SPAWN)) {
             return null;
         }
-        return foundPos;
+        return groundPos.above();
     }
 
-    @Nullable
     private static BlockPos bisect(BlockGetter level, BlockPos min, BlockPos max) {
         while (min.getY() < max.getY() - 1) {
             CubicChunks.LOGGER.debug("Bisect step with min={}, max={}", min, max);
@@ -60,8 +59,7 @@ public final class SpawnPlaceFinder {
             }
         }
         // now max should contain the all-empty part, but min should still have filled part.
-        // take the block above the non-empty part of min
-        return findNonEmpty(level, min);
+        return min;
     }
 
     private static BlockPos middleY(BlockPos min, BlockPos max) {
@@ -98,8 +96,7 @@ public final class SpawnPlaceFinder {
 
     @Nullable
     private static BlockPos findNonEmpty(BlockGetter level, BlockPos pos) {
-        pos = pos.below(MIN_FREE_SPACE_SPAWN);
-        for (int i = 0; i < MIN_FREE_SPACE_SPAWN * 2; i++, pos = pos.above()) {
+        for (int i = 0; i < MIN_FREE_SPACE_SPAWN; i++, pos = pos.above()) {
             if (!level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) {
                 return pos;
             }

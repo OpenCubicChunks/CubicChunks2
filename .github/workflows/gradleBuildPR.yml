@@ -1,9 +1,6 @@
-name: Java CI
+name: Build Pull Request
 
-on:
-  push:
-    branches:
-      - 'MC_1.17'
+on: [ pull_request ]
 
 jobs:
   build:
@@ -26,7 +23,3 @@ jobs:
           java-version: 16
       - name: Build with Gradle
         run: ./gradlew build
-      - uses: actions/upload-artifact@v2
-        with:
-          name: Compiled jars
-          path: build/libs/*

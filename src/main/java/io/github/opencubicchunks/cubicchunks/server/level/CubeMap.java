@@ -14,6 +14,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeStatus;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
@@ -152,4 +153,6 @@ public interface CubeMap {
 
     // noPlayersCloseForSpawning
     boolean noPlayersCloseForSpawning(CubePos cubePos);
+
+    Long2ObjectLinkedOpenHashMap<ChunkHolder> getUpdatingCubeMap();
 }

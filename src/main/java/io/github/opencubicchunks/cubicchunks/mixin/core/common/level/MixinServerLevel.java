@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -18,9 +17,7 @@ import io.github.opencubicchunks.cubicchunks.world.CubicChunksSavedData;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicFastServerTickList;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.SurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;
@@ -45,7 +42,6 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.entity.PersistentEntitySectionManager;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
@@ -169,19 +165,6 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
     @Override
     public void onCubeUnloading(LevelCube cube) {
         cube.invalidateAllBlockEntities();
-
-        ChunkPos pos = cube.getCubePos().asChunkPos();
-        for (int x = 0; x < CubeAccess.DIAMETER_IN_SECTIONS; x++) {
-            for (int z = 0; z < CubeAccess.DIAMETER_IN_SECTIONS; z++) {
-                // TODO this might cause columns to reload after they've already been unloaded
-                LevelChunk chunk = this.getChunk(pos.x + x, pos.z + z);
-                for (Map.Entry<Heightmap.Types, Heightmap> entry : chunk.getHeightmaps()) {
-                    Heightmap heightmap = entry.getValue();
-                    SurfaceTrackerWrapper tracker = (SurfaceTrackerWrapper) heightmap;
-                    tracker.unloadCube(cube);
-                }
-            }
-        }
     }
 
     @Override

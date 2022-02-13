@@ -7,20 +7,21 @@ import net.minecraft.client.Option;
 import net.minecraft.client.ProgressOption;
 import net.minecraft.client.gui.screens.VideoSettingsScreen;
 import net.minecraft.network.chat.TranslatableComponent;
+import org.apache.commons.lang3.ArrayUtils;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.Mutable;
+import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(VideoSettingsScreen.class)
 public class MixinVideoSettingsScreen {
-    // TODO: do it better without replacing the entire options array
-    private static final Option[] MODIFIED_OPTIONS;
+    @Shadow @Final @Mutable private static Option[] OPTIONS;
 
     private static final ProgressOption VERTICAL_RENDER_DISTANCE = new ProgressOption("options.verticalRenderDistance", 2.0D,
         (Minecraft.getInstance().is64Bit() && Runtime.getRuntime().maxMemory() >= 1000000000L) ? 32.0 : 16.0D, 1.0F, (gameOptions) -> {
-        return (double) CubicChunks.config().client.verticalViewDistance;
+        return (double) CubicChunks.config().getVerticalViewDistance();
     }, (gameOptions, viewDistance) -> {
-        CubicChunks.config().client.verticalViewDistance = viewDistance.intValue();
+        CubicChunks.config().setVerticalViewDistance(viewDistance.intValue());
         CubicChunks.config().markDirty();
         Minecraft.getInstance().levelRenderer.needsUpdate();
     }, (gameOptions, option) -> {
@@ -28,15 +29,7 @@ public class MixinVideoSettingsScreen {
         return ((OptionAccess) option).invokeGenericValueLabel(new TranslatableComponent("options.chunks", (int) value));
     });
 
-    @Redirect(method = "init", at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/screens/VideoSettingsScreen;OPTIONS:[Lnet/minecraft/client/Option;"))
-    private Option[] getOptionsMixin() {
-        return MODIFIED_OPTIONS;
-    }
-
     static {
-        MODIFIED_OPTIONS = new Option[] { Option.GRAPHICS, Option.RENDER_DISTANCE, Option.AMBIENT_OCCLUSION, VERTICAL_RENDER_DISTANCE, Option.FRAMERATE_LIMIT, Option.ENABLE_VSYNC,
-            Option.VIEW_BOBBING, Option.GUI_SCALE, Option.ATTACK_INDICATOR, Option.GAMMA, Option.RENDER_CLOUDS, Option.USE_FULLSCREEN, Option.PARTICLES, Option.MIPMAP_LEVELS,
-            Option.ENTITY_SHADOWS, Option.SCREEN_EFFECTS_SCALE, Option.ENTITY_DISTANCE_SCALING, Option.FOV_EFFECTS_SCALE
-        };
+        OPTIONS = ArrayUtils.add(OPTIONS, 3, VERTICAL_RENDER_DISTANCE);
     }
 }

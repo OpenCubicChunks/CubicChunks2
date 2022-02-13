@@ -61,6 +61,7 @@ import io.github.opencubicchunks.cubicchunks.utils.ExecutorUtils;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeStatus;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ImposterProtoCube;
@@ -190,6 +191,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Shadow @Final private PlayerMap playerMap;
 
     @Shadow @Final private PoiManager poiManager;
+
+    @Shadow @Final private Long2ObjectLinkedOpenHashMap<ChunkHolder> updatingChunkMap;
 
     @Shadow private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleChunkMap;
 
@@ -396,6 +399,61 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                 for (Ticket<?> ticket : tickets) {
                     ((DistanceManagerAccess) this.distanceManager).invokeRemoveTicket(chunkPos, ticket);
                 }
+            }
+        }
+    }
+
+    // scheduleUnload
+    private void scheduleCubeUnload(long cubePos, ChunkHolder cubeHolder) {
+        CompletableFuture<CubeAccess> toSaveFuture = ((CubeHolder) cubeHolder).getCubeToSave();
+        toSaveFuture.thenAcceptAsync(cube -> {
+            CompletableFuture<CubeAccess> newToSaveFuture = ((CubeHolder) cubeHolder).getCubeToSave();
+            if (newToSaveFuture != toSaveFuture) {
+                this.scheduleCubeUnload(cubePos, cubeHolder);
+            } else {
+                if (this.pendingCubeUnloads.remove(cubePos, cubeHolder) && cube != null) {
+                    if (cube instanceof LevelCube levelCube) {
+                        levelCube.setLoaded(false);
+                        //TODO: reimplement forge event ChunkEvent#Unload.
+                        //net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Unload((Chunk)cube));
+                    }
+
+                    if (USE_ASYNC_SERIALIZATION) {
+                        this.cubeSaveAsync(cube);
+                    } else {
+                        this.cubeSave(cube);
+                    }
+                    if (this.cubeEntitiesInLevel.remove(cubePos) && cube instanceof LevelCube levelCube) {
+                        ((CubicServerLevel) this.level).onCubeUnloading(levelCube);
+                    }
+
+                    ((CubicThreadedLevelLightEngine) this.lightEngine).setCubeStatusEmpty(cube.getCubePos());
+                    this.lightEngine.tryScheduleUpdate();
+                    CubePos pos = CubePos.from(cubePos);
+
+                    for (int localX = 0; localX < CubeAccess.DIAMETER_IN_SECTIONS; localX++) {
+                        for (int localZ = 0; localZ < CubeAccess.DIAMETER_IN_SECTIONS; localZ++) {
+                            long chunkPos = pos.asChunkPos(localX, localZ).toLong();
+
+                            //Remove cubic COLUMN tickets
+                            Ticket<?>[] tickets = ((DistanceManagerAccess) distanceManager).invokeGetTickets(chunkPos).stream().filter((ticket ->
+                                ticket.getType() == CubicTicketType.COLUMN && ((TicketAccess) ticket).getKey().equals(pos))).toArray(Ticket[]::new);
+                            for (Ticket<?> ticket : tickets) {
+                                ((DistanceManagerAccess) this.distanceManager).invokeRemoveTicket(chunkPos, ticket);
+                            }
+
+                            //Remove cube from cubemaps
+                            ChunkAccess chunkAccess = this.updatingChunkMap.get(chunkPos).getFutureIfPresentUnchecked(ChunkStatus.EMPTY)
+                                .getNow(null).left().get(); //Must exist as the cube exists
+                            ((ColumnCubeMapGetter) chunkAccess).getCubeMap().markUnloaded(pos.getY());
+                        }
+                    }
+                }
+
+            }
+        }, this.cubeUnloadQueue::add).whenComplete((v, throwable) -> {
+            if (throwable != null) {
+                LOGGER.error("Failed to save cube " + ((CubeHolder) cubeHolder).getCubePos(), throwable);
             }
         }
     }
@@ -890,7 +948,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             this.updatePlayerCubePos(player); //This also sends the vanilla packet, as player#ManagedSectionPos is changed in this method.
             if (!cannotGenerateChunks) {
                 this.distanceManager.addPlayer(SectionPos.of(player), player); //Vanilla
-                ((CubicDistanceManager) this.distanceManager).addCubePlayer(CubePos.from(SectionPos.of(player)), player);
             }
         } else {
             SectionPos managedSectionPos = player.getLastSectionPos(); //Vanilla
@@ -898,7 +955,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             this.playerMap.removePlayer(cubePos.asChunkPos().toLong(), player);
             if (!cannotGenerateChunksTracker) {
                 this.distanceManager.removePlayer(managedSectionPos, player); //Vanilla
-                ((CubicDistanceManager) this.distanceManager).removeCubePlayer(cubePos, player);
             }
         }
 
@@ -966,15 +1022,12 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             // remove player is generation was allowed on last update
             if (!prevNoGenerate) {
                 this.distanceManager.removePlayer(managedSectionPos, player);
-                ((CubicDistanceManager) this.distanceManager).removeCubePlayer(cubePosManaged, player);
-
             }
 
             // update the position if generation is allowed now
             if (!nowNoGenerate) {
                 // we are mixin into this method, so it should work as this:
                 this.distanceManager.addPlayer(newSectionPos, player); //Vanilla
-                ((CubicDistanceManager) this.distanceManager).addCubePlayer(newCubePos, player);
             }
 
             if (!prevNoGenerate && nowNoGenerate) {
@@ -1251,6 +1304,11 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         long cubePosAsLong = cubePos.asLong();
         return !((CubicDistanceManager) this.distanceManager).hasCubePlayersNearby(cubePosAsLong) || this.playerMap.getPlayers(cubePosAsLong).noneMatch(
             (serverPlayer) -> !serverPlayer.isSpectator() && euclideanDistanceSquared(cubePos, serverPlayer) < (TICK_UPDATE_DISTANCE * TICK_UPDATE_DISTANCE));
+    }
+
+    @Override
+    public Long2ObjectLinkedOpenHashMap<ChunkHolder> getUpdatingCubeMap() {
+        return this.updatingCubeMap;
     }
 
     // euclideanDistanceSquared

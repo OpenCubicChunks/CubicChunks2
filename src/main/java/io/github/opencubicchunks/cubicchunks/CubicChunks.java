@@ -1,19 +1,16 @@
 package io.github.opencubicchunks.cubicchunks;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
 
+import io.github.opencubicchunks.cubicchunks.config.CommonConfig;
 import io.github.opencubicchunks.cubicchunks.config.EarlyConfig;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.StripedBiomeSource;
 import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicFeatureDecorators;
 import io.github.opencubicchunks.cubicchunks.network.PacketDispatcher;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.SharedConstants;
-import net.minecraft.Util;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ChunkMap;
@@ -40,13 +37,7 @@ public class CubicChunks implements ModInitializer {
 
     public static final String PROTOCOL_VERSION = "0";
 
-    public static final Map<String, CubicLevelHeightAccessor.WorldStyle> DIMENSION_TO_WORLD_STYLE = Util.make(new HashMap<>(), (set) -> {
-        set.put("minecraft:overworld", CubicLevelHeightAccessor.WorldStyle.CUBIC);
-        set.put("minecraft:the_nether", CubicLevelHeightAccessor.WorldStyle.CUBIC);
-        set.put("minecraft:the_end", CubicLevelHeightAccessor.WorldStyle.CHUNK);
-    });
-
-    private static final Config CONFIG = new Config();
+    private static final CommonConfig CONFIG = CommonConfig.getConfig();
 
     public CubicChunks() {
         if (!(CubeMap.class.isAssignableFrom(ChunkMap.class))) {
@@ -68,7 +59,7 @@ public class CubicChunks implements ModInitializer {
         CubicFeatures.init();
     }
 
-    public static Config config() {
+    public static CommonConfig config() {
         return CONFIG;
     }
 
@@ -78,22 +69,5 @@ public class CubicChunks implements ModInitializer {
 
         Registry.register(Registry.BIOME_SOURCE, new ResourceLocation(MODID, "stripes"), StripedBiomeSource.CODEC);
 //        Registry.register(Registry.CHUNK_GENERATOR, new ResourceLocation(MODID, "generator"), CCNoiseBasedChunkGenerator.CODEC);
-    }
-
-    //TODO: Implement a file for this.
-    public static class Config {
-        public ClientConfig client = new ClientConfig();
-        public CommonConfig common = new CommonConfig();
-
-        public void markDirty() {
-        }
-
-        public static class ClientConfig {
-            public int verticalViewDistance = 8;
-        }
-
-        public static class CommonConfig {
-            public boolean generateNewWorldsAsCC = true;
-        }
     }
 }

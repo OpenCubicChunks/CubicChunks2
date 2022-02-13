@@ -466,12 +466,15 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
             icube.removeCubeBlockEntity(pos);
         }
 
-        //if (newState.hasPostProcess(this, pos)) {
-        //TODO: reimplement postprocessing
-        //this.markBlockForPostprocessing(pos);
-        //}
+        if (newState.hasPostProcess(this, pos)) {
+            this.markPosForPostprocessing(pos);
+        }
 
         return true;
+    }
+
+    private void markPosForPostprocessing(BlockPos pos) {
+        this.getCube(pos).markPosForPostprocessing(pos);
     }
 
     @Override public boolean ensureCanWrite(BlockPos blockPos) {

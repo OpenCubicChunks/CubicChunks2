@@ -45,14 +45,14 @@ public abstract class MixinWorldRenderer_Vanilla {
     @Inject(method = "setupRender", at = @At("HEAD"))
     private void setupVerticalViewDistance(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator, CallbackInfo ci) {
         if (this.minecraft.options.renderDistance != this.lastViewDistance) return;
-        if (this.lastVerticalViewDistance != CubicChunks.config().client.verticalViewDistance) {
+        if (this.lastVerticalViewDistance != CubicChunks.config().getVerticalViewDistance()) {
             this.allChanged();
         }
     }
 
     @Inject(method = "allChanged", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ItemBlockRenderTypes;setFancy(Z)V"))
     private void setLastVerticalViewDistance(CallbackInfo ci) {
-        this.lastVerticalViewDistance = CubicChunks.config().client.verticalViewDistance;
+        this.lastVerticalViewDistance = CubicChunks.config().getVerticalViewDistance();
     }
 
     /**
@@ -81,7 +81,7 @@ public abstract class MixinWorldRenderer_Vanilla {
     @ModifyArg(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/FogRenderer;setupFog(Lnet/minecraft/client/Camera;"
         + "Lnet/minecraft/client/renderer/FogRenderer$FogMode;FZ)V"))
     private float modifyFogDistance(float hFogDistance) {
-        int verticalViewDistance = CubicChunks.config().client.verticalViewDistance;
+        int verticalViewDistance = CubicChunks.config().getVerticalViewDistance();
         float verticalFogDistance;
         if (verticalViewDistance >= 4) {
             verticalFogDistance = verticalViewDistance * 16;
@@ -93,6 +93,6 @@ public abstract class MixinWorldRenderer_Vanilla {
 
     @Redirect(method = "updateRenderChunks", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;clamp(DDD)D"))
     private double considerVerticalRenderDistance(double value, double min, double max) {
-        return Mth.clamp(Math.max(value, CubicChunks.config().client.verticalViewDistance), min, max);
+        return Mth.clamp(Math.max(value, CubicChunks.config().getVerticalViewDistance()), min, max);
     }
 }

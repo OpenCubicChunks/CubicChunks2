@@ -21,13 +21,13 @@ public abstract class MixinCreateWorldScreen extends Screen {
 
     @Inject(method = "init", at = @At("RETURN"))
     private void onInit(CallbackInfo ci) {
-        isCubicChunksButton = this.addRenderableWidget(CycleButton.onOffBuilder(CubicChunks.config().common.generateNewWorldsAsCC)
+        isCubicChunksButton = this.addRenderableWidget(CycleButton.onOffBuilder(CubicChunks.config().shouldGenerateNewWorldsAsCC())
 //                .withCustomNarration((button) -> CommonComponents.joinForNarration(button.createDefaultNarrationMessage(), new TranslatableComponent("selectWorld.cubicChunks.info")))
                 .create(this.width / 2 + 5, 151 - 20, 150, 20, new TranslatableComponent("selectWorld.cubicChunks"), (button, cubicChunksEnabled) -> {
             var config = CubicChunks.config();
-            config.common.generateNewWorldsAsCC = cubicChunksEnabled;
+            config.setGenerateNewWorldsAsCC(cubicChunksEnabled);
             config.markDirty();
-            CubicChunks.LOGGER.info("New worlds generate as CC: " + config.common.generateNewWorldsAsCC);
+            CubicChunks.LOGGER.info("New worlds generate as CC: " + config.shouldGenerateNewWorldsAsCC());
         }));
     }
 }
