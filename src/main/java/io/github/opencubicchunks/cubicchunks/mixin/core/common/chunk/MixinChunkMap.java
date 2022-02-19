@@ -69,6 +69,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.AsyncSaveData;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicSectionStorage;
+import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicThreadedLevelLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.storage.CubeSerializer;
 import io.github.opencubicchunks.cubicchunks.world.storage.RegionCubeIO;
@@ -455,7 +456,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             if (throwable != null) {
                 LOGGER.error("Failed to save cube " + ((CubeHolder) cubeHolder).getCubePos(), throwable);
             }
-        }
+        });
     }
 
     // used from ASM
