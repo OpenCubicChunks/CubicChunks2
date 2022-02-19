@@ -124,7 +124,7 @@ public class SurfaceTrackerSectionTest {
             SurfaceTrackerSection section = this.sections[(x >> 4) + ((z >> 4) * CubeAccess.DIAMETER_IN_SECTIONS)];
 
             if (section == null) {
-                fail(String.format("No section loaded for position (%d, %d, %d)", x, Coords.blockToCube(this.y) + localY,  z));
+                fail(String.format("No section loaded for position (%d, %d, %d)", x, Coords.blockToCube(this.y) + localY, z));
             }
             section.onSetBlock(x, (this.y << SurfaceTrackerSection.SCALE_0_NODE_BITS) + localY, z, heightmapType -> isOpaque);
         }
