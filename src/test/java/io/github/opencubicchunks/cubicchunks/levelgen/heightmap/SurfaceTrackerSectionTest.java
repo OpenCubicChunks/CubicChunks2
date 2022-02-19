@@ -1,6 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.levelgen.heightmap;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.util.BitSet;
 import java.util.HashMap;
@@ -20,9 +21,18 @@ public class SurfaceTrackerSectionTest {
     @Test
     public void sanityTest() {
         ReferenceHeightmap reference = new ReferenceHeightmap(2048);
-
-        SurfaceTrackerSection root = new SurfaceTrackerSection(Heightmap.Types.WORLD_SURFACE);
+        
         TestHeightmapNode node0 = new TestHeightmapNode(0);
+        SurfaceTrackerSection[] roots = new SurfaceTrackerSection[CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS];
+        for (int i = 0; i < roots.length; i++) {
+            roots[i] = new SurfaceTrackerSection(Heightmap.Types.WORLD_SURFACE);
+        }
+
+        for (int localSectionX = 0; localSectionX < CubeAccess.DIAMETER_IN_SECTIONS; localSectionX++) {
+            for (int localSectionZ = 0; localSectionZ < CubeAccess.DIAMETER_IN_SECTIONS; localSectionZ++) {
+                roots[localSectionX + CubeAccess.DIAMETER_IN_SECTIONS * localSectionZ].loadCube(localSectionX, localSectionZ, node0);
+            }
+        }
 
         Consumer<HeightmapBlock> setHeight = block -> {
             reference.set(block.y, block.isOpaque);
@@ -30,19 +40,20 @@ public class SurfaceTrackerSectionTest {
         };
 
         forEachBlockColumn((x, z) -> {
+            int localSectionX = Coords.blockToCubeLocalSection(x);
+            int localSectionZ = Coords.blockToCubeLocalSection(z);
+
             reference.clear();
 
             setHeight.accept(new HeightmapBlock(x, 5, z, true));
             setHeight.accept(new HeightmapBlock(x, 6, z, false));
             setHeight.accept(new HeightmapBlock(x, 3, z, true));
 
-            root.loadCube(Coords.blockToCubeLocalSection(x), Coords.blockToCubeLocalSection(z), node0);
-
-            assertEquals(reference.getHighest(), root.getHeight(x, z));
+            assertEquals(reference.getHighest(), roots[localSectionX + CubeAccess.DIAMETER_IN_SECTIONS * localSectionZ].getHeight(x, z));
 
             setHeight.accept(new HeightmapBlock(x, 13, z, true));
 
-            assertEquals(reference.getHighest(), root.getHeight(x, z));
+            assertEquals(reference.getHighest(), roots[localSectionX + CubeAccess.DIAMETER_IN_SECTIONS * localSectionZ].getHeight(x, z));
         });
     }
 
@@ -52,14 +63,21 @@ public class SurfaceTrackerSectionTest {
 
         ReferenceHeightmap reference = new ReferenceHeightmap(maxCoordinate);
 
-        SurfaceTrackerSection root = new SurfaceTrackerSection(Heightmap.Types.WORLD_SURFACE);
         Map<Integer, TestHeightmapNode> nodes = new HashMap<>();
+        SurfaceTrackerSection[] roots = new SurfaceTrackerSection[CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS];
+        for (int i = 0; i < roots.length; i++) {
+            roots[i] = new SurfaceTrackerSection(Heightmap.Types.WORLD_SURFACE);
+        }
 
         Consumer<HeightmapBlock> setHeight = block -> {
             reference.set(block.y, block.isOpaque);
             nodes.computeIfAbsent(block.y >> SurfaceTrackerSection.SCALE_0_NODE_BITS, y -> {
                 TestHeightmapNode node = new TestHeightmapNode(y);
-                root.loadCube(Coords.blockToCubeLocalSection(block.x), Coords.blockToCubeLocalSection(block.z), node);
+                for (int localSectionX = 0; localSectionX < CubeAccess.DIAMETER_IN_SECTIONS; localSectionX++) {
+                    for (int localSectionZ = 0; localSectionZ < CubeAccess.DIAMETER_IN_SECTIONS; localSectionZ++) {
+                        roots[localSectionX + CubeAccess.DIAMETER_IN_SECTIONS * localSectionZ].loadCube(localSectionX, localSectionZ, node);
+                    }
+                }
                 return node;
             }).setBlock(block.x, block.y & (SurfaceTrackerSection.SCALE_0_NODE_HEIGHT - 1), block.z, block.isOpaque);
         };
@@ -73,8 +91,7 @@ public class SurfaceTrackerSectionTest {
                 int y = r.nextInt(maxCoordinate * 2) - maxCoordinate;
                 setHeight.accept(new HeightmapBlock(x, y, z, r.nextBoolean()));
             }
-
-            assertEquals(reference.getHighest(), root.getHeight(x, z));
+            assertEquals(reference.getHighest(), roots[Coords.blockToCubeLocalSection(x) + CubeAccess.DIAMETER_IN_SECTIONS * Coords.blockToCubeLocalSection(z)].getHeight(x, z));
         });
     }
 
@@ -98,7 +115,6 @@ public class SurfaceTrackerSectionTest {
                     bitSets[j] = new BitSet(SurfaceTrackerSection.SCALE_0_NODE_HEIGHT);
                 }
             }
-
             this.y = nodeY;
         }
 
@@ -107,9 +123,10 @@ public class SurfaceTrackerSectionTest {
             this.blockBitsets[z][x].set(localY, isOpaque);
             SurfaceTrackerSection section = this.sections[(x >> 4) + ((z >> 4) * CubeAccess.DIAMETER_IN_SECTIONS)];
 
-            if (section != null) {
-                section.onSetBlock(x, (this.y << SurfaceTrackerSection.SCALE_0_NODE_BITS) + localY, z, heightmapType -> isOpaque);
+            if (section == null) {
+                fail(String.format("No section loaded for position (%d, %d, %d)", x, Coords.blockToCube(this.y) + localY,  z));
             }
+            section.onSetBlock(x, (this.y << SurfaceTrackerSection.SCALE_0_NODE_BITS) + localY, z, heightmapType -> isOpaque);
         }
 
         @Override public void sectionLoaded(SurfaceTrackerSection surfaceTrackerSection, int localSectionX, int localSectionZ) {
