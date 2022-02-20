@@ -274,6 +274,53 @@ public class SurfaceTrackerSection {
         nodes[idx].loadCube(localSectionX, localSectionZ, newNode);
     }
 
+    /**
+     * @return Whether this node was unloaded
+     */
+    public boolean trimToRequired(HeightmapStorage storage) {
+        if(this.scale != 0) {
+            SurfaceTrackerSection[] nodes = (SurfaceTrackerSection[]) this.cubeOrNodes;
+            for (int i = 0, nodesLength = nodes.length; i < nodesLength; i++) {
+                boolean childUnloaded = nodes[i].trimToRequired(storage);
+                if (childUnloaded) {
+                    nodes[i] = null;
+                }
+                //if this node isn't required, all child nodes must be unloaded
+                if (!this.required) {
+                    assert childUnloaded : "Child was not unloaded for non-required node";
+                }
+            }
+        }
+
+        if (!this.required) {
+            storage.unloadNode(this.scale, this.scaledY, this);
+
+            this.cubeOrNodes = null;
+            this.parent = null;
+
+            return true;
+        }
+
+        this.required = false;
+        return false;
+    }
+
+    /**
+     * Iterates recursively up the tree
+     * Marks all parent, and sibling nodes as required
+     */
+    public void markSiblingsRequired() {
+        if (this.parent != null && !this.parent.required) {
+            this.parent.required = true;
+
+            for (SurfaceTrackerSection node : (SurfaceTrackerSection[]) this.parent.cubeOrNodes) {
+                node.required = true;
+            }
+
+            this.parent.markSiblingsRequired();
+        }
+    }
+
     @Nullable
     public SurfaceTrackerSection getParent() {
         return parent;
