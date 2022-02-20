@@ -8,7 +8,6 @@ import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.HeightmapAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -52,7 +51,7 @@ public class SurfaceTrackerWrapper extends Heightmap {
      */
     @Override
     public boolean update(int columnLocalX, int globalY, int columnLocalZ, BlockState blockState) {
-        surfaceTracker.getCubeNode(blockToCube(globalY)).onSetBlock(dx + columnLocalX, globalY, dz + columnLocalZ, opaquePredicateForState(blockState));
+        surfaceTracker.getMinScaleNode(blockToCube(globalY)).onSetBlock(dx + columnLocalX, globalY, dz + columnLocalZ, opaquePredicateForState(blockState));
         // We always return false, because the result is never used anywhere anyway (by either vanilla or us)
         return false;
     }
@@ -75,13 +74,13 @@ public class SurfaceTrackerWrapper extends Heightmap {
         return data.getRaw();
     }
 
-    public synchronized void loadCube(CubeAccess cube) {
-        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), cube);
+    public synchronized void loadCube(HeightmapNode node) {
+        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), node);
     }
 
     @Nullable
-    public SurfaceTrackerSection getCubeNode(int cubeY) {
-        return surfaceTracker.getCubeNode(cubeY);
+    public SurfaceTrackerSection getMinScaleNode(int nodeY) {
+        return surfaceTracker.getMinScaleNode(nodeY);
     }
 
     public SurfaceTrackerSection getSurfaceTrackerSection() {

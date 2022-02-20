@@ -200,21 +200,21 @@ public class SurfaceTrackerSection {
      * Should only be called on scale 0 heightmaps
      * @param isOpaquePredicate takes heightmap type
      */
-    public void onSetBlock(int x, int y, int z, IntPredicate isOpaquePredicate) {
-        int index = index(x, z);
+    public void onSetBlock(int cubeLocalX, int y, int cubeLocalZ, IntPredicate isOpaquePredicate) {
+        int index = index(cubeLocalX, cubeLocalZ);
         if (isDirty(index)) {
             return;
         }
 
         //input coordinates could be cube local, so convert Y to global
         int globalY = Coords.localToBlock(scaledY, Coords.blockToLocal(y));
-        int height = getHeight(x, z);
+        int height = getHeight(cubeLocalX, cubeLocalZ);
         if (globalY < height) {
             return;
         }
 
         if (heightmapType == -1) { //TODO: need to add lighting predicate (optimisation)
-            markDirty(x, z);
+            markDirty(cubeLocalX, cubeLocalZ);
             return;
         }
         boolean opaque = isOpaquePredicate.test(this.heightmapType);
@@ -225,14 +225,14 @@ public class SurfaceTrackerSection {
 
             if (parent != null) { //parent can only be null in a ProtoCube, or a MAX_SCALE section
                 //only mark parents dirty if the Y is above their current height
-                this.parent.markTreeDirtyIfRequired(x, z, y);
+                this.parent.markTreeDirtyIfRequired(cubeLocalX, cubeLocalZ, y);
             }
             this.heights.set(index, absToRelY(globalY, scaledY, scale));
             return;
         }
         //at this point globalY == height
         if (!opaque) { //if we're replacing the current (opaque) block with a non-opaque block
-            markDirty(x, z);
+            markDirty(cubeLocalX, cubeLocalZ);
         }
     }
 
@@ -285,7 +285,7 @@ public class SurfaceTrackerSection {
     }
 
     @Nullable
-    public SurfaceTrackerSection getCubeNode(int y) {
+    public SurfaceTrackerSection getMinScaleNode(int y) {
         if (scale == 0) {
             if (y != scaledY) {
                 throw new IllegalArgumentException("Invalid Y: " + y + ", expected " + scaledY);
@@ -298,7 +298,7 @@ public class SurfaceTrackerSection {
         if (node == null) {
             return null;
         }
-        return node.getCubeNode(y);
+        return node.getMinScaleNode(y);
     }
 
     public HeightmapNode getNode() {

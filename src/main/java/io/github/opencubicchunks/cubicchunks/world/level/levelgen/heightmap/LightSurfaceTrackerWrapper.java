@@ -18,12 +18,12 @@ public class LightSurfaceTrackerWrapper extends SurfaceTrackerWrapper {
         int relY = blockToLocal(globalY);
         // TODO how are we going to handle making sure that unloaded sections stay updated?
         if (relY == 0) {
-            SurfaceTrackerSection section = surfaceTracker.getCubeNode(blockToCube(globalY - 1));
+            SurfaceTrackerSection section = surfaceTracker.getMinScaleNode(blockToCube(globalY - 1));
             if (section != null) {
                 section.markDirty(columnLocalX, columnLocalZ);
             }
         } else if (relY == CubeAccess.DIAMETER_IN_BLOCKS - 1) {
-            SurfaceTrackerSection section = surfaceTracker.getCubeNode(blockToCube(globalY + 1));
+            SurfaceTrackerSection section = surfaceTracker.getMinScaleNode(blockToCube(globalY + 1));
             if (section != null) {
                 section.markDirty(columnLocalX, columnLocalZ);
             }
