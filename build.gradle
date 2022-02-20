@@ -229,6 +229,7 @@ dependencies {
     }
 
     compileOnly('com.google.code.findbugs:jsr305:3.0.1')
+    testCompileOnly('com.google.code.findbugs:jsr305:3.0.1')
 
     testImplementation('junit:junit:4.11')
     testImplementation('org.hamcrest:hamcrest-junit:2.0.0.0')
