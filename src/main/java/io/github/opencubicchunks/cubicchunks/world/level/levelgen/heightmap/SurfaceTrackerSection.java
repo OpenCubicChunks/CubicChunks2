@@ -40,7 +40,7 @@ public class SurfaceTrackerSection {
     protected final byte scale;
     protected final byte heightmapType;
 
-    protected boolean required;
+    private int requiredChildren = 0;
 
     public SurfaceTrackerSection(Heightmap.Types types) {
         this(MAX_SCALE, 0, null, (byte) types.ordinal());
@@ -241,7 +241,7 @@ public class SurfaceTrackerSection {
      * @param localSectionZ
      * @param newNode
      */
-    public synchronized void loadCube(int localSectionX, int localSectionZ, HeightmapNode newNode) {
+    public synchronized void loadCube(int localSectionX, int localSectionZ, HeightmapStorage storage, HeightmapNode newNode) {
         if (this.scale != 0 && this.cubeOrNodes == null) {
             throw new IllegalStateException("Attempting to load node " + newNode + " into an unloaded surface tracker section");
         }
@@ -264,60 +264,50 @@ public class SurfaceTrackerSection {
             //TODO: load from save here, instead of always creating
             SurfaceTrackerSection newOrLoadedSection;
             if (i == idx) {
-                newOrLoadedSection = createNewChild(newScale, newScaledY, newNode);
+                newOrLoadedSection = storage.loadNode(this.heightmapType, newScale, newScaledY);
+                if (newOrLoadedSection != null) {
+                    newOrLoadedSection.cubeOrNodes = newNode;
+                } else {
+                    newOrLoadedSection = createNewChild(newScale, newScaledY, newNode);
+                }
+
+                if (newScale == 0) { //scale 0 nodes are required by their cube (if it's loaded)
+                    newOrLoadedSection.onChildLoaded();
+                }
+
+                this.onChildLoaded();
             } else {
                 newOrLoadedSection = null;
             }
             nodes[i] = newOrLoadedSection;
         }
         assert nodes[idx] != null;
-        nodes[idx].loadCube(localSectionX, localSectionZ, newNode);
+        nodes[idx].loadCube(localSectionX, localSectionZ, storage, newNode);
     }
 
-    /**
-     * @return Whether this node was unloaded
-     */
-    public boolean trimToRequired(HeightmapStorage storage) {
-        if(this.scale != 0) {
+    public void onChildLoaded() {
+        ++requiredChildren;
+        assert scale == 0 || requiredChildren <= ((SurfaceTrackerSection[]) this.cubeOrNodes).length : "More children than max?!";
+    }
+
+    public void onChildUnloaded(HeightmapStorage storage) {
+        --requiredChildren;
+
+        assert requiredChildren >= 0 : "Less than 0 required children?!";
+
+        if (this.scale == 0) {
+            this.parent.onChildUnloaded(storage);
+        } else if (requiredChildren == 0) {
             SurfaceTrackerSection[] nodes = (SurfaceTrackerSection[]) this.cubeOrNodes;
             for (int i = 0, nodesLength = nodes.length; i < nodesLength; i++) {
-                boolean childUnloaded = nodes[i].trimToRequired(storage);
-                if (childUnloaded) {
+                SurfaceTrackerSection childNode = nodes[i];
+                if (childNode != null) {
+                    storage.unloadNode(this.heightmapType, childNode.scale, childNode.scaledY, childNode);
                     nodes[i] = null;
                 }
-                //if this node isn't required, all child nodes must be unloaded
-                if (!this.required) {
-                    assert childUnloaded : "Child was not unloaded for non-required node";
-                }
-            }
-        }
-
-        if (!this.required) {
-            storage.unloadNode(this.scale, this.scaledY, this);
-
-            this.cubeOrNodes = null;
-            this.parent = null;
-
-            return true;
-        }
-
-        this.required = false;
-        return false;
-    }
-
-    /**
-     * Iterates recursively up the tree
-     * Marks all parent, and sibling nodes as required
-     */
-    public void markSiblingsRequired() {
-        if (this.parent != null && !this.parent.required) {
-            this.parent.required = true;
-
-            for (SurfaceTrackerSection node : (SurfaceTrackerSection[]) this.parent.cubeOrNodes) {
-                node.required = true;
             }
 
-            this.parent.markSiblingsRequired();
+            this.parent.onChildUnloaded(storage);
         }
     }
 
@@ -363,6 +353,16 @@ public class SurfaceTrackerSection {
     /** Get position x/z index within a column, from global/local pos */
     protected int index(int x, int z) {
         return (z & 0xF) * WIDTH_BLOCKS + (x & 0xF);
+    }
+
+    @VisibleForTesting
+    public void setCubeOrNodes(@Nullable Object cubeOrNodes) {
+        this.cubeOrNodes = cubeOrNodes;
+    }
+
+    @VisibleForTesting
+    public void setParent(@Nullable SurfaceTrackerSection parent) {
+        this.parent = parent;
     }
 
     @VisibleForTesting

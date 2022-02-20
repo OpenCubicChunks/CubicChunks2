@@ -74,8 +74,8 @@ public class SurfaceTrackerWrapper extends Heightmap {
         return data.getRaw();
     }
 
-    public synchronized void loadCube(HeightmapNode node) {
-        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), node);
+    public synchronized void loadCube(HeightmapStorage storage, HeightmapNode node) {
+        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), storage, node);
     }
 
     @Nullable

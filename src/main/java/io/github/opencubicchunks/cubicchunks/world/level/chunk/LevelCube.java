@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
@@ -26,9 +27,11 @@ import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerSection;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.SurfaceTrackerSection;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.SurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import io.github.opencubicchunks.cubicchunks.world.storage.CubeProtoTickList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -242,7 +245,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         return this.heightmaps;
     }
 
-    @Override public void sectionLoaded(SurfaceTrackerSection surfaceTrackerSection, int localSectionX, int localSectionZ) {
+    @Override public void sectionLoaded(@Nonnull SurfaceTrackerSection surfaceTrackerSection, int localSectionX, int localSectionZ) {
         int idx = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
 
         if (surfaceTrackerSection.getRawType() == -1) { //light
@@ -251,6 +254,20 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
             this.heightmaps.computeIfAbsent(surfaceTrackerSection.getType(),
                 type -> new SurfaceTrackerSection[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS]
             )[idx] = surfaceTrackerSection;
+        }
+    }
+
+    @Override public void unloadNode(@Nonnull HeightmapStorage storage) {
+        for (SurfaceTrackerSection[] surfaceTrackerSections : this.heightmaps.values()) {
+            for (int i = 0, sectionArrayLength = surfaceTrackerSections.length; i < sectionArrayLength; i++) {
+                surfaceTrackerSections[i].onChildUnloaded(storage);
+                surfaceTrackerSections[i] = null;
+            }
+        }
+        LightSurfaceTrackerSection[] surfaceTrackerSections = this.lightHeightmaps;
+        for (int i = 0, length = surfaceTrackerSections.length; i < length; i++) {
+            surfaceTrackerSections[i].onChildUnloaded(storage);
+            surfaceTrackerSections[i] = null;
         }
     }
 
@@ -1060,6 +1077,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         }
         // TODO heightmap stuff should probably be elsewhere rather than here.
         ChunkPos pos = this.cubePos.asChunkPos();
+        HeightmapStorage storage = ((CubicServerLevel) this.level).getHeightmapStorage();
         for (int x = 0; x < CubeAccess.DIAMETER_IN_SECTIONS; x++) {
             for (int z = 0; z < CubeAccess.DIAMETER_IN_SECTIONS; z++) {
 
@@ -1069,11 +1087,11 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
                 for (Map.Entry<Heightmap.Types, Heightmap> entry : chunk.getHeightmaps()) {
                     Heightmap heightmap = entry.getValue();
                     SurfaceTrackerWrapper tracker = (SurfaceTrackerWrapper) heightmap;
-                    tracker.loadCube(this);
+                    tracker.loadCube(storage, this);
                 }
 
                 // TODO probably don't want to do this if the cube was already loaded as a CubePrimer
-                ((LightHeightmapGetter) chunk).getServerLightHeightmap().loadCube(this);
+                ((LightHeightmapGetter) chunk).getServerLightHeightmap().loadCube(storage, this);
             }
         }
     }

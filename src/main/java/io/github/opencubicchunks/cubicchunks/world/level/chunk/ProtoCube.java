@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.function.IntPredicate;
 import java.util.stream.Stream;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
@@ -25,11 +26,13 @@ import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerSection;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.SurfaceTrackerSection;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.SurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
+import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import io.github.opencubicchunks.cubicchunks.world.storage.CubeProtoTickList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -221,7 +224,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
                     }
                 }
 
-                lightHeightmap.loadCube(this);
+                lightHeightmap.loadCube(((CubicServerLevel) this.levelHeightAccessor).getHeightmapStorage(), this);
 
                 for (int z = 0; z < SECTION_DIAMETER; z++) {
                     for (int x = 0; x < SECTION_DIAMETER; x++) {
@@ -238,7 +241,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
     }
 
     @Override
-    public void sectionLoaded(SurfaceTrackerSection surfaceTrackerSection, int localSectionX, int localSectionZ) {
+    public void sectionLoaded(@Nonnull SurfaceTrackerSection surfaceTrackerSection, int localSectionX, int localSectionZ) {
         int idx = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
 
         if (surfaceTrackerSection.getRawType() == -1) { //light
@@ -247,6 +250,21 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
             this.heightmaps.computeIfAbsent(surfaceTrackerSection.getType(),
                 type -> new SurfaceTrackerSection[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS]
             )[idx] = surfaceTrackerSection;
+        }
+    }
+
+    @Override
+    public void unloadNode(@Nonnull HeightmapStorage storage) {
+        for (SurfaceTrackerSection[] surfaceTrackerSections : this.heightmaps.values()) {
+            for (int i = 0, sectionArrayLength = surfaceTrackerSections.length; i < sectionArrayLength; i++) {
+                surfaceTrackerSections[i].onChildUnloaded(storage);
+                surfaceTrackerSections[i] = null;
+            }
+        }
+        LightSurfaceTrackerSection[] surfaceTrackerSections = this.lightHeightmaps;
+        for (int i = 0, length = surfaceTrackerSections.length; i < length; i++) {
+            surfaceTrackerSections[i].onChildUnloaded(storage);
+            surfaceTrackerSections[i] = null;
         }
     }
 
@@ -341,7 +359,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
                 for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
                     int idx = dx + dz * CubeAccess.DIAMETER_IN_SECTIONS;
                     surfaceTrackerSections[idx] = new SurfaceTrackerSection(0, cubePos.getY(), null, this, (byte) type.ordinal());
-                    surfaceTrackerSections[idx].loadCube(dx, dz, this);
+                    surfaceTrackerSections[idx].loadCube(dx, dz, ((CubicServerLevel) this.levelHeightAccessor).getHeightmapStorage(), this);
                     surfaceTrackerSections[idx].markAllDirtyAndTreeIfRequired();
                 }
             }
