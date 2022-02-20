@@ -1,18 +1,23 @@
 package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap;
 
-import it.unimi.dsi.fastutil.longs.Long2ReferenceMap;
-import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ReferenceMap;
+import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 
 public class SurfaceTrackerSectionStorage implements HeightmapStorage {
-    private Long2ReferenceMap<SurfaceTrackerSection> saved = new Long2ReferenceOpenHashMap<>();
+    private Object2ReferenceMap<PackedTypeScaleScaledY, SurfaceTrackerSection> saved = new Object2ReferenceOpenHashMap<>();
 
     @Override
-    public void unloadNode(int scale, int scaledY, SurfaceTrackerSection surfaceTrackerSection) {
-        saved.put((((long)scale) << 32) | scaledY, surfaceTrackerSection);
+    public void unloadNode(byte heightmapType, int scale, int scaledY, SurfaceTrackerSection surfaceTrackerSection) {
+        saved.put(new PackedTypeScaleScaledY(heightmapType, scale, scaledY), surfaceTrackerSection);
+
+        surfaceTrackerSection.cubeOrNodes = null;
+        surfaceTrackerSection.parent = null;
     }
 
     @Override
-    public SurfaceTrackerSection loadNode(int scale, int scaledY) {
-        return saved.remove((((long)scale) << 32) | scaledY);
+    public SurfaceTrackerSection loadNode(byte heightmapType, int scale, int scaledY) {
+        return saved.remove(new PackedTypeScaleScaledY(heightmapType, scale, scaledY));
     }
+
+    record PackedTypeScaleScaledY(byte heightmapType, int scale, int scaledY) { }
 }
