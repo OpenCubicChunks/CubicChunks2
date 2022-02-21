@@ -14,13 +14,13 @@
     "mixins": [
         "common.MixinDistanceManager",
         "common.MixinMinecraftServer",
-        "common.MixinPlayerRespawnLogic",
-        "client.MixinHeightMapRenderer"
+        "common.MixinPlayerRespawnLogic"
     ],
     "client": [
         "client.MixinClientLevel",
         "client.MixinDebugRenderer",
         "client.MixinGameRenderer",
+        "client.MixinHeightMapRenderer",
         "client.MixinLevelRenderer",
         "client.MixinMinecraft",
         "client.MixinMinecraftServer"

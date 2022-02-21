@@ -7,6 +7,8 @@ import static org.objectweb.asm.Type.getObjectType;
 import static org.objectweb.asm.Type.getType;
 import static org.objectweb.asm.commons.Method.getMethod;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,20 +16,23 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-import net.fabricmc.loader.api.FabricLoader;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
+import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import net.fabricmc.loader.api.MappingResolver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.commons.MethodRemapper;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -35,11 +40,11 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class MainTransformer {
+    public static final Config TRANSFORM_CONFIG;
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final boolean IS_DEV = FabricLoader.getInstance().isDevelopmentEnvironment();
+    private static final boolean IS_DEV = Utils.isDev();
 
     public static void transformChunkHolder(ClassNode targetClass) {
-
         Map<ClassMethod, String> vanillaToCubic = new HashMap<>();
         vanillaToCubic.put(new ClassMethod(getObjectType("net/minecraft/class_3193"), // ChunkHolder
                 getMethod("void <init>("
@@ -108,44 +113,116 @@ public class MainTransformer {
         vanillaToCubic.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), // ChunkMap
             getMethod("net.minecraft.class_3193 " // ChunkHolder
                 + "method_17217(long, int, " // updateChunkScheduling
-                + "net.minecraft.class_3193, int)")), "updateCubeScheduling"); // ChunkHolder
-
+                + "net.minecraft.class_3193, int)" // ChunkHolder
+            )), "updateCubeScheduling");
         vanillaToCubic.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), //ChunkMap
             getMethod("boolean "
                 + "method_27055(" // isExistingChunkFull
                 + "net.minecraft.class_1923)" //ChunkPos
             )), "isExistingCubeFull");
+        vanillaToCubic.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), //ChunkMap
+            getMethod("void "
+                + "method_20605(" // processUnloads
+                + "java.util.function.BooleanSupplier)" //ChunkPos
+            )), "processCubeUnloads");
+        vanillaToCubic.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), //ChunkMap
+            getMethod("void "
+                + "method_20458(long, " // scheduleUnload
+                + "net.minecraft.class_3193)" // ChunkHolder
+            )), "scheduleCubeUnload");
+        vanillaToCubic.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), //ChunkMap
+            getMethod("void method_17242(boolean)")), "saveAllCubes"); // saveAllChunks
+        vanillaToCubic.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), // ChunkMap
+            getMethod("boolean method_17228(" // save
+                + "net.minecraft.class_2791)" // ChunkAccess
+            )), "cubeSave");
 
         Map<ClassMethod, String> methodRedirects = new HashMap<>();
 
         methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), // ChunkMap
             getMethod("net.minecraft.class_2487 " // CompundTag
                 + "method_17979(" // readChunk
-                + "net.minecraft.class_1923)" // chunkPos
+                + "net.minecraft.class_1923)" // ChunkPos
             )), "readCubeNBT");
-
         methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), // ChunkMap
             getMethod("void "
                 + "method_27054(" // markPositionReplaceable
-                + "net.minecraft.class_1923)" // chunkPos
+                + "net.minecraft.class_1923)" // ChunkPos
             )), "markCubePositionReplaceable");
-
-        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3898"),
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), // ChunkMap
             getMethod("byte "
                 + "method_27053(" // markPosition
                 + "net.minecraft.class_1923, " // chunkPos
                 + "net.minecraft.class_2806$class_2808)" // ChunkStatus.ChunkType
             )), "markCubePosition");
-
         methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_1923"), // ChunkPos
-                getMethod("long method_8324()")), // toLong
-            "asLong");
+            getMethod("long method_8324()" // toLong
+            )), "asLong");
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), // ChunkMap
+            getMethod("void method_20605(java.util.function.BooleanSupplier)")), "processCubeUnloads"); // processUnloads
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), // ChunkMap
+            getMethod("void method_23697()"), // flushWorker
+            getObjectType("net/minecraft/class_3977")), "flushCubeWorker"); // ChunkStorage
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3898"), // ChunkMap
+            getMethod("void method_17910(" // write
+                + "net.minecraft.class_1923, " // ChunkPos
+                + "net.minecraft.class_2487)" // CompoundTag
+            ), getObjectType("net/minecraft/class_3977")), "writeCube"); // ChunkStorage
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3193"), // ChunkHolder
+            getMethod("java.util.concurrent.CompletableFuture "
+                + "method_14000()"  // getChunkToSave
+            )), "getCubeToSave");
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3193"), // ChunkHolder
+            getMethod("net.minecraft.class_1923 " // ChunkPos
+                + "method_13994()"  // getPos
+            )), "getCubePos");
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_2818"), // LevelChunk
+            getMethod("void method_12226(boolean)" // setLoaded
+            )), "setLoaded");
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_2791"), // ChunkAccess
+            getMethod("net.minecraft.class_1923 " // ChunkPos
+                + "method_12004()" // getPos
+            )), "getCubePos");
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_2791"), // ChunkAccess
+            getMethod("void method_12008(boolean)" // setUnsaved
+            )), "setDirty");
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_2791"), // ChunkAccess
+            getMethod("net.minecraft.class_2806 " // ChunkStatus
+                + "method_12009()" // getStatus
+            )), "getCubeStatus");
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_2791"), // ChunkAccess
+            getMethod("java.util.Map method_12016()")), "getAllCubeStructureStarts"); // getAllStarts
+
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3218"), // ServerLevel
+            getMethod("void method_18764(" // unload
+                + "net.minecraft.class_2818)" // LevelChunk
+            )), "onCubeUnloading");
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3227"), // ThreadedLevelLightEngine
+            getMethod("void method_20386(" // updateChunkStatus
+                + "net.minecraft.class_1923)" // ChunkPos
+            )), "setCubeStatusEmpty");
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_3949"), // ChunkProgressListener
+            getMethod("void method_17670(" // onStatusChange
+                + "net.minecraft.class_1923, " // ChunkPos
+                + "net.minecraft.class_2806)" // ChunkStatus
+            )), "onCubeStatusChange");
+        methodRedirects.put(new ClassMethod(getObjectType("net/minecraft/class_2852"), // ChunkSerializer
+            getMethod("net.minecraft.class_2487 " // CompoundTag
+                + "method_12410(" // write
+                + "net.minecraft.class_3218, " // ServerLevel
+                + "net.minecraft.class_2791)" // ChunkAccess
+            )), "write");
+        methodRedirects.putAll(vanillaToCubic);
 
         Map<ClassField, String> fieldRedirects = new HashMap<>();
         fieldRedirects.put(new ClassField(
                 "net/minecraft/class_3898", // net/minecraft/server/level/ChunkMap
                 "field_17221", "Lit/unimi/dsi/fastutil/longs/LongSet;"), // toDrop
             "cubesToDrop");
+        fieldRedirects.put(new ClassField(
+                "net/minecraft/class_3898", // net/minecraft/server/level/ChunkMap
+                "field_19343", "Ljava/util/Queue;"), // unloadQueue
+            "cubeUnloadQueue");
         fieldRedirects.put(new ClassField(
                 "net/minecraft/class_3898", // net/minecraft/server/level/ChunkMap
                 "field_18807", "Lit/unimi/dsi/fastutil/longs/Long2ObjectLinkedOpenHashMap;"), // pendingUnloads
@@ -159,6 +236,10 @@ public class MainTransformer {
                 "field_17213", "Lit/unimi/dsi/fastutil/longs/Long2ObjectLinkedOpenHashMap;"), // updatingChunkMap
             "updatingCubeMap");
         fieldRedirects.put(new ClassField(
+                "net/minecraft/class_3898", // net/minecraft/server/level/ChunkMap
+                "field_17220", "Lit/unimi/dsi/fastutil/longs/Long2ObjectLinkedOpenHashMap;"), // visibleChunkMap
+            "visibleCubeMap");
+        fieldRedirects.put(new ClassField(
                 getObjectType("net/minecraft/class_3898"), // net/minecraft/server/level/ChunkMap
                 "field_18239", Type.INT_TYPE), // MAX_CHUNK_DISTANCE
             "MAX_CUBE_DISTANCE");
@@ -166,8 +247,17 @@ public class MainTransformer {
                 "net/minecraft/class_3898", // ChunkMap
                 "field_23786", // chunkTypeCache
                 "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;"),
-            "cubeTypeCache"
-        );
+            "cubeTypeCache");
+        fieldRedirects.put(new ClassField(
+                "net/minecraft/class_3898", // ChunkMap
+                "field_18807", // pendingUnloads
+                "Lit/unimi/dsi/fastutil/longs/Long2ObjectLinkedOpenHashMap;"),
+            "pendingCubeUnloads");
+        fieldRedirects.put(new ClassField(
+                "net/minecraft/class_3898", // ChunkMap
+                "field_18307", // entitiesInLevel
+                "Lit/unimi/dsi/fastutil/longs/LongSet;"),
+            "cubeEntitiesInLevel");
 
         Map<Type, Type> typeRedirects = new HashMap<>();
         typeRedirects.put(getObjectType("net/minecraft/class_1923"), // ChunkPos
@@ -175,7 +265,14 @@ public class MainTransformer {
         // TODO: generate that class at runtime? transform and duplicate?
         typeRedirects.put(getObjectType("net/minecraft/class_3900"), // ChunkTaskPriorityQueueSorter
             getObjectType("io/github/opencubicchunks/cubicchunks/server/level/CubeTaskPriorityQueueSorter"));
-
+        typeRedirects.put(getObjectType("net/minecraft/class_2818"), // LevelChunk
+            getObjectType("io/github/opencubicchunks/cubicchunks/world/level/chunk/LevelCube"));
+        typeRedirects.put(getObjectType("net/minecraft/class_2791"), // ChunkAccess
+            getObjectType("io/github/opencubicchunks/cubicchunks/world/level/chunk/CubeAccess"));
+        typeRedirects.put(getObjectType("net/minecraft/class_2821"), // ImposterProtoChunk
+            getObjectType("io/github/opencubicchunks/cubicchunks/world/level/chunk/ImposterProtoCube"));
+        typeRedirects.put(getObjectType("net/minecraft/class_2852"), // ChunkSerializer
+            getObjectType("io/github/opencubicchunks/cubicchunks/world/storage/CubeSerializer"));
         vanillaToCubic.forEach((old, newName) -> {
             MethodNode newMethod = cloneAndApplyRedirects(targetClass, old, newName, methodRedirects, fieldRedirects, typeRedirects);
             if (makeSyntheticAccessor.contains(newName)) {
@@ -284,6 +381,155 @@ public class MainTransformer {
         });
     }
 
+    public static void transformDynamicGraphMinFixedPoint(ClassNode targetClass) {
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
+
+        transformer.analyzeAllMethods();
+
+        //transformer.makeConstructor("(III)V", makeDynGraphConstructor());
+        transformer.makeConstructor("(III)V");
+
+        transformer.transformAllMethods();
+    }
+
+    public static void transformLayerLightEngine(ClassNode targetClass) {
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
+
+        transformer.analyzeAllMethods();
+        transformer.transformAllMethods();
+
+        transformer.callMagicSuperConstructor();
+    }
+
+    public static void transformSectionPos(ClassNode targetClass) {
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
+
+        ClassMethod blockToSection = remapMethod(
+            new ClassMethod(
+                getObjectType("net/minecraft/class_4076"),
+                new Method("method_18691", "(J)J"),
+                getObjectType("net/minecraft/class_4076")
+            )
+        );
+
+        transformer.analyzeMethod(blockToSection.method.getName(), blockToSection.method.getDescriptor());
+        transformer.cleanUpAnalysis();
+
+        transformer.transformMethod(blockToSection.method.getName(), blockToSection.method.getDescriptor());
+        transformer.cleanUpTransform();
+    }
+
+    public static void defaultTransform(ClassNode targetClass) {
+        TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
+
+        transformer.analyzeAllMethods();
+        transformer.transformAllMethods();
+    }
+
+    public static void transformLayerLightSectionStorage(ClassNode targetClass) {
+        fixLayerLightSectionStorage(targetClass);
+
+        defaultTransform(targetClass);
+    }
+
+    public static void fixLayerLightSectionStorage(ClassNode targetClass) {
+        //400% performance improvement and all the vanilla lighting bugs go away with this one simple trick
+
+        //Find setLevel
+
+        ClassMethod setLevel = remapMethod(
+            new ClassMethod(
+                getObjectType("net/minecraft/class_3560"),
+                new Method("method_15485", "(JI)V"),
+                getObjectType("net/minecraft/class_3554")
+            )
+        );
+
+        MethodNode setLevelNode =
+            targetClass.methods.stream().filter(m -> m.name.equals(setLevel.method.getName()) && m.desc.equals(setLevel.method.getDescriptor())).findFirst().orElseThrow();
+
+        //Find field access (sectionsAffectedByLightUpdates)
+        ClassField sectionsAffectedByLightUpdates = remapField(
+            new ClassField(
+                "net/minecraft/class_3560",
+                "field_16448",
+                "Lit/unimi/dsi/fastutil/longs/LongSet;"
+            )
+        );
+
+        AbstractInsnNode sectionsAffectedByLightUpdatesNode = ASMUtil.getFirstMatch(setLevelNode.instructions, (insn) -> {
+            if (insn.getOpcode() == GETFIELD) {
+                FieldInsnNode fieldInsnNode = (FieldInsnNode) insn;
+                return fieldInsnNode.owner.equals(sectionsAffectedByLightUpdates.owner.getInternalName()) && fieldInsnNode.name.equals(sectionsAffectedByLightUpdates.name);
+            }
+            return false;
+        });
+
+
+        //Find the LLOAD_1 instruction that comes after sectionsAffectedByLightUpdatesNode
+        AbstractInsnNode load1Node = ASMUtil.getFirstMatch(sectionsAffectedByLightUpdatesNode, (insn) -> insn.getOpcode() == LLOAD && ((VarInsnNode) insn).var == 1);
+
+        //Convert to BlockPos (SectionPos.sectionToBlock(J)J)
+
+        ClassMethod blockToSection = remapMethod(
+            new ClassMethod(
+                getObjectType("net/minecraft/class_4076"),
+                new Method("method_18691", "(J)J"),
+                getObjectType("net/minecraft/class_4076")
+            )
+        );
+
+        ClassMethod blockPosOffset = remapMethod(
+            new ClassMethod(
+                getObjectType("net/minecraft/class_2338"),
+                new Method("method_10096", "(JIII)J"),
+                getObjectType("net/minecraft/class_2338")
+            )
+        );
+
+        ClassMethod sectionPosOffset = remapMethod(
+            new ClassMethod(
+                getObjectType("net/minecraft/class_4076"),
+                new Method("method_18678", "(JIII)J"),
+                getObjectType("net/minecraft/class_4076")
+            )
+        );
+
+        AbstractInsnNode blockPosOffsetCall = ASMUtil.getFirstMatch(load1Node, (insn) -> {
+            if (insn.getOpcode() == INVOKESTATIC) {
+                MethodInsnNode methodInsnNode = (MethodInsnNode) insn;
+                return methodInsnNode.owner.equals(blockPosOffset.owner.getInternalName()) && methodInsnNode.name.equals(blockPosOffset.method.getName()) && methodInsnNode.desc.equals(
+                    blockPosOffset.method.getDescriptor());
+            }
+            return false;
+        });
+
+        AbstractInsnNode blockToSectionCall = ASMUtil.getFirstMatch(blockPosOffsetCall, (insn) -> {
+            if (insn.getOpcode() == INVOKESTATIC) {
+                MethodInsnNode methodInsnNode = (MethodInsnNode) insn;
+                return methodInsnNode.owner.equals(blockToSection.owner.getInternalName()) && methodInsnNode.name.equals(blockToSection.method.getName()) && methodInsnNode.desc.equals(
+                    blockToSection.method.getDescriptor());
+            }
+            return false;
+        });
+
+        MethodInsnNode sectionOffset =
+            new MethodInsnNode(INVOKESTATIC, sectionPosOffset.owner.getInternalName(), sectionPosOffset.method.getName(), sectionPosOffset.method.getDescriptor(), false);
+
+        setLevelNode.instructions.insert(blockToSectionCall, sectionOffset);
+        setLevelNode.instructions.remove(blockToSectionCall);
+        setLevelNode.instructions.remove(blockPosOffsetCall);
+
+    }
+
+    /**
+     * Create a static accessor method for a given method we created on a class.
+     * <p>
+     * e.g. if we had created a method {@code public boolean bar(int, int)} on a class {@code Foo}, this method would create a method {@code public static boolean bar(Foo, int, int)}.
+     *
+     * @param node class of the method
+     * @param newMethod method to create a static accessor for
+     */
     private static void makeStaticSyntheticAccessor(ClassNode node, MethodNode newMethod) {
         Type[] params = Type.getArgumentTypes(newMethod.desc);
         Type[] newParams = new Type[params.length + 1];
@@ -304,6 +550,18 @@ public class MainTransformer {
         node.methods.add(newNode);
     }
 
+    /**
+     * Create a clone of a method with substituted methods, fields, and types. Generally used for creating 3d equivalents of 2d methods.
+     *
+     * @param node the class containing the method to be cloned
+     * @param existingMethodIn the method to be cloned
+     * @param newName name for the newly-cloned method
+     * @param methodRedirectsIn map of method substitutions
+     * @param fieldRedirectsIn map of field substitutions
+     * @param typeRedirectsIn map of type substitutions
+     *
+     * @return the cloned method
+     */
     private static MethodNode cloneAndApplyRedirects(ClassNode node, ClassMethod existingMethodIn, String newName,
                                                      Map<ClassMethod, String> methodRedirectsIn, Map<ClassField, String> fieldRedirectsIn, Map<Type, Type> typeRedirectsIn) {
         LOGGER.info("Transforming " + node.name + ": Cloning method " + existingMethodIn.method.getName() + " " + existingMethodIn.method.getDescriptor() + " "
@@ -433,12 +691,7 @@ public class MainTransformer {
             output = new MethodNode(m.access, newName, mappedDesc, null, m.exceptions.toArray(new String[0]));
         }
 
-        MethodVisitor mv = new MethodVisitor(ASM7, output) {
-            @Override public void visitLineNumber(int line, Label start) {
-                super.visitLineNumber(line + 10000, start);
-            }
-        };
-        MethodRemapper methodRemapper = new MethodRemapper(mv, remapper);
+        MethodRemapper methodRemapper = new MethodRemapper(output, remapper);
 
         m.accept(methodRemapper);
         output.name = newName;
@@ -455,7 +708,7 @@ public class MainTransformer {
     }
 
     private static ClassField remapField(ClassField clField) {
-        MappingResolver mappingResolver = FabricLoader.getInstance().getMappingResolver();
+        MappingResolver mappingResolver = Utils.getMappingResolver();
 
         Type mappedType = remapType(clField.owner);
         String mappedName = mappingResolver.mapFieldName("intermediary",
@@ -468,7 +721,7 @@ public class MainTransformer {
     }
 
     @NotNull private static ClassMethod remapMethod(ClassMethod clMethod) {
-        MappingResolver mappingResolver = FabricLoader.getInstance().getMappingResolver();
+        MappingResolver mappingResolver = Utils.getMappingResolver();
         Type[] params = Type.getArgumentTypes(clMethod.method.getDescriptor());
         Type returnType = Type.getReturnType(clMethod.method.getDescriptor());
 
@@ -498,7 +751,7 @@ public class MainTransformer {
         if (t.getSort() != OBJECT) {
             return t;
         }
-        MappingResolver mappingResolver = FabricLoader.getInstance().getMappingResolver();
+        MappingResolver mappingResolver = Utils.getMappingResolver();
         String unmapped = t.getClassName();
         if (unmapped.endsWith(";")) {
             unmapped = unmapped.substring(1, unmapped.length() - 1);
@@ -512,7 +765,7 @@ public class MainTransformer {
     }
 
     private static Type remapType(Type t) {
-        MappingResolver mappingResolver = FabricLoader.getInstance().getMappingResolver();
+        MappingResolver mappingResolver = Utils.getMappingResolver();
         String unmapped = t.getClassName();
         String mapped = mappingResolver.mapClassName("intermediary", unmapped);
         if (unmapped.contains("class") && IS_DEV && mapped.equals(unmapped)) {
@@ -535,7 +788,8 @@ public class MainTransformer {
                         if (bsmArg instanceof Handle) {
                             Handle handle = (Handle) bsmArg;
                             String owner = handle.getOwner();
-                            if (owner.equals(node.name)) {
+                            MethodNode existingMethod = findExistingMethod(node, handle.getName(), handle.getDesc());
+                            if (owner.equals(node.name) && (existingMethod.access & ACC_SYNTHETIC) != 0) {
                                 String newName = "cc$redirect$" + handle.getName();
                                 lambdaRedirects.put(handle, newName);
                                 cloneAndApplyRedirects(node, new ClassMethod(Type.getObjectType(handle.getOwner()),
@@ -550,10 +804,21 @@ public class MainTransformer {
         return lambdaRedirects;
     }
 
-    private static final class ClassMethod {
-        final Type owner;
-        final Method method;
-        final Type mappingOwner;
+    static {
+        //Load config
+        try {
+            InputStream is = MainTransformer.class.getResourceAsStream("/type-transform.json");
+            TRANSFORM_CONFIG = ConfigLoader.loadConfig(is);
+            is.close();
+        } catch (IOException e) {
+            throw new RuntimeException("Couldn't load transform config", e);
+        }
+    }
+
+    public static final class ClassMethod {
+        public final Type owner;
+        public final Method method;
+        public final Type mappingOwner;
 
         ClassMethod(Type owner, Method method) {
             this.owner = owner;
@@ -588,10 +853,10 @@ public class MainTransformer {
         }
     }
 
-    private static final class ClassField {
-        final Type owner;
-        final String name;
-        final Type desc;
+    public static final class ClassField {
+        public final Type owner;
+        public final String name;
+        public final Type desc;
 
         ClassField(String owner, String name, String desc) {
             this.owner = getObjectType(owner);
