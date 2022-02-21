@@ -246,6 +246,11 @@ public class SurfaceTrackerSection {
             throw new IllegalStateException("Attempting to load node " + newNode + " into an unloaded surface tracker section");
         }
         if (this.scale == 0) {
+            if(this.requiredChildren > 0) {
+                int asd = 0;
+            }
+            this.cubeOrNodes = newNode;
+
             //Don't need to mark this cube-scale section as dirty, as it should have been updated on unload
             newNode.sectionLoaded(this, localSectionX, localSectionZ);
             if (this.parent != null) {
@@ -261,24 +266,20 @@ public class SurfaceTrackerSection {
             }
             int newScaledY = indexToScaledY(i, scale, scaledY);
             int newScale = scale - 1;
-            //TODO: load from save here, instead of always creating
-            SurfaceTrackerSection newOrLoadedSection;
+
+            SurfaceTrackerSection newOrLoadedSection = storage.loadNode(this, this.heightmapType, newScale, newScaledY);
+            if(newOrLoadedSection != null) {
+                if(this.requiredChildren > 0) {
+                    int asd = 0;
+                }
+            }
             if (i == idx) {
-                newOrLoadedSection = storage.loadNode(this.heightmapType, newScale, newScaledY);
-                if (newOrLoadedSection != null) {
-                    newOrLoadedSection.cubeOrNodes = newNode;
-                } else {
+                if (newOrLoadedSection == null) {
                     newOrLoadedSection = createNewChild(newScale, newScaledY, newNode);
                 }
-
-                if (newScale == 0) { //scale 0 nodes are required by their cube (if it's loaded)
-                    newOrLoadedSection.onChildLoaded();
-                }
-
-                this.onChildLoaded();
-            } else {
-                newOrLoadedSection = null;
+                newOrLoadedSection.onChildLoaded();
             }
+
             nodes[i] = newOrLoadedSection;
         }
         assert nodes[idx] != null;
@@ -287,7 +288,14 @@ public class SurfaceTrackerSection {
 
     public void onChildLoaded() {
         ++requiredChildren;
-        assert scale == 0 || requiredChildren <= ((SurfaceTrackerSection[]) this.cubeOrNodes).length : "More children than max?!";
+        if (scale == 0) {
+            if(requiredChildren > 1) {
+                int asd = 0;
+            }
+            assert requiredChildren <= 1 : "Scale 0 node has more than one cube loaded?!";
+        } else {
+            assert requiredChildren <= ((SurfaceTrackerSection[]) this.cubeOrNodes).length : "More children than max?!";
+        }
     }
 
     public void onChildUnloaded(HeightmapStorage storage) {
@@ -295,19 +303,32 @@ public class SurfaceTrackerSection {
 
         assert requiredChildren >= 0 : "Less than 0 required children?!";
 
-        if (this.scale == 0) {
-            this.parent.onChildUnloaded(storage);
-        } else if (requiredChildren == 0) {
-            SurfaceTrackerSection[] nodes = (SurfaceTrackerSection[]) this.cubeOrNodes;
-            for (int i = 0, nodesLength = nodes.length; i < nodesLength; i++) {
-                SurfaceTrackerSection childNode = nodes[i];
-                if (childNode != null) {
-                    storage.unloadNode(this.heightmapType, childNode.scale, childNode.scaledY, childNode);
-                    nodes[i] = null;
+        if (requiredChildren == 0) {
+            if (this.scale == 0) {
+                //scale 0 parents can be null if the node was unloaded before it was inserted into the global heightmap
+                if (this.cubeOrNodes != null && this.parent != null) {
+                    this.parent.onChildUnloaded(storage);
+                } else {
+                    if(this.requiredChildren > 0) {
+                        int asd = 0;
+                    }
+                    storage.unloadNode(this.heightmapType, this.scale, this.scaledY, this);
+                }
+            } else {
+                SurfaceTrackerSection[] nodes = (SurfaceTrackerSection[]) this.cubeOrNodes;
+                for (int i = 0, nodesLength = nodes.length; i < nodesLength; i++) {
+                    SurfaceTrackerSection childNode = nodes[i];
+                    if (childNode != null) {
+                        childNode.updateDirtyHeights();
+                        storage.unloadNode(this.heightmapType, childNode.scale, childNode.scaledY, childNode);
+                        nodes[i] = null;
+                    }
+                }
+
+                if (this.scale != MAX_SCALE) {
+                    this.parent.onChildUnloaded(storage);
                 }
             }
-
-            this.parent.onChildUnloaded(storage);
         }
     }
 
