@@ -1072,10 +1072,8 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
                     tracker.loadCube(this);
                 }
 
-                if (!this.level.isClientSide) {
-                    // TODO probably don't want to do this if the cube was already loaded as a CubePrimer
-                    ((LightHeightmapGetter) chunk).getServerLightHeightmap().loadCube(this);
-                }
+                // TODO probably don't want to do this if the cube was already loaded as a CubePrimer
+                ((LightHeightmapGetter) chunk).getServerLightHeightmap().loadCube(this);
             }
         }
     }
