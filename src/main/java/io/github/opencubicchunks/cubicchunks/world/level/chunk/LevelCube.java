@@ -260,14 +260,18 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
     @Override public void unloadNode(@Nonnull HeightmapStorage storage) {
         for (SurfaceTrackerSection[] surfaceTrackerSections : this.heightmaps.values()) {
             for (int i = 0, sectionArrayLength = surfaceTrackerSections.length; i < sectionArrayLength; i++) {
-                surfaceTrackerSections[i].onChildUnloaded(storage);
-                surfaceTrackerSections[i] = null;
+                if(surfaceTrackerSections[i] != null) {
+                    surfaceTrackerSections[i].onChildUnloaded(storage);
+                    surfaceTrackerSections[i] = null;
+                }
             }
         }
         LightSurfaceTrackerSection[] surfaceTrackerSections = this.lightHeightmaps;
         for (int i = 0, length = surfaceTrackerSections.length; i < length; i++) {
-            surfaceTrackerSections[i].onChildUnloaded(storage);
-            surfaceTrackerSections[i] = null;
+            if(surfaceTrackerSections[i] != null) {
+                surfaceTrackerSections[i].onChildUnloaded(storage);
+                surfaceTrackerSections[i] = null;
+            }
         }
     }
 

@@ -47,6 +47,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -257,14 +258,18 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
     public void unloadNode(@Nonnull HeightmapStorage storage) {
         for (SurfaceTrackerSection[] surfaceTrackerSections : this.heightmaps.values()) {
             for (int i = 0, sectionArrayLength = surfaceTrackerSections.length; i < sectionArrayLength; i++) {
-                surfaceTrackerSections[i].onChildUnloaded(storage);
-                surfaceTrackerSections[i] = null;
+                if(surfaceTrackerSections[i] != null) {
+                    surfaceTrackerSections[i].onChildUnloaded(storage);
+                    surfaceTrackerSections[i] = null;
+                }
             }
         }
         LightSurfaceTrackerSection[] surfaceTrackerSections = this.lightHeightmaps;
         for (int i = 0, length = surfaceTrackerSections.length; i < length; i++) {
-            surfaceTrackerSections[i].onChildUnloaded(storage);
-            surfaceTrackerSections[i] = null;
+            if(surfaceTrackerSections[i] != null) {
+                surfaceTrackerSections[i].onChildUnloaded(storage);
+                surfaceTrackerSections[i] = null;
+            }
         }
     }
 
@@ -359,7 +364,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
                 for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
                     int idx = dx + dz * CubeAccess.DIAMETER_IN_SECTIONS;
                     surfaceTrackerSections[idx] = new SurfaceTrackerSection(0, cubePos.getY(), null, this, (byte) type.ordinal());
-                    surfaceTrackerSections[idx].loadCube(dx, dz, ((CubicServerLevel) this.levelHeightAccessor).getHeightmapStorage(), this);
+                    surfaceTrackerSections[idx].loadCube(dx, dz, ((CubicServerLevel) ((ServerLevelAccessor) this.levelHeightAccessor).getLevel()).getHeightmapStorage(), this);
                     surfaceTrackerSections[idx].markAllDirtyAndTreeIfRequired();
                 }
             }
