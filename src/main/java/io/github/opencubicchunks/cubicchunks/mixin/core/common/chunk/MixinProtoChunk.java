@@ -6,7 +6,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMapGett
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;

@@ -19,7 +19,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.CubicFastServerTickList
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.SurfaceTrackerSectionStorage;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerSectionStorage;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;

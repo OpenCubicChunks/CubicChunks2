@@ -21,13 +21,13 @@
     <!-- we are not fixing setBlockState -->
     <suppress checks="CyclomaticComplexity" files="LevelCube.java|ProtoCube.java"/>
     <!-- TODO: These probably need refactoring -->
-    <suppress checks="CyclomaticComplexity" files="CubicLevelLoadingScreen.java|CubeSerializer.java|DebugVisualization.java|LightSurfaceTrackerSection.java"/>
+    <suppress checks="CyclomaticComplexity" files="CubicLevelLoadingScreen.java|CubeSerializer.java|DebugVisualization.java|SurfaceTrackerNodesTest.java"/>
     <!-- TODO: DebugVulkan doesn't work yet anyway, and this requires some refactoring -->
     <suppress checks="NPathComplexity" files="DebugVulkan.java"/>
     <!-- Mixins don't count for now until ASM is done -->
     <suppress checks="NPathComplexity" files=".*Mixin.*\.java"/>
     <!-- TODO These need refactoring -->
-    <suppress checks="NPathComplexity" files="LevelCube.java|ProtoCube.java|CubeSerializer.java"/>
+    <suppress checks="NPathComplexity" files="LevelCube.java|ProtoCube.java|CubeSerializer.java|SurfaceTrackerNodesTest.java"/>
     <!-- Mixins need shadows and sometimes may want soft implements with special characters in prefix -->
     <suppress checks="MemberName" files=".*Mixin.*\.java"/>
     <suppress checks="MethodName" files=".*Mixin.*\.java"/>

@@ -2,9 +2,11 @@ package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap;
 
 import javax.annotation.Nonnull;
 
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
+
 public interface HeightmapNode {
 
-    default void sectionLoaded(@Nonnull SurfaceTrackerSection surfaceTrackerSection, int localSectionX, int localSectionZ) {
+    default void sectionLoaded(@Nonnull SurfaceTrackerLeaf surfaceTrackerLeaf, int localSectionX, int localSectionZ) {
         throw new IllegalStateException("Should not be reached");
     }
 
