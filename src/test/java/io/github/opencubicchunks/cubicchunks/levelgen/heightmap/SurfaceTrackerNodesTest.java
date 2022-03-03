@@ -1,15 +1,16 @@
 package io.github.opencubicchunks.cubicchunks.levelgen.heightmap;
 
+import static io.github.opencubicchunks.cubicchunks.testutils.Utils.forEachBlockColumn;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -27,6 +28,15 @@ import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 import org.junit.Test;
 
 public class SurfaceTrackerNodesTest {
+
+    /**
+     * Trivially tests that SurfaceTrackerNode works
+     * Places blocks:
+     * 5 -> 6 (transparent) -> 3
+     * assert height is 5
+     * 13
+     * assert height is 13
+     */
     @Test
     public void sanityTest() {
         TestHeightmapStorage storage = new TestHeightmapStorage();
@@ -65,6 +75,51 @@ public class SurfaceTrackerNodesTest {
             setHeight.accept(new HeightmapBlock(x, 13, z, true));
 
             assertEquals(reference.getHighest(), roots[localSectionX + CubeAccess.DIAMETER_IN_SECTIONS * localSectionZ].getHeight(x, z));
+        });
+    }
+
+    /**
+     * Tests that an invalid height (Integer.MIN_VALUE) is returned from a heightmap with no heights set
+     */
+    @Test
+    public void testNoValidHeights() {
+        TestHeightmapStorage storage = new TestHeightmapStorage();
+
+        ReferenceHeightmap reference = new ReferenceHeightmap(2048);
+
+        TestHeightmapNode node0 = new TestHeightmapNode(0);
+        SurfaceTrackerNode[] roots = new SurfaceTrackerNode[CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS];
+        for (int i = 0; i < roots.length; i++) {
+            roots[i] = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) 0);
+        }
+
+        for (int localSectionX = 0; localSectionX < CubeAccess.DIAMETER_IN_SECTIONS; localSectionX++) {
+            for (int localSectionZ = 0; localSectionZ < CubeAccess.DIAMETER_IN_SECTIONS; localSectionZ++) {
+                roots[localSectionX + CubeAccess.DIAMETER_IN_SECTIONS * localSectionZ].loadCube(localSectionX, localSectionZ, storage, node0);
+            }
+        }
+
+        Consumer<HeightmapBlock> setHeight = block -> {
+            reference.set(block.y, block.isOpaque);
+            node0.setBlock(block.x, block.y, block.z, block.isOpaque);
+        };
+
+        forEachBlockColumn((x, z) -> {
+            int localSectionX = Coords.blockToCubeLocalSection(x);
+            int localSectionZ = Coords.blockToCubeLocalSection(z);
+
+            reference.clear();
+
+            assertEquals(Integer.MIN_VALUE, roots[localSectionX + CubeAccess.DIAMETER_IN_SECTIONS * localSectionZ].getHeight(x, z));
+
+            setHeight.accept(new HeightmapBlock(x, 0, z, false));
+
+            assertEquals(Integer.MIN_VALUE, roots[localSectionX + CubeAccess.DIAMETER_IN_SECTIONS * localSectionZ].getHeight(x, z));
+
+            setHeight.accept(new HeightmapBlock(x, 0, z, true));
+            setHeight.accept(new HeightmapBlock(x, 0, z, false));
+
+            assertEquals(Integer.MIN_VALUE, roots[localSectionX + CubeAccess.DIAMETER_IN_SECTIONS * localSectionZ].getHeight(x, z));
         });
     }
 
@@ -249,18 +304,17 @@ public class SurfaceTrackerNodesTest {
         }
     }
 
-    static void forEachBlockColumn(BiConsumer<Integer, Integer> xzConsumer) {
-        for (int x = 0; x < CubeAccess.DIAMETER_IN_BLOCKS; x++) {
-            for (int z = 0; z < CubeAccess.DIAMETER_IN_BLOCKS; z++) {
-                xzConsumer.accept(x, z);
-            }
-        }
-    }
-
     static class TestHeightmapStorage implements HeightmapStorage {
         Object2ReferenceMap<PackedTypeScaleScaledY, SurfaceTrackerNode> saved = new Object2ReferenceOpenHashMap<>();
 
         @Override public void unloadNode(SurfaceTrackerNode node) {
+            if (node.getScale() == 0) {
+                ((SurfaceTrackerLeaf) node).setNode(null);
+            } else {
+                Arrays.fill(((SurfaceTrackerBranch) node).getChildren(), null);
+            }
+            node.setParent(null);
+
             saved.put(new PackedTypeScaleScaledY(node.getRawType(), node.getScale(), node.getScaledY()), node);
         }
         @Override public SurfaceTrackerNode loadNode(SurfaceTrackerBranch parent, byte heightmapType, int scale, int scaledY) {
@@ -273,7 +327,7 @@ public class SurfaceTrackerNodesTest {
         record PackedTypeScaleScaledY(byte heightmapType, int scale, int scaledY) { }
     }
 
-    static class TestHeightmapNode implements HeightmapNode {
+    public static class TestHeightmapNode implements HeightmapNode {
         final int y;
 
         final BitSet[][] blockBitsets = new BitSet[CubeAccess.DIAMETER_IN_BLOCKS][CubeAccess.DIAMETER_IN_BLOCKS];
@@ -329,12 +383,12 @@ public class SurfaceTrackerNodesTest {
         }
     }
 
-    record HeightmapBlock (int x, int y, int z, boolean isOpaque) { }
-    static class ReferenceHeightmap {
+    public record HeightmapBlock (int x, int y, int z, boolean isOpaque) { }
+    public static class ReferenceHeightmap {
         BitSet bitSet;
         final int offset;
 
-        ReferenceHeightmap(int maxCoordinate) {
+        public ReferenceHeightmap(int maxCoordinate) {
             this.bitSet = new BitSet(maxCoordinate * 2);
             this.offset = maxCoordinate;
         }

@@ -1,8 +1,11 @@
 package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.google.common.annotations.VisibleForTesting;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
-import org.jetbrains.annotations.Nullable;
 
 public class SurfaceTrackerBranch extends SurfaceTrackerNode {
     protected SurfaceTrackerNode[] children = new SurfaceTrackerNode[NODE_COUNT];
@@ -103,5 +106,10 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
                 }
             }
         }
+    }
+
+    @VisibleForTesting
+    @Nonnull public SurfaceTrackerNode[] getChildren() {
+        return this.children;
     }
 }
