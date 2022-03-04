@@ -89,8 +89,7 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
 
 
     public void onChildLoaded() {
-        if (requiredChildren == 0 && this.scale != MAX_SCALE) {
-            //Parent should never be null when a child is loaded
+        if (requiredChildren == 0 && this.parent != null) {
             this.parent.onChildLoaded();
         }
 
@@ -113,8 +112,7 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
                 }
             }
 
-            if (this.scale != MAX_SCALE) {
-                //Parent should never be null when a child is unloaded
+            if (this.parent != null) {
                 this.parent.onChildUnloaded(storage);
             }
         }
