@@ -15,6 +15,8 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
     public SurfaceTrackerBranch(int scale, int scaledY,
                                 @Nullable SurfaceTrackerBranch parent, byte heightmapType) {
         super(scale, scaledY, parent, heightmapType);
+        assert scale > 0; //Branches cannot be scale 0
+        assert scale <= SurfaceTrackerNode.MAX_SCALE; //Branches cannot be > MAX_SCALE
     }
 
     @Override

@@ -130,6 +130,7 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
         }
     }
 
+    @Nullable
     public HeightmapNode getNode() {
         return this.node;
     }

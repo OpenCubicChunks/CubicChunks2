@@ -15,6 +15,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
@@ -304,6 +305,27 @@ public class SurfaceTrackerNodesTest {
         }
     }
 
+    /**
+     * Test heightmap storage that always returns null on load, and correctly nulls fields on unload
+     */
+    static class NullHeightmapStorage implements HeightmapStorage {
+        @Override public void unloadNode(SurfaceTrackerNode node) {
+            if (node.getScale() == 0) {
+                ((SurfaceTrackerLeaf) node).setNode(null);
+            } else {
+                Arrays.fill(((SurfaceTrackerBranch) node).getChildren(), null);
+            }
+            node.setParent(null);
+        }
+
+        @Nullable @Override public SurfaceTrackerNode loadNode(SurfaceTrackerBranch parent, byte heightmapType, int scale, int scaledY) {
+            return null;
+        }
+    }
+
+    /**
+     * Test heightmap storage that unloads into a hashmap
+     */
     static class TestHeightmapStorage implements HeightmapStorage {
         Object2ReferenceMap<PackedTypeScaleScaledY, SurfaceTrackerNode> saved = new Object2ReferenceOpenHashMap<>();
 
