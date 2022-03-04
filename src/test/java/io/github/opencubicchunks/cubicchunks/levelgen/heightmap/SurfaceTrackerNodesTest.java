@@ -6,11 +6,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -24,8 +27,11 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.Heig
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerBranch;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
+import net.minecraft.world.level.ChunkPos;
 import org.junit.jupiter.api.Test;
 
 public class SurfaceTrackerNodesTest {
@@ -197,6 +203,8 @@ public class SurfaceTrackerNodesTest {
         for (SurfaceTrackerNode root : roots) {
             assertNull(root.getMinScaleNode(-1), "Did not unload non-required node?!");
             assertNotNull(root.getMinScaleNode(0), "Unloaded required node?!");
+
+            verifyHeightmapTree((SurfaceTrackerBranch) root, nodes.entrySet());
         }
     }
 
@@ -249,6 +257,8 @@ public class SurfaceTrackerNodesTest {
             for (Integer integer : nodes.keySet()) {
                 assertNotNull(root.getMinScaleNode(integer), "Unloaded required node?!");
             }
+
+            verifyHeightmapTree((SurfaceTrackerBranch) root, nodes.entrySet());
         }
     }
 
@@ -301,6 +311,62 @@ public class SurfaceTrackerNodesTest {
 
             for (Integer integer : nodes.keySet()) {
                 assertNotNull(root.getMinScaleNode(integer), "Unloaded required node?!");
+            }
+
+            verifyHeightmapTree((SurfaceTrackerBranch) root, nodes.entrySet());
+        }
+    }
+
+    /**
+     * Very crude implementation of heightmap checking.
+     * Iterates up from cubes adding all required nodes to a list
+     * Adds all required ancestors to a set, iterates down from root verifying that all nodes are contained in the required set
+     */
+    private void verifyHeightmapTree(SurfaceTrackerBranch root, Set<Map.Entry<Integer, TestHeightmapNode>> entries) {
+        //Collect all leaves in the cubemap
+        List<SurfaceTrackerLeaf> requiredLeaves = new ArrayList<>();
+        for (Map.Entry<Integer, TestHeightmapNode> entry : entries) {
+            SurfaceTrackerLeaf leaf = root.getMinScaleNode(entry.getKey());
+            if (leaf != null) {
+                //Leaves can be null when a protocube is marked as loaded in the cubemap, but hasn't yet been added to the global heightmap
+                requiredLeaves.add(leaf);
+            }
+        }
+
+        LongSet requiredPositions = new LongOpenHashSet();
+        //Root will not be added if there are no leaves in the tree, so we add it here
+        requiredPositions.add(ChunkPos.asLong(root.getScale(), root.getScaledY()));
+        //Collect all positions that are required to be loaded
+        for (SurfaceTrackerLeaf leaf : requiredLeaves) {
+            requiredPositions.add(ChunkPos.asLong(leaf.getScale(), leaf.getScaledY()));
+            SurfaceTrackerBranch parent = leaf.getParent();
+            while (parent != null) {
+                requiredPositions.add(ChunkPos.asLong(parent.getScale(), parent.getScaledY()));
+
+                for (SurfaceTrackerNode child : parent.getChildren()) {
+                    if (child != null) {
+                        requiredPositions.add(ChunkPos.asLong(child.getScale(), child.getScaledY()));
+                    }
+                }
+
+                parent = parent.getParent();
+            }
+        }
+
+        //Verify that heightmap meets requirements (all parents are loaded, and their direct children)
+        verifyAllNodesInRequiredSet(root, requiredPositions);
+    }
+
+    private static void verifyAllNodesInRequiredSet(SurfaceTrackerBranch branch, LongSet requiredNodes) {
+        for (SurfaceTrackerNode child : branch.getChildren()) {
+            if (child != null) {
+                if (!requiredNodes.contains(ChunkPos.asLong(child.getScale(), child.getScaledY()))) {
+                    throw new IllegalStateException("Heightmap borken");
+                }
+
+                if (branch.getScale() != 1) {
+                    verifyAllNodesInRequiredSet((SurfaceTrackerBranch) child, requiredNodes);
+                }
             }
         }
     }

@@ -89,6 +89,11 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
 
 
     public void onChildLoaded() {
+        if (requiredChildren == 0 && this.scale != MAX_SCALE) {
+            //Parent should never be null when a child is loaded
+            this.parent.onChildLoaded();
+        }
+
         ++requiredChildren;
         assert requiredChildren <= this.children.length : "More children than max?!";
     }
@@ -106,6 +111,11 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
                     child.unload(storage);
                     surfaceTrackerNodes[i] = null;
                 }
+            }
+
+            if (this.scale != MAX_SCALE) {
+                //Parent should never be null when a child is unloaded
+                this.parent.onChildUnloaded(storage);
             }
         }
     }

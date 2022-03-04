@@ -160,7 +160,7 @@ public abstract class SurfaceTrackerNode {
 
 
     @Nullable
-    public SurfaceTrackerNode getParent() {
+    public SurfaceTrackerBranch getParent() {
         return parent;
     }
 
