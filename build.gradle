@@ -173,6 +173,8 @@ loom {
             "-Dcubicchunks.debug.heightmaprenderer.server=false",
             "-Dcubicchunks.debug.heightmaprenderer.render_lightmap=false",
             "-Dcubicchunks.debug.heightmaprenderer.radius=2",
+            "-Dcubicchunks.debug.heightmapverification=false",
+            "-Dcubicchunks.debug.heightmapverification.frequency=1",
             "-Dcubicchunks.debug.biomes=false",
             "-ea"
     ]
