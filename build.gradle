@@ -21,6 +21,18 @@ apply plugin: "fabric-loom"
 apply plugin: "io.github.opencubicchunks.gradle.mcGitVersion"
 apply plugin: "io.github.opencubicchunks.gradle.mixingen"
 
+test {
+    useJUnitPlatform()
+
+    // Always run tests, even when nothing changed.
+    dependsOn 'cleanTest'
+
+    // Show test results.
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
 mcGitVersion {
     snapshot = true
     mcVersion = "${project.minecraft_version}"
@@ -231,7 +243,10 @@ dependencies {
     compileOnly('com.google.code.findbugs:jsr305:3.0.1')
     testCompileOnly('com.google.code.findbugs:jsr305:3.0.1')
 
-    testImplementation('junit:junit:4.11')
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.8.2')
+    testImplementation('org.junit.jupiter:junit-jupiter-params:5.8.2')
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.8.2')
+
     testImplementation('org.hamcrest:hamcrest-junit:2.0.0.0')
 
     debugCompile "org.lwjgl:lwjgl-vulkan:$lwjglVersion"

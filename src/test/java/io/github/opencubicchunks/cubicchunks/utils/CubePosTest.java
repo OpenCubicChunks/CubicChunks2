@@ -1,11 +1,11 @@
 package io.github.opencubicchunks.cubicchunks.utils;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CubePosTest {
 

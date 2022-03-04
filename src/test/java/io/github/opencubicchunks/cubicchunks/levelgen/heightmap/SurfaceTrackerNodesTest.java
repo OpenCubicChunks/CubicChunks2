@@ -1,10 +1,10 @@
 package io.github.opencubicchunks.cubicchunks.levelgen.heightmap;
 
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.forEachBlockColumn;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -26,7 +26,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surf
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SurfaceTrackerNodesTest {
 
@@ -195,8 +195,8 @@ public class SurfaceTrackerNodesTest {
         nodes.get(-1).unloadNode(storage);
 
         for (SurfaceTrackerNode root : roots) {
-            assertNull("Did not unload non-required node?!", root.getMinScaleNode(-1));
-            assertNotNull("Unloaded required node?!", root.getMinScaleNode(0));
+            assertNull(root.getMinScaleNode(-1), "Did not unload non-required node?!");
+            assertNotNull(root.getMinScaleNode(0), "Unloaded required node?!");
         }
     }
 
@@ -242,12 +242,12 @@ public class SurfaceTrackerNodesTest {
         for (SurfaceTrackerNode root : roots) {
             for (TestHeightmapStorage.PackedTypeScaleScaledY packed : storage.saved.keySet()) {
                 if (packed.scale == 0) {
-                    assertNull("Did not unload non-required node?!", root.getMinScaleNode(packed.scaledY));
+                    assertNull(root.getMinScaleNode(packed.scaledY), "Did not unload non-required node?!");
                 }
             }
 
             for (Integer integer : nodes.keySet()) {
-                assertNotNull("Unloaded required node?!", root.getMinScaleNode(integer));
+                assertNotNull(root.getMinScaleNode(integer), "Unloaded required node?!");
             }
         }
     }
@@ -295,12 +295,12 @@ public class SurfaceTrackerNodesTest {
         for (SurfaceTrackerNode root : roots) {
             for (TestHeightmapStorage.PackedTypeScaleScaledY packed : storage.saved.keySet()) {
                 if (packed.scale == 0) {
-                    assertNull("Did not unload non-required node?!", root.getMinScaleNode(packed.scaledY));
+                    assertNull(root.getMinScaleNode(packed.scaledY), "Did not unload non-required node?!");
                 }
             }
 
             for (Integer integer : nodes.keySet()) {
-                assertNotNull("Unloaded required node?!", root.getMinScaleNode(integer));
+                assertNotNull(root.getMinScaleNode(integer), "Unloaded required node?!");
             }
         }
     }

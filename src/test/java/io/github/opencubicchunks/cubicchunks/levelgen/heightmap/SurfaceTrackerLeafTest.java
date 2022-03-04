@@ -3,9 +3,9 @@ package io.github.opencubicchunks.cubicchunks.levelgen.heightmap;
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.forEachBlockColumn;
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldFail;
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldSucceed;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.BitSet;
 import java.util.Random;
@@ -18,7 +18,7 @@ import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerBranch;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SurfaceTrackerLeafTest {
 
@@ -30,10 +30,10 @@ public class SurfaceTrackerLeafTest {
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
 
         leaf.loadCube(0, 0, null, new TestHeightmapNode(0));
-        assertNotNull("Leaf had null HeightmapNode after being loaded", leaf.getNode());
+        assertNotNull(leaf.getNode(), "Leaf had null HeightmapNode after being loaded");
 
         leaf.cubeUnloaded(0, 0, null);
-        assertNull("Leaf had non-null HeightmapNode after being unloaded", leaf.getNode());
+        assertNull(leaf.getNode(), "Leaf had non-null HeightmapNode after being unloaded");
     }
 
     /**
@@ -51,8 +51,8 @@ public class SurfaceTrackerLeafTest {
         //Unload the node
         leaf.cubeUnloaded(0, 0, storage);
 
-        assertNull("Leaf had non-null HeightmapNode after being unloaded", leaf.getNode());
-        assertNull("Leaf had non-null Parent after being unloaded", leaf.getParent());
+        assertNull(leaf.getNode(), "Leaf had non-null HeightmapNode after being unloaded");
+        assertNull(leaf.getParent(), "Leaf had non-null Parent after being unloaded");
     }
 
     /**
@@ -69,16 +69,16 @@ public class SurfaceTrackerLeafTest {
         Consumer<HeightmapBlock> setHeight = block -> testNode.setBlock(block.x(), block.y() & (SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
 
         forEachBlockColumn((x, z) -> {
-            assertEquals("SurfaceTrackerLeaf does not return invalid height when no block is present", Integer.MIN_VALUE, leaf.getHeight(x, z));
+            assertEquals(Integer.MIN_VALUE, leaf.getHeight(x, z), "SurfaceTrackerLeaf does not return invalid height when no block is present");
 
             setHeight.accept(new HeightmapBlock(x, 0, z, false));
 
-            assertEquals("SurfaceTrackerLeaf does not return invalid height when no block is present", Integer.MIN_VALUE, leaf.getHeight(x, z));
+            assertEquals(Integer.MIN_VALUE, leaf.getHeight(x, z), "SurfaceTrackerLeaf does not return invalid height when no block is present");
 
             setHeight.accept(new HeightmapBlock(x, 0, z, true));
             setHeight.accept(new HeightmapBlock(x, 0, z, false));
 
-            assertEquals("SurfaceTrackerLeaf does not return invalid height when no block is present", Integer.MIN_VALUE, leaf.getHeight(x, z));
+            assertEquals(Integer.MIN_VALUE, leaf.getHeight(x, z), "SurfaceTrackerLeaf does not return invalid height when no block is present");
         });
     }
 

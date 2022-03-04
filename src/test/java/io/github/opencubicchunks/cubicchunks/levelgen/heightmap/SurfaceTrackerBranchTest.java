@@ -2,15 +2,15 @@ package io.github.opencubicchunks.cubicchunks.levelgen.heightmap;
 
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldFail;
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldSucceed;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.NullHeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.TestHeightmapNode;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerBranch;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SurfaceTrackerBranchTest {
     /**
@@ -42,11 +42,11 @@ public class SurfaceTrackerBranchTest {
         SurfaceTrackerNode[] children = branch.getChildren();
 
         //Check that idx 0 child isn't null
-        assertNotNull("Branch had no appropriate leaf after loading cube into direct parent to leaf", children[0]);
-        assertNotNull("Leaf had null cube after cube was loaded into direct parent to leaf", ((SurfaceTrackerLeaf) children[0]).getNode());
+        assertNotNull(children[0], "Branch had no appropriate leaf after loading cube into direct parent to leaf");
+        assertNotNull(((SurfaceTrackerLeaf) children[0]).getNode(), "Leaf had null cube after cube was loaded into direct parent to leaf");
         //Check that all other children are null
         for (int i = 1; i < SurfaceTrackerNode.NODE_COUNT; i++) {
-            assertNull("Branch loaded inappropriate leaf after loading cube", children[i]);
+            assertNull(children[i], "Branch loaded inappropriate leaf after loading cube");
         }
     }
 
@@ -60,7 +60,7 @@ public class SurfaceTrackerBranchTest {
         root.loadCube(0, 0, storage, new TestHeightmapNode(0));
 
         SurfaceTrackerLeaf leaf = root.getMinScaleNode(0);
-        assertNotNull("Appropriate leaf was null after loading node into root", leaf);
-        assertNotNull("Leaf had null node after node was loaded into root", leaf.getNode());
+        assertNotNull(leaf, "Appropriate leaf was null after loading node into root");
+        assertNotNull(leaf.getNode(), "Leaf had null node after node was loaded into root");
     }
 }

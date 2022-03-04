@@ -2,14 +2,14 @@ package io.github.opencubicchunks.cubicchunks.utils;
 
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CoordsTest {
     @Test

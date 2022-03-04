@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.ToIntFunction;
 
 import net.minecraft.core.Vec3i;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class Int3HashSetTest {
     @Test

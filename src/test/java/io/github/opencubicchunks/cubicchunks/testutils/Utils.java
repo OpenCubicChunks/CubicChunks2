@@ -1,7 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.testutils;
 
 import static io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode.WIDTH_BLOCKS;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.function.BiConsumer;
 
