@@ -21,6 +21,40 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surf
 import org.junit.Test;
 
 public class SurfaceTrackerLeafTest {
+
+    /**
+     * Tests that {@link HeightmapNode}s are correctly loaded and unloaded into and from a leaf
+     */
+    @Test
+    public void testCubeLoadUnload() {
+        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
+
+        leaf.loadCube(0, 0, null, new TestHeightmapNode(0));
+        assertNotNull("Leaf had null HeightmapNode after being loaded", leaf.getNode());
+
+        leaf.cubeUnloaded(0, 0, null);
+        assertNull("Leaf had non-null HeightmapNode after being unloaded", leaf.getNode());
+    }
+
+    /**
+     * Tests that a leaf properly nulls its fields when told to unload into a storage
+     */
+    @Test
+    public void testLeafUnload() {
+        NullHeightmapStorage storage = new NullHeightmapStorage();
+
+        //Set up leaf and node with parent
+        SurfaceTrackerBranch parent = new SurfaceTrackerBranch(1, 0, null, (byte) 0);
+        parent.loadCube(0, 0, storage, new TestHeightmapNode(0));
+        SurfaceTrackerLeaf leaf = parent.getMinScaleNode(0);
+
+        //Unload the node
+        leaf.cubeUnloaded(0, 0, storage);
+
+        assertNull("Leaf had non-null HeightmapNode after being unloaded", leaf.getNode());
+        assertNull("Leaf had non-null Parent after being unloaded", leaf.getParent());
+    }
+
     /**
      * Tests that an invalid height (Integer.MIN_VALUE) is returned from a leaf with no heights set
      */
@@ -32,7 +66,7 @@ public class SurfaceTrackerLeafTest {
         TestHeightmapNode testNode = new TestHeightmapNode(0);
         leaf.loadCube(0, 0, storage, testNode);
 
-        Consumer<HeightmapBlock> setHeight = block -> testNode.setBlock(block.x(), block.y() & (SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());;
+        Consumer<HeightmapBlock> setHeight = block -> testNode.setBlock(block.x(), block.y() & (SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
 
         forEachBlockColumn((x, z) -> {
             assertEquals("SurfaceTrackerLeaf does not return invalid height when no block is present", Integer.MIN_VALUE, leaf.getHeight(x, z));
