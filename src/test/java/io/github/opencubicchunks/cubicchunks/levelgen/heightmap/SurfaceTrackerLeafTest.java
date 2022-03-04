@@ -19,6 +19,8 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.Heig
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerBranch;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class SurfaceTrackerLeafTest {
 
@@ -125,21 +127,22 @@ public class SurfaceTrackerLeafTest {
     }
 
     /**
-     * Tests that setting of blocks inside the Leaf is correct for negative y values
+     * Tests that setting of blocks inside the Leaf is correct for many leaf y values
      */
-    @Test
-    public void testNegativePositions() {
-        ReferenceHeightmap reference = new ReferenceHeightmap(-1);
+    @ParameterizedTest
+    @ValueSource(ints = { -1024, -512, -256, -128, -64, -32, -16, -1, 0, 1, 16, 32, 64, 128, 256, 512, 1024 })
+    public void testManyPositions(int nodeY) {
+        ReferenceHeightmap reference = new ReferenceHeightmap(nodeY);
 
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(-1, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(-1);
+        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(nodeY, null, (byte) 0);
+        TestHeightmapNode testNode = new TestHeightmapNode(nodeY);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> {
             reference.set(block.y(), block.isOpaque());
-            testNode.setBlock(block.x(), block.y() & (SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
+            testNode.setBlock(block.x(), Coords.blockToLocal(block.y()), block.z(), block.isOpaque());
         };
 
         forEachBlockColumn((x, z) -> {
@@ -147,19 +150,19 @@ public class SurfaceTrackerLeafTest {
 
             assertEquals(reference.getHighest(), leaf.getHeight(x, z));
 
-            setHeight.accept(new HeightmapBlock(x, -4, z, true));
+            setHeight.accept(new HeightmapBlock(x, 4, z, true));
 
             assertEquals(reference.getHighest(), leaf.getHeight(x, z));
 
-            setHeight.accept(new HeightmapBlock(x, -7, z, true));
-            setHeight.accept(new HeightmapBlock(x, -19, z, true));
-            setHeight.accept(new HeightmapBlock(x, -21, z, false));
+            setHeight.accept(new HeightmapBlock(x, 7, z, true));
+            setHeight.accept(new HeightmapBlock(x, 19, z, true));
+            setHeight.accept(new HeightmapBlock(x, 21, z, false));
 
             assertEquals(reference.getHighest(), leaf.getHeight(x, z));
 
-            setHeight.accept(new HeightmapBlock(x, -4, z, false));
-            setHeight.accept(new HeightmapBlock(x, -7, z, false));
-            setHeight.accept(new HeightmapBlock(x, -19, z, false));
+            setHeight.accept(new HeightmapBlock(x, 4, z, false));
+            setHeight.accept(new HeightmapBlock(x, 7, z, false));
+            setHeight.accept(new HeightmapBlock(x, 19, z, false));
 
             assertEquals(reference.getHighest(), leaf.getHeight(x, z));
             assertEquals(Integer.MIN_VALUE, leaf.getHeight(x, z));
