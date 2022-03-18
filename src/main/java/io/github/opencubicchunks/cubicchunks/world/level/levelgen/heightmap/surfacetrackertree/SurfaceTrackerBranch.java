@@ -89,7 +89,8 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
 
 
     public void onChildLoaded() {
-        if (requiredChildren == 0 && this.parent != null) {
+        if (requiredChildren == 0 && this.scale != MAX_SCALE) {
+            assert this.parent != null : "Cube loaded in detached tree?!";
             this.parent.onChildLoaded();
         }
 

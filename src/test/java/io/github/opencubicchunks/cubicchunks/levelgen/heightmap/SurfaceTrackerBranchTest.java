@@ -32,25 +32,6 @@ public class SurfaceTrackerBranchTest {
     }
 
     /**
-     * Tests that when a cube is inserted into a branch, it properly creates the appropriate leaf
-     */
-    @Test
-    public void testLeafInsertion() {
-        NullHeightmapStorage storage = new NullHeightmapStorage();
-        SurfaceTrackerBranch branch = new SurfaceTrackerBranch(1, 0, null, (byte) 0);
-        branch.loadCube(0, 0, storage, new TestHeightmapNode(0));
-        SurfaceTrackerNode[] children = branch.getChildren();
-
-        //Check that idx 0 child isn't null
-        assertNotNull(children[0], "Branch had no appropriate leaf after loading cube into direct parent to leaf");
-        assertNotNull(((SurfaceTrackerLeaf) children[0]).getNode(), "Leaf had null cube after cube was loaded into direct parent to leaf");
-        //Check that all other children are null
-        for (int i = 1; i < SurfaceTrackerNode.NODE_COUNT; i++) {
-            assertNull(children[i], "Branch loaded inappropriate leaf after loading cube");
-        }
-    }
-
-    /**
      * Tests that when a cube is inserted into root, it properly creates the appropriate leaf
      */
     @Test

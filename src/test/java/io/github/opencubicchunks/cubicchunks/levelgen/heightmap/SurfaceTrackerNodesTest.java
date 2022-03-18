@@ -318,6 +318,46 @@ public class SurfaceTrackerNodesTest {
     }
 
     /**
+     * Tests that after unloading and reloading, both the unloaded node and its parent are unchanged
+     */
+    @Test
+    public void testUnloadReload() {
+        TestHeightmapStorage storage = new TestHeightmapStorage();
+
+        Map<Integer, TestHeightmapNode> nodes = new HashMap<>();
+        SurfaceTrackerNode root = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) 0);
+
+        Function<Integer, TestHeightmapNode> loadNode = y -> nodes.computeIfAbsent(y, yPos -> {
+            TestHeightmapNode node = new TestHeightmapNode(yPos);
+            root.loadCube(0, 0, storage, node);
+            return node;
+        });
+        Function<Integer, TestHeightmapNode> unloadNode = y -> {
+            TestHeightmapNode removed = nodes.remove(y);
+            if (removed != null) {
+                removed.unloadNode(storage);
+            }
+            return removed;
+        };
+
+        loadNode.apply(0);
+        loadNode.apply(1);
+        SurfaceTrackerLeaf node0 = root.getMinScaleNode(0);
+
+        SurfaceTrackerBranch parent = node0.getParent();
+        HeightmapNode cubeNode = node0.getNode();
+
+        unloadNode.apply(0);
+
+        root.loadCube(0, 0, storage, cubeNode);
+
+        SurfaceTrackerLeaf reloadedNode = root.getMinScaleNode(0);
+
+        assertEquals(parent, reloadedNode.getParent());
+        assertEquals(cubeNode, reloadedNode.getNode());
+    }
+
+    /**
      * Very crude implementation of heightmap checking.
      * Iterates up from cubes adding all required nodes to a list
      * Adds all required ancestors to a set, iterates down from root verifying that all nodes are contained in the required set
