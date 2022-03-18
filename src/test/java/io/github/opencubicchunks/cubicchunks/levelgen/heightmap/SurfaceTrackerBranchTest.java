@@ -3,7 +3,6 @@ package io.github.opencubicchunks.cubicchunks.levelgen.heightmap;
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldFail;
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldSucceed;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.NullHeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.TestHeightmapNode;
@@ -22,7 +21,7 @@ public class SurfaceTrackerBranchTest {
         shouldFail(() -> new SurfaceTrackerBranch(0, 0, null, (byte) 0),
             "SurfaceTrackerBranch didn't throw when given scale 0");
         shouldFail(() -> new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE + 1, 0, null, (byte) 0),
-            "SurfaceTrackerBranch didn't throw when given scale 0");
+            "SurfaceTrackerBranch didn't throw when given scale MAX_SCALE + 1");
 
         for (int i = 1; i <= SurfaceTrackerNode.MAX_SCALE; i++) {
             int finalI = i;
