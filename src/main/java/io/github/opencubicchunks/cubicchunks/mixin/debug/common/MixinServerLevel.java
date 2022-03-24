@@ -97,18 +97,23 @@ public class MixinServerLevel {
         requiredPositions.add(ChunkPos.asLong(root.getScale(), root.getScaledY()));
         //Collect all positions that are required to be loaded
         for (SurfaceTrackerLeaf leaf : requiredLeaves) {
-            requiredPositions.add(ChunkPos.asLong(leaf.getScale(), leaf.getScaledY()));
-            SurfaceTrackerBranch parent = leaf.getParent();
-            while (parent != null) {
-                requiredPositions.add(ChunkPos.asLong(parent.getScale(), parent.getScaledY()));
+            SurfaceTrackerNode node = leaf;
+            while (node != null) {
+                requiredPositions.add(ChunkPos.asLong(node.getScale(), node.getScaledY()));
 
-                for (SurfaceTrackerNode child : parent.getChildren()) {
-                    if (child != null) {
-                        requiredPositions.add(ChunkPos.asLong(child.getScale(), child.getScaledY()));
+                if (node instanceof SurfaceTrackerBranch branch) {
+                    for (SurfaceTrackerNode child : branch.getChildren()) {
+                        if (child != null) {
+                            requiredPositions.add(ChunkPos.asLong(child.getScale(), child.getScaledY()));
+                        }
                     }
                 }
 
-                parent = parent.getParent();
+                SurfaceTrackerBranch parent = node.getParent();
+                if (node.getScale() < SurfaceTrackerNode.MAX_SCALE && parent == null) {
+                    throw new IllegalStateException("Detached heightmap branch exists?!");
+                }
+                node = parent;
             }
         }
 
