@@ -1,4 +1,4 @@
-package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap;
+package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree;
 
 import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
 
@@ -8,6 +8,8 @@ import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.HeightmapAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -17,7 +19,7 @@ import org.apache.commons.lang3.NotImplementedException;
 public class SurfaceTrackerWrapper extends Heightmap {
     public static final Heightmap.Types[] HEIGHTMAP_TYPES = Heightmap.Types.values();
 
-    protected final SurfaceTrackerSection surfaceTracker;
+    protected final SurfaceTrackerBranch surfaceTracker;
     /** global x of min block in column */
     protected final int dx;
     /** global z of min block in column */
@@ -27,12 +29,12 @@ public class SurfaceTrackerWrapper extends Heightmap {
         super(chunkAccess, types);
         //noinspection ConstantConditions
         ((HeightmapAccess) this).setIsOpaque(null);
-        this.surfaceTracker = new SurfaceTrackerSection(types);
+        this.surfaceTracker = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) types.ordinal());
         this.dx = sectionToMinBlock(chunkAccess.getPos().x);
         this.dz = sectionToMinBlock(chunkAccess.getPos().z);
     }
 
-    protected SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types, SurfaceTrackerSection root) {
+    protected SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types, SurfaceTrackerBranch root) {
         super(chunkAccess, types);
         //noinspection ConstantConditions
         ((HeightmapAccess) this).setIsOpaque(null);
@@ -74,16 +76,16 @@ public class SurfaceTrackerWrapper extends Heightmap {
         return data.getRaw();
     }
 
-    public synchronized void loadCube(HeightmapNode node) {
-        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), node);
+    public synchronized void loadCube(HeightmapStorage storage, HeightmapNode node) {
+        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), storage, node);
     }
 
     @Nullable
-    public SurfaceTrackerSection getMinScaleNode(int nodeY) {
+    public SurfaceTrackerLeaf getMinScaleNode(int nodeY) {
         return surfaceTracker.getMinScaleNode(nodeY);
     }
 
-    public SurfaceTrackerSection getSurfaceTrackerSection() {
+    public SurfaceTrackerBranch getSurfaceTrackerSection() {
         return this.surfaceTracker;
     }
 

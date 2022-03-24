@@ -481,8 +481,9 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                             ((ColumnCubeMapGetter) chunkAccess).getCubeMap().markUnloaded(pos.getY());
                         }
                     }
-                }
 
+                    cube.unloadNode(((CubicServerLevel) this.level).getHeightmapStorage());
+                }
             }
         }, this.cubeUnloadQueue::add).whenComplete((v, throwable) -> {
             if (throwable != null) {

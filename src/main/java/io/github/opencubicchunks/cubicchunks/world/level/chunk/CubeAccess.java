@@ -10,7 +10,7 @@ import io.github.opencubicchunks.cubicchunks.config.EarlyConfig;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.SurfaceTrackerSection;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.BlockGetter;
@@ -91,5 +91,5 @@ public interface CubeAccess extends BlockGetter, ChunkAccess, FeatureAccess, Hei
 
     int getCubeLocalHeight(Heightmap.Types heightmapType, int x, int z);
 
-    Map<Heightmap.Types, SurfaceTrackerSection[]> getCubeHeightmaps();
+    Map<Heightmap.Types, SurfaceTrackerLeaf[]> getCubeHeightmaps();
 }
