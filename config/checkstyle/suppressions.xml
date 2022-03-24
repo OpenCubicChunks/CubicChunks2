@@ -27,7 +27,7 @@
     <!-- Mixins don't count for now until ASM is done -->
     <suppress checks="NPathComplexity" files=".*Mixin.*\.java"/>
     <!-- TODO These need refactoring -->
-    <suppress checks="NPathComplexity" files="LevelCube.java|ProtoCube.java|CubeSerializer.java|SurfaceTrackerNodesTest.java"/>
+    <suppress checks="NPathComplexity" files="LevelCube.java|ProtoCube.java|CubeSerializer.java"/>
     <!-- Mixins need shadows and sometimes may want soft implements with special characters in prefix -->
     <suppress checks="MemberName" files=".*Mixin.*\.java"/>
     <suppress checks="MethodName" files=".*Mixin.*\.java"/>

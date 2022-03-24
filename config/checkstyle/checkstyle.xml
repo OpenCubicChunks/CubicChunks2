@@ -162,7 +162,9 @@
 
         <module name="CyclomaticComplexity"/>
         <!-- <module name="JavaNCSS"/> TODO fix and enable -->
-        <module name="NPathComplexity"/>
+        <module name="NPathComplexity">
+            <property name="max" value="512"/>
+        </module>
 
         <!-- Misc -->
 
