@@ -161,20 +161,7 @@ public class CubeSerializer {
             //}
         }
         cube.setCubeLight(isLightOn);
-        //TODO: reimplement heightmap in save format
-//            CompoundTag compoundnbt3 = level.getCompound("Heightmaps");
-//            EnumSet<Heightmap.Type> enumset = EnumSet.noneOf(Heightmap.Type.class);
-//
-//            for(Heightmap.Type heightmap$type : cube.getCubeStatus().getHeightMaps()) {
-//                String s = heightmap$type.getId();
-//                if (compoundnbt3.contains(s, 12)) {
-//                    cube.setHeightmap(heightmap$type, compoundnbt3.getLongArray(s));
-//                } else {
-//                    enumset.add(heightmap$type);
-//                }
-//            }
-//
-//            Heightmap.updateChunkHeightmaps(cube, enumset);
+
         CompoundTag structures = level.getCompound("Structures");
         cube.setAllStarts(ChunkSerializerAccess.invokeUnpackStructureStart(serverLevel, structures, serverLevel.getSeed()));
         cube.setAllReferences(unpackCubeStructureReferences(new ImposterChunkPos(cubePos), structures));

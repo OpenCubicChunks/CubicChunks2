@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.objects.Object2ReferenceMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
 
 public class SurfaceTrackerSectionStorage implements HeightmapStorage {
+    //TODO: replace with a real saving impl
     private Object2ReferenceMap<PackedTypeScaleScaledY, SurfaceTrackerNode> saved = new Object2ReferenceOpenHashMap<>();
 
     @Override
