@@ -8,11 +8,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
 
-public class ClientSurfaceTracker extends Heightmap {
+public class ClientHeightmap extends Heightmap {
 
     protected final Predicate<BlockState> isOpaque;
 
-    public ClientSurfaceTracker(ChunkAccess chunkAccess, Types types) {
+    public ClientHeightmap(ChunkAccess chunkAccess, Types types) {
         super(chunkAccess, types);
         this.isOpaque = ((HeightmapAccess) this).getIsOpaque();
     }

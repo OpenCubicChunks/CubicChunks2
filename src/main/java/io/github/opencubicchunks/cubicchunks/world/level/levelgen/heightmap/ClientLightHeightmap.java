@@ -1,5 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap;
 
+import static io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.HeightmapTreeNode.WIDTH_BLOCKS;
+
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.HeightmapAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
@@ -14,11 +16,11 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class ClientLightSurfaceTracker extends ClientSurfaceTracker {
+public class ClientLightHeightmap extends ClientHeightmap {
     private final int bitsPerColumn;
     private final int minHeight;
 
-    public ClientLightSurfaceTracker(ChunkAccess chunkAccess) {
+    public ClientLightHeightmap(ChunkAccess chunkAccess) {
         // type shouldn't matter
         super(chunkAccess, Types.WORLD_SURFACE);
         bitsPerColumn = Mth.ceillog2(((HeightmapAccess) this).getChunk().getHeight() + 1);
@@ -34,20 +36,20 @@ public class ClientLightSurfaceTracker extends ClientSurfaceTracker {
     }
 
     private static int getIndex(int x, int z) {
-        return x + z * 16;
+        return x + z * WIDTH_BLOCKS;
     }
 
     public void setRawData(long[] heightmap, LevelChunk chunk) {
         // We need to compare the old and new data here, hence the inefficiencies with making a new bitstorage
         // TODO can this be optimized to operate on long[]s directly instead of making an extra BitStorage?
         BitStorage storage = ((HeightmapAccess) this).getData();
-        BitStorage oldStorage = new BitStorage(bitsPerColumn, 256, storage.getRaw().clone());
+        BitStorage oldStorage = new BitStorage(bitsPerColumn, WIDTH_BLOCKS*WIDTH_BLOCKS, storage.getRaw().clone());
         System.arraycopy(heightmap, 0, storage.getRaw(), 0, heightmap.length);
 //        ChunkAccess chunk = ((HeightmapAccess) this).getChunk();
         int baseX = chunk.getPos().getMinBlockX();
         int baseZ = chunk.getPos().getMinBlockZ();
-        for (int z = 0; z < 16; z++) {
-            for (int x = 0; x < 16; x++) {
+        for (int z = 0; z < WIDTH_BLOCKS; z++) {
+            for (int x = 0; x < WIDTH_BLOCKS; x++) {
                 int index = getIndex(x, z);
                 int oldHeight = oldStorage.get(index) + minHeight;
                 int newHeight = storage.get(index) + minHeight;

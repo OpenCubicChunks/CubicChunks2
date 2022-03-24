@@ -9,8 +9,8 @@ import javax.annotation.Nullable;
 import io.github.opencubicchunks.cubicchunks.config.EarlyConfig;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.CubeHeightAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.HeightmapTreeLeaf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.BlockGetter;
@@ -25,7 +25,7 @@ import net.minecraft.world.level.levelgen.feature.StructureFeature;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import org.apache.logging.log4j.LogManager;
 
-public interface CubeAccess extends BlockGetter, ChunkAccess, FeatureAccess, HeightmapNode {
+public interface CubeAccess extends BlockGetter, ChunkAccess, FeatureAccess, CubeHeightAccess {
 
     int SECTION_DIAMETER = 16;
     int DIAMETER_IN_SECTIONS = EarlyConfig.getDiameterInSections();
@@ -91,5 +91,5 @@ public interface CubeAccess extends BlockGetter, ChunkAccess, FeatureAccess, Hei
 
     int getCubeLocalHeight(Heightmap.Types heightmapType, int x, int z);
 
-    Map<Heightmap.Types, SurfaceTrackerLeaf[]> getCubeHeightmaps();
+    Map<Heightmap.Types, HeightmapTreeLeaf[]> getCubeHeightmaps();
 }

@@ -9,11 +9,11 @@ import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkMapAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMap;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerBranch;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.LightHeightmapTree;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.HeightmapTreeBranch;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.HeightmapTreeLeaf;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.HeightmapTreeNode;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.HeightmapTree;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -61,18 +61,18 @@ public class MixinServerLevel {
                 //ProtoChunks only contain a global light heightmap
                 if (chunk instanceof ProtoChunk protoChunk && !(chunk instanceof ImposterProtoChunk)) {
                     ColumnCubeMap cubeMap = ((ColumnCubeMapGetter) protoChunk).getCubeMap();
-                    LightSurfaceTrackerWrapper heightmap = ((LightHeightmapGetter) protoChunk).getServerLightHeightmap();
+                    LightHeightmapTree heightmap = ((LightHeightmapGetter) protoChunk).getServerLightHeightmap();
                     if (heightmap != null) {
-                        SurfaceTrackerBranch root = heightmap.getSurfaceTrackerSection();
+                        HeightmapTreeBranch root = heightmap.getRoot();
                         verifyHeightmapTree(root, cubeMap);
                     }
                 }
                 if (chunk instanceof LevelChunk levelChunk) {
                     for (Map.Entry<Heightmap.Types, Heightmap> heightmap : levelChunk.getHeightmaps()) {
-                        verifyHeightmapTree(((SurfaceTrackerWrapper) heightmap.getValue()).getSurfaceTrackerSection(), ((ColumnCubeMapGetter) levelChunk).getCubeMap());
+                        verifyHeightmapTree(((HeightmapTree) heightmap.getValue()).getRoot(), ((ColumnCubeMapGetter) levelChunk).getCubeMap());
                     }
 
-                    verifyHeightmapTree(((LightHeightmapGetter) levelChunk).getServerLightHeightmap().getSurfaceTrackerSection(), ((ColumnCubeMapGetter) levelChunk).getCubeMap());
+                    verifyHeightmapTree(((LightHeightmapGetter) levelChunk).getServerLightHeightmap().getRoot(), ((ColumnCubeMapGetter) levelChunk).getCubeMap());
                 }
             });
         }
@@ -81,11 +81,11 @@ public class MixinServerLevel {
     /**
      * Rough duplicate of SurfaceTrackerNodesTest#verifyHeightmapTree, which is in the test module
      */
-    private void verifyHeightmapTree(SurfaceTrackerBranch root, ColumnCubeMap cubeMap) {
+    private void verifyHeightmapTree(HeightmapTreeBranch root, ColumnCubeMap cubeMap) {
         //Collect all leaves in the cubemap
-        List<SurfaceTrackerLeaf> requiredLeaves = new ArrayList<>();
+        List<HeightmapTreeLeaf> requiredLeaves = new ArrayList<>();
         for (Integer cubeY : cubeMap.getLoaded()) {
-            SurfaceTrackerLeaf leaf = root.getMinScaleNode(cubeY);
+            HeightmapTreeLeaf leaf = root.getLeaf(cubeY);
             if (leaf != null) {
                 //Leaves can be null when a protocube is marked as loaded in the cubemap, but hasn't yet been added to the global heightmap
                 requiredLeaves.add(leaf);
@@ -96,21 +96,21 @@ public class MixinServerLevel {
         //Root will not be added if there are no leaves in the tree, so we add it here
         requiredPositions.add(ChunkPos.asLong(root.getScale(), root.getScaledY()));
         //Collect all positions that are required to be loaded
-        for (SurfaceTrackerLeaf leaf : requiredLeaves) {
-            SurfaceTrackerNode node = leaf;
+        for (HeightmapTreeLeaf leaf : requiredLeaves) {
+            HeightmapTreeNode node = leaf;
             while (node != null) {
                 requiredPositions.add(ChunkPos.asLong(node.getScale(), node.getScaledY()));
 
-                if (node instanceof SurfaceTrackerBranch branch) {
-                    for (SurfaceTrackerNode child : branch.getChildren()) {
+                if (node instanceof HeightmapTreeBranch branch) {
+                    for (HeightmapTreeNode child : branch.getChildren()) {
                         if (child != null) {
                             requiredPositions.add(ChunkPos.asLong(child.getScale(), child.getScaledY()));
                         }
                     }
                 }
 
-                SurfaceTrackerBranch parent = node.getParent();
-                if (node.getScale() < SurfaceTrackerNode.MAX_SCALE && parent == null) {
+                HeightmapTreeBranch parent = node.getParent();
+                if (node.getScale() < HeightmapTreeNode.MAX_SCALE && parent == null) {
                     throw new IllegalStateException("Detached heightmap branch exists?!");
                 }
                 node = parent;
@@ -121,15 +121,15 @@ public class MixinServerLevel {
         verifyAllNodesInRequiredSet(root, requiredPositions);
     }
 
-    private static void verifyAllNodesInRequiredSet(SurfaceTrackerBranch branch, LongSet requiredNodes) {
-        for (SurfaceTrackerNode child : branch.getChildren()) {
+    private static void verifyAllNodesInRequiredSet(HeightmapTreeBranch branch, LongSet requiredNodes) {
+        for (HeightmapTreeNode child : branch.getChildren()) {
             if (child != null) {
                 if (!requiredNodes.contains(ChunkPos.asLong(child.getScale(), child.getScaledY()))) {
                     throw new IllegalStateException("Heightmap borken");
                 }
 
                 if (branch.getScale() != 1) {
-                    verifyAllNodesInRequiredSet((SurfaceTrackerBranch) child, requiredNodes);
+                    verifyAllNodesInRequiredSet((HeightmapTreeBranch) child, requiredNodes);
                 }
             }
         }

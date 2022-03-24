@@ -17,10 +17,10 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.EmptyLevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientLightSurfaceTracker;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientSurfaceTracker;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientLightHeightmap;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientHeightmap;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.LightHeightmapTree;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.HeightmapTree;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -112,9 +112,9 @@ public abstract class MixinLevelChunk implements ChunkAccess, LightHeightmapGett
         }
 
         if (levelIn.isClientSide) {
-            lightHeightmap = new ClientLightSurfaceTracker(this);
+            lightHeightmap = new ClientLightHeightmap(this);
         } else {
-            lightHeightmap = new LightSurfaceTrackerWrapper(this);
+            lightHeightmap = new LightHeightmapTree(this);
         }
         // TODO might want 4 columns that share the same BigCubes to have a reference to the same CubeMap?
         columnCubeMap = new ColumnCubeMap();
@@ -143,11 +143,11 @@ public abstract class MixinLevelChunk implements ChunkAccess, LightHeightmapGett
         // TODO how do we want to handle client side light heightmap updates on block updates?
         //      note that either way there'll still need to be synchronization, since updates can happen outside of the client's vertically loaded range
         if (this.level.isClientSide) {
-            ClientLightSurfaceTracker clientLightHeightmap = this.getClientLightHeightmap();
+            ClientLightHeightmap clientLightHeightmap = this.getClientLightHeightmap();
         } else {
             int relX = pos.getX() & 15;
             int relZ = pos.getZ() & 15;
-            LightSurfaceTrackerWrapper serverLightHeightmap = this.getServerLightHeightmap();
+            LightHeightmapTree serverLightHeightmap = this.getServerLightHeightmap();
             int oldHeight = serverLightHeightmap.getFirstAvailable(relX, relZ);
             // Light heightmap update needs to occur before the light engine update.
             // LevelChunk.setBlockState is called before the light engine is updated, so this works fine currently, but if this update call is ever moved, that must still be the case.
@@ -181,9 +181,9 @@ public abstract class MixinLevelChunk implements ChunkAccess, LightHeightmapGett
             return new Heightmap(chunkAccess, type);
         }
         if (this.level.isClientSide()) {
-            return new ClientSurfaceTracker(chunkAccess, type);
+            return new ClientHeightmap(chunkAccess, type);
         } else {
-            return new SurfaceTrackerWrapper(chunkAccess, type); //TODO: Load from this from files.
+            return new HeightmapTree(chunkAccess, type); //TODO: Load from this from files.
         }
     }
 

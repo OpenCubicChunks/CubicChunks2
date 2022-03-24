@@ -1,4 +1,4 @@
-package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree;
+package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree;
 
 import java.util.function.IntPredicate;
 
@@ -7,21 +7,24 @@ import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.CubeHeightAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 
-public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
-    protected HeightmapNode node;
+public class HeightmapTreeLeaf extends HeightmapTreeNode {
 
-    public SurfaceTrackerLeaf(int y, @Nullable SurfaceTrackerBranch parent, byte heightmapType) {
+    protected CubeHeightAccess cubeAccess;
+
+
+    public HeightmapTreeLeaf(int y, @Nullable HeightmapTreeBranch parent, byte heightmapType) {
         super(0, y, parent, heightmapType);
     }
+
 
     @Override
     protected int updateHeight(int x, int z, int idx) {
         synchronized(this) {
             // Node cannot be null here. If it is, the leaf was not updated on node unloading.
-            int maxY = this.node.getHighest(x, z, this.heightmapType);
+            int maxY = this.cubeAccess.getHighest(x, z, this.heightmapType);
 
             this.heights.set(idx, absToRelY(maxY, this.scaledY, this.scale));
             clearDirty(idx);
@@ -30,10 +33,10 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
     }
 
     @Override
-    public synchronized void loadCube(int localSectionX, int localSectionZ, HeightmapStorage storage, @Nonnull HeightmapNode newNode) {
-        boolean isBeingInitialized = this.node == null;
+    public synchronized void loadCube(int localSectionX, int localSectionZ, HeightmapStorage storage, @Nonnull CubeHeightAccess newNode) {
+        boolean isBeingInitialized = this.cubeAccess == null;
 
-        this.node = newNode;
+        this.cubeAccess = newNode;
         newNode.sectionLoaded(this, localSectionX, localSectionZ);
 
         // Parent might be null for proto-cube leaf nodes
@@ -50,8 +53,9 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
         }
     }
 
-    @Override protected void unload(@Nonnull HeightmapStorage storage) {
-        assert this.node == null : "Heightmap leaf being unloaded while holding a cube?!";
+    @Override
+    protected void unload(@Nonnull HeightmapStorage storage) {
+        assert this.cubeAccess == null : "Heightmap leaf being unloaded while holding a cube?!";
 
         this.parent = null;
 
@@ -62,13 +66,13 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
      * Called by the node (cube) when it's unloaded. This informs the parent that one of its
      * children are no longer required
      */
-    public void cubeUnloaded(int localSectionX, int localSectionZ, HeightmapStorage storage) {
-        assert this.node != null;
+    public void onCubeUnloaded(int localSectionX, int localSectionZ, HeightmapStorage storage) {
+        assert this.cubeAccess != null;
 
         // On unloading the node, the leaf must have no dirty positions
         updateDirtyHeights(localSectionX, localSectionZ);
 
-        this.node = null;
+        this.cubeAccess = null;
 
         // Parent can be null for a protocube that hasn't been added to the global heightmap
         if (parent != null) {
@@ -77,7 +81,7 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
     }
 
     @Nullable
-    public SurfaceTrackerLeaf getMinScaleNode(int y) {
+    public HeightmapTreeLeaf getLeaf(int y) {
         if (y != this.scaledY) {
             throw new IllegalArgumentException("Invalid Y: " + y + ", expected " + this.scaledY);
         }
@@ -90,10 +94,10 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
      * Should only be called on scale 0 heightmaps
      * @param isOpaquePredicate takes heightmap type
      */
-    public void onSetBlock(int cubeLocalX, int y, int cubeLocalZ, IntPredicate isOpaquePredicate) {
-        assert y >= Coords.cubeToMinBlock(this.scaledY) && y <= Coords.cubeToMaxBlock(this.scaledY) :
+    public void onSetBlock(int cubeLocalX, int leafLocalY, int cubeLocalZ, IntPredicate isOpaquePredicate) {
+        assert leafLocalY >= Coords.cubeToMinBlock(this.scaledY) && leafLocalY <= Coords.cubeToMaxBlock(this.scaledY) :
             String.format("Leaf node (scaledY: %d) got Y position %d which is out of inclusive bounds %d to %d",
-                this.scaledY, y, Coords.cubeToMinBlock(this.scaledY), Coords.cubeToMaxBlock(this.scaledY));
+                this.scaledY, leafLocalY, Coords.cubeToMinBlock(this.scaledY), Coords.cubeToMaxBlock(this.scaledY));
 
         int index = index(cubeLocalX, cubeLocalZ);
         if (isDirty(index)) {
@@ -101,7 +105,7 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
         }
 
         //input coordinates could be cube local, so convert Y to global
-        int globalY = Coords.localToBlock(scaledY, Coords.blockToLocal(y));
+        int globalY = Coords.localToBlock(scaledY, Coords.blockToLocal(leafLocalY));
         int height = getHeight(cubeLocalX, cubeLocalZ);
         if (globalY < height) {
             return;
@@ -119,7 +123,7 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
 
             if (parent != null) { //parent can only be null in a ProtoCube, or a MAX_SCALE section
                 //only mark parents dirty if the Y is above their current height
-                this.parent.markTreeDirtyIfRequired(cubeLocalX, cubeLocalZ, y);
+                this.parent.markTreeDirtyIfRequired(cubeLocalX, cubeLocalZ, leafLocalY);
             }
             this.heights.set(index, absToRelY(globalY, scaledY, scale));
             return;
@@ -131,27 +135,27 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
     }
 
     @Nullable
-    public HeightmapNode getNode() {
-        return this.node;
+    public CubeHeightAccess getCube() {
+        return this.cubeAccess;
     }
 
-    private SurfaceTrackerBranch getRoot() {
-        SurfaceTrackerNode section = this;
+    private HeightmapTreeBranch getRoot() {
+        HeightmapTreeNode section = this;
         while (section.parent != null) {
             section = section.parent;
         }
         //noinspection ConstantConditions
-        return (SurfaceTrackerBranch) section;
+        return (HeightmapTreeBranch) section;
     }
 
     @Nullable
-    public SurfaceTrackerLeaf getSectionAbove() {
+    public HeightmapTreeLeaf getLeafAbove() {
         // TODO this can be optimized - don't need to go to the root every time, just the lowest node that is a parent of both this node and the node above.
-        return this.getRoot().getMinScaleNode(scaledY + 1);
+        return this.getRoot().getLeaf(scaledY + 1);
     }
 
     @VisibleForTesting
-    public void setNode(@Nullable HeightmapNode node) {
-        this.node = node;
+    public void setCube(@Nullable CubeHeightAccess cubeAccess) {
+        this.cubeAccess = cubeAccess;
     }
 }
