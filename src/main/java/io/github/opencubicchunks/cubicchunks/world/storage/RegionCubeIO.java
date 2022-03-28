@@ -380,14 +380,19 @@ public class RegionCubeIO {
 
             int version = ChunkStorage.getVersion(cubeTags[i]);
 
-            cubeTags[i] = NbtUtils.update(this.dataFixer, DataFixTypes.CHUNK, cubeTags[i], version, 1493);
-            //if (nbt.getCompound("Level").getBoolean("hasLegacyStructureData")) {
-            //    if (this.legacyStructureHandler == null) {
-            //        this.legacyStructureHandler = LegacyStructureDataHandler.getLegacyStructureHandler(worldKey, (DimensionDataStorage)persistentStateManagerFactory.get());
-            //    }
-            //    nbt = this.legacyStructureHandler.updateFromLegacy(nbt);
-            //}
-            cubeTags[i] = NbtUtils.update(this.dataFixer, DataFixTypes.CHUNK, cubeTags[i], Math.max(1493, version));
+            try {
+                cubeTags[i] = NbtUtils.update(this.dataFixer, DataFixTypes.CHUNK, cubeTags[i], version, 1493);
+                //if (nbt.getCompound("Level").getBoolean("hasLegacyStructureData")) {
+                //    if (this.legacyStructureHandler == null) {
+                //        this.legacyStructureHandler = LegacyStructureDataHandler.getLegacyStructureHandler(worldKey, (DimensionDataStorage)persistentStateManagerFactory.get());
+                //    }
+                //    nbt = this.legacyStructureHandler.updateFromLegacy(nbt);
+                //}
+                cubeTags[i] = NbtUtils.update(this.dataFixer, DataFixTypes.CHUNK, cubeTags[i], Math.max(1493, version));
+            } catch (Exception e) {
+                System.err.printf("Vanilla DFU error on (%d, %d, %d)!\n", pos.getX(), pos.getY(), pos.getZ());
+                e.printStackTrace(System.err);
+            }
             if (cubeTags[i] == null) {
                 LOGGER.warn("Dropping incomplete cube at " + pos);
                 return null;
