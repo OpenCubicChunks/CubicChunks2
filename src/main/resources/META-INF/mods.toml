@@ -26,12 +26,12 @@ displayName="Cubic Chunks" #mandatory
 # A file name (in the root of the mod JAR) containing a logo for display
 #logoFile="examplemod.png" #optional
 # A text field displayed in the mod UI
-credits="Thanks for this example mod goes to Java" #optional
+credits="Based on Cuchaz's TWM mod, initial idea and first implementation by Robinton." #optional
 # A text field displayed in the mod UI
-authors="Love, Cheese and small house plants" #optional
+authors="Barteks2x, Cuchaz and Razaekel" #optional
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-This is a long form description of the mod.
+Extends Minecraft height by changing chunk size to 16x16x16 blocks.
 '''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
 [[dependencies.cubicchunks]] #optional
@@ -49,6 +49,6 @@ This is a long form description of the mod.
 [[dependencies.cubicchunks]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.15.2,)"
+    versionRange=["1.16.3","1.16.4","1.16.5"]
     ordering="NONE"
     side="BOTH"
