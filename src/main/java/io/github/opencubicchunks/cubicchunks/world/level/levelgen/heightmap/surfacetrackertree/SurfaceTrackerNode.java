@@ -56,14 +56,6 @@ public abstract class SurfaceTrackerNode {
     }
 
 
-    private BitStorage getRawHeights() {
-        return heights;
-    }
-
-    private long[] getDirtyPositions()  {
-        return dirtyPositions;
-    }
-
     /**
      * Get the height for a given position. Recomputes the height if the column is marked dirty in this section.
      * x and z are <b>GLOBAL</b> coordinates (cube local is also fine, but section/chunk local is WRONG).

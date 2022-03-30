@@ -37,7 +37,7 @@ public class SurfaceTrackerBranchTest {
     public void testLeafInsertionIntoRoot() {
         NullHeightmapStorage storage = new NullHeightmapStorage();
         SurfaceTrackerBranch root = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) 0);
-        root.loadCube(0, 0, storage, new TestHeightmapNode(0), null);
+        root.loadCube(storage, new TestHeightmapNode(0), null);
 
         SurfaceTrackerLeaf leaf = root.getMinScaleNode(0);
         assertNotNull(leaf, "Appropriate leaf was null after loading node into root");

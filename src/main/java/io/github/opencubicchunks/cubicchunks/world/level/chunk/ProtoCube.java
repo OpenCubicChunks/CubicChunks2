@@ -225,7 +225,12 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
                 }
 
                 SurfaceTrackerLeaf lightLeaf = lightHeightmap.loadCube(((CubicServerLevel) this.levelHeightAccessor).getHeightmapStorage(), this, null);
-                sectionLoaded(lightLeaf, dx, dz);
+                int heightmapIndex = dx + dz * DIAMETER_IN_SECTIONS;
+
+                if (lightLeaf == null)
+                    System.out.println("!");
+
+                this.lightHeightmaps[heightmapIndex] = lightLeaf;
 
                 for (int z = 0; z < SECTION_DIAMETER; z++) {
                     for (int x = 0; x < SECTION_DIAMETER; x++) {
@@ -238,19 +243,6 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
                     }
                 }
             }
-        }
-    }
-
-    @Override
-    public void sectionLoaded(@Nonnull SurfaceTrackerLeaf surfaceTrackerLeaf, int localSectionX, int localSectionZ) {
-        int idx = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
-
-        if (surfaceTrackerLeaf.getRawType() == -1) { //light
-            this.lightHeightmaps[idx] = surfaceTrackerLeaf;
-        } else { // normal heightmap
-            this.heightmaps.computeIfAbsent(surfaceTrackerLeaf.getType(),
-                type -> new SurfaceTrackerLeaf[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS]
-            )[idx] = surfaceTrackerLeaf;
         }
     }
 
@@ -373,7 +365,6 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
                     // On creation of a new node for a cube, both the node and its parents must be marked dirty
                     leaf.setAllDirty();
                     surfaceTrackerLeaves[idx] = leaf;
-                    sectionLoaded(leaf, dx, dz);
                 }
             }
             return surfaceTrackerLeaves;
@@ -539,6 +530,10 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
         int zSection = blockToCubeLocalSection(z);
 
         int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
+
+        if (this.lightHeightmaps[idx] == null)
+            System.out.println("!");
+
         SurfaceTrackerLeaf sectionAbove = this.lightHeightmaps[idx].getSectionAbove();
 
         int dy = CubeAccess.DIAMETER_IN_BLOCKS - 1;

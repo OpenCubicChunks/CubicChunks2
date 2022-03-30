@@ -43,7 +43,7 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         }
     }
 
-    public SurfaceTrackerLeaf loadCube(int localSectionX, int localSectionZ, HeightmapStorage storage, HeightmapNode newNode, @Nullable SurfaceTrackerLeaf protoLeaf) {
+    public SurfaceTrackerLeaf loadCube(HeightmapStorage storage, HeightmapNode newNode, @Nullable SurfaceTrackerLeaf protoLeaf) {
         int newScale = scale - 1;
 
         // Attempt to load all children from storage
@@ -60,16 +60,24 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         // child is a leaf
         if (newScale == 0) {
 
-            assert children[idx] == null : "Duplicate leaf!";
+            assert protoLeaf == null || children[idx] == null : "!";
 
             SurfaceTrackerLeaf newLeaf;
-            if (protoLeaf == null) {
-                newLeaf = new SurfaceTrackerLeaf(newNode, this, this.heightmapType);
-            } else {
+
+            // converting an existing node
+            if (children[idx] != null) {
+                newLeaf = new SurfaceTrackerLeaf(newNode, this, (SurfaceTrackerLeaf) children[idx]);
+            }
+            // attaching an external leaf
+            else if (protoLeaf != null) {
                 newLeaf = new SurfaceTrackerLeaf(newNode, this, protoLeaf);
             }
+            // creating a new leaf
+            else {
+                newLeaf = new SurfaceTrackerLeaf(newNode, this, this.heightmapType);
+            }
+
             children[idx] = newLeaf;
-            newNode.sectionLoaded(newLeaf, localSectionX, localSectionZ);
             newLeaf.markAncestorsDirty();
 
             onChildLoaded();
@@ -80,11 +88,12 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         // child is a branch
         else {
 
+            // lazily create new branches
             if (children[idx] == null) {
                 children[idx] = new SurfaceTrackerBranch(newScale, newScaledY, this, this.heightmapType);
             }
 
-            return ((SurfaceTrackerBranch) children[idx]).loadCube(localSectionX, localSectionZ, storage, newNode, protoLeaf);
+            return ((SurfaceTrackerBranch) children[idx]).loadCube(storage, newNode, protoLeaf);
         }
     }
 

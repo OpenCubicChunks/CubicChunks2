@@ -49,7 +49,7 @@ public class SurfaceTrackerLeafTest {
 
         //Set up leaf and node with parent
         SurfaceTrackerBranch parent = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) 0);
-        parent.loadCube(0, 0, storage, new TestHeightmapNode(0), null);
+        parent.loadCube(storage, new TestHeightmapNode(0), null);
         SurfaceTrackerLeaf leaf = parent.getMinScaleNode(0);
 
         //Unload the node
