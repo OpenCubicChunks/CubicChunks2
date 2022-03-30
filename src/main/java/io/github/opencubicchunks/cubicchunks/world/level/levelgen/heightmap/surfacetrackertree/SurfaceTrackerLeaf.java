@@ -11,11 +11,21 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.Heig
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 
 public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
-    protected HeightmapNode node;
 
-    public SurfaceTrackerLeaf(int y, @Nullable SurfaceTrackerBranch parent, byte heightmapType) {
-        super(0, y, parent, heightmapType);
+    protected final HeightmapNode node;
+
+    public SurfaceTrackerLeaf(HeightmapNode node, @Nullable SurfaceTrackerBranch parent, byte heightmapType) {
+        super(0, node.getNodeY(), parent, heightmapType);
+
+        this.node = node;
     }
+
+    public SurfaceTrackerLeaf(HeightmapNode node, @Nullable SurfaceTrackerBranch parent, SurfaceTrackerLeaf protoLeaf) {
+        super(0, node.getNodeY(), parent, protoLeaf.heightmapType, protoLeaf.heights, protoLeaf.dirtyPositions);
+
+        this.node = node;
+    }
+
 
     @Override
     protected int updateHeight(int x, int z, int idx) {
@@ -26,27 +36,6 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
             this.heights.set(idx, absToRelY(maxY, this.scaledY, this.scale));
             clearDirty(idx);
             return maxY;
-        }
-    }
-
-    @Override
-    public synchronized void loadCube(int localSectionX, int localSectionZ, HeightmapStorage storage, @Nonnull HeightmapNode newNode) {
-        boolean isBeingInitialized = this.node == null;
-
-        this.node = newNode;
-        newNode.sectionLoaded(this, localSectionX, localSectionZ);
-
-        // Parent might be null for proto-cube leaf nodes
-        // If we are inserting a new node (it's parent is null), the parents must be updated.
-        // The parent can already be set for LevelCubes, their heights are inherited from their ProtoCubes
-        // and do not need to be updated
-        if (this.parent != null) {
-            this.markAncestorsDirty();
-            if (isBeingInitialized) {
-                // If this is the first node inserted into this leaf, we inform the parent node.
-                // Both ProtoCube and LevelCube will call loadCube, this avoids invalid reference counting
-                this.parent.onChildLoaded();
-            }
         }
     }
 
@@ -68,7 +57,7 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
         // On unloading the node, the leaf must have no dirty positions
         updateDirtyHeights(localSectionX, localSectionZ);
 
-        this.node = null;
+// TODO:        this.node = null;
 
         // Parent can be null for a protocube that hasn't been added to the global heightmap
         if (parent != null) {
@@ -148,10 +137,5 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
     public SurfaceTrackerLeaf getSectionAbove() {
         // TODO this can be optimized - don't need to go to the root every time, just the lowest node that is a parent of both this node and the node above.
         return this.getRoot().getMinScaleNode(scaledY + 1);
-    }
-
-    @VisibleForTesting
-    public void setNode(@Nullable HeightmapNode node) {
-        this.node = node;
     }
 }

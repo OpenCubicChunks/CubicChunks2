@@ -15,7 +15,7 @@ public class SurfaceTrackerSectionStorage implements HeightmapStorage {
         saved.put(new PackedTypeScaleScaledY(surfaceTrackerNode.heightmapType, surfaceTrackerNode.scale, surfaceTrackerNode.scaledY), surfaceTrackerNode);
 
         if (surfaceTrackerNode.scale == 0) {
-            ((SurfaceTrackerLeaf) surfaceTrackerNode).node = null;
+// TODO:            ((SurfaceTrackerLeaf) surfaceTrackerNode).node = null;
         } else {
             Arrays.fill(((SurfaceTrackerBranch) surfaceTrackerNode).children, null);
         }

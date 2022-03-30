@@ -225,21 +225,32 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         this.setAllStarts(protoCube.getAllCubeStructureStarts());
         this.setAllReferences(protoCube.getAllReferences());
 
-        this.heightmaps.putAll(protoCube.getCubeHeightmaps());
+        // copy protoCube's heightmaps
+        ChunkPos pos = this.cubePos.asChunkPos();
+        HeightmapStorage storage = ((CubicServerLevel) this.level).getHeightmapStorage();
 
-        SurfaceTrackerLeaf[] protoCubeLightHeightmaps = protoCube.getLightHeightmaps();
-        for (int localZ = 0; localZ < CubeAccess.DIAMETER_IN_SECTIONS; localZ++) {
-            for (int localX = 0; localX < CubeAccess.DIAMETER_IN_SECTIONS; localX++) {
-                int i = localX + localZ * CubeAccess.DIAMETER_IN_SECTIONS;
+        for (int sectionX = 0; sectionX < CubeAccess.DIAMETER_IN_SECTIONS; sectionX++) {
+            for (int sectionZ = 0; sectionZ < CubeAccess.DIAMETER_IN_SECTIONS; sectionZ++) {
 
-                this.lightHeightmaps[i] = protoCubeLightHeightmaps[i];
-                if (this.lightHeightmaps[i] == null) {
-                    System.out.println("Got a null light heightmap while upgrading from CubePrimer at " + this.cubePos);
-                } else {
-                    this.lightHeightmaps[i].loadCube(localX, localZ, ((CubicServerLevel) this.level).getHeightmapStorage(), this);
+                LevelChunk chunk = this.level.getChunk(pos.x + sectionX, pos.z + sectionZ);
+                int heightmapIndex = sectionX + sectionZ * DIAMETER_IN_SECTIONS;
+
+                // promote the ProtoCube's vanilla heightmaps for this chunk
+                for (Map.Entry<Heightmap.Types, Heightmap>  entry : chunk.getHeightmaps()) {
+                    SurfaceTrackerWrapper wrapper = (SurfaceTrackerWrapper) entry.getValue();
+                    SurfaceTrackerLeaf protoLeaf = protoCube.getCubeHeightmaps().get(entry.getKey())[heightmapIndex];
+                    SurfaceTrackerLeaf levelLeaf = wrapper.loadCube(storage, this, protoLeaf);
+                    sectionLoaded(levelLeaf, sectionX, sectionZ);
                 }
+
+                // promote the ProtoCube's light heightmap for this chunk
+                SurfaceTrackerWrapper lightWrapper = (SurfaceTrackerWrapper) ((LightHeightmapGetter) chunk).getLightHeightmap();
+                SurfaceTrackerLeaf lightProtoLeaf = protoCube.getLightHeightmaps()[heightmapIndex];
+                SurfaceTrackerLeaf lightLevelLeaf = lightWrapper.loadCube(storage, this, lightProtoLeaf);
+                sectionLoaded(lightLevelLeaf, sectionX, sectionZ);
             }
         }
+
         this.setCubeLight(protoCube.hasCubeLight());
         this.dirty = true;
     }
@@ -1090,28 +1101,10 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
     }
 
     public void postLoad() {
+
         if (this.postLoad != null) {
             this.postLoad.accept(this);
             this.postLoad = null;
-        }
-        // TODO heightmap stuff should probably be elsewhere rather than here.
-        ChunkPos pos = this.cubePos.asChunkPos();
-        HeightmapStorage storage = ((CubicServerLevel) this.level).getHeightmapStorage();
-        for (int x = 0; x < CubeAccess.DIAMETER_IN_SECTIONS; x++) {
-            for (int z = 0; z < CubeAccess.DIAMETER_IN_SECTIONS; z++) {
-
-                // This force-loads the column, but it shouldn't matter if column-cube load order is working properly.
-                LevelChunk chunk = this.level.getChunk(pos.x + x, pos.z + z);
-                ((ColumnCubeMapGetter) chunk).getCubeMap().markLoaded(this.cubePos.getY());
-                for (Map.Entry<Heightmap.Types, Heightmap> entry : chunk.getHeightmaps()) {
-                    Heightmap heightmap = entry.getValue();
-                    SurfaceTrackerWrapper tracker = (SurfaceTrackerWrapper) heightmap;
-                    tracker.loadCube(storage, this);
-                }
-
-                // TODO probably don't want to do this if the cube was already loaded as a CubePrimer
-                ((LightHeightmapGetter) chunk).getServerLightHeightmap().loadCube(storage, this);
-            }
         }
     }
 
