@@ -237,7 +237,11 @@ dependencies {
     }
 
     // modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-//
+
+    // This is commented out as it (obviously) breaks loading old worlds, and should probably be enabled in dev env
+//    modRuntime ("supercoder79:databreaker:0.2.8") {
+//        exclude module: "fabric-loader"
+//    }
 
     compileOnly('com.google.code.findbugs:jsr305:3.0.1')
     testCompileOnly('com.google.code.findbugs:jsr305:3.0.1')
