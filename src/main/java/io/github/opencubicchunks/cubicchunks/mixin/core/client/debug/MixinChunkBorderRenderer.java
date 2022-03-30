@@ -16,7 +16,7 @@ public class MixinChunkBorderRenderer {
     public int minHeight(ClientLevel clientLevel) {
         Entity cameraEntity = Minecraft.getInstance().getCameraEntity();
         if (cameraEntity != null) {
-            return Coords.sectionToMinBlock(Coords.blockToCube(Coords.getCubeYForEntity(cameraEntity))) - 256;
+            return Coords.cubeToMinBlock((Coords.getCubeYForEntity(cameraEntity))) - 256;
         } else {
             return 0;
         }
@@ -26,7 +26,7 @@ public class MixinChunkBorderRenderer {
     public int maxHeight(ClientLevel clientLevel) {
         Entity cameraEntity = Minecraft.getInstance().getCameraEntity();
         if (cameraEntity != null) {
-            return Coords.sectionToMinBlock(Coords.blockToCube(Coords.getCubeYForEntity(cameraEntity))) + 256;
+            return Coords.cubeToMinBlock((Coords.getCubeYForEntity(cameraEntity))) + 256;
         } else {
             return 256;
         }
