@@ -52,6 +52,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.ClassInstanceMultiMap;
@@ -84,10 +85,11 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.ticks.LevelChunkTicks;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAccessor {
+public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
 
     private static final TickingBlockEntity NULL_TICKER = new TickingBlockEntity() {
         public void tick() {
@@ -109,9 +111,9 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
 
     private final CubePos cubePos;
     private final UpgradeData upgradeData;
-    private TickList<Block> blockTicks;
-    private TickList<Fluid> fluidTicks;
-    private final LevelChunkSection[] sections;
+    private LevelChunkTicks<Block> blockTicks;
+    private LevelChunkTicks<Fluid> fluidTicks;
+    private final LevelChunkSection[] sections = new LevelChunkSection[SECTION_COUNT];
     private final ShortList[] postProcessing;
 
     private final HashMap<BlockPos, BlockEntity> blockEntities = new HashMap<>();
@@ -124,8 +126,6 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
 
     private final Map<Heightmap.Types, SurfaceTrackerLeaf[]> heightmaps;
     private final SurfaceTrackerLeaf[] lightHeightmaps = new SurfaceTrackerLeaf[CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS];
-
-    private ChunkBiomeContainer cubeBiomeContainer;
 
     private boolean dirty = true; // todo: change back to false?
     private boolean loaded = false;
@@ -141,12 +141,12 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
     private final boolean generates2DChunks;
     private final WorldStyle worldStyle;
 
-    public LevelCube(Level level, CubePos cubePos, ChunkBiomeContainer biomeContainer) {
-        this(level, cubePos, biomeContainer, UpgradeData.EMPTY, EmptyTickList.empty(), EmptyTickList.empty(), 0L, null, null);
+    public LevelCube(Level level, CubePos cubePos) {
+        this(level, cubePos, UpgradeData.EMPTY, new LevelChunkTicks<>(), new LevelChunkTicks<>(), 0L, null, null);
     }
 
-    public LevelCube(Level level, CubePos cubePos, ChunkBiomeContainer biomeContainer, UpgradeData upgradeData, TickList<Block> blockTicks,
-                     TickList<Fluid> fluidTicks, long inhabitedTime, @Nullable LevelChunkSection[] sections, @Nullable Consumer<LevelCube> postLoad) {
+    public LevelCube(Level level, CubePos cubePos,UpgradeData upgradeData, LevelChunkTicks<Block> blockTicks,
+                     LevelChunkTicks<Fluid> fluidTicks, long inhabitedTime, @Nullable LevelChunkSection[] sections, @Nullable Consumer<LevelCube> postLoad) {
         this.level = level;
         this.cubePos = cubePos;
         this.upgradeData = upgradeData;
@@ -170,13 +170,12 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
             this.entityLists[i] = new ClassInstanceMultiMap<>(Entity.class);
         }
 
-        this.cubeBiomeContainer = biomeContainer;
 //        this.blockBiomeArray = biomeContainer;
 //        this.blocksToBeTicked = tickBlocksIn;
 //        this.fluidsToBeTicked = tickFluidsIn;
         this.inhabitedTime = inhabitedTime;
         this.postLoad = postLoad;
-        this.sections = new LevelChunkSection[SECTION_COUNT];
+
         if (sections != null) {
             if (sections.length != SECTION_COUNT) {
                 throw new IllegalStateException("Number of Sections must equal BigCube.CUBESIZE");
@@ -846,14 +845,45 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         }
     }
 
-    public void read(@Nullable ChunkBiomeContainer biomes, FriendlyByteBuf readBuffer, CompoundTag tag, boolean cubeExists) {
+    public void read(FriendlyByteBuf readBuffer, CompoundTag tag, Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> consumer, boolean cubeExists) {
         if (!cubeExists) {
             Arrays.fill(sections, null);
             return;
         }
+
+        //Clear all block entities
+        this.blockEntities.values().forEach(this::onBlockEntityRemove);
+        this.blockEntities.clear();
+        this.tickersInLevel.values().forEach(tickingWrapper -> {
+            tickingWrapper.rebind(LevelChunk.NULL_TICKER);
+        });
+        this.tickersInLevel.clear();
+
+        //Load sections
         byte[] emptyFlagsBytes = new byte[MathUtil.ceilDiv(sections.length, Byte.SIZE)];
         readBuffer.readBytes(emptyFlagsBytes);
         BitSet emptyFlags = BitSet.valueOf(emptyFlagsBytes);
+
+        for (int i = 0; i < CubeAccess.SECTION_COUNT; i++) {
+            boolean exists = emptyFlags.get(i);
+
+            int dy = indexToY(i);
+
+            SectionPos sectionPos = getCubePos().asSectionPos();
+            int y = sectionPos.getY() + dy;
+
+            readSection(i, y, null, readBuffer, tag, exists); //TODO
+        }
+
+        //Load block entities
+        consumer.accept((blockPos, blockEntityType, compundTagX) -> {
+            BlockEntity blockEntity = this.getBlockEntity(blockPos, LevelChunk.EntityCreationType.IMMEDIATE);
+            if (blockEntity != null && compundTagX != null && blockEntity.getType() == blockEntityType) {
+                blockEntity.load(compundTagX);
+            }
+        });
+
+        /*
 
         if (biomes != null) {
             this.cubeBiomeContainer = biomes;
@@ -886,7 +916,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
             int y = sectionPos.getY() + dy;
 
             readSection(i, y, null, readBuffer, tag, exists);
-        }
+        }*/
     }
 
     private void onBlockEntityRemove(BlockEntity blockEntity) {

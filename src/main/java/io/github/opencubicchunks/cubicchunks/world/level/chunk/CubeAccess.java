@@ -11,6 +11,7 @@ import io.github.opencubicchunks.cc_core.config.EarlyConfig;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapSource;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
+import it.unimi.dsi.fastutil.shorts.ShortList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.BlockGetter;
@@ -25,7 +26,7 @@ import net.minecraft.world.level.levelgen.feature.StructureFeature;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import org.apache.logging.log4j.LogManager;
 
-public interface CubeAccess extends BlockGetter, ChunkAccess, FeatureAccess, HeightmapSource {
+public abstract class CubeAccess extends ChunkAccess implements BlockGetter, FeatureAccess, HeightmapSource {
 
     int SECTION_DIAMETER = 16;
     int DIAMETER_IN_SECTIONS = EarlyConfig.getDiameterInSections();
@@ -35,6 +36,14 @@ public interface CubeAccess extends BlockGetter, ChunkAccess, FeatureAccess, Hei
     int BLOCK_COUNT = DIAMETER_IN_BLOCKS * DIAMETER_IN_BLOCKS * DIAMETER_IN_BLOCKS;
     int BLOCK_COLUMNS_PER_SECTION = SECTION_DIAMETER * SECTION_DIAMETER;
     int SIZE_BITS = (int) Math.round(Math.log(DIAMETER_IN_BLOCKS) / Math.log(2.0D));
+
+    protected final ShortList[] postProcessing;
+    private boolean dirty; /*Same as unsaved*/
+    private volatile boolean lightCorrect;
+    protected final CubePos pos;
+    private long inhabitedTime;
+
+    //TODO: Figure out carverBiome and noiseChunk
 
     CubePos getCubePos();
     LevelChunkSection[] getCubeSections();

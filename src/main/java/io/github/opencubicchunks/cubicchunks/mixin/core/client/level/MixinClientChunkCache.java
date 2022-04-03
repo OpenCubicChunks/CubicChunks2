@@ -1,5 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.level;
 
+import java.util.function.Consumer;
+
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
@@ -8,18 +10,16 @@ import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.client.multiplayer.ClientCubeCache;
 import io.github.opencubicchunks.cubicchunks.client.multiplayer.ClientCubeCacheStorage;
-import io.github.opencubicchunks.cubicchunks.client.multiplayer.CubicClientLevel;
 import io.github.opencubicchunks.cubicchunks.mixin.access.client.ClientChunkCacheStorageAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.EmptyLevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLevelLightEngine;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
 import net.minecraft.world.level.chunk.ChunkBiomeContainer;
 import net.minecraft.world.level.chunk.ChunkStatus;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Final;
@@ -98,7 +98,9 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
 
     @Override
     public LevelCube replaceWithPacketData(int cubeX, int cubeY, int cubeZ,
-                                           @Nullable ChunkBiomeContainer biomes, FriendlyByteBuf readBuffer, CompoundTag tag, boolean cubeExists) {
+                                           FriendlyByteBuf readBuffer, CompoundTag tag,
+                                           Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> blockEntityTagOutputConsumer,
+                                           boolean cubeExists) {
 
         if (!this.cubeArray.inRange(cubeX, cubeY, cubeZ)) {
             LOGGER.warn("Ignoring cube since it's not in the view range: {}, {}, {}", cubeX, cubeY, cubeZ);
@@ -106,7 +108,15 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
         }
         int index = this.cubeArray.getIndex(cubeX, cubeY, cubeZ);
         LevelCube cube = this.cubeArray.cubes.get(index);
+
         if (!isCubeValid(cube, cubeX, cubeY, cubeZ)) {
+            cube = new LevelCube(this.level, CubePos.of(cubeX, cubeY, cubeZ));
+            cube.read(readBuffer, tag, blockEntityTagOutputConsumer, cubeExists);
+            this.cubeArray.replace(index, cube);
+        } else {
+            cube.read(readBuffer, tag, blockEntityTagOutputConsumer, cubeExists);
+        }
+        /*if (!isCubeValid(cube, cubeX, cubeY, cubeZ)) {
             if (biomes == null) {
                 LOGGER.warn("Ignoring cube since we don't have complete data: {}, {}, {}", cubeX, cubeY, cubeZ);
                 return null;
@@ -131,7 +141,7 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
         ((CubicClientLevel) this.level).onCubeLoaded(cubeX, cubeY, cubeZ);
         // TODO: forge client cube load event
         // net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Load(cube));
-        return cube;
+        return cube;*/
     }
 
     @Override public void updateViewCenter(int sectionX, int sectionY, int sectionZ) {

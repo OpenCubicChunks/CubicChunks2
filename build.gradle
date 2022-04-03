@@ -54,7 +54,7 @@ task genAll {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(16)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
@@ -152,7 +152,7 @@ loom {
     accessWidenerPath = file('src/main/resources/cubicchunks.accesswidener')
     // intermediaryUrl = { "http://localhost:9000/intermediary-20w49a-v2.jar" }
 
-    def dependency = project.configurations.detachedConfiguration(project.dependencies.create("net.fabricmc:sponge-mixin:0.9.4+mixin.0.8.2"))
+    def dependency = project.configurations.detachedConfiguration(project.dependencies.create("net.fabricmc:sponge-mixin:0.11.2+mixin.0.8.5"))
     dependency.transitive(false)
     def mixinFile = dependency.resolve().iterator().next().toString()
 
@@ -230,7 +230,7 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.layered() {
         officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-1.17.1:2021.09.05@zip")
+        //parchment("org.parchmentmc.data:parchment-1.18.2:2022.03.13@zip")
     }
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
