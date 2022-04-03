@@ -90,7 +90,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
-
     private static final TickingBlockEntity NULL_TICKER = new TickingBlockEntity() {
         public void tick() {
         }
