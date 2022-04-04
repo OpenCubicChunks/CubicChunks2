@@ -1279,13 +1279,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     // getChunkDistance is in ICubeManager now
 
     @Override
-    public CompletableFuture<Void> packCubeTicks(LevelCube cubeIn) {
-        return this.mainThreadExecutor.submit(() -> {
-            cubeIn.packTicks(this.level);
-        });
-    }
-
-    @Override
     public CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareEntityTickingCube(CubePos pos) {
         return this.getCubeRangeFuture(pos, 2, (index) -> {
             return ChunkStatus.FULL;

@@ -95,8 +95,6 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
     private final Map<BlockPos, CompoundTag> blockEntityNbts = Maps.newHashMap();
 
     //Structures
-    private final Map<StructureFeature<?>, StructureStart<?>> structureStarts;
-    private final Map<StructureFeature<?>, LongSet> structuresRefences;
     private final Map<GenerationStep.Carving, BitSet> carvingMasks;
     private final Map<BlockPos, BlockState> featuresStateMap = new HashMap<>();
 
@@ -283,10 +281,6 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
 
     public SurfaceTrackerLeaf[] getLightHeightmaps() {
         return lightHeightmaps;
-    }
-
-    @Override public Map<Heightmap.Types, SurfaceTrackerLeaf[]> getCubeHeightmaps() {
-        return this.heightmaps;
     }
 
     @Override public ChunkStatus getCubeStatus() {
@@ -616,11 +610,6 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
     }
 
     @Override
-    public Map<StructureFeature<?>, StructureStart<?>> getAllCubeStructureStarts() {
-        return Collections.unmodifiableMap(this.structureStarts);
-    }
-
-    @Override
     public LongSet getReferencesForFeature(StructureFeature<?> structureFeature) {
         return this.structuresRefences.computeIfAbsent(structureFeature, (structureFeaturex) -> {
             return new LongOpenHashSet();
@@ -633,10 +622,6 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
             return new LongOpenHashSet();
         }).add(l);
         this.modified = true;
-    }
-
-    public Map<StructureFeature<?>, LongSet> getAllReferences() {
-        return Collections.unmodifiableMap(this.structuresRefences);
     }
 
     public static BlockPos unpackToWorld(short sectionRel, int sectionIdx, CubePos cubePosIn) {

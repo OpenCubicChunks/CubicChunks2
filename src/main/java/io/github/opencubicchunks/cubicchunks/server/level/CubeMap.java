@@ -65,8 +65,6 @@ public interface CubeMap {
     // getChunkRangeFuture
     CompletableFuture<Either<List<CubeAccess>, ChunkHolder.ChunkLoadingFailure>> getCubeRangeFuture(CubePos pos, int radius,
                                                                                                     IntFunction<ChunkStatus> getParentStatus);
-    // packTicks
-    CompletableFuture<Void> packCubeTicks(LevelCube cubeIn);
 
     // prepareEntityTickingChunk
     CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareEntityTickingCube(CubePos pos);
