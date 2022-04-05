@@ -13,7 +13,7 @@ public class CubicWorldGenUtils {
             int sectionY = Coords.cubeToSection(cubeY, yScan);
             int sectionIndex = Coords.sectionToIndex(pos.x, sectionY, pos.z);
             LevelChunkSection cubeSection = cube.getCubeSections()[sectionIndex];
-            if (LevelChunkSection.isEmpty(cubeSection)) {
+            if (cubeSection.hasOnlyAir()) {
                 emptySections++;
             }
             if (emptySections == CubeAccess.DIAMETER_IN_SECTIONS) {

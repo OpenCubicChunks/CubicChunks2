@@ -21,18 +21,20 @@ import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.WorldGenRegionAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.shorts.ShortList;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
-import net.minecraft.server.level.WorldGenTickList;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -41,7 +43,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.TickList;
+import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.block.Block;
@@ -51,7 +53,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.border.WorldBorder;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkBiomeContainer;
 import net.minecraft.world.level.chunk.ChunkSource;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -60,6 +61,8 @@ import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.blending.BlendingData;
+import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
 import net.minecraft.world.level.levelgen.feature.StructureFeature;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.lighting.LevelLightEngine;
@@ -67,6 +70,8 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.ticks.TickContainerAccess;
+import net.minecraft.world.ticks.WorldGenTickAccess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -101,8 +106,8 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
     private int cubeCenterColumnCenterX = 0;
     private int cubeCenterColumnCenterZ = 0;
 
-    private final TickList<Block> blockTicks = new WorldGenTickList<>((pos) -> this.getCube(pos).getBlockTicks());
-    private final TickList<Fluid> liquidTicks = new WorldGenTickList<>((pos) -> this.getCube(pos).getLiquidTicks());
+    private final WorldGenTickAccess<Block> blockTicks = new WorldGenTickAccess<>((pos) -> this.getCube(pos).getBlockTicks());
+    private final WorldGenTickAccess<Fluid> fluidTicks = new WorldGenTickAccess<>((pos) -> this.getCube(pos).getFluidTicks());
 
     // TODO: the "main chunk" is an awful idea, who did this?
     public CubeWorldGenRegion(ServerLevel level, List<CubeAccess> cubes, ChunkStatus status, ChunkAccess mainChunk, int writeRadiusCutoff) {
@@ -126,7 +131,7 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
             this.random = level.getRandom();
             this.dimension = level.dimensionType();
 
-            this.biomeManager = new BiomeManager(this, BiomeManager.obfuscateSeed(this.seed), level.dimensionType().getBiomeZoomer());
+            this.biomeManager = new BiomeManager(this, BiomeManager.obfuscateSeed(this.seed));
 
             CubeAccess minCube = this.cubePrimers[0];
             CubeAccess maxCube = this.cubePrimers[this.cubePrimers.length - 1];
@@ -239,12 +244,12 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
         return this.seed;
     }
 
-    @Override public TickList<Block> getBlockTicks() {
+    @Override public WorldGenTickAccess<Block> getBlockTicks() {
         return this.blockTicks;
     }
 
-    @Override public TickList<Fluid> getLiquidTicks() {
-        return this.liquidTicks;
+    @Override public WorldGenTickAccess<Fluid> getFluidTicks() {
+        return this.fluidTicks;
     }
 
     @Override public LevelData getLevelData() {
@@ -397,15 +402,11 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
         return this.biomeManager;
     }
 
-    @Override public Biome getUncachedNoiseBiome(int x, int y, int z) {
-        return this.getLevel().getUncachedNoiseBiome(x, y, z);
-    }
-
     //TODO: Cube Biome Storage
     @Override
-    public Biome getNoiseBiome(int x, int y, int z) {
+    public Holder<Biome> getNoiseBiome(int x, int y, int z) {
         CubeAccess cube = this.getCube(Coords.blockToCube(x), Coords.blockToCube(y), Coords.blockToCube(z), ChunkStatus.BIOMES, false);
-        return cube != null && cube.getBiomes() != null ? cube.getBiomes().getNoiseBiome(x, y, z) : this.getUncachedNoiseBiome(x, y, z);
+        return cube != null ? cube.getNoiseBiome(x, y, z) : this.getUncachedNoiseBiome(x, y, z);
     }
 
     @Override public boolean isClientSide() {
@@ -527,11 +528,6 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
         return this.getLevel().registryAccess();
     }
 
-    @Override
-    public Stream<? extends StructureStart<?>> startsForFeature(SectionPos sectionPos, StructureFeature<?> structure) {
-        return this.getLevel().startsForFeature(sectionPos, structure);
-    }
-
     @Override public int getMinBuildHeight() {
         return getLevel().getMinBuildHeight();
     }
@@ -545,8 +541,12 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
     }
 
 
-    private static class DummyChunkAccess implements ChunkAccess {
+    private static class DummyChunkAccess extends ChunkAccess {
 
+
+        public DummyChunkAccess() {
+            super(null, null, new ProtoCube.FakeSectionCount(null, 0), null, 0, null, null);
+        }
 
         @org.jetbrains.annotations.Nullable @Override public BlockState setBlockState(BlockPos pos, BlockState state, boolean moved) {
             return null;
@@ -584,24 +584,16 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
             return 0;
         }
 
-        @Override public BlockPos getHeighestPosition(Heightmap.Types types) {
-            return null;
-        }
-
         @Override public ChunkPos getPos() {
             return new ChunkPos(0, 0);
         }
 
-        @Override public Map<StructureFeature<?>, StructureStart<?>> getAllStarts() {
+        @Override public Map<ConfiguredStructureFeature<?, ?>, StructureStart> getAllStarts() {
             return null;
         }
 
-        @Override public void setAllStarts(Map<StructureFeature<?>, StructureStart<?>> structureStarts) {
+        @Override public void setAllStarts(Map<ConfiguredStructureFeature<?, ?>, StructureStart> structureStarts) {
 
-        }
-
-        @org.jetbrains.annotations.Nullable @Override public ChunkBiomeContainer getBiomes() {
-            return null;
         }
 
         @Override public void setUnsaved(boolean shouldSave) {
@@ -636,11 +628,15 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
             return null;
         }
 
-        @Override public TickList<Block> getBlockTicks() {
+        @Override public TickContainerAccess<Block> getBlockTicks() {
             return null;
         }
 
-        @Override public TickList<Fluid> getLiquidTicks() {
+        @Override public TickContainerAccess<Fluid> getFluidTicks() {
+            return null;
+        }
+
+        @Override public TicksToSave getTicksForSerialization() {
             return null;
         }
 
@@ -684,27 +680,30 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
             return 0;
         }
 
-        @org.jetbrains.annotations.Nullable @Override public StructureStart<?> getStartForFeature(StructureFeature<?> structure) {
+        @org.jetbrains.annotations.Nullable @Override public StructureStart getStartForFeature(ConfiguredStructureFeature<?, ?> structure) {
             return null;
         }
 
-        @Override public void setStartForFeature(StructureFeature<?> structure, StructureStart<?> start) {
+        @Override public void setStartForFeature(ConfiguredStructureFeature<?, ?> structure, StructureStart start) {
 
         }
 
-        @Override public LongSet getReferencesForFeature(StructureFeature<?> structure) {
+        @Override
+        public LongSet getReferencesForFeature(ConfiguredStructureFeature<?, ?> structure) {
             return null;
         }
 
-        @Override public void addReferenceForFeature(StructureFeature<?> structure, long reference) {
+        @Override
+        public void addReferenceForFeature(ConfiguredStructureFeature<?, ?> structure, long reference) {
 
         }
 
-        @Override public Map<StructureFeature<?>, LongSet> getAllReferences() {
+        @Override public Map<ConfiguredStructureFeature<?, ?>, LongSet> getAllReferences() {
             return null;
         }
 
-        @Override public void setAllReferences(Map<StructureFeature<?>, LongSet> structureReferences) {
+        @Override
+        public void setAllReferences(Map<ConfiguredStructureFeature<?, ?>, LongSet> structureReferences) {
 
         }
     }

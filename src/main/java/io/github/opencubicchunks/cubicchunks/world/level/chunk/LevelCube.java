@@ -397,6 +397,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
                     this.addAndRegisterBlockEntity(blockEntity);
                 }
             } else {
+                //This is deprecated but, as of 1.18.2, it is still used in the vanilla implementation so ¯\_(ツ)_/¯
                 blockEntity.setBlockState(newState);
                 this.updateBlockEntityTicker(blockEntity);
             }
