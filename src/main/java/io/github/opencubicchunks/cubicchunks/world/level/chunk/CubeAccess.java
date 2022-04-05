@@ -77,7 +77,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     public CubeAccess(CubePos pos, UpgradeData upgradeData, LevelHeightAccessor heightAccessor, Registry<Biome> biomeRegistry, long inhabitedTime,
                        @Nullable LevelChunkSection[] sections, @Nullable BlendingData blendingData) {
         super(
-            new ImposterChunkPos(pos), //TODO: Maybe there is a better way to handle the fact that we must now pass a ChunkPos
+            pos.asChunkPos(), //TODO: Maybe there is a better way to handle the fact that we must now pass a ChunkPos
             upgradeData,
             heightAccessor,
             biomeRegistry,
@@ -255,43 +255,6 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
                     section.fillBiomesFromNoise(biomeResolver, sampler, minXQuart, minZQuart);
                 }
             }
-        }
-    }
-
-    //TODO: Implement other methods
-    public static class CubeLevelHeightAccessor extends CubeSerializer.CubeBoundsLevelHeightAccessor {
-        public CubeLevelHeightAccessor(int height, int minBuildHeight, CubicLevelHeightAccessor accessor) {
-            super(height, minBuildHeight, accessor);
-        }
-
-        @Override
-        public int getSectionsCount() {
-            return CubeAccess.SECTION_COUNT;
-        }
-
-        @Override
-        public int getMinSection() {
-            return super.getMinSection();
-        }
-
-        @Override
-        public int getMaxSection() {
-            return super.getMaxSection();
-        }
-
-        @Override
-        public int getSectionIndex(int i) {
-            return super.getSectionIndex(i);
-        }
-
-        @Override
-        public int getSectionIndexFromSectionY(int i) {
-            return super.getSectionIndexFromSectionY(i);
-        }
-
-        @Override
-        public int getSectionYFromSectionIndex(int i) {
-            return Coords.indexToSectionY(i);
         }
     }
 }
