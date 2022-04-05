@@ -5,10 +5,12 @@ import static io.github.opencubicchunks.cc_core.utils.Coords.cubeToSection;
 import static io.github.opencubicchunks.cc_core.utils.Coords.sectionToMinBlock;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
+import com.mojang.datafixers.util.Pair;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRandom;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.BiomeGetter;
@@ -25,6 +27,8 @@ import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
@@ -39,6 +43,7 @@ import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.OverworldBiomeSource;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -72,6 +77,8 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
     @Shadow @Final private List<ChunkPos> strongholdPositions;
 
     @Shadow protected abstract void generateStrongholds();
+
+    @Shadow public abstract Climate.Sampler climateSampler();
 
     // TODO: move this to debug mixins
     @Inject(at = @At("RETURN"),
@@ -146,19 +153,21 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         int blockY = cubeToMinBlock(cubeY);
         int blockZ = cubeToMinBlock(cubeZ);
 
+        BoundingBox cubeBounds = new BoundingBox(
+            blockX, blockY, blockZ,
+            blockX + CubeAccess.DIAMETER_IN_BLOCKS - 1,
+            blockY + CubeAccess.DIAMETER_IN_BLOCKS - 1,
+            blockZ + CubeAccess.DIAMETER_IN_BLOCKS - 1
+        );
+
         for (int x = cubeX - 8 / CubeAccess.DIAMETER_IN_SECTIONS; x <= cubeX + 8 / CubeAccess.DIAMETER_IN_SECTIONS; ++x) {
             for (int y = cubeY - 8 / CubeAccess.DIAMETER_IN_SECTIONS; y <= cubeY + 8 / CubeAccess.DIAMETER_IN_SECTIONS; ++y) {
                 for (int z = cubeZ - 8 / CubeAccess.DIAMETER_IN_SECTIONS; z <= cubeZ + 8 / CubeAccess.DIAMETER_IN_SECTIONS; ++z) {
                     long cubePosAsLong = CubePos.asLong(x, y, z);
 
-                    for (StructureStart<?> structureStart : world.getCube(CubePos.of(x, y, z)).getAllCubeStructureStarts().values()) {
+                    for (StructureStart structureStart : world.getCube(CubePos.of(x, y, z)).getAllCubeStructureStarts().values()) {
                         try {
-                            if (structureStart != StructureStart.INVALID_START && structureStart.getBoundingBox().intersects(
-                                //We use a new Bounding Box and check if it intersects a given cube.
-                                new BoundingBox(blockX, blockY, blockZ,
-                                    blockX + CubeAccess.DIAMETER_IN_BLOCKS - 1,
-                                    blockY + CubeAccess.DIAMETER_IN_BLOCKS - 1,
-                                    blockZ + CubeAccess.DIAMETER_IN_BLOCKS - 1))) {
+                            if (structureStart != StructureStart.INVALID_START && structureStart.getBoundingBox().intersects(cubeBounds)) {
                                 //The First Param is a SectionPos arg that is not used anywhere so we make it null.
                                 featureManager.addReferenceForFeature(null, structureStart.getFeature(), cubePosAsLong, cube);
                                 DebugPackets.sendStructurePacket(world, structureStart);
@@ -166,8 +175,11 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
                         } catch (Exception e) {
                             CrashReport crashReport = CrashReport.forThrowable(e, "Generating structure reference");
                             CrashReportCategory crashReportCategory = crashReport.addCategory("Structure");
-                            crashReportCategory.setDetail("Id", () -> Registry.STRUCTURE_FEATURE.getKey(structureStart.getFeature()).toString());
-                            crashReportCategory.setDetail("Name", () -> structureStart.getFeature().getFeatureName());
+
+                            Registry<ConfiguredStructureFeature<?, ?>> registry = worldGenLevel.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
+
+                            crashReportCategory.setDetail("Id", () -> registry.getKey(structureStart.getFeature()).toString());
+                            //crashReportCategory.setDetail("Name", () -> structureStart.getFeature().getFeatureName());
                             crashReportCategory.setDetail("Class", () -> structureStart.getFeature().getClass().getCanonicalName());
                             throw new ReportedException(crashReport);
                         }
@@ -177,15 +189,16 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         }
     }
 
+    //TODO: This code looks identical to the 1.17 code. This mixin seems to only be duplicating code. Is it really needed?
     @Inject(at = @At("HEAD"),
-        method = "findNearestMapFeature(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/levelgen/feature/StructureFeature;Lnet/minecraft/core/BlockPos;IZ)"
-            + "Lnet/minecraft/core/BlockPos;",
+        method = "findNearestMapFeature",
         cancellable = true)
-    private void do3DLocateStructure(ServerLevel serverLevel, StructureFeature<?> structureFeature, BlockPos blockPos, int radius, boolean skipExistingChunks,
-                                     CallbackInfoReturnable<BlockPos> cir) {
+    private void do3DLocateStructure(ServerLevel serverLevel, HolderSet<ConfiguredStructureFeature<?, ?>> holderSet, BlockPos blockPos, int i, boolean bl,
+                                     CallbackInfoReturnable<Pair<BlockPos, Holder<ConfiguredStructureFeature<?, ?>>>> cir) {
         if (((CubicLevelHeightAccessor) serverLevel).generates2DChunks()) {
             return;
         }
+
         if (!this.biomeSource.canGenerateStructure(structureFeature)) {
             cir.setReturnValue(null);
         } else if (structureFeature == StructureFeature.STRONGHOLD) {
@@ -241,12 +254,14 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
 
                 long seed = worldgenRandom.setDecorationSeed(region.getSeed(), columnMinPos.getX(), columnMinPos.getY(), columnMinPos.getZ());
 
-                Biome biome = ((ChunkGenerator) (Object) this).getBiomeSource().getNoiseBiome(
+                Holder<Biome> biome = ((ChunkGenerator) (Object) this).getBiomeSource().getNoiseBiome(
                     QuartPos.fromSection(cubeToSection(mainCubeX, columnX)) + BiomeManagerAccess.getChunkCenterQuart(),
                     QuartPos.fromSection(cubeToSection(mainCubeY, 0)) + BiomeManagerAccess.getChunkCenterQuart() * CubeAccess.DIAMETER_IN_SECTIONS,
-                    QuartPos.fromSection(cubeToSection(mainCubeZ, columnZ)) + BiomeManagerAccess.getChunkCenterQuart());
+                    QuartPos.fromSection(cubeToSection(mainCubeZ, columnZ)) + BiomeManagerAccess.getChunkCenterQuart(),
+                    this.climateSampler()
+                );
                 try {
-                    ((BiomeGetter) (Object) biome).generate(structureManager, ((ChunkGenerator) (Object) this), region, seed, worldgenRandom, columnMinPos);
+                    ((BiomeGetter) (Object) biome.value()).generate(structureManager, ((ChunkGenerator) (Object) this), region, seed, worldgenRandom, columnMinPos);
                 } catch (Exception e) {
                     CrashReport crashReport = CrashReport.forThrowable(e, "Biome decoration");
                     crashReport.addCategory("Generation").setDetail("CubeX", mainCubeX).setDetail("CubeY", mainCubeY).setDetail("CubeZ", mainCubeZ).setDetail("Seed", seed)

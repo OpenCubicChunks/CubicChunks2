@@ -10,12 +10,13 @@ public class NonAtomicWorldgenRandom extends WorldgenRandom {
 
     protected long seed;
 
+    //TODO: Is passing n
     public NonAtomicWorldgenRandom() {
-        super(0);
+        super(null);
     }
 
     public NonAtomicWorldgenRandom(long seed) {
-        super(0);
+        super(null);
         this.seed = scramble(seed);
     }
 
