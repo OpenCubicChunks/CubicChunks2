@@ -14,11 +14,19 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.chunk.UpgradeData;
+import net.minecraft.world.level.levelgen.blending.BlendingData;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -28,11 +36,15 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 // TODO: Maybe Resolve redirect conflict with fabric-lifecycle-events-v1.mixins.json:server .WorldChunkMixin->@Redirect::onRemoveBlockEntity(Fabric API). We implement their events
 @Environment(EnvType.CLIENT)
 @Mixin(value = LevelChunk.class, priority = 0) // Priority 0 to always ensure our redirects are on top. Should also prevent fabric api crashes that have occur(ed) here. See removeTileEntity
-public abstract class MixinLevelChunk {
-
-    @Shadow @Final private Map<BlockPos, BlockEntity> blockEntities;
-
-    @Shadow @Final private Map<BlockPos, CompoundTag> pendingBlockEntities;
+public abstract class MixinLevelChunk extends ChunkAccess {
+    public MixinLevelChunk(ChunkPos chunkPos, UpgradeData upgradeData,
+                           LevelHeightAccessor levelHeightAccessor,
+                           Registry<Biome> registry, long l,
+                           LevelChunkSection[] levelChunkSections,
+                           BlendingData blendingData) {
+        super(chunkPos, upgradeData, levelHeightAccessor, registry, l, levelChunkSections, blendingData);
+        throw new RuntimeException("MixinLevelChunk constructor should never be called");
+    }
 
     @Shadow public abstract Level getLevel();
 

@@ -12,11 +12,19 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.chunk.UpgradeData;
+import net.minecraft.world.level.levelgen.blending.BlendingData;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -26,13 +34,17 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 // TODO: Maybe Resolve redirect conflict with fabric-lifecycle-events-v1.mixins.json:client .WorldChunkMixin->@Redirect::onRemoveBlockEntity(Fabric API). We implement their events
 @Environment(EnvType.SERVER)
 @Mixin(value = LevelChunk.class, priority = 0) // Priority 0 to always ensure our redirects are on top. Should also prevent fabric api crashes that have occur(ed) here. See removeTileEntity
-public abstract class MixinLevelChunk {
-
-    @Shadow @Final private Map<BlockPos, BlockEntity> blockEntities;
-
-    @Shadow @Final private Map<BlockPos, CompoundTag> pendingBlockEntities;
-
+public abstract class MixinLevelChunk extends ChunkAccess {
     @Shadow public abstract Level getLevel();
+
+    public MixinLevelChunk(ChunkPos chunkPos, UpgradeData upgradeData,
+                           LevelHeightAccessor levelHeightAccessor,
+                           Registry<Biome> registry, long l,
+                           LevelChunkSection[] levelChunkSections,
+                           BlendingData blendingData) {
+        super(chunkPos, upgradeData, levelHeightAccessor, registry, l, levelChunkSections, blendingData);
+        throw new RuntimeException("MixinLevelChunk constructor should never be called");
+    }
 
     // TODO: handle it better, no redirects on all map access
     @SuppressWarnings({ "rawtypes", "UnresolvedMixinReference" })
