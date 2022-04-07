@@ -26,7 +26,8 @@ public class LavaLeakFix extends Feature<NoneFeatureConfiguration> {
         super(codec);
     }
 
-    @Override public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    @Override
+    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
         if (!(context.level() instanceof CubeWorldGenRegion level)) {
             return false;
         }
@@ -48,13 +49,10 @@ public class LavaLeakFix extends Feature<NoneFeatureConfiguration> {
                         continue;
                     }
 
-                    SurfaceBuilderConfiguration surfaceBuilderConfiguration =
-                        cube.getBiomes().getNoiseBiome(mutable.getX(), mutable.getY(), mutable.getZ()).getGenerationSettings().getSurfaceBuilder().get().config();
+                    //TODO: Try detect the topState and underState somehow? Used to be done by fetching the surface builder
+                    BlockState block = Blocks.NETHERRACK.defaultBlockState();
 
-                    BlockState topState = surfaceBuilderConfiguration.getTopMaterial();
-                    BlockState underState = surfaceBuilderConfiguration.getUnderMaterial();
-
-                    checkDirectionsAndPreventLeaking(level, topState, underState, cubePos, random, generator, mutable, localX, localY, localZ);
+                    checkDirectionsAndPreventLeaking(level, block, block, cubePos, random, generator, mutable, localX, localY, localZ);
                 }
             }
         }
@@ -69,7 +67,8 @@ public class LavaLeakFix extends Feature<NoneFeatureConfiguration> {
                 Coords.localToBlock(cubePos.getY(), localY), Coords.localToBlock(cubePos.getZ(), localZ)).move(direction));
             if (blockState.isAir()) {
                 if (direction == Direction.DOWN) {
-                    level.setBlock(mutable, generator.getBaseStoneSource().getBaseBlock(mutable), 2);
+                    //TODO: This may not always be netherrack
+                    level.setBlock(mutable, Blocks.NETHERRACK.defaultBlockState(), 2);
                 } else {
                     if (random.nextInt(5) == 0) {
                         continue;

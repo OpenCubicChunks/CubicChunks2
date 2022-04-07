@@ -1,11 +1,17 @@
 package io.github.opencubicchunks.cubicchunks.levelgen.biome;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.google.common.collect.Lists;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.ListCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -22,17 +28,15 @@ import net.minecraft.world.level.biome.Climate;
 public class StripedBiomeSource extends BiomeSource {
     public static final Codec<StripedBiomeSource> CODEC = RecordCodecBuilder.create(
         (instance) -> instance.group(
-            RegistryOps.retrieveRegistry(Registry.BIOME_REGISTRY).forGetter(s -> null)
+            new ListCodec<>(Biome.CODEC).stable().fieldOf("biomes").forGetter(s -> s.biomes)
         ).apply(instance, instance.stable(StripedBiomeSource::new))
     );
 
-    private final Registry<Biome> biomeRegistry;
-    private final Holder<Biome>[] biomeArray;
+    private final List<Holder<Biome>> biomes;
 
-    public StripedBiomeSource(Registry<Biome> registry) {
+    public StripedBiomeSource(Collection<Holder<Biome>> biomes) {
         super(Stream.of());
-        this.biomeRegistry = registry;
-        this.biomeArray = getAllOverWorldBiomes(registry);
+        this.biomes = new ArrayList<>(biomes);
     }
 
     @Override
@@ -42,45 +46,11 @@ public class StripedBiomeSource extends BiomeSource {
 
     @Override
     public BiomeSource withSeed(long l) {
-        return new StripedBiomeSource(this.biomeRegistry);
+        return new StripedBiomeSource(this.biomes);
     }
 
     @Override
     public Holder<Biome> getNoiseBiome(int x, int y, int z, Climate.Sampler sampler) {
-        return biomeArray[Math.floorMod(Math.floorDiv(x, 160), biomeArray.length)];
-    }
-
-    private static Holder<Biome>[] getAllOverWorldBiomes(Registry<Biome> registry) {
-        TagKey<Biome> inOverworld = TagKey.create(Registry.BIOME_REGISTRY, new ResourceLocation("c", "in_overworld"));
-
-        //Check that "c:in_overworld" exists/is valid
-        Optional<HolderSet.Named<Biome>> tagOptional = registry.getTag(inOverworld);
-        if (tagOptional.isPresent()) {
-            Holder<Biome> plains = registry.getOrCreateHolder(Biomes.PLAINS);
-            HolderSet.Named<Biome> tag = tagOptional.get();
-            if (tag.contains(plains)) {
-                return tag.stream().toArray(Holder[]::new);
-            }
-        }
-
-        //Fallback to combinations of some biome tags
-        final TagKey<Biome>[] tags = new TagKey[]{
-            BiomeTags.HAS_STRONGHOLD, //This tag has nearly all biomes except oceans, beaches, stone shore, and rivers
-            BiomeTags.IS_OCEAN,
-            BiomeTags.IS_BEACH,
-            BiomeTags.IS_RIVER,
-            BiomeTags.HAS_MINESHAFT //This tag contains the rest of what we want
-        };
-
-        Set<Holder<Biome>> biomes = new HashSet<>();
-
-        for (TagKey<Biome> tag : tags) {
-            HolderSet.Named<Biome> tagSet = registry.getOrCreateTag(tag);
-            for (Holder<Biome> biome : tagSet) {
-                biomes.add(biome);
-            }
-        }
-
-        return biomes.toArray(new Holder[0]);
+        return biomes.get(Math.floorMod(Math.floorDiv(x, 160), biomes.size()));
     }
 }

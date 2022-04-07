@@ -8,7 +8,7 @@ import net.minecraft.world.level.levelgen.placement.FeatureDecorator;
 
 public class CubicFeatureDecorators {
 
-    public static final FeatureDecorator<CubicLakePlacementConfig> CUBIC_LAKE = featureDecorator("cubic_lake", new SurfaceProjectedDecorator(CubicLakePlacementConfig.CODEC));
+    public static final FeatureDecorator<CubicLakePlacementModifier> CUBIC_LAKE = featureDecorator("cubic_lake", new SurfaceProjectedDecorator(CubicLakePlacementModifier.CODEC));
 
     public static void init() {
     }

@@ -12,14 +12,14 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.placement.DecorationContext;
 import net.minecraft.world.level.levelgen.placement.FeatureDecorator;
 
-public class SurfaceProjectedDecorator extends FeatureDecorator<CubicLakePlacementConfig> {
+public class SurfaceProjectedDecorator extends FeatureDecorator<CubicLakePlacementModifier> {
 
-    public SurfaceProjectedDecorator(Codec<CubicLakePlacementConfig> codec) {
+    public SurfaceProjectedDecorator(Codec<CubicLakePlacementModifier> codec) {
         super(codec);
     }
 
     @Override
-    public Stream<BlockPos> getPositions(DecorationContext decorationContext, Random random, CubicLakePlacementConfig config, BlockPos blockPos) {
+    public Stream<BlockPos> getPositions(DecorationContext decorationContext, Random random, CubicLakePlacementModifier config, BlockPos blockPos) {
         List<BlockPos> positions = new ArrayList<>();
 
         for (int i = 0; i < CubeAccess.DIAMETER_IN_SECTIONS; i++) {
