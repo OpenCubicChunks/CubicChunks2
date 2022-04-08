@@ -56,7 +56,8 @@
         "common.progress.MixinLoggerChunkProgressListener",
         "common.server.MixinPlayerList",
         "common.ticket.MixinChunkMapDistanceManager",
-        "common.ticket.MixinDistanceManager"
+        "common.ticket.MixinDistanceManager",
+        "client.render.MixinLevelRenderer"
     ],
     "client": [
         "client.chunk.MixinLevelChunk",
