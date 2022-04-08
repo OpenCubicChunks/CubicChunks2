@@ -41,16 +41,12 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.ServerTickList;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.lighting.LevelLightEngine;
-import net.minecraft.world.level.material.Fluid;
-import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -59,7 +55,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ChunkHolder.class)
@@ -176,7 +171,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
         updateCubeFutures(chunkMap, executor);
     }
 
-    @Dynamic
+    /*@Dynamic
     @Inject(method = "updateCubeFutures",
         at = @At(
             value = "FIELD", opcode = Opcodes.PUTFIELD, ordinal = 0, shift = At.Shift.AFTER,
@@ -204,9 +199,9 @@ public abstract class MixinChunkHolder implements CubeHolder {
                 }
             });
         }, mainThreadExecutor);
-    }
+    }*/
 
-    @Dynamic
+    /*@Dynamic
     @Inject(method = "updateCubeFutures",
         at = @At(
             value = "FIELD", opcode = Opcodes.PUTFIELD, ordinal = 0,
@@ -227,7 +222,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
         if (liquidTicks instanceof CubicFastServerTickList) {
             ((CubicFastServerTickList<Fluid>) liquidTicks).onCubeStopTicking(this.cubePos);
         }
-    }
+    }*/
 
     @Redirect(method = "scheduleFullChunkPromotion", at = @At(
         value = "INVOKE",

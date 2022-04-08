@@ -6,7 +6,6 @@ import io.github.opencubicchunks.cc_core.config.EarlyConfig;
 import io.github.opencubicchunks.cubicchunks.config.CommonConfig;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.StripedBiomeSource;
 import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
-import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicFeatureDecorators;
 import io.github.opencubicchunks.cubicchunks.network.PacketDispatcher;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import net.fabricmc.api.ModInitializer;
@@ -38,7 +37,6 @@ public class CubicChunks extends io.github.opencubicchunks.cc_core.CubicChunks i
         }
 
         //Custom CC Features
-        CubicFeatureDecorators.init();
         CubicFeatures.init();
     }
 

@@ -3,7 +3,6 @@ package io.github.opencubicchunks.cubicchunks.levelgen.feature;
 import java.util.List;
 
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
-import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicFeatureDecorators;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicLakePlacementModifier;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.UserFunction;
 import net.minecraft.core.Holder;

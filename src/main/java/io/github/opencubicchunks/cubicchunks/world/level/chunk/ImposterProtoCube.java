@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 
-import java.util.BitSet;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -13,36 +12,41 @@ import io.github.opencubicchunks.cubicchunks.world.storage.CubeProtoTickList;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.ChunkBiomeContainer;
+import net.minecraft.world.level.chunk.CarvingMask;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.levelgen.feature.StructureFeature;
+import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.ticks.ProtoChunkTicks;
 
 @SuppressWarnings("deprecation")
 public class ImposterProtoCube extends ProtoCube {
 
     private final LevelCube cube;
 
-    public ImposterProtoCube(LevelCube cubeIn, LevelHeightAccessor levelHeightAccessor) {
-        super(cubeIn.getCubePos(), UpgradeData.EMPTY, cubeIn.getCubeSections(), new CubeProtoTickList<>((block) -> {
-                return block == null || block.defaultBlockState().isAir();
-            }, new ImposterChunkPos(cubeIn.getCubePos()), new CubeProtoTickList.CubeProtoTickListHeightAccess(cubeIn.getCubePos(), (CubicLevelHeightAccessor) levelHeightAccessor)),
-            new CubeProtoTickList<>((fluid) -> {
-                return fluid == null || fluid == Fluids.EMPTY;
-            }, new ImposterChunkPos(cubeIn.getCubePos()), new CubeProtoTickList.CubeProtoTickListHeightAccess(cubeIn.getCubePos(), (CubicLevelHeightAccessor) levelHeightAccessor)),
-            levelHeightAccessor);
+    public ImposterProtoCube(LevelCube cubeIn, LevelHeightAccessor levelHeightAccessor, Registry<Biome> biomeRegistry) {
+        super(
+            cubeIn.getCubePos(),
+            UpgradeData.EMPTY,
+            cubeIn.getCubeSections(),
+            new ProtoChunkTicks<>(),
+            new ProtoChunkTicks<>(),
+            levelHeightAccessor,
+            biomeRegistry,
+            null
+        );
 
         this.cube = cubeIn;
     }
@@ -183,10 +187,6 @@ public class ImposterProtoCube extends ProtoCube {
         return this.cube.isEmptyCube();
     }
 
-    @Override public ChunkBiomeContainer getBiomes() {
-        return this.cube.getBiomes();
-    }
-
     @Override public void setHeightmap(Heightmap.Types type, long[] data) {
     }
 
@@ -203,37 +203,37 @@ public class ImposterProtoCube extends ProtoCube {
     }
 
     // getStructureStart
-    @Override @Nullable public StructureStart<?> getStartForFeature(StructureFeature<?> var1) {
+    @Override @Nullable public StructureStart getStartForFeature(ConfiguredStructureFeature<?, ?> var1) {
         return this.cube.getStartForFeature(var1);
     }
 
-    @Override public void setStartForFeature(StructureFeature<?> structureIn, StructureStart<?> structureStartIn) {
+    @Override public void setStartForFeature(ConfiguredStructureFeature<?, ?> structureIn, StructureStart structureStartIn) {
     }
 
-    @Override public Map<StructureFeature<?>, StructureStart<?>> getAllCubeStructureStarts() {
+    @Override public Map<ConfiguredStructureFeature<?, ?>, StructureStart> getAllCubeStructureStarts() {
         return this.cube.getAllCubeStructureStarts();
     }
 
     @Override
-    public Map<StructureFeature<?>, StructureStart<?>> getAllStarts() {
+    public Map<ConfiguredStructureFeature<?, ?>, StructureStart> getAllStarts() {
         return this.getAllCubeStructureStarts();
     }
 
-    @Override public void setAllStarts(Map<StructureFeature<?>, StructureStart<?>> structureStartsIn) {
+    @Override public void setAllStarts(Map<ConfiguredStructureFeature<?, ?>, StructureStart> structureStartsIn) {
     }
 
-    @Override public LongSet getReferencesForFeature(StructureFeature<?> structureIn) {
+    @Override public LongSet getReferencesForFeature(ConfiguredStructureFeature<?, ?> structureIn) {
         return this.cube.getReferencesForFeature(structureIn);
     }
 
-    @Override public void addReferenceForFeature(StructureFeature<?> structure, long reference) {
+    @Override public void addReferenceForFeature(ConfiguredStructureFeature<?, ?> structure, long reference) {
     }
 
-    @Override public Map<StructureFeature<?>, LongSet> getAllReferences() {
+    @Override public Map<ConfiguredStructureFeature<?, ?>, LongSet> getAllReferences() {
         return this.cube.getAllReferences();
     }
 
-    @Override public void setAllReferences(Map<StructureFeature<?>, LongSet> structures) {
+    @Override public void setAllReferences(Map<ConfiguredStructureFeature<?, ?>, LongSet> structures) {
     }
 
     @Override public void markPosForPostprocessing(BlockPos pos) {
@@ -254,17 +254,18 @@ public class ImposterProtoCube extends ProtoCube {
     }
     */
 
-    @Override public BitSet getCarvingMask(GenerationStep.Carving type) {
+    @Override
+    public CarvingMask getCarvingMask(GenerationStep.Carving type) {
         throw Util.pauseInIde(new UnsupportedOperationException("Meaningless in this context"));
     }
 
     @Override
-    public BitSet getOrCreateCarvingMask(GenerationStep.Carving type) {
+    public CarvingMask getOrCreateCarvingMask(GenerationStep.Carving type) {
         throw Util.pauseInIde(new UnsupportedOperationException("Meaningless in this context"));
     }
 
     @Override
-    public void setCarvingMask(GenerationStep.Carving type, BitSet mask) {
+    public void setCarvingMask(GenerationStep.Carving type, CarvingMask mask) {
         throw Util.pauseInIde(new UnsupportedOperationException("Meaningless in this context"));
     }
 }
