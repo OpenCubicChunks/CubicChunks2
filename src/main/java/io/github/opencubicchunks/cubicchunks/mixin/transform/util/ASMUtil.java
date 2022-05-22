@@ -4,6 +4,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -676,6 +677,16 @@ public class ASMUtil {
         }
 
         return matches.get(0);
+    }
+
+    public static String getDescriptor(Method method) {
+        Type[] types = new Type[method.getParameterCount()];
+
+        for (int i = 0; i < types.length; i++) {
+            types[i] = Type.getType(method.getParameterTypes()[i]);
+        }
+
+        return Type.getMethodDescriptor(Type.getType(method.getReturnType()), types);
     }
 
     public static record MethodCondition(String name, @Nullable String desc) implements Predicate<MethodNode> {

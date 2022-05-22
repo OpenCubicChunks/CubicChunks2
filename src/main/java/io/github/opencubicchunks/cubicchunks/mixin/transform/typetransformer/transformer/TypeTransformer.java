@@ -2,6 +2,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tr
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +38,8 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMa
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.Utils;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
@@ -52,6 +55,7 @@ import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.LocalVariableNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -81,6 +85,8 @@ public class TypeTransformer {
     private static final Set<String> WARNINGS = new HashSet<>();
     //Path to file where errors should be logged
     private static final Path ERROR_LOG = Utils.getGameDir().resolve("errors.log");
+
+    private static final Map<String, Int2ObjectMap<String>> CC_SYNTHETIC_LOOKUP = new HashMap<>();
 
     //Directory where the transformed classes will be written to for debugging purposes
     private static final Path OUT_DIR = Utils.getGameDir().resolve("transformed");
@@ -179,7 +185,7 @@ public class TypeTransformer {
         newMethod = ASMUtil.copy(methodNode);
         //Add it to newMethods so that it gets added later and doesn't cause a ConcurrentModificationException if iterating over the methods.
         newMethods.add(newMethod);
-        markSynthetic(newMethod, "AUTO-TRANSFORMED", methodNode.name + methodNode.desc);
+        markSynthetic(newMethod, "AUTO-TRANSFORMED", methodNode.name + methodNode.desc, classNode.name);
 
         if ((methodNode.access & Opcodes.ACC_ABSTRACT) != 0) {
             transformDescriptorForAbstractMethod(methodNode, start, methodID, results, newMethod);
@@ -2006,7 +2012,7 @@ public class TypeTransformer {
         MethodNode methodNode = new MethodNode(Opcodes.ACC_PUBLIC, "<init>", newDesc, null, null);
         methodNode.instructions.add(constructor);
 
-        markSynthetic(methodNode, "CONSTRUCTOR", "<init>" + desc);
+        markSynthetic(methodNode, "CONSTRUCTOR", "<init>" + desc, classNode.name);
 
         newMethods.add(methodNode);
     }
@@ -2061,7 +2067,7 @@ public class TypeTransformer {
      * @param subType The type of synthetic method this is
      * @param original The original method this is a synthetic version of
      */
-    private static void markSynthetic(MethodNode methodNode, String subType, String original) {
+    private static void markSynthetic(MethodNode methodNode, String subType, String original, String ownerName) {
         List<AnnotationNode> annotations = methodNode.visibleAnnotations;
         if (annotations == null) {
             annotations = new ArrayList<>();
@@ -2077,6 +2083,92 @@ public class TypeTransformer {
         synthetic.values.add(original);
 
         annotations.add(synthetic);
+
+        //Stack traces don't specify the descriptor so we set the line numbers to a known value to detect whether we were in a CC synthetic emthod
+
+        final int MIN = 60000;
+
+        int lineStart = MIN;
+        Int2ObjectMap<String> descLookup = CC_SYNTHETIC_LOOKUP.computeIfAbsent(ownerName, k -> new Int2ObjectOpenHashMap<>());
+        while (descLookup.containsKey(lineStart)) {
+            lineStart += 10;
+
+            if (lineStart >= (1 << 16)) {
+                throw new RuntimeException("Too many CC synthetic methods");
+            }
+        }
+
+        //Remove previous line numbers
+        for (AbstractInsnNode insnNode : methodNode.instructions.toArray()) {
+            if (insnNode instanceof LineNumberNode) {
+                methodNode.instructions.remove(insnNode);
+            }
+        }
+
+        descLookup.put(lineStart, methodNode.desc);
+
+        //Add our own
+        LabelNode start = new LabelNode();
+        methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), new LineNumberNode(lineStart, start));
+        methodNode.instructions.insertBefore(methodNode.instructions.getFirst(), start);
+
+        LabelNode end = new LabelNode();
+        methodNode.instructions.insert(methodNode.instructions.getLast(), end);
+        methodNode.instructions.insert(methodNode.instructions.getLast(), new LineNumberNode(lineStart + 9, end));
+    }
+
+    public static @Nullable Method getSyntheticMethod(Class<?> owner, String name, int lineNumber) {
+        String ownerName = owner.getName().replace('.', '/');
+
+        Int2ObjectMap<String> descLookup = CC_SYNTHETIC_LOOKUP.computeIfAbsent(ownerName, k -> new Int2ObjectOpenHashMap<>());
+        String desc = descLookup.get((lineNumber / 10) * 10);
+
+        if (desc == null) {
+            return null;
+        }
+
+        Class<?>[] types = Arrays.stream(Type.getArgumentTypes(desc))
+            .map((t) -> {
+                if (t == Type.BYTE_TYPE) {
+                    return byte.class;
+                } else if (t == Type.SHORT_TYPE) {
+                    return short.class;
+                } else if (t == Type.INT_TYPE) {
+                    return int.class;
+                } else if (t == Type.LONG_TYPE) {
+                    return long.class;
+                } else if (t == Type.FLOAT_TYPE) {
+                    return float.class;
+                } else if (t == Type.DOUBLE_TYPE) {
+                    return double.class;
+                } else if (t == Type.BOOLEAN_TYPE) {
+                    return boolean.class;
+                } else if (t == Type.CHAR_TYPE) {
+                    return char.class;
+                } else if (t == Type.VOID_TYPE) {
+                    return void.class;
+                } else {
+                    try {
+                        return Class.forName(t.getClassName());
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }).toArray(Class<?>[]::new);
+
+        try {
+            Method method = owner.getMethod(name, types);
+
+            CCSynthetic annotation = method.getAnnotation(CCSynthetic.class);
+
+            if (annotation == null) {
+                return null;
+            }
+
+            return method;
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
     }
 
     /**
