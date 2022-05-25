@@ -7,6 +7,7 @@ import io.github.opencubicchunks.cubicchunks.debug.DebugVisualization;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.Level;
@@ -21,15 +22,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinClientLevel extends Level {
 
     protected MixinClientLevel(WritableLevelData writableLevelData,
-                               ResourceKey<Level> resourceKey, DimensionType dimensionType,
+                               ResourceKey<Level> resourceKey, Holder<DimensionType> dimensionType,
                                Supplier<ProfilerFiller> supplier, boolean bl, boolean bl2, long l) {
         super(writableLevelData, resourceKey, dimensionType, supplier, bl, bl2, l);
+        throw new Error("Unable to instantiate MixinClientLevel");
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void onClientWorldConstruct(ClientPacketListener clientPacketListener, ClientLevel.ClientLevelData clientLevelData,
-                                        ResourceKey<net.minecraft.world.level.Level> resourceKey, DimensionType dimensionType, int i, Supplier<ProfilerFiller> supplier,
-                                        LevelRenderer levelRenderer, boolean bl, long l, CallbackInfo ci) {
+    private void onClientWorldConstruct(ClientPacketListener clientPacketListener, ClientLevel.ClientLevelData clientLevelData, ResourceKey resourceKey,
+                                        Holder holder, int i, int j, Supplier supplier, LevelRenderer levelRenderer, boolean bl, long l, CallbackInfo ci) {
 
         if (((CubicLevelHeightAccessor) this).isCubic()) {
             DebugVisualization.onWorldLoad(this);

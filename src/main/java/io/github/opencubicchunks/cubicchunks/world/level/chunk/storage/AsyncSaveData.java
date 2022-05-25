@@ -12,15 +12,12 @@ import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
-import io.github.opencubicchunks.cubicchunks.world.storage.CubeProtoTickList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.ChunkTickList;
 import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.TickList;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.DataLayer;
@@ -31,8 +28,6 @@ public class AsyncSaveData {
 
     public final HashMap<SectionPos, DataLayer> blockLight;
     public final HashMap<SectionPos, DataLayer> skyLight;
-    public final Optional<Tag> serverBlockTicks;
-    public final Optional<Tag> serverLiquidTicks;
     public final Map<BlockPos, BlockEntity> blockEntities;
     public final Map<BlockPos, CompoundTag> blockEntitiesDeferred;
 
@@ -48,18 +43,7 @@ public class AsyncSaveData {
             this.blockLight.put(sectionPos, blockData);
             this.skyLight.put(sectionPos, skyData);
         }
-        final TickList<Block> blockTicks = cube.getBlockTicks();
-        if (!(blockTicks instanceof CubeProtoTickList) && !(blockTicks instanceof ChunkTickList)) {
-            this.serverBlockTicks = Optional.of(level.getBlockTicks().save(new ImposterChunkPos(cube.getCubePos())));
-        } else {
-            this.serverBlockTicks = Optional.empty();
-        }
-        final TickList<Fluid> liquidTicks = cube.getLiquidTicks();
-        if (!(liquidTicks instanceof CubeProtoTickList) && !(liquidTicks instanceof ChunkTickList)) {
-            this.serverLiquidTicks = Optional.of(level.getLiquidTicks().save(new ImposterChunkPos(cube.getCubePos())));
-        } else {
-            this.serverLiquidTicks = Optional.empty();
-        }
+
         this.blockEntities = cube.getCubeBlockEntitiesPos().stream()
             .map(cube::getBlockEntity)
             .filter(Objects::nonNull)

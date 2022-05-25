@@ -1,25 +1,51 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk.storage;
 
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMap;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientLightSurfaceTracker;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
+import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.chunk.UpgradeData;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.blending.BlendingData;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkAccess.class)
 //A lot of these mixins are taken from ether MixinLevelChunk or MixinProtoChunk
-public class MixinChunkAccess {
+public class MixinChunkAccess implements CubicLevelHeightAccessor {
     @Shadow @Final protected LevelHeightAccessor levelHeightAccessor;
+
+    private boolean isCubic;
+    private boolean generates2DChunks;
+    private CubicLevelHeightAccessor.WorldStyle worldStyle;
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void onInit(ChunkPos chunkPos, UpgradeData upgradeData, LevelHeightAccessor levelHeightAccessor, Registry registry, long l, LevelChunkSection[] levelChunkSections,
+                        BlendingData blendingData, CallbackInfo ci) {
+        isCubic = ((CubicLevelHeightAccessor) levelHeightAccessor).isCubic();
+        generates2DChunks = ((CubicLevelHeightAccessor) levelHeightAccessor).generates2DChunks();
+        worldStyle = ((CubicLevelHeightAccessor) levelHeightAccessor).worldStyle();
+
+        if (!this.isCubic()) {
+            return;
+        }
+    }
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/LevelHeightAccessor;getSectionsCount()I"))
     private int getFakeSectionsCount(LevelHeightAccessor accessor) {
@@ -62,5 +88,25 @@ public class MixinChunkAccess {
                 cir.setReturnValue(level.dimensionType().minY());
             }
         }
+    }
+
+    @Override
+    public WorldStyle worldStyle() {
+        return worldStyle;
+    }
+
+    @Override
+    public boolean isCubic() {
+        return isCubic;
+    }
+
+    @Override
+    public boolean generates2DChunks() {
+        return generates2DChunks;
+    }
+
+    @Override
+    public void setWorldStyle(WorldStyle worldStyle) {
+        this.worldStyle = worldStyle;
     }
 }

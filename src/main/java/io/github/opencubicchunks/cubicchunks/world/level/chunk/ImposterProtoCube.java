@@ -33,22 +33,23 @@ import net.minecraft.world.ticks.ProtoChunkTicks;
 
 @SuppressWarnings("deprecation")
 public class ImposterProtoCube extends ProtoCube {
-
     private final LevelCube cube;
+    private final boolean allowWrites;
 
-    public ImposterProtoCube(LevelCube cubeIn, LevelHeightAccessor levelHeightAccessor, Registry<Biome> biomeRegistry) {
+    public ImposterProtoCube(LevelCube cubeIn, boolean allowWrites) {
         super(
             cubeIn.getCubePos(),
             UpgradeData.EMPTY,
             cubeIn.getCubeSections(),
             new ProtoChunkTicks<>(),
             new ProtoChunkTicks<>(),
-            levelHeightAccessor,
-            biomeRegistry,
+            cubeIn.getHeightAccessorForGeneration(),
+            cubeIn.getLevel().registryAccess().registryOrThrow(Registry.BIOME_REGISTRY),
             null
         );
 
         this.cube = cubeIn;
+        this.allowWrites = allowWrites;
     }
 
     public LevelCube getCube() {

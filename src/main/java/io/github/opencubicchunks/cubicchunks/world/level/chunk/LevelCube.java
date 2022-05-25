@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
@@ -753,24 +754,12 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
     }
 
     public void write(FriendlyByteBuf buf) {
-        /*BitSet emptyFlags = new BitSet(sections.length);
-        for (int i = 0; i < sections.length; i++) {
-            if (sections[i] != null && !sections[i].isEmpty()) {
-                emptyFlags.set(i);
-            }
-        }
-        byte[] emptyFlagsBytes = emptyFlags.toByteArray();
-        byte[] actualFlagsBytes = new byte[MathUtil.ceilDiv(sections.length, Byte.SIZE)];
-        System.arraycopy(emptyFlagsBytes, 0, actualFlagsBytes, 0, emptyFlagsBytes.length);
-        buf.writeBytes(actualFlagsBytes);*/
         for (LevelChunkSection section : sections) {
-            //if (section != null && !section.isEmpty()) {
-                section.write(buf);
-            //}
+            section.write(buf);
         }
     }
 
-    public void read(FriendlyByteBuf readBuffer, CompoundTag tag, Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> consumer, boolean cubeExists) {
+    public void read(FriendlyByteBuf readBuffer, CompoundTag tag, BiConsumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput, CubePos> consumer, boolean cubeExists) {
         if (!cubeExists) {
             Arrays.fill(sections, null);
             return;
@@ -806,7 +795,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
             if (blockEntity != null && compundTagX != null && blockEntity.getType() == blockEntityType) {
                 blockEntity.load(compundTagX);
             }
-        });
+        }, this.cubePos);
 
         /*
 

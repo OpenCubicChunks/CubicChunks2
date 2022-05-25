@@ -14,18 +14,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.ChunkTickList;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.ImposterProtoChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.ProtoChunk;
-import net.minecraft.world.level.chunk.ProtoTickList;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.chunk.storage.ChunkSerializer;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
-import net.minecraft.world.level.material.Fluids;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -47,7 +42,7 @@ public abstract class MixinChunkSerializer {
      * @reason CubicChunks doesn't need much real data in columns
      */
     @Inject(method = "read", at = @At("HEAD"), cancellable = true)
-    private static void read(ServerLevel serverLevel, StructureManager structureManager, PoiManager poiManager, ChunkPos pos, CompoundTag compound, CallbackInfoReturnable<ProtoChunk> cir) {
+    private static void read(ServerLevel serverLevel, PoiManager poiManager, ChunkPos pos, CompoundTag compound, CallbackInfoReturnable<ProtoChunk> cir) {
         if (!((CubicLevelHeightAccessor) serverLevel).isCubic()) {
             return;
         }
@@ -61,18 +56,11 @@ public abstract class MixinChunkSerializer {
         long inhabitedTime = level.getLong("InhabitedTime");
         ChunkStatus.ChunkType statusType = getChunkTypeFromTag(compound);
         ChunkAccess newChunk;
-        ColumnBiomeContainer biomeContainerIn = new ColumnBiomeContainer(serverLevel.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY), serverLevel, serverLevel);
         if (statusType == ChunkStatus.ChunkType.LEVELCHUNK) {
-            newChunk = new LevelChunk(serverLevel.getLevel(), pos, biomeContainerIn, UpgradeData.EMPTY,
-                new ChunkTickList<>(Registry.BLOCK::getKey, new ArrayList<>(), 0), // TODO: supply game time
-                new ChunkTickList<>(Registry.FLUID::getKey, new ArrayList<>(), 0),
-                inhabitedTime, new LevelChunkSection[16], (chunk) -> {});
+            newChunk = new LevelChunk(serverLevel.getLevel(), pos);
         } else {
-            ProtoChunk chunkprimer = new ProtoChunk(pos, UpgradeData.EMPTY, new LevelChunkSection[16],
-                new ProtoTickList<>((block) -> block == null || block.defaultBlockState().isAir(), pos, serverLevel),
-                new ProtoTickList<>((fluid) -> fluid == null || fluid == Fluids.EMPTY, pos, serverLevel), serverLevel);
+            ProtoChunk chunkprimer = new ProtoChunk(pos, UpgradeData.EMPTY, serverLevel, serverLevel.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY), null);
 
-            chunkprimer.setBiomes(biomeContainerIn); // setBiomes
             newChunk = chunkprimer;
             chunkprimer.setInhabitedTime(inhabitedTime);
             chunkprimer.setStatus(ChunkStatus.byName(level.getString("Status")));
@@ -95,7 +83,7 @@ public abstract class MixinChunkSerializer {
             newChunk.setUnsaved(true);
         }
         if (statusType == ChunkStatus.ChunkType.LEVELCHUNK) {
-            cir.setReturnValue(new ImposterProtoChunk((LevelChunk) newChunk));
+            cir.setReturnValue(new ImposterProtoChunk((LevelChunk) newChunk, false));
         } else {
             ProtoChunk primer = (ProtoChunk) newChunk;
             cir.setReturnValue(primer);

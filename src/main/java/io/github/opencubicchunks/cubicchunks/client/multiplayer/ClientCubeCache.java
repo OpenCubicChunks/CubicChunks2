@@ -1,7 +1,9 @@
 package io.github.opencubicchunks.cubicchunks.client.multiplayer;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import net.minecraft.nbt.CompoundTag;
@@ -17,6 +19,6 @@ public interface ClientCubeCache extends CubeSource {
     void updateCubeViewRadius(int hDistance, int vDistance);
 
     LevelCube replaceWithPacketData(int cubeX, int cubeY, int cubeZ, FriendlyByteBuf readBuffer, CompoundTag tag,
-                                    Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> blockEntityTagOutputConsumer,
+                                    BiConsumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput, CubePos> blockEntityTagOutputConsumer,
                                     boolean cubeExists);
 }

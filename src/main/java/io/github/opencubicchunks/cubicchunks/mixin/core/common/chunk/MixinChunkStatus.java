@@ -32,19 +32,11 @@ import net.minecraft.world.level.StructureFeatureManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
-import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.chunk.ProtoChunk;
-import net.minecraft.world.level.chunk.UpgradeData;
-import net.minecraft.world.level.levelgen.GenerationStep;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkStatus.class)
 public class MixinChunkStatus {
+    //Pre 1.18
     // lambda$static$0 == NOOP_LOADING_WORKER
     // lambda$static$1 == EMPTY
     // lambda$static$2 == STRUCTURE_STARTS
@@ -62,11 +54,36 @@ public class MixinChunkStatus {
     // lambda$static$14 == FULL
     // lambda$static$15 == FULL (loading worker)
 
+    //1.18
+    // unnamed - named
+    // method_20615 = lambda$static$0 = PASSTHROUGH_LOAD_TASK
+    // method_17036 = lambda$static$1 = EMPTY
+    // method_39464 = lambda$static$2 = STRUCTURE_STARTS (generation task)
+    // method_39790 = lambda$static$3 = STRUCTURE_STARTS (loading_task)
+    // method_16565 = lambda$static$4 = STRUCTURE_REFERENCES (generation_task)
+    // method_38283 = lambda$static$5
+    // method_38285 = lambda$static$6
+    // method_39463 = lambda$static$7
+    // method_38284 = lambda$static$8
+    // method_16569 = lambda$static$9
+    // method_38282 = lambda$static$10
+    // method_39789 = lambda$static$11
+    // method_20613 = lambda$static$12
+    // method_20614 = lambda$static$13
+    // method_16566 = lambda$static$14
+    // method_17033 = lambda$static$15
+    // method_38277 = lambda$static$16
+    // method_20609 = lambda$static$17
+    // method_38278 = lambda$static$18
+    // method_12166 = lambda$static$19
+    // method_38280 = lambda$generate$20
+
+
+    //TODO: Redo for 1.18 (if necessary)
+    /*
     @SuppressWarnings({ "UnresolvedMixinReference", "target" })
     @Inject(
-        method = "lambda$static$0(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;"
-            + "Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;Lnet/minecraft/server/level/ThreadedLevelLightEngine;Ljava/util/function/Function;"
-            + "Lnet/minecraft/world/level/chunk/ChunkAccess;)Ljava/util/concurrent/CompletableFuture;",
+        method = "method_20615",
         at = @At("HEAD")
     )
     private static void noopLoadingWorker(
@@ -459,4 +476,5 @@ public class MixinChunkStatus {
             }
         }
     }
+    */
 }

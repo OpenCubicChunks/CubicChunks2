@@ -7,7 +7,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 public class EmptyLevelCube extends LevelCube {
 
     public EmptyLevelCube(Level worldIn) {
-        super(worldIn, CubePos.of(0, 0, 0), null);
+        super(worldIn, CubePos.of(0, 0, 0));
     }
 
     @Override public LevelChunkSection[] getCubeSections() {

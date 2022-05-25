@@ -42,7 +42,7 @@ public class MixinBulkSectionAccess {
             long sectionLong = SectionPos.asLong(blockPos);
             if (this.lastSection == null || this.lastSectionKey != sectionLong) {
                 this.lastSection = this.acquiredSections.computeIfAbsent(sectionLong, (lx) -> {
-                    LevelChunkSection section = cube.getOrCreateSection(sectionIdx);
+                    LevelChunkSection section = cube.getSection(sectionIdx);
                     section.acquire();
                     return section;
                 });

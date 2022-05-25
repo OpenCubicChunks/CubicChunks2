@@ -118,7 +118,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
         this.addTask(cubePos.getX(), cubePos.getY(), cubePos.getZ(), ThreadedLevelLightEngine.TaskType.PRE_UPDATE, Util.name(() -> {
             for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
                 LevelChunkSection chunksection = cube.getCubeSections()[i];
-                if (!LevelChunkSection.isEmpty(chunksection)) {
+                if (!chunksection.hasOnlyAir()) {
                     super.updateSectionStatus(Coords.sectionPosByIndex(cubePos, i), false);
                 }
             }

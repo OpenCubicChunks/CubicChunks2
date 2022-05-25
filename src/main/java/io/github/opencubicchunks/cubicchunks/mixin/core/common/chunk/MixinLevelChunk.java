@@ -55,11 +55,6 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
 
     @Shadow @Final private Level level;
 
-    //TODO: Perhaps these could be moved to ChunkAccess. Same goes for ProtoChunk.
-    private boolean isCubic;
-    private boolean generates2DChunks;
-    private CubicLevelHeightAccessor.WorldStyle worldStyle;
-
     private Heightmap lightHeightmap;
     private ColumnCubeMap columnCubeMap;
 
@@ -81,7 +76,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
 
     @Override
     public Heightmap getLightHeightmap() {
-        if (!isCubic) {
+        if (!isCubic()) {
             throw new UnsupportedOperationException("Attempted to get light heightmap on a non-cubic chunk");
         }
         return lightHeightmap;
@@ -97,10 +92,6 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
         at = @At("RETURN"))
     private void onInit(Level levelIn, ChunkPos chunkPos, UpgradeData upgradeData, LevelChunkTicks levelChunkTicks, LevelChunkTicks levelChunkTicks2, long l,
                         LevelChunkSection[] levelChunkSections, LevelChunk.PostLoadProcessor postLoadProcessor, BlendingData blendingData, CallbackInfo ci) {
-        isCubic = ((CubicLevelHeightAccessor) level).isCubic();
-        generates2DChunks = ((CubicLevelHeightAccessor) level).generates2DChunks();
-        worldStyle = ((CubicLevelHeightAccessor) level).worldStyle();
-
         if (!this.isCubic()) {
             return;
         }
@@ -269,7 +260,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
 
     @Inject(method = "addAndRegisterBlockEntity", at = @At("HEAD"), cancellable = true)
     private void addAndRegisterCubeBlockEntity(BlockEntity blockEntity, CallbackInfo ci) {
-        if (!this.isCubic) {
+        if (!this.isCubic()) {
             return;
         }
         ci.cancel();
@@ -278,7 +269,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
 
     @Inject(method = "updateBlockEntityTicker", at = @At("HEAD"), cancellable = true)
     private void updateCubeBlockEntityTicker(BlockEntity blockEntity, CallbackInfo ci) {
-        if (!this.isCubic) {
+        if (!this.isCubic()) {
             return;
         }
         ci.cancel();
@@ -287,7 +278,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
 
     @Inject(method = "removeBlockEntityTicker", at = @At("HEAD"), cancellable = true)
     private void removeBlockEntityTicker(BlockPos pos, CallbackInfo ci) {
-        if (!this.isCubic) {
+        if (!this.isCubic()) {
             return;
         }
         ci.cancel();
@@ -313,19 +304,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
 
     @Redirect(method = "isTicking", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/ChunkPos;asLong(Lnet/minecraft/core/BlockPos;)J"))
     private long cubePos(BlockPos blockPos) {
-        return isCubic ? CubePos.asLong(blockPos) : ChunkPos.asLong(blockPos);
-    }
-
-    @Override public WorldStyle worldStyle() {
-        return worldStyle;
-    }
-
-    @Override public boolean isCubic() {
-        return isCubic;
-    }
-
-    @Override public boolean generates2DChunks() {
-        return generates2DChunks;
+        return isCubic() ? CubePos.asLong(blockPos) : ChunkPos.asLong(blockPos);
     }
 
 }

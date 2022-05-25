@@ -29,6 +29,14 @@ public class CubicFeatures {
         )
     );
 
+    public static final Holder<ConfiguredFeature<?, ?>> CC_WATER_LAKE_FEATURE = createConfiguredFeature(
+        "lake_water",
+        new ConfiguredFeature<>(
+            Feature.LAKE,
+            new LakeFeature.Configuration(BlockStateProvider.simple(Blocks.WATER), BlockStateProvider.simple(Blocks.STONE))
+        )
+    );
+
     //TODO: These probabilities are from before 1.18
     public static final Holder<PlacedFeature> CC_LAVA_LAKE = createPlacedFeature(
         "lake_lava",
@@ -53,6 +61,24 @@ public class CubicFeatures {
                 .point(95, 161 / 32612f)
                 .point(127, 129 / 40765f)
                 .point(128, 129 / 40765f)
+                .build()
+        )
+    );
+
+    public static final Holder<PlacedFeature> CC_WATER_LAKE = createPlacedFeature(
+        "lake_water",
+        CC_WATER_LAKE_FEATURE,
+        new CubicLakePlacementModifier(
+            UserFunction.builder()
+                // same as vanilla
+                .point(0, 1 / 64f)
+                .build(),
+            UserFunction.builder()
+                // same as vanilla for y=0-128, probabilities get too low at 2xx heights so dont use them
+                .point(-1, 0.25f)
+                .point(0, 0.25f)
+                .point(128, 0.125f)
+                .point(129, 0.125f)
                 .build()
         )
     );

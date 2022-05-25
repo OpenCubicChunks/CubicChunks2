@@ -3,6 +3,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk.storage;
 import static io.github.opencubicchunks.cc_core.utils.Utils.unsafeCast;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -44,7 +45,7 @@ public abstract class MixinPoiManager extends SectionStorage<PoiSection> impleme
 
     @Shadow @Final private LongSet loadedChunks; // Loaded cubes
 
-    public MixinPoiManager(File file, Function<Runnable, Codec<PoiSection>> function, Function<Runnable, PoiSection> function2, DataFixer dataFixer,
+    public MixinPoiManager(Path file, Function<Runnable, Codec<PoiSection>> function, Function<Runnable, PoiSection> function2, DataFixer dataFixer,
                            DataFixTypes dataFixTypes, boolean bl, LevelHeightAccessor levelHeightAccessor) {
         super(file, function, function2, dataFixer, dataFixTypes, bl, levelHeightAccessor);
     }

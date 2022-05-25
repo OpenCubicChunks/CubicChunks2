@@ -26,11 +26,13 @@ import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.ServerResources;
+import net.minecraft.server.WorldStem;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
@@ -38,6 +40,7 @@ import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.server.level.progress.ChunkProgressListenerFactory;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.players.GameProfileCache;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.util.Unit;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ForcedChunksSavedData;
@@ -45,6 +48,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.WorldData;
 import org.apache.logging.log4j.Logger;
@@ -66,36 +70,41 @@ public abstract class MixinMinecraftServer implements CubicMinecraftServer {
     @Shadow protected abstract void waitUntilNextTick();
     @Shadow public abstract ServerLevel overworld();
     @Shadow public abstract boolean isRunning();
-    @Shadow public abstract RegistryAccess registryAccess();
+
+    @Shadow public abstract RegistryAccess.Frozen registryAccess();
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void injectFeatures(Thread thread, RegistryAccess.RegistryHolder registryHolder, LevelStorageSource.LevelStorageAccess levelStorageAccess, WorldData worldData,
-                                PackRepository packRepository, Proxy proxy, DataFixer dataFixer, ServerResources serverResources, MinecraftSessionService minecraftSessionService,
-                                GameProfileRepository gameProfileRepository, GameProfileCache gameProfileCache, ChunkProgressListenerFactory chunkProgressListenerFactory, CallbackInfo ci) {
+    private void injectFeatures(Thread thread, LevelStorageSource.LevelStorageAccess levelStorageAccess, PackRepository packRepository, WorldStem worldStem, Proxy proxy, DataFixer dataFixer,
+                                MinecraftSessionService minecraftSessionService, GameProfileRepository gameProfileRepository, GameProfileCache gameProfileCache,
+                                ChunkProgressListenerFactory chunkProgressListenerFactory, CallbackInfo ci) {
         cubicChunksServerConfig = ServerConfig.getConfig(levelStorageAccess);
+        Registry<Biome> biomeRegistry = this.registryAccess().registry(Registry.BIOME_REGISTRY).get();
 
-        for (Map.Entry<ResourceKey<Biome>, Biome> entry : this.registryAccess().registry(Registry.BIOME_REGISTRY).get().entrySet()) {
-            Biome biome = entry.getValue();
-            if (biome.getBiomeCategory() == Biome.BiomeCategory.NETHER) {
-                addFeatureToBiome(biome, GenerationStep.Decoration.RAW_GENERATION, CubicFeatures.LAVA_LEAK_FIX);
-            }
+        for (Holder<Biome> holder : biomeRegistry.getTag(BiomeTags.IS_NETHER).get()) {
+            addFeatureToBiome(holder.value(), GenerationStep.Decoration.RAW_GENERATION, CubicFeatures.LAVA_LEAK_FIX);
         }
     }
 
     //Use this to add our features to vanilla's biomes.
-    private static void addFeatureToBiome(Biome biome, GenerationStep.Decoration stage, ConfiguredFeature<?, ?> configuredFeature) {
+    private static void addFeatureToBiome(Biome biome, GenerationStep.Decoration stage, Holder<PlacedFeature> feature) {
         convertImmutableFeatures(biome);
-        List<List<Supplier<ConfiguredFeature<?, ?>>>> biomeFeatures = ((BiomeGenerationSettingsAccess) biome.getGenerationSettings()).getFeatures();
-        while (biomeFeatures.size() <= stage.ordinal()) {
-            biomeFeatures.add(Lists.newArrayList());
+        List<HolderSet<PlacedFeature>> features = ((BiomeGenerationSettingsAccess) biome.getGenerationSettings()).getFeatures();
+        while (features.size() <= stage.ordinal()) {
+            features.add(new MutableHolderSet<>());
         }
-        biomeFeatures.get(stage.ordinal()).add(() -> configuredFeature);
+        ((MutableHolderSet) features.get(stage.ordinal())).add(feature);
     }
 
     private static void convertImmutableFeatures(Biome biome) {
-        if (((BiomeGenerationSettingsAccess) biome.getGenerationSettings()).getFeatures() instanceof ImmutableList) {
-            ((BiomeGenerationSettingsAccess) biome.getGenerationSettings())
-                .setFeatures(((BiomeGenerationSettingsAccess) biome.getGenerationSettings()).getFeatures().stream().map(Lists::newArrayList).collect(Collectors.toList()));
+        BiomeGenerationSettingsAccess access = (BiomeGenerationSettingsAccess) biome.getGenerationSettings();
+
+        if (access.getFeatures() instanceof ImmutableList) {
+            access.setFeatures(access
+                .getFeatures()
+                .stream()
+                .map(MutableHolderSet::new)
+                .collect(Collectors.toList())
+            );
         }
     }
 

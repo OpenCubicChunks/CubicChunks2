@@ -40,7 +40,10 @@
         "common.TicketTypeAccess",
         "common.VerticalAnchorAccess",
         "common.WorldGenRegionAccess",
-        "common.HolderSetNameAccess"
+        "common.HolderSetNameAccess",
+        "common.LevelTicksAccess",
+        "common.SavedTickAccess",
+        "common.ProtoChunkTicksAccess"
     ],
     "client": [
         "client.ChunkRenderDispatcherAccess",

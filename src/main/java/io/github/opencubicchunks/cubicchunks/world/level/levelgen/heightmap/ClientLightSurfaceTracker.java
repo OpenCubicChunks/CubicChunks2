@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.BitStorage;
 import net.minecraft.util.Mth;
+import net.minecraft.util.SimpleBitStorage;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -41,7 +42,7 @@ public class ClientLightSurfaceTracker extends ClientSurfaceTracker {
         // We need to compare the old and new data here, hence the inefficiencies with making a new bitstorage
         // TODO can this be optimized to operate on long[]s directly instead of making an extra BitStorage?
         BitStorage storage = ((HeightmapAccess) this).getData();
-        BitStorage oldStorage = new BitStorage(bitsPerColumn, 256, storage.getRaw().clone());
+        BitStorage oldStorage = new SimpleBitStorage(bitsPerColumn, 256, storage.getRaw().clone());
         System.arraycopy(heightmap, 0, storage.getRaw(), 0, heightmap.length);
 //        ChunkAccess chunk = ((HeightmapAccess) this).getChunk();
         int baseX = chunk.getPos().getMinBlockX();

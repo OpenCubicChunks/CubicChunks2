@@ -32,11 +32,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ProtoChunk.class)
 public abstract class MixinProtoChunk extends ChunkAccess implements LightHeightmapGetter, LevelHeightAccessor, ColumnCubeMapGetter, CubicLevelHeightAccessor {
 
-    private boolean isCubic;
-    private boolean generates2DChunks;
-    private WorldStyle worldStyle;
-
-    private LightSurfaceTrackerWrapper lightHeightmap;
+    private Heightmap lightHeightmap;
     private ColumnCubeMap columnCubeMap;
 
     public MixinProtoChunk(ChunkPos chunkPos, UpgradeData upgradeData, LevelHeightAccessor levelHeightAccessor, Registry<Biome> registry, long l,
@@ -50,7 +46,7 @@ public abstract class MixinProtoChunk extends ChunkAccess implements LightHeight
 
     @Override
     public Heightmap getLightHeightmap() {
-        if (!isCubic) {
+        if (!isCubic()) {
             throw new UnsupportedOperationException("Attempted to get light heightmap on a non-cubic chunk");
         }
         return lightHeightmap;
@@ -63,28 +59,6 @@ public abstract class MixinProtoChunk extends ChunkAccess implements LightHeight
             columnCubeMap = new ColumnCubeMap();
         }
         return columnCubeMap;
-    }
-
-    @Inject(method = "<init>(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/level/chunk/UpgradeData;[Lnet/minecraft/world/level/chunk/LevelChunkSection;"
-        + "Lnet/minecraft/world/ticks/ProtoChunkTicks;Lnet/minecraft/world/ticks/ProtoChunkTicks;Lnet/minecraft/world/level/LevelHeightAccessor;"
-        + "Lnet/minecraft/core/Registry;Lnet/minecraft/world/level/levelgen/blending/BlendingData;)V", at = @At("RETURN"))
-    private void setCubic(ChunkPos chunkPos, UpgradeData upgradeData, LevelChunkSection[] levelChunkSections, ProtoChunkTicks<Block> blockTicks, ProtoChunkTicks<Fluid> fluidTicks,
-                          LevelHeightAccessor heightAccessor, Registry<Biome> registry, BlendingData blendingData, CallbackInfo ci) {
-        isCubic = ((CubicLevelHeightAccessor) heightAccessor).isCubic();
-        generates2DChunks = ((CubicLevelHeightAccessor) heightAccessor).generates2DChunks();
-        worldStyle = ((CubicLevelHeightAccessor) heightAccessor).worldStyle();
-    }
-
-    @Override public WorldStyle worldStyle() {
-        return worldStyle;
-    }
-
-    @Override public boolean isCubic() {
-        return isCubic;
-    }
-
-    @Override public boolean generates2DChunks() {
-        return generates2DChunks;
     }
 
     @Inject(

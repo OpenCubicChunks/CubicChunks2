@@ -1,5 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.level;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
@@ -99,7 +100,7 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
     @Override
     public LevelCube replaceWithPacketData(int cubeX, int cubeY, int cubeZ,
                                            FriendlyByteBuf readBuffer, CompoundTag tag,
-                                           Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> blockEntityTagOutputConsumer,
+                                           BiConsumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput, CubePos> blockEntityTagOutputConsumer,
                                            boolean cubeExists) {
 
         if (!this.cubeArray.inRange(cubeX, cubeY, cubeZ)) {
