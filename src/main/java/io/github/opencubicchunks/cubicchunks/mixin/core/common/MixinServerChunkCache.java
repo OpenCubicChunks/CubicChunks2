@@ -343,7 +343,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
 
     @Inject(method = "tickChunks", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;getChunks()Ljava/lang/Iterable;"),
         locals = LocalCapture.CAPTURE_FAILHARD)
-    private void tickCubes(CallbackInfo ci, long gameTime, long timeSinceUpdate, boolean isDebug, LevelData levelData, ProfilerFiller profilerFiller, int randomTicking, boolean bl2, int spawnChunkCount, NaturalSpawner.SpawnState spawnState,
+    private void tickCubes(CallbackInfo ci, long gameTime, long timeSinceUpdate, LevelData levelData, ProfilerFiller profilerFiller, int randomTicking, boolean bl2, int spawnChunkCount, NaturalSpawner.SpawnState spawnState,
                            List list) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;
@@ -413,7 +413,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
 
     @Nullable
     @SuppressWarnings("UnresolvedMixinReference")
-    @Inject(method = "lambda$onLightUpdate$7(Lnet/minecraft/core/SectionPos;Lnet/minecraft/world/level/LightLayer;)V", at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "method_14118"/*"lambda$onLightUpdate$7(Lnet/minecraft/core/SectionPos;Lnet/minecraft/world/level/LightLayer;)V"*/, at = @At(value = "HEAD"), cancellable = true)
     private void onlyCubes(SectionPos pos, LightLayer type, CallbackInfo ci) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;

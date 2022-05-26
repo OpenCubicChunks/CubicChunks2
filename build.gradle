@@ -241,7 +241,7 @@ dependencies {
 
     // modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 //
-//    modRuntime ("supercoder79:databreaker:0.2.8") {
+//    modRuntime ("supercoder79:databreaker:0.2.9") {
 //        exclude module: "fabric-loader"
 //    }
     include implementation(project(':CubicChunksCore')) {

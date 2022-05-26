@@ -19,11 +19,11 @@ public abstract class MixinPlayerRespawnLogic {
      * @reason Overwriting finding spawn location
      */
     @Inject(method = "getOverworldRespawnPos", at = @At("HEAD"), cancellable = true)
-    private static void getOverworldRespawnPos(ServerLevel world, int posX, int posZ, boolean checkValid, CallbackInfoReturnable<BlockPos> cir) {
+    private static void getOverworldRespawnPos(ServerLevel world, int posX, int posZ, CallbackInfoReturnable<BlockPos> cir) {
         if (!((CubicLevelHeightAccessor) world).isCubic()) {
             return;
         }
-        cir.setReturnValue(SpawnPlaceFinder.getTopBlockBisect(world, new BlockPos(posX, 0, posZ), checkValid,
+        cir.setReturnValue(SpawnPlaceFinder.getTopBlockBisect(world, new BlockPos(posX, 0, posZ), false,
             pos -> world.getBlockState((BlockPos) pos).is(BlockTags.VALID_SPAWN),
             pos -> world.getBlockState((BlockPos) pos).getCollisionShape(world, (BlockPos) pos).isEmpty()));
     }

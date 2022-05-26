@@ -1,4 +1,4 @@
-package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
+package io.github.opencubicchunks.cubicchunks.world.level;
 
 import java.util.List;
 import java.util.function.BiConsumer;

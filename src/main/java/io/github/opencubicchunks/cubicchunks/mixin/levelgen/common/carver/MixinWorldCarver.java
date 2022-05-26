@@ -14,11 +14,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(WorldCarver.class)
 public class MixinWorldCarver {
 
-    @Redirect(method = "carveEllipsoid", at = @At(value = "NEW", target = "java/util/Random", remap = false))
-    private Random createRandom(long seed) {
-        return new NonAtomicWorldgenRandom(seed);
-    }
-
     @Redirect(method = "getCarveState",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/levelgen/VerticalAnchor;resolveY(Lnet/minecraft/world/level/levelgen/WorldGenerationContext;)I"))
     private int returnMinIntValue(VerticalAnchor verticalAnchor, WorldGenerationContext context) {

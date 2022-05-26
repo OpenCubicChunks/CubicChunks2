@@ -2,6 +2,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk.storage;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
@@ -77,11 +78,11 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void getServerLevel(File file, Function<Runnable, Codec<R>> function, Function<Runnable, R> function2, DataFixer dataFixer, DataFixTypes dataFixTypes, boolean bl,
-                                LevelHeightAccessor heightAccessor, CallbackInfo ci) throws IOException {
+    private void getServerLevel(Path path, Function function, Function function2, DataFixer dataFixer, DataFixTypes dataFixTypes, boolean bl, LevelHeightAccessor levelHeightAccessor,
+                                CallbackInfo ci) throws IOException {
 
         if (((CubicLevelHeightAccessor) levelHeightAccessor).isCubic()) {
-            cubeWorker = new RegionCubeIO(file, file.getName() + "-chunk", file.getName());
+            cubeWorker = new RegionCubeIO(path.toFile(), path.toFile().getName() + "-chunk", path.toFile().getName());
         }
     }
 

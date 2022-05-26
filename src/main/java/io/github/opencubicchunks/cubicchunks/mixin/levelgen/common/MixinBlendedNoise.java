@@ -18,8 +18,10 @@ public class MixinBlendedNoise {
      * @reason optimization: the main noise is often clamped, causing only one of the min limit or max limit to be actually used
      * @author Gegy
      */
+    //TODO: It looks like this is now optimized in the vanilla code. I only gave it a glance though
+    /*
     @Overwrite
-    public double sampleAndClampNoise(int ix, int iy, int iz, double horizontalScale, double verticalScale, double horizontalStretch, double verticalStretch) {
+    public double compute(int ix, int iy, int iz, double horizontalScale, double verticalScale, double horizontalStretch, double verticalStretch) {
         double amplitude = 1.0;
 
         double x = ix;
@@ -99,4 +101,5 @@ public class MixinBlendedNoise {
             return Mth.lerp(mix, minLimit, maxLimit);
         }
     }
+    */
 }

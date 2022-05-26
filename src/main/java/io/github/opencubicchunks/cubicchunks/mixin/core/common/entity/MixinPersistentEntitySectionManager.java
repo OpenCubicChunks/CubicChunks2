@@ -51,7 +51,9 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
 
     @Shadow public abstract void updateChunkStatus(ChunkPos chunkPos, Visibility visibility);
 
-    @Shadow public abstract boolean isPositionTicking(ChunkPos chunkPos);
+    //@Shadow public abstract boolean isPositionTicking(ChunkPos chunkPos);
+
+    @Shadow public abstract boolean canPositionTick(ChunkPos chunkPos);
 
     @Override public boolean isCubic() {
         return this.isCubic;
@@ -115,7 +117,7 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
         }
     }
 
-    @Inject(method = "isPositionTicking(Lnet/minecraft/world/level/ChunkPos;)Z", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "canPositionTick(Lnet/minecraft/world/level/ChunkPos;)Z", at = @At("HEAD"), cancellable = true)
     private void isColumnPositionTicking(ChunkPos chunkPos, CallbackInfoReturnable<Boolean> cir) {
         if (chunkPos instanceof ImposterChunkPos) {
             // TODO throw on ImposterChunkPos in non-cc?
@@ -126,7 +128,7 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
         }
     }
 
-    @Inject(method = "isPositionTicking(Lnet/minecraft/core/BlockPos;)Z", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "canPositionTick(Lnet/minecraft/core/BlockPos;)Z", at = @At("HEAD"), cancellable = true)
     private void isCubePositionTicking(BlockPos blockPos, CallbackInfoReturnable<Boolean> cir) {
         if (!isCubic) {
             return;
@@ -174,7 +176,7 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
     public boolean isChunkTicking(ChunkPos pos) {
         // TODO throw on ImposterChunkPos?
         if (!isCubic) {
-            return isPositionTicking(pos);
+            return canPositionTick(pos);
         }
         return ccTickingChunks.contains(pos.toLong());
     }

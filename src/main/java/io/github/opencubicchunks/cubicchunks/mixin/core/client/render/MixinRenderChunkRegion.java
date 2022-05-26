@@ -1,6 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.render;
 
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
+import net.minecraft.client.renderer.chunk.RenderChunk;
 import net.minecraft.client.renderer.chunk.RenderChunkRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -18,7 +19,7 @@ public abstract class MixinRenderChunkRegion implements CubicLevelHeightAccessor
     private WorldStyle worldStyle;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void initIsCubic(Level level, int i, int j, LevelChunk[][] levelChunks, BlockPos blockPos, BlockPos blockPos2, CallbackInfo ci) {
+    private void initIsCubic(Level level, int i, int j, RenderChunk[][] renderChunks, CallbackInfo ci) {
         isCubic = ((CubicLevelHeightAccessor) level).isCubic();
         generates2DChunks = ((CubicLevelHeightAccessor) level).generates2DChunks();
         worldStyle = ((CubicLevelHeightAccessor) level).worldStyle();

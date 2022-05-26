@@ -57,7 +57,7 @@ public abstract class MixinLevel implements CubicLevelAccessor, LevelReader {
         return -20000000;
     }
 
-    @Inject(method = "blockEntityChanged", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/LevelChunk;markUnsaved()V"))
+    @Inject(method = "blockEntityChanged", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/LevelChunk;setUnsaved(Z)V"))
     private void onBlockEntityChanged(BlockPos blockPos, CallbackInfo ci) {
         if (!isCubic()) {
             return;

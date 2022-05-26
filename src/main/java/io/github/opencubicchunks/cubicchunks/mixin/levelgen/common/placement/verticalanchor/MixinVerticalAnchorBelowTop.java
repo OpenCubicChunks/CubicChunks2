@@ -1,7 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.placement.verticalanchor;
 
 import io.github.opencubicchunks.cubicchunks.levelgen.carver.CubicCarvingContext;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.VerticalAnchorAccess;
+import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import net.minecraft.world.level.levelgen.VerticalAnchor;
 import net.minecraft.world.level.levelgen.WorldGenerationContext;
 import org.spongepowered.asm.mixin.Mixin;
@@ -11,12 +11,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(VerticalAnchor.BelowTop.class)
 public class MixinVerticalAnchorBelowTop {
-
     @Inject(method = "resolveY", at = @At("HEAD"), cancellable = true)
     private void resolveCubicChunksY(WorldGenerationContext context, CallbackInfoReturnable<Integer> cir) {
         if (context instanceof CubicCarvingContext) {
-            int defaultValue = ((CubicCarvingContext) context).getOriginalGenDepth() - 1 + ((CubicCarvingContext) context).getOriginalMinGenY() - ((VerticalAnchorAccess) this).invokeValue();
+            int defaultValue = ((CubicCarvingContext) context).getOriginalGenDepth() - 1 + ((CubicCarvingContext) context).getOriginalMinGenY() - getThis().offset();
             cir.setReturnValue(defaultValue);
         }
+    }
+
+    private VerticalAnchor.AboveBottom getThis() {
+        return Utils.unsafeCast(this);
     }
 }

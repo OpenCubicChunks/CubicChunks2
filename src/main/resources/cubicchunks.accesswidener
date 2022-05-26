@@ -19,3 +19,5 @@ accessible field net/minecraft/world/level/chunk/LevelChunk NULL_TICKER Lnet/min
 extendable method net/minecraft/world/ticks/LevelTicks updateContainerScheduling (Lnet/minecraft/world/ticks/ScheduledTick;)V
 extendable method net/minecraft/world/ticks/LevelTicks forContainersInArea (Lnet/minecraft/world/level/levelgen/structure/BoundingBox;Lnet/minecraft/world/ticks/LevelTicks$PosAndContainerConsumer;)V
 accessible class net/minecraft/world/ticks/LevelTicks$PosAndContainerConsumer
+
+accessible class net/minecraft/client/renderer/chunk/RenderChunk

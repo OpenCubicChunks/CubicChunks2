@@ -2,6 +2,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk.storage;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -47,9 +48,9 @@ public abstract class MixinEntityStorage implements CubicEntityStorage {
     @Shadow protected abstract CompoundTag upgradeChunkTag(CompoundTag chunkTag);
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void setupCubeIO(ServerLevel serverLevel, File file, DataFixer dataFixer, boolean bl, Executor executor, CallbackInfo ci) throws IOException {
+    private void setupCubeIO(ServerLevel serverLevel, Path path, DataFixer dataFixer, boolean bl, Executor executor, CallbackInfo ci) throws IOException {
         if (((CubicLevelHeightAccessor) serverLevel).isCubic()) {
-            cubeWorker = new RegionCubeIO(file, file.getName(), file.getName());
+            cubeWorker = new RegionCubeIO(path.toFile(), path.toFile().getName(), path.toFile().getName());
         }
     }
 

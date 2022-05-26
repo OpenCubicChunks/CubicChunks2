@@ -23,7 +23,7 @@ public class CubicLakePlacementModifier extends PlacementModifier {
             UserFunction.CODEC.fieldOf("surface_probability").forGetter((config) -> config.surfaceProbability),
             UserFunction.CODEC.fieldOf("main_probability").forGetter((config) -> config.mainProbability)
         ).apply(instance, CubicLakePlacementModifier::new));
-    private static final PlacementModifierType<CubicLakePlacementModifier> TYPE;
+    private static PlacementModifierType<CubicLakePlacementModifier> TYPE;
 
     private final UserFunction surfaceProbability;
     private final UserFunction mainProbability;
@@ -76,7 +76,7 @@ public class CubicLakePlacementModifier extends PlacementModifier {
         return TYPE;
     }
 
-    static {
+    public static void init() {
         TYPE = Registry.register(Registry.PLACEMENT_MODIFIERS, new ResourceLocation(CubicChunks.MODID, "cubic_lake"), () -> CODEC);
     }
 }

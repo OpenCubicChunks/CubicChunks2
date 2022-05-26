@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.HugeFungusConfiguration;
@@ -33,8 +34,9 @@ public class MixinHugeFungusFeature {
 
     @Inject(method = "place", at = @At(value = "FIELD", target = "Lnet/minecraft/world/level/levelgen/feature/HugeFungusConfiguration;planted:Z"), locals = LocalCapture.CAPTURE_FAILHARD,
         cancellable = true)
-    private void cancelInLava(FeaturePlaceContext<?> context, CallbackInfoReturnable<Boolean> cir, WorldGenLevel worldGenLevel, BlockPos blockPos, Random random,
-                              ChunkGenerator chunkGenerator, HugeFungusConfiguration hugeFungusConfiguration, Block block, BlockPos blockPos2, int i) {
+    private void cancelInLava(FeaturePlaceContext<HugeFungusConfiguration> context, CallbackInfoReturnable<Boolean> cir, WorldGenLevel worldGenLevel, BlockPos blockPos,
+                              Random random, ChunkGenerator chunkGenerator, HugeFungusConfiguration hugeFungusConfiguration, Block block, BlockPos blockPos2,
+                              int i) {
         if (worldGenLevel.getFluidState(blockPos2).is(FluidTags.LAVA)) {
             cir.setReturnValue(false);
         }

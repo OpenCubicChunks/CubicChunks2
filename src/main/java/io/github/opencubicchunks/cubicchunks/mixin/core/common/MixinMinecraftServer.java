@@ -51,7 +51,7 @@ import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.WorldData;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -61,7 +61,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MinecraftServer.class)
 public abstract class MixinMinecraftServer implements CubicMinecraftServer {
-    @Shadow @Final private static Logger LOGGER;
     @Shadow protected long nextTickTime;
     @Shadow @Final private Map<ResourceKey<Level>, ServerLevel> levels;
 
@@ -72,6 +71,8 @@ public abstract class MixinMinecraftServer implements CubicMinecraftServer {
     @Shadow public abstract boolean isRunning();
 
     @Shadow public abstract RegistryAccess.Frozen registryAccess();
+
+    @Shadow @Final private static Logger LOGGER;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void injectFeatures(Thread thread, LevelStorageSource.LevelStorageAccess levelStorageAccess, PackRepository packRepository, WorldStem worldStem, Proxy proxy, DataFixer dataFixer,
