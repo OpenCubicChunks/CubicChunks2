@@ -111,7 +111,7 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
 
     // TODO: the "main chunk" is an awful idea, who did this?
     public CubeWorldGenRegion(ServerLevel level, List<CubeAccess> cubes, ChunkStatus status, ChunkAccess mainChunk, int writeRadiusCutoff) {
-        super(level, Collections.singletonList(new DummyChunkAccess()), status, writeRadiusCutoff);
+        super(level, Collections.singletonList(cubes.get(0)), status, writeRadiusCutoff);
 
         int cubeRoot = Mth.floor(Math.cbrt(cubes.size()));
         if (cubeRoot * cubeRoot * cubeRoot != cubes.size()) {
@@ -544,8 +544,8 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
     private static class DummyChunkAccess extends ChunkAccess {
 
 
-        public DummyChunkAccess() {
-            super(null, null, new ProtoCube.FakeSectionCount(null, 0), null, 0, null, null);
+        public DummyChunkAccess(LevelHeightAccessor accessor) {
+            super(null, null, new ProtoCube.FakeSectionCount(accessor, 0), null, 0, null, null);
         }
 
         @org.jetbrains.annotations.Nullable @Override public BlockState setBlockState(BlockPos pos, BlockState state, boolean moved) {

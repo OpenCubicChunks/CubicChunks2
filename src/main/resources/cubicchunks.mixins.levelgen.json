@@ -40,7 +40,8 @@
         "common.placement.MixinPlacementModifier",
         "common.feature.MixinMiscOverworldFeatures",
         "common.noise.MixinNoiseRouterData",
-        "common.noise.MixinNoiseBasedChunkGenerator"
+        "common.noise.MixinNoiseBasedChunkGenerator",
+        "common.MixinNoiseChunk"
     ],
     "client": [],
     "server": []

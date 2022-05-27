@@ -307,4 +307,10 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
         return isCubic() ? CubePos.asLong(blockPos) : ChunkPos.asLong(blockPos);
     }
 
+    @Inject(method = { "registerTickContainerInLevel",  "unregisterTickContainerFromLevel"}, at = @At("HEAD"), cancellable = true)
+    private void noTickContainer(ServerLevel serverLevel, CallbackInfo ci) {
+        if (this.isCubic()) {
+            ci.cancel();
+        }
+    }
 }

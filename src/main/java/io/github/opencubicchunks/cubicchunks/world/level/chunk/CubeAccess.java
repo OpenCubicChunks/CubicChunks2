@@ -1,17 +1,24 @@
 package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
-import io.github.opencubicchunks.cc_core.api.CubePos;
-import io.github.opencubicchunks.cc_core.config.EarlyConfig;
-import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapSource;
-import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
-import it.unimi.dsi.fastutil.shorts.ShortList;
+import com.google.common.collect.Maps;
+import io.github.opencubicchunks.cubicchunks.config.EarlyConfig;
+import io.github.opencubicchunks.cubicchunks.utils.Coords;
+import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
+import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
+import io.github.opencubicchunks.cubicchunks.world.storage.CubeSerializer;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
+import net.minecraft.ReportedException;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
@@ -19,7 +26,6 @@ import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeResolver;
@@ -75,7 +81,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     //protected final LevelChunkSection[] sections = new LevelChunkSection[SECTION_COUNT];
 
     public CubeAccess(CubePos pos, UpgradeData upgradeData, LevelHeightAccessor heightAccessor, Registry<Biome> biomeRegistry, long inhabitedTime,
-                       @Nullable LevelChunkSection[] sections, @Nullable BlendingData blendingData) {
+                      @Nullable LevelChunkSection[] sections, @Nullable BlendingData blendingData) {
         super(
             pos.asChunkPos(), //TODO: Maybe there is a better way to handle the fact that we must now pass a ChunkPos
             upgradeData,
@@ -93,6 +99,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     public CubePos getCubePos() {
         return cubePos;
     }
+
     public LevelChunkSection[] getCubeSections() {
         return sections;
     }
@@ -112,6 +119,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     public BlockState getBlockState(BlockPos pos) {
         return getBlockState(Coords.localX(pos), Coords.localY(pos), Coords.localZ(pos));
     }
+
     //TODO: remove this getBlockState from IBigCube to match IChunk
     public abstract BlockState getBlockState(int x, int y, int z);
 
@@ -120,6 +128,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     public void setCubeBlockEntity(CompoundTag nbt) {
         LogManager.getLogger().warn("Trying to set a BlockEntity, but this operation is not supported.");
     }
+
     public abstract void setCubeBlockEntity(BlockEntity tileEntity);
     public abstract void removeCubeBlockEntity(BlockPos pos);
 
@@ -134,7 +143,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     }
 
     public Map<ConfiguredStructureFeature<?, ?>, StructureStart> getAllCubeStructureStarts() {
-        return this.getAllStarts();
+        return new HashMap<>(); //TODO: Not silently fail
     }
 
     //LIGHTING
@@ -169,12 +178,13 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     public void setCubeInhabitedTime(long newCubeInhabitedTime) {
         this.setInhabitedTime(newCubeInhabitedTime);
     }
+
     public long getCubeInhabitedTime() {
         return this.getInhabitedTime();
     }
 
     public int getCubeLocalHeight(Heightmap.Types type, int x, int z) {
-        SurfaceTrackerLeaf[]  leaves = this.cubeHeightmaps.get(type);
+        SurfaceTrackerLeaf[] leaves = this.cubeHeightmaps.get(type);
         if (leaves == null) {
             throw new IllegalStateException("Trying to access heightmap of type " + type + " for cube " + this.cubePos + " before it's loaded!");
         }
@@ -242,11 +252,11 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     }
 
     @Override
-    public void fillBiomesFromNoise(BiomeResolver biomeResolver, Climate.Sampler sampler) {
+    public synchronized void fillBiomesFromNoise(BiomeResolver biomeResolver, Climate.Sampler sampler) {
         LevelHeightAccessor heightAccessor = this.getHeightAccessorForGeneration();
 
-        for (int sectionY = heightAccessor.getMinSection(); sectionY < heightAccessor.getMaxSection(); sectionY++) {
-            for (int sectionX = 0; sectionX < DIAMETER_IN_SECTIONS; sectionX++) {
+        for (int sectionX = 0; sectionX < DIAMETER_IN_SECTIONS; sectionX++) {
+            for (int sectionY = 0; sectionY < DIAMETER_IN_SECTIONS; sectionY++) {
                 for (int sectionZ = 0; sectionZ < DIAMETER_IN_SECTIONS; sectionZ++) {
                     int minXQuart = QuartPos.fromBlock(Coords.sectionToMinBlock(sectionX));
                     int minZQuart = QuartPos.fromBlock(Coords.sectionToMinBlock(sectionZ));

@@ -123,7 +123,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         super(
             cubePos,
             upgradeData,
-            new FakeSectionCount(levelHeightAccessor, CubeAccess.SECTION_COUNT),
+            levelHeightAccessor,
             biomes,
             0L,
             sections,
@@ -175,6 +175,14 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         } else {
             return ((ServerLevel) this.levelHeightAccessor).getChunkSource();
         }
+    }
+
+    @Override public int getSectionIndex(int i) {
+        return super.getSectionIndex(i);
+    }
+
+    @Override public LevelChunkSection getSection(int i) {
+        return super.getSection(i);
     }
 
     //STATUS
@@ -279,6 +287,8 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
     @Override public ChunkStatus getCubeStatus() {
         return this.status;
     }
+
+
 
     @Override @Nullable
     public BlockState setBlock(BlockPos pos, BlockState state, boolean isMoving) {
