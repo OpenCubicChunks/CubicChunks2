@@ -114,8 +114,6 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
     private final ProtoChunkTicks<Block> blockTicks;
     private final ProtoChunkTicks<Fluid> fluidTicks;
 
-    //TODO: Below zero retrogen?
-
     public ProtoCube(CubePos cubePos, UpgradeData upgradeData, LevelHeightAccessor levelHeightAccessor, Registry<Biome> biomes, @Nullable BlendingData blendingData) {
         this(cubePos, upgradeData, null, new ProtoChunkTicks<>(), new ProtoChunkTicks<>(), levelHeightAccessor, biomes, blendingData);
     }

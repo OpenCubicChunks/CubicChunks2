@@ -35,6 +35,11 @@ public abstract class MixinSkyLightSectionStorage extends LayerLightSectionStora
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onInit(LightChunkGetter lightChunkGetter, CallbackInfo ci) {
+        if (lightChunkGetter.getLevel() == null) {
+            //Special case for dummy light engine
+            isCubic = true;
+            return;
+        }
         isCubic = ((CubicLevelHeightAccessor) lightChunkGetter.getLevel()).isCubic();
     }
 

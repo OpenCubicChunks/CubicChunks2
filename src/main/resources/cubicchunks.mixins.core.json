@@ -3,7 +3,7 @@
     "package": "io.github.opencubicchunks.cubicchunks.mixin.core",
     "refmap": "CubicChunks-refmap.json",
     "plugin": "io.github.opencubicchunks.cubicchunks.mixin.AnnotationConfigPlugin",
-    "compatibilityLevel": "JAVA_16",
+    "compatibilityLevel": "JAVA_17",
     "minVersion": "0.8",
     "injectors": {
         "defaultRequire": 1
@@ -56,7 +56,8 @@
         "common.server.MixinPlayerList",
         "common.ticket.MixinChunkMapDistanceManager",
         "common.ticket.MixinDistanceManager",
-        "common.chunk.storage.MixinChunkAccess"
+        "common.chunk.storage.MixinChunkAccess",
+        "LoaderMixin"
     ],
     "client": [
         "client.chunk.MixinLevelChunk",

@@ -2,7 +2,7 @@
     "required": true,
     "package": "io.github.opencubicchunks.cubicchunks.mixin.levelgen",
     "refmap": "CubicChunks-refmap.json",
-    "compatibilityLevel": "JAVA_16",
+    "compatibilityLevel": "JAVA_17",
     "minVersion": "0.8",
     "injectors": {
         "defaultRequire": 1
@@ -38,7 +38,9 @@
         "common.structure.MixinStructurePiece",,
         "common.biome.MixinBiomeSource",
         "common.placement.MixinPlacementModifier",
-        "common.feature.MixinMiscOverworldFeatures"
+        "common.feature.MixinMiscOverworldFeatures",
+        "common.noise.MixinNoiseRouterData",
+        "common.noise.MixinNoiseBasedChunkGenerator"
     ],
     "client": [],
     "server": []

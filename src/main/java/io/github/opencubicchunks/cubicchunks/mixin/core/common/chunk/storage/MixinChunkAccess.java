@@ -7,11 +7,14 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGet
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientLightSurfaceTracker;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.level.biome.BiomeResolver;
+import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.UpgradeData;
@@ -31,6 +34,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MixinChunkAccess implements CubicLevelHeightAccessor {
     @Shadow @Final protected LevelHeightAccessor levelHeightAccessor;
 
+    @Shadow @Final protected LevelChunkSection[] sections;
     private boolean isCubic;
     private boolean generates2DChunks;
     private CubicLevelHeightAccessor.WorldStyle worldStyle;

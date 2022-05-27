@@ -67,6 +67,12 @@ public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S 
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void setCubic(LightChunkGetter lightChunkGetter, LightLayer lightLayer, S layerLightSectionStorage, CallbackInfo ci) {
+        if (this.chunkSource.getLevel() == null) {
+            // Special case for dummy light engine used in MixinChunkMap for serialization
+            this.isCubic = true;
+            return;
+        }
+
         this.isCubic = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).isCubic();
 //        this.generates2DChunks = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).generates2DChunks();
 //        this.worldStyle = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).worldStyle();

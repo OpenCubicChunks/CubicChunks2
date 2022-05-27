@@ -62,7 +62,7 @@ mixinGen {
     filePattern = "cubicchunks.mixins.%s.json"
     defaultRefmap = "CubicChunks-refmap.json"
     defaultPackagePrefix = "io.github.opencubicchunks.cubicchunks.mixin"
-    defaultCompatibilityLevel = "JAVA_16"
+    defaultCompatibilityLevel = "JAVA_17"
     defaultMinVersion = "0.8"
 
     config("core") {

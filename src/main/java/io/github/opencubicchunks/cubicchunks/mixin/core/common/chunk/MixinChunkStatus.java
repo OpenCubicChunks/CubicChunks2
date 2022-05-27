@@ -32,7 +32,17 @@ import net.minecraft.world.level.StructureFeatureManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.chunk.ProtoChunk;
+import net.minecraft.world.level.chunk.UpgradeData;
+import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
 
 @Mixin(ChunkStatus.class)
 public class MixinChunkStatus {
@@ -79,8 +89,7 @@ public class MixinChunkStatus {
     // method_38280 = lambda$generate$20
 
 
-    //TODO: Redo for 1.18 (if necessary)
-    /*
+
     @SuppressWarnings({ "UnresolvedMixinReference", "target" })
     @Inject(
         method = "method_20615",
@@ -101,12 +110,8 @@ public class MixinChunkStatus {
     // EMPTY -> does nothing already
 
     // structure starts - replace setStatus, handled by MixinChunkGenerator
-    @SuppressWarnings({ "target", "UnresolvedMixinReference" })
     @Inject(
-        method = "lambda$static$2(Lnet/minecraft/world/level/chunk/ChunkStatus;Ljava/util/concurrent/Executor;Lnet/minecraft/server/level/ServerLevel;"
-            + "Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;"
-            + "Lnet/minecraft/server/level/ThreadedLevelLightEngine;Ljava/util/function/Function;Ljava/util/List;Lnet/minecraft/world/level/chunk/ChunkAccess;)"
-            + "Ljava/util/concurrent/CompletableFuture;",
+        method = "
         at = @At("HEAD"), cancellable = true
     )
     private static void generateStructureStatus(
@@ -476,5 +481,4 @@ public class MixinChunkStatus {
             }
         }
     }
-    */
 }
