@@ -19,6 +19,7 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.SpawnPlacements;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.LocalMobCapCalculator;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.PotentialCalculator;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -156,16 +157,17 @@ public abstract class MixinNaturalSpawner {
     private static ThreadLocal<BlockPos> capturedPos = new ThreadLocal<>();
 
     @Dynamic
-    @Inject(method = "createCubicState", at = @At(value = "INVOKE", target = "Lio/github/opencubicchunks/cc_core/api/CubePos;asLong(II)J"),
+    @Inject(method = "createCubicState", at = @At(value = "INVOKE", target = "Lio/github/opencubicchunks/cc_core/api/CubePos;asLong(Lnet/minecraft/core/BlockPos;)J"),
         locals = LocalCapture.CAPTURE_FAILHARD)
-    private static void createCubicState(int spawningChunkCount, Iterable<?> entities, CubicNaturalSpawner.CubeGetter cubeGetter, CallbackInfoReturnable<NaturalSpawner.SpawnState> cir,
-                                         PotentialCalculator potentialCalculator, Object2IntOpenHashMap<?> object2IntOpenHashMap, Iterator<?> var5, Entity entity, MobCategory mobCategory,
+    private static void createCubicState(int spawningChunkCount, Iterable<?> entities, CubicNaturalSpawner.CubeGetter cubeGetter, LocalMobCapCalculator mobCapCalculator,
+                                         CallbackInfoReturnable<NaturalSpawner.SpawnState> cir,
+                                         PotentialCalculator potentialCalculator, Object2IntOpenHashMap<?> object2IntOpenHashMap, Iterator<?> var6, Entity entity, MobCategory mobCategory,
                                          BlockPos blockPos) {
         capturedPos.set(blockPos);
     }
 
     @Dynamic
-    @Redirect(method = "createCubicState", at = @At(value = "INVOKE", target = "Lio/github/opencubicchunks/cc_core/api/CubePos;asLong(II)J"))
+    @Redirect(method = "createCubicState", at = @At(value = "INVOKE", target = "Lio/github/opencubicchunks/cc_core/api/CubePos;asLong(Lnet/minecraft/core/BlockPos;)J"))
     private static long packCubePosLongNoSectionPos(int x, int z) {
         BlockPos pos = capturedPos.get();
         return CubePos.asLong(
