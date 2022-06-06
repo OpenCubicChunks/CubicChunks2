@@ -49,6 +49,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
 import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.ClassInstanceMultiMap;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
@@ -196,6 +197,16 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         this.setCubeLight(protoCube.hasCubeLight());
 
         this.setDirty(true);
+    }
+
+    public void registerTicks(ServerLevel serverLevel) {
+        ((CubicLevelTicks<Block>) serverLevel.getBlockTicks()).addContainer(this.cubePos, this.blockTicks);
+        ((CubicLevelTicks<Fluid>) serverLevel.getFluidTicks()).addContainer(this.cubePos, this.fluidTicks);
+    }
+
+    public void unregisterTicks(ServerLevel serverLevel) {
+        ((CubicLevelTicks<Block>) serverLevel.getBlockTicks()).removeContainer(this.cubePos);
+        ((CubicLevelTicks<Fluid>) serverLevel.getFluidTicks()).removeContainer(this.cubePos);
     }
 
     @Override public void sectionLoaded(@Nonnull SurfaceTrackerLeaf surfaceTrackerLeaf, int localSectionX, int localSectionZ) {
@@ -711,7 +722,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
     }
 
     @Deprecated @Override public void setUnsaved(boolean modified) {
-        setDirty(modified);
+        super.setUnsaved(modified);
     }
 
     @Deprecated @Override public boolean isUnsaved() {
@@ -729,10 +740,6 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
 
     @Deprecated @Override public long getInhabitedTime() {
         return super.getInhabitedTime();
-    }
-
-    @Override public long getCubeInhabitedTime() {
-        return super.getCubeInhabitedTime();
     }
 
     @Deprecated @Override public void setInhabitedTime(long newInhabitedTime) {

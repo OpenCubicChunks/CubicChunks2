@@ -56,9 +56,9 @@ public class ImposterProtoCube extends ProtoCube {
         return this.cube;
     }
 
-    @Deprecated @Override public ChunkPos getPos() {
+    /*@Deprecated @Override public ChunkPos getPos() {
         throw new UnsupportedOperationException("This function should never be called!");
-    }
+    }*/
 
     @Override public CubePos getCubePos() {
         return this.cube.getCubePos();

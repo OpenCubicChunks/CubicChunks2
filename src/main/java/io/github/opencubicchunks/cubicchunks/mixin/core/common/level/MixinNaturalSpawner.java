@@ -168,7 +168,7 @@ public abstract class MixinNaturalSpawner {
 
     @Dynamic
     @Redirect(method = "createCubicState", at = @At(value = "INVOKE", target = "Lio/github/opencubicchunks/cc_core/api/CubePos;asLong(Lnet/minecraft/core/BlockPos;)J"))
-    private static long packCubePosLongNoSectionPos(int x, int z) {
+    private static long packCubePosLongNoSectionPos(BlockPos blockPos) {
         BlockPos pos = capturedPos.get();
         return CubePos.asLong(
             Coords.blockToCube(pos.getX()),

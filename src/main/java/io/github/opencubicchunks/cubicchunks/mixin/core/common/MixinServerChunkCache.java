@@ -338,7 +338,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
         int naturalSpawnCountForColumns = ((CubicDistanceManager) this.distanceManager).getNaturalSpawnCubeCount()
             * CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS / (CubicNaturalSpawner.SPAWN_RADIUS * 2 / CubeAccess.DIAMETER_IN_BLOCKS + 1);
 
-        return CubicNaturalSpawner.createState(naturalSpawnCountForColumns, entities, this::getFullCube);
+        return CubicNaturalSpawner.createState(naturalSpawnCountForColumns, entities, this::getFullCube, localMobCapCalculator);
     }
 
     @Inject(method = "tickChunks", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;getChunks()Ljava/lang/Iterable;"),

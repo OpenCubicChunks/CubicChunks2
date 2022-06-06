@@ -36,7 +36,8 @@
         "common.WorldGenRegionAccess",
         "common.LevelTicksAccess",
         "common.SavedTickAccess",
-        "common.ProtoChunkTicksAccess"
+        "common.ProtoChunkTicksAccess",
+        "common.NoiseChunkAccess"
     ],
     "client": [
         "client.ChunkRenderDispatcherAccess",

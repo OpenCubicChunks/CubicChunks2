@@ -114,6 +114,8 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
     private final ProtoChunkTicks<Block> blockTicks;
     private final ProtoChunkTicks<Fluid> fluidTicks;
 
+    private final LevelHeightAccessor accessor2D;
+
     public ProtoCube(CubePos cubePos, UpgradeData upgradeData, LevelHeightAccessor levelHeightAccessor, Registry<Biome> biomes, @Nullable BlendingData blendingData) {
         this(cubePos, upgradeData, null, new ProtoChunkTicks<>(), new ProtoChunkTicks<>(), levelHeightAccessor, biomes, blendingData);
     }
@@ -123,12 +125,14 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         super(
             cubePos,
             upgradeData,
-            levelHeightAccessor,
+            new FakeSectionCount(levelHeightAccessor, CubeAccess.SECTION_COUNT),
             biomes,
             0L,
             sections,
             blendingData
         );
+
+        this.accessor2D = levelHeightAccessor;
 
         this.blockTicks = blockProtoTickList;
         this.fluidTicks = fluidProtoTickList;
@@ -170,10 +174,10 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
     }
 
     private ChunkSource getChunkSource() {
-        if (this.levelHeightAccessor instanceof CubeWorldGenRegion region) {
+        if (this.accessor2D instanceof CubeWorldGenRegion region) {
             return region.getChunkSource();
         } else {
-            return ((ServerLevel) this.levelHeightAccessor).getChunkSource();
+            return ((ServerLevel) this.accessor2D).getChunkSource();
         }
     }
 
@@ -225,7 +229,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
                     }
                 }
 
-                lightHeightmap.loadCube(((CubicServerLevel) this.levelHeightAccessor).getHeightmapStorage(), this);
+                lightHeightmap.loadCube(((CubicServerLevel) this.accessor2D).getHeightmapStorage(), this);
 
                 for (int z = 0; z < SECTION_DIAMETER; z++) {
                     for (int x = 0; x < SECTION_DIAMETER; x++) {
@@ -372,7 +376,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
                     int idx = dx + dz * CubeAccess.DIAMETER_IN_SECTIONS;
                     SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(cubePos.getY(), null, (byte) type.ordinal());
                     leaf.loadSource(cubeMinSection.x() + dx, cubeMinSection.z() + dz,
-                        ((CubicServerLevel) ((ServerLevelAccessor) this.levelHeightAccessor).getLevel()).getHeightmapStorage(), this);
+                        ((CubicServerLevel) ((ServerLevelAccessor) this.accessor2D).getLevel()).getHeightmapStorage(), this);
                     // On creation of a new node for a cube, both the node and its parents must be marked dirty
                     leaf.setAllDirty();
                     leaf.markAncestorsDirty();
@@ -708,7 +712,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
     }
 
     @Deprecated @Override public long getInhabitedTime() {
-        return this.getCubeInhabitedTime();
+        return super.getInhabitedTime();
     }
 
     @Deprecated @Override public boolean isUnsaved() {
@@ -717,7 +721,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
 
     //MISC
     @Deprecated @Override public void setUnsaved(boolean newUnsaved) {
-        setDirty(newUnsaved);
+        super.setUnsaved(newUnsaved);
     }
 
     @Deprecated @Override public Stream<BlockPos> getLights() {

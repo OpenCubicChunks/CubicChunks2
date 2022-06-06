@@ -55,7 +55,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
             delegate.getCubeSections(),
             (ProtoChunkTicks<Block>) delegate.getBlockTicks(),
             (ProtoChunkTicks<Fluid>) delegate.getFluidTicks(),
-            delegate,
+            new ProtoCube.FakeSectionCount(delegate, CubeAccess.SECTION_COUNT),
             biomeRegistry,
             null
         );

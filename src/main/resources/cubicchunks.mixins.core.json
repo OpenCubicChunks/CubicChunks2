@@ -57,7 +57,8 @@
         "common.ticket.MixinChunkMapDistanceManager",
         "common.ticket.MixinDistanceManager",
         "common.chunk.storage.MixinChunkAccess",
-        "LoaderMixin"
+        "LoaderMixin",
+        "common.level.MixinLevelReader"
     ],
     "client": [
         "client.chunk.MixinLevelChunk",

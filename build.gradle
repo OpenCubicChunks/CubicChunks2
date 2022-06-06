@@ -21,12 +21,19 @@ buildscript {
 plugins {
     id 'maven-publish'
     id 'checkstyle'
+    id 'io.github.juuxel.loom-quiltflower' version '1.7.2'
 }
 
 apply plugin: "fabric-loom"
 apply plugin: "io.github.opencubicchunks.gradle.mcGitVersion"
 apply plugin: "io.github.opencubicchunks.gradle.mixingen"
 apply plugin: 'io.github.opencubicchunks.javaheaders'
+
+quiltflower {
+    preferences {
+
+    }
+}
 
 javaHeaders {
     acceptedJars = ".*CubicChunksCore.*"

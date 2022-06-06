@@ -883,6 +883,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                 if (this.cubeEntitiesInLevel.add(cubePos.asLong())) {
                     cube.setLoaded(true);
                     cube.registerAllBlockEntitiesAfterLevelLoad();
+                    cube.registerTicks(this.level);
                 }
                 return cube;
             });

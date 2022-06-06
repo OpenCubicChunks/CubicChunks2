@@ -200,6 +200,7 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
     @Override
     public void onCubeUnloading(LevelCube cube) {
         cube.invalidateAllBlockEntities();
+        cube.unregisterTicks(Utils.unsafeCast(this));
     }
 
     @Override
