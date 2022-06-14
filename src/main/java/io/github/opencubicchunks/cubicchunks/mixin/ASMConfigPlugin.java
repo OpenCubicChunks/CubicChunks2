@@ -1,14 +1,24 @@
 package io.github.opencubicchunks.cubicchunks.mixin;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.dasm.RedirectsParser;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.tree.ClassNode;
@@ -41,22 +51,59 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     }
 
     @Override public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        List<RedirectsParser.RedirectSet> redirectSets;
+        List<RedirectsParser.ClassTarget> targetClasses;
+
+        //TODO: add easy use of multiple set and target json files
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        try (InputStream is = classloader.getResourceAsStream("dasm/sets/sets.json")) {
+            JsonElement setsJson = new JsonParser().parse(new InputStreamReader(is, StandardCharsets.UTF_8));
+
+            RedirectsParser redirectsParser = new RedirectsParser();
+            redirectSets = redirectsParser.parseRedirectSet(setsJson.getAsJsonObject());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        try (InputStream is = classloader.getResourceAsStream("dasm/targets.json")) {
+            JsonElement targetsJson = new JsonParser().parse(new InputStreamReader(is, StandardCharsets.UTF_8));
+
+            RedirectsParser redirectsParser = new RedirectsParser();
+            targetClasses = redirectsParser.parseClassTargets(targetsJson.getAsJsonObject());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        Map<String, RedirectsParser.ClassTarget> classTargetByName = new HashMap<>();
+        Map<String, RedirectsParser.RedirectSet> redirectSetByName = new HashMap<>();
+        Map<RedirectsParser.ClassTarget, List<RedirectsParser.RedirectSet>> redirectSetsByClassTarget = new HashMap<>();
+
+        for (RedirectsParser.RedirectSet redirectSet : redirectSets) {
+            redirectSetByName.put(redirectSet.getName(), redirectSet);
+        }
+        for (RedirectsParser.ClassTarget target : targetClasses) {
+            classTargetByName.put(target.getClassName(), target);
+            List<RedirectsParser.RedirectSet> sets = new ArrayList<>();
+            for (String set : target.getSets()) {
+                sets.add(redirectSetByName.get(set));
+            }
+            redirectSetsByClassTarget.put(target, sets);
+        }
+
         MappingResolver map = FabricLoader.getInstance().getMappingResolver();
         String chunkMapDistanceManager = map.mapClassName("intermediary", "net.minecraft.class_3898$class_3216");
-        String chunkMap = map.mapClassName("intermediary", "net.minecraft.class_3898");
-        String chunkHolder = map.mapClassName("intermediary", "net.minecraft.class_3193");
-        String naturalSpawner = map.mapClassName("intermediary", "net.minecraft.class_1948");
 
+        //TODO: untangle the mess of some methods accepting the/class/name, and others accepting the.class.name
+        //Ideally the input json would all have the same, and we'd just figure it out here
         if (targetClassName.equals(chunkMapDistanceManager)) {
             MainTransformer.transformProxyTicketManager(targetClass);
-        } else if (targetClassName.equals(chunkMap)) {
-            MainTransformer.transformChunkManager(targetClass);
-        } else if (targetClassName.equals(chunkHolder)) {
-            MainTransformer.transformChunkHolder(targetClass);
-        } else if (targetClassName.equals(naturalSpawner)) {
-            MainTransformer.transformNaturalSpawner(targetClass);
         } else {
-            return;
+            RedirectsParser.ClassTarget target = classTargetByName.get(map.unmapClassName("intermediary", targetClassName).replace(".", "/"));
+            if (target != null) {
+                MainTransformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
+            } else {
+                System.err.printf("Couldn't find target class %s to remap", targetClassName);
+            }
         }
 
         try {
@@ -76,8 +123,6 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
             throw new IllegalStateException(e);
         }
-
-
     }
 
     @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {

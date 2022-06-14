@@ -1,0 +1,55 @@
+{
+    "chunkHolderSet": {
+        "typeRedirects": {
+            "net/minecraft/class_1923": "io/github/opencubicchunks/cubicchunks/world/level/CubePos",
+            "net/minecraft/class_2818": "io/github/opencubicchunks/cubicchunks/world/level/chunk/LevelCube",
+            "net/minecraft/class_3193$1": "io/github/opencubicchunks/cubicchunks/server/level/CubeHolder$CubeLoadingError"
+        },
+        "fieldRedirects": {
+            "net/minecraft/class_3898#field_18239;I": "MAX_CUBE_DISTANCE",
+            "net/minecraft/class_3193#field_13864;net/minecraft/class_1923": "cubePos"
+        },
+        "methodRedirects": {
+            "net/minecraft/class_3193#method_14011(int);net.minecraft.class_2806": "getCubeStatus",
+            "net/minecraft/class_3898#method_31417(net.minecraft.class_3193);java.util.concurrent.CompletableFuture": "prepareAccessibleCube",
+            "net/minecraft/class_3898#method_17235(net.minecraft.class_3193);java.util.concurrent.CompletableFuture": "prepareTickingCube",
+            "net/minecraft/class_3898#method_17247(net.minecraft.class_1923);java.util.concurrent.CompletableFuture": "prepareEntityTickingCube",
+            "net/minecraft/class_3898#method_20576(net.minecraft.class_2818);java.util.concurrent.CompletableFuture": "packCubeTicks",
+            "net/minecraft/class_3193$class_3896#method_17209(net.minecraft.class_1923, java.util.function.IntSupplier, int, java.util.function.IntConsumer);void": "onCubeLevelChange"
+        }
+    },
+    "chunkMapSet": {
+        "typeRedirects": {
+            "net/minecraft/class_1923": "io/github/opencubicchunks/cubicchunks/world/level/CubePos",
+            "net/minecraft/class_3900": "io/github/opencubicchunks/cubicchunks/server/level/CubeTaskPriorityQueueSorter"
+        },
+        "fieldRedirects": {
+            "net/minecraft/class_3898#field_17221;it/unimi/dsi/fastutil/longs/LongSet": "cubesToDrop",
+            "net/minecraft/class_3898#field_18807;it/unimi/dsi/fastutil/longs/Long2ObjectLinkedOpenHashMap": "pendingCubeUnloads",
+            "net/minecraft/class_3898#field_17223;net/minecraft/class_3900": "cubeQueueSorter",
+            "net/minecraft/class_3898#field_17213;it/unimi/dsi/fastutil/longs/Long2ObjectLinkedOpenHashMap": "updatingCubeMap",
+            "net/minecraft/class_3898#field_18239;I": "MAX_CUBE_DISTANCE",
+            "net/minecraft/class_3898#field_23786;it/unimi/dsi/fastutil/longs/Long2ByteMap": "cubeTypeCache"
+        },
+        "methodRedirects": {
+            "net/minecraft/class_3898#method_17979(net.minecraft.class_1923);net.minecraft.class_2487": "readCubeNBT",
+            "net/minecraft/class_3898#method_27054(net.minecraft.class_1923);void": "markCubePositionReplaceable",
+            "net/minecraft/class_3898#method_27053(net.minecraft.class_1923, net.minecraft.class_2806$class_2808);byte": "markCubePosition",
+            "net/minecraft/class_1923#method_8324();long": "asLong"
+        }
+    },
+    "naturalSpawnerSet": {
+        "typeRedirects": {
+            "net/minecraft/class_1923": "io/github/opencubicchunks/cubicchunks/world/level/CubePos",
+            "net/minecraft/class_1948$class_5260": "io/github/opencubicchunks/cubicchunks/world/CubicNaturalSpawner$CubeGetter",
+            "net/minecraft/class_2818": "net/minecraft/class_2791"
+        },
+        "fieldRedirects": { },
+        "methodRedirects": {
+            "net/minecraft/class_1948#method_8663(net.minecraft.class_1311, net.minecraft.class_3218, net.minecraft.class_2818, net.minecraft.class_1948$class_5261, net.minecraft.class_1948$class_5259);void": "spawnCategoryForCube",
+            "net/minecraft/class_1948#method_8657(net.minecraft.class_1937, net.minecraft.class_2818);net.minecraft.class_2338": "getRandomPosWithinCube",
+            "net/minecraft/class_1923#method_8324();long": "asLong",
+            "net/minecraft/class_1923#method_8331(int, int);long": "asLong"
+        }
+    }
+}
