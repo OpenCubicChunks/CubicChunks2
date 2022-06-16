@@ -18,6 +18,7 @@ import javax.annotation.Nullable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.dasm.RedirectsParseException;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.dasm.RedirectsParser;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
@@ -28,6 +29,35 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import org.spongepowered.asm.mixin.transformer.ClassInfo;
 
 public class ASMConfigPlugin implements IMixinConfigPlugin {
+    Map<String, RedirectsParser.ClassTarget> classTargetByName = new HashMap<>();
+    Map<RedirectsParser.ClassTarget, List<RedirectsParser.RedirectSet>> redirectSetsByClassTarget = new HashMap<>();
+
+
+    public ASMConfigPlugin() {
+        List<RedirectsParser.RedirectSet> redirectSets;
+        List<RedirectsParser.ClassTarget> targetClasses;
+        try {
+            //TODO: add easy use of multiple set and target json files
+            redirectSets = loadSetsFile("dasm/sets/sets.json");
+            targetClasses = loadTargetsFile("dasm/targets.json");
+        } catch (RedirectsParseException e) {
+            throw new RuntimeException(e);
+        }
+
+        Map<String, RedirectsParser.RedirectSet> redirectSetByName = new HashMap<>();
+
+        for (RedirectsParser.RedirectSet redirectSet : redirectSets) {
+            redirectSetByName.put(redirectSet.getName(), redirectSet);
+        }
+        for (RedirectsParser.ClassTarget target : targetClasses) {
+            classTargetByName.put(target.getClassName(), target);
+            List<RedirectsParser.RedirectSet> sets = new ArrayList<>();
+            for (String set : target.getSets()) {
+                sets.add(redirectSetByName.get(set));
+            }
+            redirectSetsByClassTarget.put(target, sets);
+        }
+    }
 
     @Override public void onLoad(String mixinPackage) {
 
@@ -51,45 +81,6 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     }
 
     @Override public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-        List<RedirectsParser.RedirectSet> redirectSets;
-        List<RedirectsParser.ClassTarget> targetClasses;
-
-        //TODO: add easy use of multiple set and target json files
-        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        try (InputStream is = classloader.getResourceAsStream("dasm/sets/sets.json")) {
-            JsonElement setsJson = new JsonParser().parse(new InputStreamReader(is, StandardCharsets.UTF_8));
-
-            RedirectsParser redirectsParser = new RedirectsParser();
-            redirectSets = redirectsParser.parseRedirectSet(setsJson.getAsJsonObject());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        try (InputStream is = classloader.getResourceAsStream("dasm/targets.json")) {
-            JsonElement targetsJson = new JsonParser().parse(new InputStreamReader(is, StandardCharsets.UTF_8));
-
-            RedirectsParser redirectsParser = new RedirectsParser();
-            targetClasses = redirectsParser.parseClassTargets(targetsJson.getAsJsonObject());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Map<String, RedirectsParser.ClassTarget> classTargetByName = new HashMap<>();
-        Map<String, RedirectsParser.RedirectSet> redirectSetByName = new HashMap<>();
-        Map<RedirectsParser.ClassTarget, List<RedirectsParser.RedirectSet>> redirectSetsByClassTarget = new HashMap<>();
-
-        for (RedirectsParser.RedirectSet redirectSet : redirectSets) {
-            redirectSetByName.put(redirectSet.getName(), redirectSet);
-        }
-        for (RedirectsParser.ClassTarget target : targetClasses) {
-            classTargetByName.put(target.getClassName(), target);
-            List<RedirectsParser.RedirectSet> sets = new ArrayList<>();
-            for (String set : target.getSets()) {
-                sets.add(redirectSetByName.get(set));
-            }
-            redirectSetsByClassTarget.put(target, sets);
-        }
-
         MappingResolver map = FabricLoader.getInstance().getMappingResolver();
         String chunkMapDistanceManager = map.mapClassName("intermediary", "net.minecraft.class_3898$class_3216");
 
@@ -127,5 +118,28 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
 
     @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
 
+    }
+
+    private JsonElement parseFileAsJson(String fileName) {
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        try (InputStream is = classloader.getResourceAsStream(fileName)) {
+            return new JsonParser().parse(new InputStreamReader(is, StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private List<RedirectsParser.ClassTarget> loadTargetsFile(String fileName) throws RedirectsParseException {
+        RedirectsParser redirectsParser = new RedirectsParser();
+
+        JsonElement targetsJson = parseFileAsJson(fileName);
+        return redirectsParser.parseClassTargets(targetsJson.getAsJsonObject());
+    }
+
+    private List<RedirectsParser.RedirectSet> loadSetsFile(String fileName) throws RedirectsParseException {
+        RedirectsParser redirectsParser = new RedirectsParser();
+
+        JsonElement setsJson = parseFileAsJson(fileName);
+        return redirectsParser.parseRedirectSet(setsJson.getAsJsonObject());
     }
 }

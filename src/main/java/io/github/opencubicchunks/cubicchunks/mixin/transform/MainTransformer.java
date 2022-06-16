@@ -52,7 +52,7 @@ public class MainTransformer {
             for (RedirectsParser.RedirectSet.FieldRedirect fieldRedirect : redirectSet.getFieldRedirects()) {
                 //annoying syntax only on field
                 String desc = fieldRedirect.fieldDesc();
-                if(desc.length() > 1) { //not a primitive type
+                if (desc.length() > 1) { //not a primitive type
                     desc = "L" + desc;
                 }
                 desc = desc + ";";
@@ -60,7 +60,7 @@ public class MainTransformer {
             }
 
             for (RedirectsParser.RedirectSet.MethodRedirect methodRedirect : redirectSet.getMethodRedirects()) {
-                if(methodRedirect.mappingsOwner() == null) {
+                if (methodRedirect.mappingsOwner() == null) {
                     methodRedirects.put(
                         new ClassMethod(getObjectType(methodRedirect.owner()), getMethod(methodRedirect.returnType() + " " + methodRedirect.srcMethodName())),
                         methodRedirect.dstMethodName()
@@ -80,7 +80,7 @@ public class MainTransformer {
                 methodRedirects,
                 fieldRedirects,
                 typeRedirects);
-            if(targetMethod.makeSyntheticAccessor()) {
+            if (targetMethod.makeSyntheticAccessor()) {
                 makeStaticSyntheticAccessor(targetClass, newMethod);
             }
         });

@@ -1,14 +1,18 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.dasm;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.*;
-import java.util.function.Supplier;
 
 public class RedirectsParser {
     private static final String TARGET_METHODS_NAME = "targetMethods";
@@ -34,19 +38,19 @@ public class RedirectsParser {
 
             RedirectSet redirectSet = new RedirectSet(redirectSetName);
 
-            if(!redirectJson.has(TYPE_REDIRECTS_NAME) || !redirectJson.get(TYPE_REDIRECTS_NAME).isJsonObject()) {
+            if (!redirectJson.has(TYPE_REDIRECTS_NAME) || !redirectJson.get(TYPE_REDIRECTS_NAME).isJsonObject()) {
                 throw new RedirectsParseException(String.format("Redirect set has no \"%s\" object", TYPE_REDIRECTS_NAME));
             }
             Set<Map.Entry<String, JsonElement>> typeRedirects = redirectJson.get(TYPE_REDIRECTS_NAME).getAsJsonObject().entrySet();
             parseTypeRedirects(redirectSet, typeRedirects);
 
-            if(!redirectJson.has(FIELD_REDIRECTS_NAME) || !redirectJson.get(FIELD_REDIRECTS_NAME).isJsonObject()) {
+            if (!redirectJson.has(FIELD_REDIRECTS_NAME) || !redirectJson.get(FIELD_REDIRECTS_NAME).isJsonObject()) {
                 throw new RedirectsParseException(String.format("Redirect set has no \"%s\" object", FIELD_REDIRECTS_NAME));
             }
             Set<Map.Entry<String, JsonElement>> fieldRedirects = redirectJson.get(FIELD_REDIRECTS_NAME).getAsJsonObject().entrySet();
             parseFieldRedirects(redirectSet, fieldRedirects);
 
-            if(!redirectJson.has(METHOD_REDIRECTS_NAME) || !redirectJson.get(METHOD_REDIRECTS_NAME).isJsonObject()) {
+            if (!redirectJson.has(METHOD_REDIRECTS_NAME) || !redirectJson.get(METHOD_REDIRECTS_NAME).isJsonObject()) {
                 throw new RedirectsParseException(String.format("Redirect set has no \"%s\" object", METHOD_REDIRECTS_NAME));
             }
             Set<Map.Entry<String, JsonElement>> methodRedirects = redirectJson.get(METHOD_REDIRECTS_NAME).getAsJsonObject().entrySet();
@@ -69,14 +73,14 @@ public class RedirectsParser {
             }
             JsonObject classTargetNode = classTargetElement.getAsJsonObject();
 
-            if(!classTargetNode.has(USE_SETS_NAME)) {
+            if (!classTargetNode.has(USE_SETS_NAME)) {
                 throw new RedirectsParseException(String.format("Class target has no \"%s\" object", USE_SETS_NAME));
             }
 
             ClassTarget classTarget = new ClassTarget(classTargetName);
 
             JsonElement usesSetNameElement = classTargetNode.get(USE_SETS_NAME);
-            if(usesSetNameElement.isJsonPrimitive() && usesSetNameElement.getAsJsonPrimitive().isString()) {
+            if (usesSetNameElement.isJsonPrimitive() && usesSetNameElement.getAsJsonPrimitive().isString()) {
                 //single set
                 classTarget.addUsesSet(throwOnLengthZero(usesSetNameElement.getAsString(), () -> "Specified Class set name has zero length"));
             } else if (usesSetNameElement.isJsonArray()) {
@@ -113,11 +117,11 @@ public class RedirectsParser {
             } else if (value.isJsonObject()) { // target method might want a synthetic accessor
                 JsonObject targetMethodValue = value.getAsJsonObject();
 
-                if(!targetMethodValue.has(DST_NAME)) {
+                if (!targetMethodValue.has(DST_NAME)) {
                     throw new RedirectsParseException(String.format("Target method value does not contain a value for \"%s\". %s", DST_NAME, targetMethodValue));
                 }
                 JsonElement newNameNode = targetMethodValue.get(DST_NAME);
-                if(!newNameNode.isJsonPrimitive() || !newNameNode.getAsJsonPrimitive().isString()) {
+                if (!newNameNode.isJsonPrimitive() || !newNameNode.getAsJsonPrimitive().isString()) {
                     throw new RedirectsParseException(String.format("Target method value does not contain a valid \"%s\". %s", DST_NAME, newNameNode));
                 }
 
@@ -162,14 +166,14 @@ public class RedirectsParser {
                     srcFieldName,
                     throwOnLengthZero(value.getAsString(), () -> String.format("Field redirect has zero length string value: %s", fieldRedirect))
                 ));
-            } else if(value.isJsonObject()) { // field redirect might contain a mappings owner
+            } else if (value.isJsonObject()) { // field redirect might contain a mappings owner
                 JsonObject fieldRedirectValue = value.getAsJsonObject();
 
-                if(!fieldRedirectValue.has(DST_NAME)) {
+                if (!fieldRedirectValue.has(DST_NAME)) {
                     throw new RedirectsParseException(String.format("Field redirect value does not contain a value for \"%s\". %s", DST_NAME, fieldRedirectValue));
                 }
                 JsonElement newNameNode = fieldRedirectValue.get(DST_NAME);
-                if(!newNameNode.isJsonPrimitive() || !newNameNode.getAsJsonPrimitive().isString()) {
+                if (!newNameNode.isJsonPrimitive() || !newNameNode.getAsJsonPrimitive().isString()) {
                     throw new RedirectsParseException(String.format("Field redirect value does not contain a valid \"%s\". %s", DST_NAME, newNameNode));
                 }
 
@@ -194,14 +198,14 @@ public class RedirectsParser {
             if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
                 String dstMethodName = throwOnLengthZero(value.getAsString(), () -> String.format("Method redirect has zero length value for key %s", methodRedirect));
                 output.addRedirect(new RedirectSet.MethodRedirect(ownerName, returnType, null, srcMethodName, dstMethodName));
-            } else if(value.isJsonObject()) { // method redirect might contain a mappings owner
+            } else if (value.isJsonObject()) { // method redirect might contain a mappings owner
                 JsonObject methodRedirectValue = value.getAsJsonObject();
 
-                if(!methodRedirectValue.has(DST_NAME)) {
+                if (!methodRedirectValue.has(DST_NAME)) {
                     throw new RedirectsParseException(String.format("Method redirect value does not contain a value for \"%s\". %s", DST_NAME, methodRedirectValue));
                 }
                 JsonElement newNameNode = methodRedirectValue.get(DST_NAME);
-                if(!newNameNode.isJsonPrimitive() || !newNameNode.getAsJsonPrimitive().isString()) {
+                if (!newNameNode.isJsonPrimitive() || !newNameNode.getAsJsonPrimitive().isString()) {
                     throw new RedirectsParseException(String.format("Method redirect value does not contain a valid \"%s\". %s", DST_NAME, newNameNode));
                 }
 
@@ -217,9 +221,9 @@ public class RedirectsParser {
 
     private boolean getMakeSyntheticAccessorIfPresent(JsonObject redirectElement) throws RedirectsParseException {
         boolean makeSyntheticAccessor = false;
-        if(redirectElement.has(MAKE_SYNTHETIC_ACCESSOR_NAME)) { // synthetic accessor is optional
+        if (redirectElement.has(MAKE_SYNTHETIC_ACCESSOR_NAME)) { // synthetic accessor is optional
             JsonElement syntheticAccessorNode = redirectElement.get(MAKE_SYNTHETIC_ACCESSOR_NAME);
-            if(!syntheticAccessorNode.isJsonPrimitive() || !syntheticAccessorNode.getAsJsonPrimitive().isBoolean()) {
+            if (!syntheticAccessorNode.isJsonPrimitive() || !syntheticAccessorNode.getAsJsonPrimitive().isBoolean()) {
                 throw new RedirectsParseException(String.format("Redirect value does not contain a valid \"%s\". %s", MAKE_SYNTHETIC_ACCESSOR_NAME, syntheticAccessorNode));
             }
             makeSyntheticAccessor = syntheticAccessorNode.getAsBoolean();
@@ -230,12 +234,13 @@ public class RedirectsParser {
     private String getMappingsOwnerIfPresent(JsonObject targetMethodValue)
         throws RedirectsParseException {
         String mappingsOwner = null;
-        if(targetMethodValue.has(MAPPINGS_OWNER_NAME)) { // mappings owner is optional
+        if (targetMethodValue.has(MAPPINGS_OWNER_NAME)) { // mappings owner is optional
             JsonElement mappingsOwnerNode = targetMethodValue.get(MAPPINGS_OWNER_NAME);
-            if(!mappingsOwnerNode.isJsonPrimitive() || !mappingsOwnerNode.getAsJsonPrimitive().isString()) {
+            if (!mappingsOwnerNode.isJsonPrimitive() || !mappingsOwnerNode.getAsJsonPrimitive().isString()) {
                 throw new RedirectsParseException(String.format("Redirect value does not contain a valid \"%s\". %s", MAPPINGS_OWNER_NAME, mappingsOwnerNode));
             }
-            mappingsOwner = throwOnLengthZero(mappingsOwnerNode.getAsString(), () -> String.format("Field redirect has zero length value for %s: %s", MAPPINGS_OWNER_NAME, mappingsOwnerNode));
+            mappingsOwner = throwOnLengthZero(mappingsOwnerNode.getAsString(),
+                () -> String.format("Field redirect has zero length value for %s: %s", MAPPINGS_OWNER_NAME, mappingsOwnerNode));
         }
         return mappingsOwner;
     }
