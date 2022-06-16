@@ -224,7 +224,13 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
                     }
                 }
 
-                lightHeightmap.loadCube(((CubicServerLevel) this.levelHeightAccessor).getHeightmapStorage(), this);
+                SurfaceTrackerLeaf lightLeaf = lightHeightmap.loadCube(((CubicServerLevel) this.levelHeightAccessor).getHeightmapStorage(), this, null);
+                int heightmapIndex = dx + dz * DIAMETER_IN_SECTIONS;
+
+                if (lightLeaf == null)
+                    System.out.println("!");
+
+                this.lightHeightmaps[heightmapIndex] = lightLeaf;
 
                 for (int z = 0; z < SECTION_DIAMETER; z++) {
                     for (int x = 0; x < SECTION_DIAMETER; x++) {
@@ -237,19 +243,6 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
                     }
                 }
             }
-        }
-    }
-
-    @Override
-    public void sectionLoaded(@Nonnull SurfaceTrackerLeaf surfaceTrackerLeaf, int localSectionX, int localSectionZ) {
-        int idx = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
-
-        if (surfaceTrackerLeaf.getRawType() == -1) { //light
-            this.lightHeightmaps[idx] = surfaceTrackerLeaf;
-        } else { // normal heightmap
-            this.heightmaps.computeIfAbsent(surfaceTrackerLeaf.getType(),
-                type -> new SurfaceTrackerLeaf[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS]
-            )[idx] = surfaceTrackerLeaf;
         }
     }
 
@@ -368,11 +361,9 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
             for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {
                 for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
                     int idx = dx + dz * CubeAccess.DIAMETER_IN_SECTIONS;
-                    SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(cubePos.getY(), null, (byte) type.ordinal());
-                    leaf.loadCube(dx, dz, ((CubicServerLevel) ((ServerLevelAccessor) this.levelHeightAccessor).getLevel()).getHeightmapStorage(), this);
+                    SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(this, null, (byte) type.ordinal());
                     // On creation of a new node for a cube, both the node and its parents must be marked dirty
                     leaf.setAllDirty();
-                    leaf.markAncestorsDirty();
                     surfaceTrackerLeaves[idx] = leaf;
                 }
             }
@@ -539,6 +530,10 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
         int zSection = blockToCubeLocalSection(z);
 
         int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
+
+        if (this.lightHeightmaps[idx] == null)
+            System.out.println("!");
+
         SurfaceTrackerLeaf sectionAbove = this.lightHeightmaps[idx].getSectionAbove();
 
         int dy = CubeAccess.DIAMETER_IN_BLOCKS - 1;

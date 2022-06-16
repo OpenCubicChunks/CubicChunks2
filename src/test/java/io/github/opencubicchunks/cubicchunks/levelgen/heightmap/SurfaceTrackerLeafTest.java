@@ -30,9 +30,10 @@ public class SurfaceTrackerLeafTest {
      */
     @Test
     public void testCubeLoadUnload() {
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
 
-        leaf.loadCube(0, 0, null, new TestHeightmapNode(0));
+        TestHeightmapNode testNode = new TestHeightmapNode(0);
+        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(testNode, null, (byte) 0);
+
         assertNotNull(leaf.getNode(), "Leaf had null HeightmapNode after being loaded");
 
         leaf.cubeUnloaded(0, 0, null);
@@ -48,7 +49,7 @@ public class SurfaceTrackerLeafTest {
 
         //Set up leaf and node with parent
         SurfaceTrackerBranch parent = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) 0);
-        parent.loadCube(0, 0, storage, new TestHeightmapNode(0));
+        parent.loadCube(storage, new TestHeightmapNode(0), null);
         SurfaceTrackerLeaf leaf = parent.getMinScaleNode(0);
 
         //Unload the node
@@ -63,11 +64,9 @@ public class SurfaceTrackerLeafTest {
      */
     @Test
     public void testNoValidHeights() {
-        NullHeightmapStorage storage = new NullHeightmapStorage();
 
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
         TestHeightmapNode testNode = new TestHeightmapNode(0);
-        leaf.loadCube(0, 0, storage, testNode);
+        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(testNode, null, (byte) 0);
 
         Consumer<HeightmapBlock> setHeight = block -> testNode.setBlock(block.x(), block.y() & (SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
 
@@ -92,11 +91,8 @@ public class SurfaceTrackerLeafTest {
     public void testBasicFunctionality() {
         ReferenceHeightmap reference = new ReferenceHeightmap(0);
 
-        NullHeightmapStorage storage = new NullHeightmapStorage();
-
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
         TestHeightmapNode testNode = new TestHeightmapNode(0);
-        leaf.loadCube(0, 0, storage, testNode);
+        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(testNode, null, (byte) 0);
 
         Consumer<HeightmapBlock> setHeight = block -> {
             reference.set(block.y(), block.isOpaque());
@@ -135,11 +131,8 @@ public class SurfaceTrackerLeafTest {
     public void testManyPositions(int nodeY) {
         ReferenceHeightmap reference = new ReferenceHeightmap(nodeY);
 
-        NullHeightmapStorage storage = new NullHeightmapStorage();
-
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(nodeY, null, (byte) 0);
         TestHeightmapNode testNode = new TestHeightmapNode(nodeY);
-        leaf.loadCube(0, 0, storage, testNode);
+        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(testNode, null, (byte) 0);
 
         Consumer<HeightmapBlock> setHeight = block -> {
             reference.set(block.y(), block.isOpaque());
@@ -177,11 +170,8 @@ public class SurfaceTrackerLeafTest {
     public void testSeededRandom() {
         ReferenceHeightmap reference = new ReferenceHeightmap(0);
 
-        NullHeightmapStorage storage = new NullHeightmapStorage();
-
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
         TestHeightmapNode testNode = new TestHeightmapNode(0);
-        leaf.loadCube(0, 0, storage, testNode);
+        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(testNode, null, (byte) 0);
 
         Consumer<HeightmapBlock> setHeight = block -> {
             reference.set(block.y(), block.isOpaque());
@@ -208,10 +198,9 @@ public class SurfaceTrackerLeafTest {
      */
     @Test
     public void testBounds() {
-        NullHeightmapStorage storage = new NullHeightmapStorage();
 
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        leaf.loadCube(0, 0, storage, new TestHeightmapNode(0));
+        TestHeightmapNode node = new TestHeightmapNode(0);
+        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(node, null, (byte) 0);
 
         Consumer<HeightmapBlock> setHeight = block -> {
             leaf.onSetBlock(block.x(), block.y(), block.z(), type -> block.isOpaque());

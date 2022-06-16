@@ -40,15 +40,21 @@ public abstract class SurfaceTrackerNode {
     protected final byte heightmapType;
 
     public SurfaceTrackerNode(int scale, int scaledY, @Nullable SurfaceTrackerBranch parent, byte heightmapType) {
-//      super((ChunkAccess) node, types);
-        // +1 in bit size to make room for null values
-        this.heights = new BitStorage(BASE_SIZE_BITS + 1 + scale * NODE_COUNT_BITS, WIDTH_BLOCKS * WIDTH_BLOCKS);
-        this.dirtyPositions = new long[WIDTH_BLOCKS * WIDTH_BLOCKS / Long.SIZE];
+        this(scale, scaledY, parent, heightmapType,
+            new BitStorage(BASE_SIZE_BITS + 1 + scale * NODE_COUNT_BITS, WIDTH_BLOCKS * WIDTH_BLOCKS),
+            new long[WIDTH_BLOCKS * WIDTH_BLOCKS / Long.SIZE]
+        );
+    }
+
+    protected SurfaceTrackerNode(int scale, int scaledY, @Nullable SurfaceTrackerBranch parent, byte heightmapType, BitStorage heights, long[] dirtyPositions) {
+        this.heights = heights;
+        this.dirtyPositions = dirtyPositions;
         this.parent = parent;
         this.scaledY = scaledY;
         this.scale = (byte) scale;
         this.heightmapType = heightmapType;
     }
+
 
     /**
      * Get the height for a given position. Recomputes the height if the column is marked dirty in this section.
@@ -67,8 +73,6 @@ public abstract class SurfaceTrackerNode {
      * Updates height for given position, and returns the new (global) height
      */
     protected abstract int updateHeight(int x, int z, int idx);
-
-    public abstract void loadCube(int localSectionX, int localSectionZ, HeightmapStorage storage, HeightmapNode newNode);
 
     /**
      * Tells a node to unload itself, nulling its parent, and passing itself to the provided storage
