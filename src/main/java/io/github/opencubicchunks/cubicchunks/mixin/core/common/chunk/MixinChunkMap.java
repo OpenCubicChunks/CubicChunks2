@@ -240,7 +240,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             this.cubeQueueSorter.createExecutor(lightMailbox, false));
 
         try {
-            regionCubeIO = new RegionCubeIO(file, "chunk", "cube");
+            regionCubeIO = new RegionCubeIO(file, dataFixer, "chunk", "cube");
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

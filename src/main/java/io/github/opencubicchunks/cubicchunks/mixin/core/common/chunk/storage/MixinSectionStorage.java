@@ -81,7 +81,7 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
                                 LevelHeightAccessor heightAccessor, CallbackInfo ci) throws IOException {
 
         if (((CubicLevelHeightAccessor) levelHeightAccessor).isCubic()) {
-            cubeWorker = new RegionCubeIO(file, file.getName() + "-chunk", file.getName());
+            cubeWorker = new RegionCubeIO(file, dataFixer, file.getName() + "-chunk", file.getName());
         }
     }
 
