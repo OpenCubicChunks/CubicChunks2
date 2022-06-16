@@ -56,8 +56,7 @@
         "common.progress.MixinLoggerChunkProgressListener",
         "common.server.MixinPlayerList",
         "common.ticket.MixinChunkMapDistanceManager",
-        "common.ticket.MixinDistanceManager",
-        "client.render.MixinLevelRenderer"
+        "common.ticket.MixinDistanceManager"
     ],
     "client": [
         "client.chunk.MixinLevelChunk",
@@ -75,6 +74,7 @@
         "client.progress.MixinProcessorChunkProgressListener",
         "client.progress.MixinStoringChunkProgressListener",
         "client.render.MixinGameRenderer",
+        "client.render.MixinLevelRenderer",
         "client.render.MixinRenderChunk",
         "client.render.MixinRenderChunkRegion",
         "client.render.MixinViewArea",
