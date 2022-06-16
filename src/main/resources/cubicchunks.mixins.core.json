@@ -74,6 +74,7 @@
         "client.progress.MixinProcessorChunkProgressListener",
         "client.progress.MixinStoringChunkProgressListener",
         "client.render.MixinGameRenderer",
+        "client.render.MixinLevelRenderer",
         "client.render.MixinRenderChunk",
         "client.render.MixinRenderChunkRegion",
         "client.render.MixinViewArea",
