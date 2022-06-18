@@ -29,9 +29,10 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import org.spongepowered.asm.mixin.transformer.ClassInfo;
 
 public class ASMConfigPlugin implements IMixinConfigPlugin {
-    Map<String, RedirectsParser.ClassTarget> classTargetByName = new HashMap<>();
-    Map<RedirectsParser.ClassTarget, List<RedirectsParser.RedirectSet>> redirectSetsByClassTarget = new HashMap<>();
+    private final Map<String, RedirectsParser.ClassTarget> classTargetByName = new HashMap<>();
+    private final Map<RedirectsParser.ClassTarget, List<RedirectsParser.RedirectSet>> redirectSetsByClassTarget = new HashMap<>();
 
+    private final Throwable constructException;
 
     public ASMConfigPlugin() {
         List<RedirectsParser.RedirectSet> redirectSets;
@@ -41,8 +42,10 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             redirectSets = loadSetsFile("dasm/sets/sets.json");
             targetClasses = loadTargetsFile("dasm/targets.json");
         } catch (RedirectsParseException e) {
-            throw new RuntimeException(e);
+            constructException = e; // Annoying because mixin catches Throwable for creating a config plugin >:(
+            return;
         }
+        constructException = null;
 
         Map<String, RedirectsParser.RedirectSet> redirectSetByName = new HashMap<>();
 
@@ -60,7 +63,9 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     }
 
     @Override public void onLoad(String mixinPackage) {
-
+        if (this.constructException != null) {
+            throw new Error(this.constructException); // throw error because Mixin catches Exception for onLoad
+        }
     }
 
     @Override public String getRefMapperConfig() {
