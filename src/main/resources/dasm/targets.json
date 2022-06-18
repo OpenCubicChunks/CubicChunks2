@@ -1,0 +1,34 @@
+{
+    "net/minecraft/class_3193": {
+        "targetMethods": {
+            "net/minecraft/class_3193#<init>(net.minecraft.class_1923, int, net.minecraft.class_5539, net.minecraft.class_3568, net.minecraft.class_3193$class_3896, net.minecraft.class_3193$class_3897);void": "<init>",
+            "net/minecraft/class_3193#method_14007(net.minecraft.class_3898, java.util.concurrent.Executor);void": "updateCubeFutures"
+        },
+        "useSets": "chunkHolderSet"
+    },
+    "net/minecraft/class_3898": {
+        "targetMethods": {
+            "net/minecraft/class_3898#method_17217(long, int, net.minecraft.class_3193, int);net.minecraft.class_3193": {
+                "newName": "updateCubeScheduling",
+                "makeSyntheticAccessor": true
+            },
+            "net/minecraft/class_3898#method_27055(net.minecraft.class_1923);boolean": "isExistingCubeFull"
+        },
+        "useSets": "chunkMapSet"
+    },
+    "net/minecraft/class_1948": {
+        "targetMethods": {
+            "net/minecraft/class_1948#method_27821(net.minecraft.class_3218, net.minecraft.class_2818, net.minecraft.class_1948$class_5262, boolean, boolean, boolean);void": "spawnForCube",
+            "net/minecraft/class_1948#method_8663(net.minecraft.class_1311, net.minecraft.class_3218, net.minecraft.class_2818, net.minecraft.class_1948$class_5261, net.minecraft.class_1948$class_5259);void": "spawnCategoryForCube",
+            "net/minecraft/class_1948#method_24933(net.minecraft.class_3218, net.minecraft.class_2791, net.minecraft.class_2338$class_2339, double);boolean": "isRightDistanceToPlayerAndSpawnPointForCube",
+            "net/minecraft/class_1948#method_27815(int, java.lang.Iterable, net.minecraft.class_1948$class_5260);net.minecraft.class_1948$class_5262": "createCubicState"
+        },
+        "useSets": "naturalSpawnerSet"
+    },
+    "net/minecraft/class_3898$class_3216": {
+        "targetMethods": {
+            "net/minecraft/class_3204#method_14053(long, int, net.minecraft.class_3193, int);net.minecraft.class_3193": "updateCubeScheduling"
+        },
+        "useSets": "chunkMap$DistanceManagerSet"
+    }
+}
