@@ -94,7 +94,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         if (target != null) {
             MainTransformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
         } else {
-            System.err.printf("Couldn't find target class %s to remap", targetClassName);
+            throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
         }
 
         try {
