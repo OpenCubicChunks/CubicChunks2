@@ -51,5 +51,12 @@
             "net/minecraft/class_1923#method_8324();long": "asLong",
             "net/minecraft/class_1923#method_8331(int, int);long": "asLong"
         }
+    },
+    "chunkMap$DistanceManagerSet": {
+        "typeRedirects": { },
+        "fieldRedirects" : { },
+        "methodRedirects": {
+            "net/minecraft/class_3898#method_17217(long, int, net.minecraft.class_3193, int);net.minecraft.class_3193": "updateCubeScheduling"
+        }
     }
 }

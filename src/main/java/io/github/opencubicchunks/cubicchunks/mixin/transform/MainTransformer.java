@@ -86,29 +86,6 @@ public class MainTransformer {
         });
     }
 
-    public static void transformProxyTicketManager(ClassNode targetClass) {
-        final ClassMethod setChunkLevel = new ClassMethod(getObjectType("net/minecraft/class_3204"),
-            getMethod("net.minecraft.class_3193 " // ChunkHolder
-                + "method_14053(long, int, " // updateChunkScheduling
-                + "net.minecraft.class_3193, int)")); // ChunkHolder
-        final String updateCubeScheduling = "updateCubeScheduling";
-
-        Map<ClassMethod, String> methodRedirects = new HashMap<>();
-        methodRedirects.put(// synthetic accessor for method_14053 (updateChunkScheduling)
-            new ClassMethod(
-                getObjectType("net/minecraft/class_3898"), // ChunkMap
-                getMethod("net.minecraft.class_3193 " // ChunkHolder
-                    + "method_17217(" // access$400
-                    + "long, int, "
-                    + "net.minecraft.class_3193, int)") // ChunkHolder
-            ), updateCubeScheduling);
-
-        Map<ClassField, String> fieldRedirects = new HashMap<>();
-        Map<Type, Type> typeRedirects = new HashMap<>();
-
-        cloneAndApplyRedirects(targetClass, setChunkLevel, updateCubeScheduling, methodRedirects, fieldRedirects, typeRedirects);
-    }
-
     private static void makeStaticSyntheticAccessor(ClassNode node, MethodNode newMethod) {
         Type[] params = Type.getArgumentTypes(newMethod.desc);
         Type[] newParams = new Type[params.length + 1];

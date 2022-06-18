@@ -87,19 +87,14 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
 
     @Override public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
         MappingResolver map = FabricLoader.getInstance().getMappingResolver();
-        String chunkMapDistanceManager = map.mapClassName("intermediary", "net.minecraft.class_3898$class_3216");
 
         //TODO: untangle the mess of some methods accepting the/class/name, and others accepting the.class.name
         //Ideally the input json would all have the same, and we'd just figure it out here
-        if (targetClassName.equals(chunkMapDistanceManager)) {
-            MainTransformer.transformProxyTicketManager(targetClass);
+        RedirectsParser.ClassTarget target = classTargetByName.get(map.unmapClassName("intermediary", targetClassName).replace(".", "/"));
+        if (target != null) {
+            MainTransformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
         } else {
-            RedirectsParser.ClassTarget target = classTargetByName.get(map.unmapClassName("intermediary", targetClassName).replace(".", "/"));
-            if (target != null) {
-                MainTransformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
-            } else {
-                System.err.printf("Couldn't find target class %s to remap", targetClassName);
-            }
+            System.err.printf("Couldn't find target class %s to remap", targetClassName);
         }
 
         try {

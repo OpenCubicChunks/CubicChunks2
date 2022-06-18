@@ -24,5 +24,11 @@
             "net/minecraft/class_1948#method_27815(int, java.lang.Iterable, net.minecraft.class_1948$class_5260);net.minecraft.class_1948$class_5262": "createCubicState"
         },
         "useSets": "naturalSpawnerSet"
+    },
+    "net/minecraft/class_3898$class_3216": {
+        "targetMethods": {
+            "net/minecraft/class_3204#method_14053(long, int, net.minecraft.class_3193, int);net.minecraft.class_3193": "updateCubeScheduling"
+        },
+        "useSets": "chunkMap$DistanceManagerSet"
     }
 }
