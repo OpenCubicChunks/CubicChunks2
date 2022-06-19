@@ -255,12 +255,13 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
 
     @Override
     public void unloadNode(@Nonnull HeightmapStorage storage) {
+        SectionPos cubeMinSection = this.cubePos.asSectionPos();
         for (SurfaceTrackerLeaf[] heightmapLeaves : this.heightmaps.values()) {
             for (int localSectionZ = 0; localSectionZ < CubeAccess.DIAMETER_IN_SECTIONS; localSectionZ++) {
                 for (int localSectionX = 0; localSectionX < CubeAccess.DIAMETER_IN_SECTIONS; localSectionX++) {
                     int i = localSectionX + localSectionZ * CubeAccess.DIAMETER_IN_SECTIONS;
                     if (heightmapLeaves[i] != null) {
-                        heightmapLeaves[i].cubeUnloaded(localSectionX, localSectionZ, storage);
+                        heightmapLeaves[i].cubeUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                         heightmapLeaves[i] = null;
                     }
                 }
@@ -271,7 +272,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
             for (int localSectionX = 0; localSectionX < CubeAccess.DIAMETER_IN_SECTIONS; localSectionX++) {
                 int i = localSectionX + localSectionZ * CubeAccess.DIAMETER_IN_SECTIONS;
                 if (lightHeightmapLeaves[i] != null) {
-                    lightHeightmapLeaves[i].cubeUnloaded(localSectionX, localSectionZ, storage);
+                    lightHeightmapLeaves[i].cubeUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                     lightHeightmapLeaves[i] = null;
                 }
             }
@@ -364,12 +365,14 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
      */
     private SurfaceTrackerLeaf[] getHeightmapSections(Heightmap.Types type) {
         return heightmaps.computeIfAbsent(type, t -> {
+            SectionPos cubeMinSection = this.cubePos.asSectionPos();
             SurfaceTrackerLeaf[] surfaceTrackerLeaves = new SurfaceTrackerLeaf[CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS];
             for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {
                 for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
                     int idx = dx + dz * CubeAccess.DIAMETER_IN_SECTIONS;
                     SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(cubePos.getY(), null, (byte) type.ordinal());
-                    leaf.loadCube(dx, dz, ((CubicServerLevel) ((ServerLevelAccessor) this.levelHeightAccessor).getLevel()).getHeightmapStorage(), this);
+                    leaf.loadCube(cubeMinSection.x() + dx, cubeMinSection.z() + dz,
+                        ((CubicServerLevel) ((ServerLevelAccessor) this.levelHeightAccessor).getLevel()).getHeightmapStorage(), this);
                     // On creation of a new node for a cube, both the node and its parents must be marked dirty
                     leaf.setAllDirty();
                     leaf.markAncestorsDirty();

@@ -6,6 +6,6 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surf
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode;
 
 public interface HeightmapStorage {
-    void unloadNode(SurfaceTrackerNode surfaceTrackerSection);
-    @Nullable SurfaceTrackerNode loadNode(SurfaceTrackerBranch parent, byte heightmapType, int scale, int scaledY);
+    void unloadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode surfaceTrackerSection);
+    @Nullable SurfaceTrackerNode loadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerBranch parent, byte heightmapType, int scale, int scaledY);
 }

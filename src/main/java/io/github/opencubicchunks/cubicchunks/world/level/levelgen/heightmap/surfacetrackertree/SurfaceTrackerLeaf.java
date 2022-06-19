@@ -1,5 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree;
 
+import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
+
 import java.util.function.IntPredicate;
 
 import javax.annotation.Nonnull;
@@ -17,6 +19,13 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
         super(0, y, parent, heightmapType);
     }
 
+    /**
+     * Should be used when loading from save
+     */
+    public SurfaceTrackerLeaf(int y, @Nullable SurfaceTrackerBranch parent, byte heightmapType, long[] heightsRaw) {
+        super(0, y, parent, heightmapType, heightsRaw);
+    }
+
     @Override
     protected int updateHeight(int x, int z, int idx) {
         synchronized(this) {
@@ -30,11 +39,11 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
     }
 
     @Override
-    public synchronized void loadCube(int localSectionX, int localSectionZ, HeightmapStorage storage, @Nonnull HeightmapNode newNode) {
+    public synchronized void loadCube(int globalSectionX, int globalSectionZ, HeightmapStorage storage, @Nonnull HeightmapNode newNode) {
         boolean isBeingInitialized = this.node == null;
 
         this.node = newNode;
-        newNode.sectionLoaded(this, localSectionX, localSectionZ);
+        newNode.sectionLoaded(this, cubeLocalSection(globalSectionX), cubeLocalSection(globalSectionZ));
 
         // Parent might be null for proto-cube leaf nodes
         // If we are inserting a new node (it's parent is null), the parents must be updated.
@@ -50,29 +59,29 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
         }
     }
 
-    @Override protected void unload(@Nonnull HeightmapStorage storage) {
+    @Override protected void unload(int globalSectionX, int globalSectionZ, @Nonnull HeightmapStorage storage) {
         assert this.node == null : "Heightmap leaf being unloaded while holding a cube?!";
 
         this.parent = null;
 
-        storage.unloadNode(this);
+        storage.unloadNode(globalSectionX, globalSectionZ, this);
     }
 
     /**
      * Called by the node (cube) when it's unloaded. This informs the parent that one of its
      * children are no longer required
      */
-    public void cubeUnloaded(int localSectionX, int localSectionZ, HeightmapStorage storage) {
+    public void cubeUnloaded(int globalSectionX, int globalSectionZ, HeightmapStorage storage) {
         assert this.node != null;
 
         // On unloading the node, the leaf must have no dirty positions
-        updateDirtyHeights(localSectionX, localSectionZ);
+        updateDirtyHeights(globalSectionX, globalSectionZ);
 
         this.node = null;
 
         // Parent can be null for a protocube that hasn't been added to the global heightmap
         if (parent != null) {
-            this.parent.onChildUnloaded(storage);
+            this.parent.onChildUnloaded(globalSectionX, globalSectionZ, storage);
         }
     }
 
@@ -135,7 +144,7 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
         return this.node;
     }
 
-    private SurfaceTrackerBranch getRoot() {
+    SurfaceTrackerBranch getRoot() {
         SurfaceTrackerNode section = this;
         while (section.parent != null) {
             section = section.parent;
