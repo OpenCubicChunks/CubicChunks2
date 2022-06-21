@@ -6,7 +6,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMapGett
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.LightHeightmapTree;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -36,7 +36,7 @@ public abstract class MixinProtoChunk implements LightHeightmapGetter, LevelHeig
     private boolean generates2DChunks;
     private WorldStyle worldStyle;
 
-    private LightSurfaceTrackerWrapper lightHeightmap;
+    private LightHeightmapTree lightHeightmap;
     private ColumnCubeMap columnCubeMap;
 
     @Shadow @Final private LevelHeightAccessor levelHeightAccessor;
@@ -138,7 +138,7 @@ public abstract class MixinProtoChunk implements LightHeightmapGetter, LevelHeig
         }
         if (lightHeightmap == null && this.getStatus().isOrAfter(ChunkStatus.FEATURES)) {
             // Lighting only starts happening after FEATURES, so we init here to avoid creating unnecessary heightmaps
-            lightHeightmap = new LightSurfaceTrackerWrapper((ChunkAccess) this);
+            lightHeightmap = new LightHeightmapTree((ChunkAccess) this);
         }
     }
 }

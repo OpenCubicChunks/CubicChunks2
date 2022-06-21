@@ -11,14 +11,14 @@ import java.util.BitSet;
 import java.util.Random;
 import java.util.function.Consumer;
 
-import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.HeightmapBlock;
-import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.NullHeightmapStorage;
-import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.TestHeightmapNode;
+import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.HeightmapTreeNodesTest.HeightmapBlock;
+import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.HeightmapTreeNodesTest.NullHeightmapStorage;
+import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.HeightmapTreeNodesTest.TestCubeHeightAccess;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerBranch;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.CubeHeightAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.HeightmapTreeBranch;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.HeightmapTreeLeaf;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.HeightmapTreeNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -26,17 +26,17 @@ import org.junit.jupiter.params.provider.ValueSource;
 public class SurfaceTrackerLeafTest {
 
     /**
-     * Tests that {@link HeightmapNode}s are correctly loaded and unloaded into and from a leaf
+     * Tests that {@link CubeHeightAccess}s are correctly loaded and unloaded into and from a leaf
      */
     @Test
     public void testCubeLoadUnload() {
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
+        HeightmapTreeLeaf leaf = new HeightmapTreeLeaf(0, null, (byte) 0);
 
-        leaf.loadCube(0, 0, null, new TestHeightmapNode(0));
-        assertNotNull(leaf.getNode(), "Leaf had null HeightmapNode after being loaded");
+        leaf.loadCube(0, 0, null, new TestCubeHeightAccess(0));
+        assertNotNull(leaf.getCube(), "Leaf had null HeightmapNode after being loaded");
 
-        leaf.cubeUnloaded(0, 0, null);
-        assertNull(leaf.getNode(), "Leaf had non-null HeightmapNode after being unloaded");
+        leaf.onCubeUnloaded(0, 0, null);
+        assertNull(leaf.getCube(), "Leaf had non-null HeightmapNode after being unloaded");
     }
 
     /**
@@ -47,14 +47,14 @@ public class SurfaceTrackerLeafTest {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
         //Set up leaf and node with parent
-        SurfaceTrackerBranch parent = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) 0);
-        parent.loadCube(0, 0, storage, new TestHeightmapNode(0));
-        SurfaceTrackerLeaf leaf = parent.getMinScaleNode(0);
+        HeightmapTreeBranch parent = new HeightmapTreeBranch(HeightmapTreeNode.MAX_SCALE, 0, null, (byte) 0);
+        parent.loadCube(0, 0, storage, new TestCubeHeightAccess(0));
+        HeightmapTreeLeaf leaf = parent.getLeaf(0);
 
         //Unload the node
-        leaf.cubeUnloaded(0, 0, storage);
+        leaf.onCubeUnloaded(0, 0, storage);
 
-        assertNull(leaf.getNode(), "Leaf had non-null HeightmapNode after being unloaded");
+        assertNull(leaf.getCube(), "Leaf had non-null HeightmapNode after being unloaded");
         assertNull(leaf.getParent(), "Leaf had non-null Parent after being unloaded");
     }
 
@@ -65,11 +65,11 @@ public class SurfaceTrackerLeafTest {
     public void testNoValidHeights() {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(0);
+        HeightmapTreeLeaf leaf = new HeightmapTreeLeaf(0, null, (byte) 0);
+        TestCubeHeightAccess testNode = new TestCubeHeightAccess(0);
         leaf.loadCube(0, 0, storage, testNode);
 
-        Consumer<HeightmapBlock> setHeight = block -> testNode.setBlock(block.x(), block.y() & (SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
+        Consumer<HeightmapBlock> setHeight = block -> testNode.setBlock(block.x(), block.y() & (HeightmapTreeLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
 
         forEachBlockColumn((x, z) -> {
             assertEquals(Integer.MIN_VALUE, leaf.getHeight(x, z), "SurfaceTrackerLeaf does not return invalid height when no block is present");
@@ -94,13 +94,13 @@ public class SurfaceTrackerLeafTest {
 
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(0);
+        HeightmapTreeLeaf leaf = new HeightmapTreeLeaf(0, null, (byte) 0);
+        TestCubeHeightAccess testNode = new TestCubeHeightAccess(0);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> {
             reference.set(block.y(), block.isOpaque());
-            testNode.setBlock(block.x(), block.y() & (SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
+            testNode.setBlock(block.x(), block.y() & (HeightmapTreeLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
         };
 
         forEachBlockColumn((x, z) -> {
@@ -137,8 +137,8 @@ public class SurfaceTrackerLeafTest {
 
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(nodeY, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(nodeY);
+        HeightmapTreeLeaf leaf = new HeightmapTreeLeaf(nodeY, null, (byte) 0);
+        TestCubeHeightAccess testNode = new TestCubeHeightAccess(nodeY);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> {
@@ -179,13 +179,13 @@ public class SurfaceTrackerLeafTest {
 
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(0);
+        HeightmapTreeLeaf leaf = new HeightmapTreeLeaf(0, null, (byte) 0);
+        TestCubeHeightAccess testNode = new TestCubeHeightAccess(0);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> {
             reference.set(block.y(), block.isOpaque());
-            testNode.setBlock(block.x(), block.y() & (SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
+            testNode.setBlock(block.x(), block.y() & (HeightmapTreeLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
         };
 
         Random r = new Random(123);
@@ -194,7 +194,7 @@ public class SurfaceTrackerLeafTest {
             reference.clear();
 
             for (int i = 0; i < 1000; i++) {
-                int randomY = r.nextInt(SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT);
+                int randomY = r.nextInt(HeightmapTreeLeaf.SCALE_0_NODE_HEIGHT);
                 boolean randomOpaque = r.nextBoolean();
                 setHeight.accept(new HeightmapBlock(x, randomY, z, randomOpaque));
                 assertEquals(reference.getHighest(), leaf.getHeight(x, z));
@@ -210,8 +210,8 @@ public class SurfaceTrackerLeafTest {
     public void testBounds() {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        leaf.loadCube(0, 0, storage, new TestHeightmapNode(0));
+        HeightmapTreeLeaf leaf = new HeightmapTreeLeaf(0, null, (byte) 0);
+        leaf.loadCube(0, 0, storage, new TestCubeHeightAccess(0));
 
         Consumer<HeightmapBlock> setHeight = block -> {
             leaf.onSetBlock(block.x(), block.y(), block.z(), type -> block.isOpaque());
@@ -221,13 +221,13 @@ public class SurfaceTrackerLeafTest {
             //Test no exception within bounds
             shouldSucceed(() -> leaf.onSetBlock(0, 0, 0, type -> false),
                 "SurfaceTrackerLeaf refused height inside itself");
-            shouldSucceed(() -> leaf.onSetBlock(0, SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1, 0, type -> false),
+            shouldSucceed(() -> leaf.onSetBlock(0, HeightmapTreeLeaf.SCALE_0_NODE_HEIGHT - 1, 0, type -> false),
                 "SurfaceTrackerLeaf refused height inside itself");
 
             //Test exception outside of bounds
             shouldFail(() -> leaf.onSetBlock(0, -1, 0, type -> false),
                 "SurfaceTrackerLeaf accepted height below itself without throwing an exception");
-            shouldFail(() -> leaf.onSetBlock(0, SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT, 0, type -> false),
+            shouldFail(() -> leaf.onSetBlock(0, HeightmapTreeLeaf.SCALE_0_NODE_HEIGHT, 0, type -> false),
                 "SurfaceTrackerLeaf accepted height above itself without throwing an exception");
         });
     }
@@ -237,8 +237,8 @@ public class SurfaceTrackerLeafTest {
         BitSet bitSet;
 
         public ReferenceHeightmap(int nodeY) {
-            this.minNodeY = nodeY * SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT;
-            this.bitSet = new BitSet(SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT);
+            this.minNodeY = nodeY * HeightmapTreeLeaf.SCALE_0_NODE_HEIGHT;
+            this.bitSet = new BitSet(HeightmapTreeLeaf.SCALE_0_NODE_HEIGHT);
         }
 
         void set(int blockY, boolean isOpaque) {

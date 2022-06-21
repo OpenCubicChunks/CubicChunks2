@@ -1,16 +1,16 @@
-package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree;
+package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree;
 
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.CubeHeightAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.levelgen.Heightmap;
 
-public abstract class SurfaceTrackerNode {
+public abstract class HeightmapTreeNode {
     // TODO: This currently covers y = -2^28 to 2^28 or so. One more would allow us to cover the entire integer block range
     public static final int MAX_SCALE = 6;
     /**
@@ -22,6 +22,7 @@ public abstract class SurfaceTrackerNode {
 
     // Use width of 16 to match columns.
     public static final int WIDTH_BLOCKS = 16;
+    public static final int WIDTH_MASK = WIDTH_BLOCKS - 1;
     public static final int SCALE_0_NODE_HEIGHT = CubeAccess.DIAMETER_IN_BLOCKS;
     public static final int SCALE_0_NODE_BITS = MathUtil.log2(CubeAccess.DIAMETER_IN_BLOCKS);
 
@@ -30,7 +31,7 @@ public abstract class SurfaceTrackerNode {
 
     protected final BitStorage heights;
     protected final long[] dirtyPositions; // bitset has 100% memory usage overhead due to pointers and object headers
-    protected @Nullable SurfaceTrackerBranch parent;
+    protected @Nullable HeightmapTreeBranch parent;
 
     /**
      * Position of this section, within all sections of this size e.g. with 64-block sections, y=0-63 would be section 0, y=64-127 would be section 1, etc.
@@ -39,7 +40,7 @@ public abstract class SurfaceTrackerNode {
     protected final byte scale;
     protected final byte heightmapType;
 
-    public SurfaceTrackerNode(int scale, int scaledY, @Nullable SurfaceTrackerBranch parent, byte heightmapType) {
+    public HeightmapTreeNode(int scale, int scaledY, @Nullable HeightmapTreeBranch parent, byte heightmapType) {
 //      super((ChunkAccess) node, types);
         // +1 in bit size to make room for null values
         this.heights = new BitStorage(BASE_SIZE_BITS + 1 + scale * NODE_COUNT_BITS, WIDTH_BLOCKS * WIDTH_BLOCKS);
@@ -68,14 +69,14 @@ public abstract class SurfaceTrackerNode {
      */
     protected abstract int updateHeight(int x, int z, int idx);
 
-    public abstract void loadCube(int localSectionX, int localSectionZ, HeightmapStorage storage, HeightmapNode newNode);
+    public abstract void loadCube(int localSectionX, int localSectionZ, HeightmapStorage storage, CubeHeightAccess newNode);
 
     /**
      * Tells a node to unload itself, nulling its parent, and passing itself to the provided storage
      */
     protected abstract void unload(HeightmapStorage storage);
 
-    @Nullable public abstract SurfaceTrackerLeaf getMinScaleNode(int y);
+    @Nullable public abstract HeightmapTreeLeaf getLeaf(int y);
 
     /**
      * Updates any positions that are dirty (used for unloading section)
@@ -160,7 +161,7 @@ public abstract class SurfaceTrackerNode {
 
 
     @Nullable
-    public SurfaceTrackerBranch getParent() {
+    public HeightmapTreeBranch getParent() {
         return parent;
     }
 
@@ -174,11 +175,11 @@ public abstract class SurfaceTrackerNode {
 
     /** Get position x/z index within a column, from global/local pos */
     protected static int index(int x, int z) {
-        return (z & 0xF) * WIDTH_BLOCKS + (x & 0xF);
+        return (z & WIDTH_MASK) * WIDTH_BLOCKS + (x & WIDTH_MASK);
     }
 
     @VisibleForTesting
-    public void setParent(@Nullable SurfaceTrackerBranch parent) {
+    public void setParent(@Nullable HeightmapTreeBranch parent) {
         this.parent = parent;
     }
 
@@ -233,14 +234,14 @@ public abstract class SurfaceTrackerNode {
     }
 
     public void writeData(int mainX, int mainZ, BitStorage data, int minValue) {
-        for (int dx = 0; dx < 16; dx++) {
-            for (int dz = 0; dz < 16; dz++) {
+        for (int dx = 0; dx < WIDTH_BLOCKS; dx++) {
+            for (int dz = 0; dz < WIDTH_BLOCKS; dz++) {
                 int y = getHeight(mainX + dx, mainZ + dz) + 1;
                 if (y < minValue) {
                     y = minValue;
                 }
                 y -= minValue;
-                data.set(dx + dz * 16, y);
+                data.set(dx + dz * WIDTH_BLOCKS, y);
             }
         }
     }

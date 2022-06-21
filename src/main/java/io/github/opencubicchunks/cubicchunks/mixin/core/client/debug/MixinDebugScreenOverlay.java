@@ -8,7 +8,7 @@ import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.LightHeightmapTree;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
@@ -61,7 +61,7 @@ public abstract class MixinDebugScreenOverlay {
             if (this.minecraft.getSingleplayerServer() != null) {
                 String serverHeight = "???";
                 if (serverChunk != null) {
-                    LightSurfaceTrackerWrapper heightmap = ((LightHeightmapGetter) serverChunk).getServerLightHeightmap();
+                    LightHeightmapTree heightmap = ((LightHeightmapGetter) serverChunk).getServerLightHeightmap();
                     int height = heightmap.getFirstAvailable(pos.getX() & 0xF, pos.getZ() & 0xF);
                     serverHeight = "" + height;
                 }

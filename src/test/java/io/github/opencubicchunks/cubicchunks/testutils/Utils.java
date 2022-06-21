@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.testutils;
 
-import static io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode.WIDTH_BLOCKS;
+import static io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.tree.HeightmapTreeNode.WIDTH_BLOCKS;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.function.BiConsumer;
