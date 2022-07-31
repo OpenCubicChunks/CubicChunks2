@@ -241,10 +241,10 @@ public abstract class SurfaceTrackerNode {
         return absoluteY + 1 - scaledYBottomY(scaledY, scale) * SCALE_0_NODE_HEIGHT;
     }
 
-    public void writeData(int mainX, int mainZ, BitStorage data, int minValue) {
+    public void writeDataForClient(int minX, int minZ, BitStorage data, int minValue) {
         for (int dx = 0; dx < 16; dx++) {
             for (int dz = 0; dz < 16; dz++) {
-                int y = getHeight(mainX + dx, mainZ + dz) + 1;
+                int y = getHeight(minX + dx, minZ + dz) + 1;
                 if (y < minValue) {
                     y = minValue;
                 }

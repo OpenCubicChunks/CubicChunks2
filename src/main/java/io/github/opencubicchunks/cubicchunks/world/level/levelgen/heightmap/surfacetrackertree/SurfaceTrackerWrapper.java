@@ -72,7 +72,7 @@ public class SurfaceTrackerWrapper extends Heightmap {
     @Override
     public long[] getRawData() {
         BitStorage data = ((HeightmapAccess) this).getData();
-        surfaceTracker.writeData(dx, dz, data, ((HeightmapAccess) this).getChunk().getMinBuildHeight());
+        surfaceTracker.writeDataForClient(dx, dz, data, ((HeightmapAccess) this).getChunk().getMinBuildHeight());
         return data.getRaw();
     }
 
