@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.LongBuffer;
 import java.nio.file.Files;
 import java.util.Arrays;
 
@@ -82,7 +83,9 @@ public class PerNodeHeightmapStorage implements HeightmapStorage {
     private SurfaceTrackerNode load(SurfaceTrackerBranch parent, int globalSectionX, int globalSectionZ, int scaledY, int scale, byte heightmapType) throws IOException {
         String filename = String.format("%d.%d.%d.%d.%d.stn", globalSectionX, globalSectionZ, scaledY, scale, heightmapType);
         try (InputStream file = new FileInputStream(new File(storageFolder, filename))) {
-            long[] heights = ByteBuffer.wrap(file.readAllBytes()).order(ByteOrder.LITTLE_ENDIAN).asLongBuffer().array();
+            LongBuffer buffer = ByteBuffer.wrap(file.readAllBytes()).order(ByteOrder.LITTLE_ENDIAN).asLongBuffer();
+            long[] heights = new long[buffer.limit()];
+            buffer.get(heights);
             if (scale == 0) {
                 return new SurfaceTrackerLeaf(scaledY, parent, heightmapType, heights);
             } else {
