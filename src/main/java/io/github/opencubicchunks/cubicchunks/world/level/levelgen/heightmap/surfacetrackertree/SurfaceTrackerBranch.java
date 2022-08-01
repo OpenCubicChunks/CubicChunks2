@@ -113,6 +113,9 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
 
         assert requiredChildren >= 0 : "Less than 0 required children?!";
 
+        // Before unloading a child, we (the parent) must have no dirty positions
+        updateDirtyHeights(globalSectionX, globalSectionZ);
+
         if (requiredChildren == 0) {
             SurfaceTrackerNode[] surfaceTrackerNodes = this.children;
             for (int i = 0, surfaceTrackerNodesLength = surfaceTrackerNodes.length; i < surfaceTrackerNodesLength; i++) {

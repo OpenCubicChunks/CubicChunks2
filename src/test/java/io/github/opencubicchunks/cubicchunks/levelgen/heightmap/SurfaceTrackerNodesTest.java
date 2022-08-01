@@ -2,8 +2,10 @@ package io.github.opencubicchunks.cubicchunks.levelgen.heightmap;
 
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.forEachBlockColumn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
@@ -379,6 +381,47 @@ public class SurfaceTrackerNodesTest {
 
         assertEquals(parent, reloadedNode.getParent());
         assertEquals(cubeNode, reloadedNode.getNode());
+    }
+
+    /**
+     * Tests that a leaf and its parent have no dirty positions on unload
+     */
+    @Test
+    public void testNoDirtyOnUnload() {
+        TestHeightmapStorage storage = new TestHeightmapStorage();
+
+        Map<Integer, TestHeightmapNode> nodes = new HashMap<>();
+        SurfaceTrackerNode root = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) 0);
+
+        Function<Integer, TestHeightmapNode> loadNode = y -> nodes.computeIfAbsent(y, yPos -> {
+            TestHeightmapNode node = new TestHeightmapNode(0, yPos, 0);
+            root.loadCube(0, 0, storage, node);
+            return node;
+        });
+        Function<Integer, TestHeightmapNode> unloadNode = y -> {
+            TestHeightmapNode removed = nodes.remove(y);
+            if (removed != null) {
+                removed.unloadNode(storage);
+            }
+            return removed;
+        };
+
+        loadNode.apply(0);
+        loadNode.apply(1);
+        SurfaceTrackerLeaf node0 = root.getMinScaleNode(0);
+
+        forEachBlockColumn((x, z) -> {
+            ((TestHeightmapNode) node0.getNode()).setBlock(x, 29, z, true);
+        });
+
+        SurfaceTrackerBranch parent = node0.getParent();
+        // parent hasn't had any gets yet, so must be dirty
+        assertTrue(parent.isAnyDirty());
+
+        unloadNode.apply(0);
+
+        // parent had a child unloaded, so it must have no dirty positions
+        assertFalse(parent.isAnyDirty());
     }
 
     /**
