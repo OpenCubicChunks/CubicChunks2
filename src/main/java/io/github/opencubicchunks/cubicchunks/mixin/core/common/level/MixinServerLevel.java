@@ -19,7 +19,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.CubicFastServerTickList
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerSectionStorage;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.PerNodeHeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;
@@ -61,7 +61,7 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(ServerLevel.class)
 public abstract class MixinServerLevel extends MixinLevel implements CubicServerLevel {
-    private final HeightmapStorage heightmapStorage = new SurfaceTrackerSectionStorage();
+    private HeightmapStorage heightmapStorage;
 
     @Shadow @Final private PersistentEntitySectionManager<Entity> entityManager;
 
@@ -80,6 +80,8 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         var dataFixer = minecraftServer.getFixerUpper();
         File dimensionFolder = levelStorageAccess.getDimensionPath(dimension);
         var config = ((CubicMinecraftServer) minecraftServer).getServerConfig();
+
+        this.heightmapStorage = new PerNodeHeightmapStorage(new File(dimensionFolder, "tempHeightmap"));
 
         if (config == null) {
             CubicChunks.LOGGER.info("No cubic chunks config found; disabling CC for dimension " + dimension.location());

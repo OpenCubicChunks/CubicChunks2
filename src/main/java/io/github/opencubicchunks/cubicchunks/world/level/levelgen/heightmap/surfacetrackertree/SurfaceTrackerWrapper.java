@@ -72,12 +72,12 @@ public class SurfaceTrackerWrapper extends Heightmap {
     @Override
     public long[] getRawData() {
         BitStorage data = ((HeightmapAccess) this).getData();
-        surfaceTracker.writeData(dx, dz, data, ((HeightmapAccess) this).getChunk().getMinBuildHeight());
+        surfaceTracker.writeDataForClient(dx, dz, data, ((HeightmapAccess) this).getChunk().getMinBuildHeight());
         return data.getRaw();
     }
 
     public synchronized void loadCube(HeightmapStorage storage, HeightmapNode node) {
-        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), storage, node);
+        this.surfaceTracker.loadCube(blockToSection(dx), blockToSection(dz), storage, node);
     }
 
     @Nullable

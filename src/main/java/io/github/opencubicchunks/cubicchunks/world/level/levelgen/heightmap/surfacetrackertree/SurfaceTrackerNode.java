@@ -40,9 +40,18 @@ public abstract class SurfaceTrackerNode {
     protected final byte heightmapType;
 
     public SurfaceTrackerNode(int scale, int scaledY, @Nullable SurfaceTrackerBranch parent, byte heightmapType) {
-//      super((ChunkAccess) node, types);
         // +1 in bit size to make room for null values
         this.heights = new BitStorage(BASE_SIZE_BITS + 1 + scale * NODE_COUNT_BITS, WIDTH_BLOCKS * WIDTH_BLOCKS);
+        this.dirtyPositions = new long[WIDTH_BLOCKS * WIDTH_BLOCKS / Long.SIZE];
+        this.parent = parent;
+        this.scaledY = scaledY;
+        this.scale = (byte) scale;
+        this.heightmapType = heightmapType;
+    }
+
+    public SurfaceTrackerNode(int scale, int scaledY, @Nullable SurfaceTrackerBranch parent, byte heightmapType, long[] heightsRaw) {
+        // +1 in bit size to make room for null values
+        this.heights = new BitStorage(BASE_SIZE_BITS + 1 + scale * NODE_COUNT_BITS, WIDTH_BLOCKS * WIDTH_BLOCKS, heightsRaw);
         this.dirtyPositions = new long[WIDTH_BLOCKS * WIDTH_BLOCKS / Long.SIZE];
         this.parent = parent;
         this.scaledY = scaledY;
@@ -68,12 +77,12 @@ public abstract class SurfaceTrackerNode {
      */
     protected abstract int updateHeight(int x, int z, int idx);
 
-    public abstract void loadCube(int localSectionX, int localSectionZ, HeightmapStorage storage, HeightmapNode newNode);
+    public abstract void loadCube(int globalSectionX, int globalSectionZ, HeightmapStorage storage, HeightmapNode newNode);
 
     /**
      * Tells a node to unload itself, nulling its parent, and passing itself to the provided storage
      */
-    protected abstract void unload(HeightmapStorage storage);
+    protected abstract void unload(int globalSectionX, int globalSectionZ, HeightmapStorage storage);
 
     @Nullable public abstract SurfaceTrackerLeaf getMinScaleNode(int y);
 
@@ -232,10 +241,10 @@ public abstract class SurfaceTrackerNode {
         return absoluteY + 1 - scaledYBottomY(scaledY, scale) * SCALE_0_NODE_HEIGHT;
     }
 
-    public void writeData(int mainX, int mainZ, BitStorage data, int minValue) {
+    public void writeDataForClient(int minX, int minZ, BitStorage data, int minValue) {
         for (int dx = 0; dx < 16; dx++) {
             for (int dz = 0; dz < 16; dz++) {
-                int y = getHeight(mainX + dx, mainZ + dz) + 1;
+                int y = getHeight(minX + dx, minZ + dz) + 1;
                 if (y < minValue) {
                     y = minValue;
                 }

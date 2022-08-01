@@ -32,7 +32,7 @@ public class SurfaceTrackerLeafTest {
     public void testCubeLoadUnload() {
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
 
-        leaf.loadCube(0, 0, null, new TestHeightmapNode(0));
+        leaf.loadCube(0, 0, null, new TestHeightmapNode(0, 0, 0));
         assertNotNull(leaf.getNode(), "Leaf had null HeightmapNode after being loaded");
 
         leaf.cubeUnloaded(0, 0, null);
@@ -48,7 +48,7 @@ public class SurfaceTrackerLeafTest {
 
         //Set up leaf and node with parent
         SurfaceTrackerBranch parent = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) 0);
-        parent.loadCube(0, 0, storage, new TestHeightmapNode(0));
+        parent.loadCube(0, 0, storage, new TestHeightmapNode(0, 0, 0));
         SurfaceTrackerLeaf leaf = parent.getMinScaleNode(0);
 
         //Unload the node
@@ -66,7 +66,7 @@ public class SurfaceTrackerLeafTest {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(0);
+        TestHeightmapNode testNode = new TestHeightmapNode(0, 0, 0);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> testNode.setBlock(block.x(), block.y() & (SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
@@ -95,7 +95,7 @@ public class SurfaceTrackerLeafTest {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(0);
+        TestHeightmapNode testNode = new TestHeightmapNode(0, 0, 0);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> {
@@ -138,7 +138,7 @@ public class SurfaceTrackerLeafTest {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(nodeY, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(nodeY);
+        TestHeightmapNode testNode = new TestHeightmapNode(0, nodeY, 0);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> {
@@ -180,7 +180,7 @@ public class SurfaceTrackerLeafTest {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(0);
+        TestHeightmapNode testNode = new TestHeightmapNode(0, 0, 0);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> {
@@ -211,7 +211,7 @@ public class SurfaceTrackerLeafTest {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        leaf.loadCube(0, 0, storage, new TestHeightmapNode(0));
+        leaf.loadCube(0, 0, storage, new TestHeightmapNode(0, 0, 0));
 
         Consumer<HeightmapBlock> setHeight = block -> {
             leaf.onSetBlock(block.x(), block.y(), block.z(), type -> block.isOpaque());
