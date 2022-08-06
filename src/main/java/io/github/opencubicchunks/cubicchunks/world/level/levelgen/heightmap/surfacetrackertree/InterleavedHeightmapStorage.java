@@ -52,11 +52,12 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
         );
     }
 
-    @Override public void unloadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode surfaceTrackerNode) {
+    @Override public void unloadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
         int regionPosX = globalSectionX >> NODE_POSITION_SHIFT;
         int regionPosZ = globalSectionZ >> NODE_POSITION_SHIFT;
 
-        NodeRegionPosition nodeRegionPosition = new NodeRegionPosition(regionPosX, regionPosZ, surfaceTrackerNode.scale, surfaceTrackerNode.scaledY, surfaceTrackerNode.heightmapType);
+        NodeRegionPosition nodeRegionPosition = new NodeRegionPosition(regionPosX, regionPosZ,
+            node.getScale(), node.getScaledY(), node.getRawType());
         String regionFileName = getRegionName(nodeRegionPosition);
 
         try {
@@ -68,11 +69,11 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
                     data = ByteBuffer.wrap(Files.readAllBytes(filePath));
                     bits = BitSet.valueOf(data.position(0));
                 } else {
-                    bits = new BitSet(ENTRIES_PER_FILE * surfaceTrackerNode.heights.getBits());
+                    bits = new BitSet(ENTRIES_PER_FILE * SurfaceTrackerNode.getBitsForScale(node.getScale()));
                 }
             }
 
-            writeNode(globalSectionX, globalSectionZ, surfaceTrackerNode, bits);
+            writeNode(globalSectionX, globalSectionZ, node, bits);
 
             fileCache.put(nodeRegionPosition, bits);
 //            Files.write(this.storageFolder.toPath().resolve(regionFileName), bits.toByteArray());
@@ -119,18 +120,18 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
         }
     }
 
-    private void writeNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode surfaceTrackerNode, BitSet data) {
+    private void writeNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node, BitSet data) {
         int localNodeX = globalSectionX & NODE_POSITION_MASK;
         int localNodeZ = globalSectionZ & NODE_POSITION_MASK;
 
         int chunkIdx = localNodeX + localNodeZ * REGION_WIDTH_IN_NODES;
 
-        int bitsForEntry = surfaceTrackerNode.heights.getBits();
+        int bitsForEntry = SurfaceTrackerNode.getBitsForScale(node.getScale());
 
         for (int blockZ = 0; blockZ < WIDTH_BLOCKS; blockZ++) {
             for (int blockX = 0; blockX < WIDTH_BLOCKS; blockX++) {
                 int idx = chunkIdx * (WIDTH_BLOCKS * WIDTH_BLOCKS) + (blockX + blockZ * WIDTH_BLOCKS);
-                int height = surfaceTrackerNode.heights.get(SurfaceTrackerNode.index(blockX, blockZ));
+                int height = node.getRawHeight(blockX, blockZ);
                 for (int bitIdx = 0; bitIdx < bitsForEntry; bitIdx++) {
                     int offset = bitIdx * (REGION_WIDTH_IN_NODES * REGION_WIDTH_IN_NODES) * (WIDTH_BLOCKS * WIDTH_BLOCKS);
                     int bit = (height >>> bitIdx) & 0x1;
@@ -143,13 +144,13 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
         }
     }
 
-    private void readNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode surfaceTrackerNode, BitSet data) {
+    private void readNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node, BitSet data) {
         int localNodeX = globalSectionX & NODE_POSITION_MASK;
         int localNodeZ = globalSectionZ & NODE_POSITION_MASK;
 
         int chunkIdx = localNodeX + localNodeZ * REGION_WIDTH_IN_NODES;
 
-        int bitsForEntry = surfaceTrackerNode.heights.getBits();
+        int bitsForEntry = SurfaceTrackerNode.getBitsForScale(node.getScale());
 
         for (int blockX = 0; blockX < WIDTH_BLOCKS; blockX++) {
             for (int blockZ = 0; blockZ < WIDTH_BLOCKS; blockZ++) {
@@ -160,8 +161,7 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
                     int offset = bitIdx * (REGION_WIDTH_IN_NODES * REGION_WIDTH_IN_NODES) * (WIDTH_BLOCKS * WIDTH_BLOCKS);
                     height |= (data.get(idx + offset) ? 1 : 0) << bitIdx;
                 }
-                surfaceTrackerNode.heights.set(SurfaceTrackerNode.index(blockX, blockZ), height);
-
+                node.setRawHeight(blockX, blockZ, height);
             }
         }
     }

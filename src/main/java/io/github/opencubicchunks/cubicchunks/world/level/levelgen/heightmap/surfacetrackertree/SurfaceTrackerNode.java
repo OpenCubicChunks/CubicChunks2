@@ -41,7 +41,7 @@ public abstract class SurfaceTrackerNode {
 
     public SurfaceTrackerNode(int scale, int scaledY, @Nullable SurfaceTrackerBranch parent, byte heightmapType) {
         // +1 in bit size to make room for null values
-        this.heights = new BitStorage(BASE_SIZE_BITS + 1 + scale * NODE_COUNT_BITS, WIDTH_BLOCKS * WIDTH_BLOCKS);
+        this.heights = new BitStorage(getBitsForScale(scale), WIDTH_BLOCKS * WIDTH_BLOCKS);
         this.dirtyPositions = new long[WIDTH_BLOCKS * WIDTH_BLOCKS / Long.SIZE];
         this.parent = parent;
         this.scaledY = scaledY;
@@ -51,7 +51,7 @@ public abstract class SurfaceTrackerNode {
 
     public SurfaceTrackerNode(int scale, int scaledY, @Nullable SurfaceTrackerBranch parent, byte heightmapType, long[] heightsRaw) {
         // +1 in bit size to make room for null values
-        this.heights = new BitStorage(BASE_SIZE_BITS + 1 + scale * NODE_COUNT_BITS, WIDTH_BLOCKS * WIDTH_BLOCKS, heightsRaw);
+        this.heights = new BitStorage(getBitsForScale(scale), WIDTH_BLOCKS * WIDTH_BLOCKS, heightsRaw);
         this.dirtyPositions = new long[WIDTH_BLOCKS * WIDTH_BLOCKS / Long.SIZE];
         this.parent = parent;
         this.scaledY = scaledY;
@@ -68,8 +68,26 @@ public abstract class SurfaceTrackerNode {
         if (isDirty(idx)) {
             return updateHeight(x, z, idx);
         }
-        int relativeY = this.heights.get(idx);
-        return relToAbsY(relativeY, this.scaledY, this.scale);
+
+        return relToAbsY(getRawHeight(x, z), this.scaledY, this.scale);
+    }
+
+    /**
+     * <b>WARNING: This method does not mark dirty or update the height. Only to be used for loading / unloading</b>
+     * <p>
+     * Gets the internal (relative) height for a given position
+     */
+    protected int getRawHeight(int x, int z) {
+        return this.heights.get(index(x, z));
+    }
+
+    /**
+     * <b>WARNING: This method does not mark dirty or update the height. Only to be used for loading / unloading</b>
+     * <p>
+     * Sets the internal (relative) height for a given position
+     */
+    protected void setRawHeight(int x, int z, int relativeHeight) {
+        this.heights.set(index(x, z), relativeHeight);
     }
 
     /**
@@ -173,6 +191,14 @@ public abstract class SurfaceTrackerNode {
         return parent;
     }
 
+    public int getScale() {
+        return this.scale;
+    }
+
+    public int getScaledY() {
+        return scaledY;
+    }
+
     public Heightmap.Types getType() {
         return Heightmap.Types.values()[heightmapType];
     }
@@ -254,11 +280,7 @@ public abstract class SurfaceTrackerNode {
         }
     }
 
-    public int getScale() {
-        return this.scale;
-    }
-
-    public int getScaledY() {
-        return scaledY;
+    public static int getBitsForScale(int scale) {
+        return BASE_SIZE_BITS + 1 + scale * NODE_COUNT_BITS;
     }
 }
