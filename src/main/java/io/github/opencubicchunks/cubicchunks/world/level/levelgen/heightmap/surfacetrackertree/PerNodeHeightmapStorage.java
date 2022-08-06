@@ -94,6 +94,10 @@ public class PerNodeHeightmapStorage implements HeightmapStorage {
         }
     }
 
+    @Override public File storageDirectory() {
+        return this.storageFolder;
+    }
+
     @Override public void close() throws IOException {
 
     }

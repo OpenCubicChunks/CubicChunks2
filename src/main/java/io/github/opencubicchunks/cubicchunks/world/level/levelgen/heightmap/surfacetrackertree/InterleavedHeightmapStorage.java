@@ -197,5 +197,9 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
         flush();
     }
 
+    @Override public File storageDirectory() {
+        return this.storageFolder;
+    }
+
     private record NodeRegionPosition(int regionX, int regionZ, int scale, int scaledY, int heightmapType) { }
 }

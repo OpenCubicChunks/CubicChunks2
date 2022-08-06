@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -503,6 +504,10 @@ public class SurfaceTrackerNodesTest {
             return null;
         }
 
+        @Override public File storageDirectory() {
+            return null;
+        }
+
         @Override public void close() throws IOException {
 
         }
@@ -534,6 +539,10 @@ public class SurfaceTrackerNodesTest {
                 removed.setParent(parent);
             }
             return removed;
+        }
+
+        @Override public File storageDirectory() {
+            return null;
         }
 
         @Override public void close() throws IOException {

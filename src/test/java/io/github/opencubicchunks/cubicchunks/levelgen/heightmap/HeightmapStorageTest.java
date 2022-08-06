@@ -19,6 +19,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surf
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerBranch;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -64,6 +65,8 @@ public class HeightmapStorageTest {
             int height = loadedLeaf.getHeight(x, z);
             assertEquals(blockY, height);
         });
+
+        closeAndCleanup(storage);
     }
 
     /**
@@ -131,6 +134,8 @@ public class HeightmapStorageTest {
                 assertEquals(32 + height, loadedLeaf.getHeight(blockX & WIDTH_BLOCKS - 1, blockZ & WIDTH_BLOCKS - 1));
             }
         }
+
+        closeAndCleanup(storage);
     }
 
     /**
@@ -166,6 +171,8 @@ public class HeightmapStorageTest {
             int height = loadedLeaf.getHeight(x, z);
             assertEquals(blockY, height);
         });
+
+        closeAndCleanup(storage);
     }
 
     @ParameterizedTest
@@ -213,5 +220,16 @@ public class HeightmapStorageTest {
 
         assertNotNull(loadedBranch5);
         forEachBlockColumnSurfaceTrackerNode((x, z) -> assertEquals(blockY, loadedBranch5.getHeight(x, z)));
+
+        closeAndCleanup(storage);
+    }
+
+    private static void closeAndCleanup(HeightmapStorage storage) {
+        try {
+            storage.close();
+            FileUtils.deleteDirectory(storage.storageDirectory());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
