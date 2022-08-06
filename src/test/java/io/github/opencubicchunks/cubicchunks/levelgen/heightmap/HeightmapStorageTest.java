@@ -22,7 +22,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surf
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class SurfaceTrackerStorageTest {
+public class HeightmapStorageTest {
     /**
      * Returns all HeightmapStorage implementations to test for all tests within this class
      */
