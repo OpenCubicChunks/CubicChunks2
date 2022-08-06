@@ -141,7 +141,7 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
         for (int blockZ = 0; blockZ < WIDTH_BLOCKS; blockZ++) {
             for (int blockX = 0; blockX < WIDTH_BLOCKS; blockX++) {
                 int idx = chunkIdx * (WIDTH_BLOCKS * WIDTH_BLOCKS) + (blockX + blockZ * WIDTH_BLOCKS);
-                int height = node.getRawHeight(blockX, blockZ);
+                int height = bin2gray(node.getRawHeight(blockX, blockZ));
                 for (int bitIdx = 0; bitIdx < bitsForEntry; bitIdx++) {
                     int offset = bitIdx * (REGION_WIDTH_IN_NODES * REGION_WIDTH_IN_NODES) * (WIDTH_BLOCKS * WIDTH_BLOCKS);
                     int bit = (height >>> bitIdx) & 0x1;
@@ -171,7 +171,7 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
                     int offset = bitIdx * (REGION_WIDTH_IN_NODES * REGION_WIDTH_IN_NODES) * (WIDTH_BLOCKS * WIDTH_BLOCKS);
                     height |= (data.get(idx + offset) ? 1 : 0) << bitIdx;
                 }
-                node.setRawHeight(blockX, blockZ, height);
+                node.setRawHeight(blockX, blockZ, gray2bin(height));
             }
         }
     }
@@ -220,4 +220,16 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
     }
 
     private record NodeRegionPosition(int regionX, int regionZ, int scale, int scaledY, int heightmapType) { }
+
+    int bin2gray(int n) {
+        return n ^ (n >>> 1);
+    }
+
+    int gray2bin(int n1) {
+        int n2 = n1;
+        while ((n1 >>>= 1) != 0) {
+            n2 ^= n1;
+        }
+        return n2;
+    }
 }
