@@ -14,6 +14,7 @@ import java.util.function.Consumer;
 
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.InterleavedHeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.PerNodeHeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerBranch;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
@@ -27,7 +28,8 @@ public class SurfaceTrackerStorageTest {
      */
     public static HeightmapStorage[] storageImplementationsToTest() throws IOException {
         return new HeightmapStorage[] {
-            new PerNodeHeightmapStorage(Files.createTempDirectory("PerNodeHeightmapStorage").toFile())
+            new PerNodeHeightmapStorage(Files.createTempDirectory("PerNodeHeightmapStorage").toFile()),
+            new InterleavedHeightmapStorage(Files.createTempDirectory("InterleavedHeightmapStorage").toFile())
         };
     }
 

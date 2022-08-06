@@ -502,6 +502,14 @@ public class SurfaceTrackerNodesTest {
         @Nullable @Override public SurfaceTrackerNode loadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerBranch parent, byte heightmapType, int scale, int scaledY) {
             return null;
         }
+
+        @Override public void close() throws IOException {
+
+        }
+
+        @Override public void flush() throws IOException {
+
+        }
     }
 
     /**
@@ -527,6 +535,15 @@ public class SurfaceTrackerNodesTest {
             }
             return removed;
         }
+
+        @Override public void close() throws IOException {
+
+        }
+
+        @Override public void flush() throws IOException {
+
+        }
+
         record PackedTypeScaleScaledY(byte heightmapType, int scale, int scaledY) { }
     }
 

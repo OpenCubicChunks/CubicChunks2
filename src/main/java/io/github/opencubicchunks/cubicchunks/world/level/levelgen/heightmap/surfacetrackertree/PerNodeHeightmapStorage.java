@@ -93,4 +93,12 @@ public class PerNodeHeightmapStorage implements HeightmapStorage {
             }
         }
     }
+
+    @Override public void close() throws IOException {
+
+    }
+
+    @Override public void flush() throws IOException {
+
+    }
 }
