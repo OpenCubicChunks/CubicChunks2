@@ -13,12 +13,14 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.BitSet;
+import java.util.Map;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
 import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.jetbrains.annotations.Nullable;
 
 public class InterleavedHeightmapStorage implements HeightmapStorage {
@@ -53,6 +55,10 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
     }
 
     @Override public void unloadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
+        if (isClosed) {
+            throw new IllegalStateException("Heightmap storage already closed!");
+        }
+
         int regionPosX = globalSectionX >> NODE_POSITION_SHIFT;
         int regionPosZ = globalSectionZ >> NODE_POSITION_SHIFT;
 
@@ -83,6 +89,10 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
     }
 
     @Nullable @Override public SurfaceTrackerNode loadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerBranch parent, byte heightmapType, int scale, int scaledY) {
+        if (isClosed) {
+            throw new IllegalStateException("Heightmap storage already closed!");
+        }
+
         int regionPosX = globalSectionX >> NODE_POSITION_SHIFT;
         int regionPosZ = globalSectionZ >> NODE_POSITION_SHIFT;
 
@@ -167,24 +177,32 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
     }
 
     @Override public void flush() throws IOException {
-        IOException[] suppressed = new IOException[1]; // java is stupid
-        this.fileCache.forEach((nodeRegionPosition, bitSet) -> {
+        if (isClosed) {
+            return;
+        }
+
+        IOException suppressed = null; // java is stupid
+        for (ObjectIterator<Map.Entry<NodeRegionPosition, BitSet>> iterator = this.fileCache.entrySet().iterator(); iterator.hasNext(); ) {
+            Map.Entry<NodeRegionPosition, BitSet> entry = iterator.next();
+            NodeRegionPosition nodeRegionPosition = entry.getKey();
+            BitSet bitSet = entry.getValue();
             try {
                 try (OutputStream outputStream = new DeflaterOutputStream(new FileOutputStream(
                     this.storageFolder.toPath().resolve(getRegionName(nodeRegionPosition)).toFile()))) {
                     outputStream.write(bitSet.toByteArray());
+                    iterator.remove(); // successfully wrote the data, it should be removed from the cache
                 }
             } catch (IOException e) { // add any exceptions to a single exception to throw after iteration
-                if (suppressed[0] == null) {
-                    suppressed[0] = e;
+                if (suppressed == null) {
+                    suppressed = e;
                 } else {
-                    suppressed[0].addSuppressed(e);
+                    suppressed.addSuppressed(e);
                 }
             }
-        });
+        }
 
-        if (suppressed[0] != null) {
-            throw suppressed[0];
+        if (suppressed != null) {
+            throw suppressed;
         }
     }
 
