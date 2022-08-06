@@ -132,7 +132,7 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
                 int idx = chunkIdx * (WIDTH_BLOCKS * WIDTH_BLOCKS) + (blockX + blockZ * WIDTH_BLOCKS);
                 int height = surfaceTrackerNode.heights.get(SurfaceTrackerNode.index(blockX, blockZ));
                 for (int bitIdx = 0; bitIdx < bitsForEntry; bitIdx++) {
-                    int offset = bitIdx * (REGION_WIDTH_IN_NODES * REGION_WIDTH_IN_NODES) * (WIDTH_BLOCKS*WIDTH_BLOCKS);
+                    int offset = bitIdx * (REGION_WIDTH_IN_NODES * REGION_WIDTH_IN_NODES) * (WIDTH_BLOCKS * WIDTH_BLOCKS);
                     int bit = (height >>> bitIdx) & 0x1;
 
                     if (bit != 0) {
@@ -157,7 +157,7 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
 
                 int height = 0;
                 for (int bitIdx = 0; bitIdx < bitsForEntry; bitIdx++) {
-                    int offset = bitIdx * (REGION_WIDTH_IN_NODES * REGION_WIDTH_IN_NODES) * (WIDTH_BLOCKS*WIDTH_BLOCKS);
+                    int offset = bitIdx * (REGION_WIDTH_IN_NODES * REGION_WIDTH_IN_NODES) * (WIDTH_BLOCKS * WIDTH_BLOCKS);
                     height |= (data.get(idx + offset) ? 1 : 0) << bitIdx;
                 }
                 surfaceTrackerNode.heights.set(SurfaceTrackerNode.index(blockX, blockZ), height);
@@ -197,5 +197,5 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
         flush();
     }
 
-    private record NodeRegionPosition(int regionX, int regionZ, int scale, int scaledY, int heightmapType) {};
+    private record NodeRegionPosition(int regionX, int regionZ, int scale, int scaledY, int heightmapType) { }
 }

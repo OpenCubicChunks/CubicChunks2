@@ -21,7 +21,6 @@ import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccesso
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.InterleavedHeightmapStorage;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.PerNodeHeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;
@@ -64,6 +63,9 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(ServerLevel.class)
 public abstract class MixinServerLevel extends MixinLevel implements CubicServerLevel {
+
+    @Shadow @Final private static Logger LOGGER;
+
     private HeightmapStorage heightmapStorage;
 
     @Shadow @Final private PersistentEntitySectionManager<Entity> entityManager;
@@ -73,8 +75,6 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
     @Shadow @Final private ServerTickList<Block> blockTicks;
 
     @Shadow public abstract ServerChunkCache getChunkSource();
-
-    @Shadow @Final private static Logger LOGGER;
 
     @Inject(method = "<init>", at = @At(value = "INVOKE", shift = At.Shift.AFTER,
             target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;" +

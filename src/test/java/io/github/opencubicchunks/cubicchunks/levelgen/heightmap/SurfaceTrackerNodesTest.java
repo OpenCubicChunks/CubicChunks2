@@ -649,8 +649,8 @@ public class SurfaceTrackerNodesTest {
             this.leaf.onSetBlock(x, Coords.cubeToMinBlock(this.nodeY) + localY, z, heightmapType -> isOpaque);
         }
 
-        @Override public void sectionLoaded(@Nonnull SurfaceTrackerLeaf leaf, int localSectionX, int localSectionZ) {
-            this.leaf = leaf;
+        @Override public void sectionLoaded(@Nonnull SurfaceTrackerLeaf surfaceTrackerLeaf, int localSectionX, int localSectionZ) {
+            this.leaf = surfaceTrackerLeaf;
         }
 
         @Override public void unloadNode(@Nonnull HeightmapStorage storage) {
