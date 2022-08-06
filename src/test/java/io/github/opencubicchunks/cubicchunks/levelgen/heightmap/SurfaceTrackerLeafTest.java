@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.levelgen.heightmap;
 
-import static io.github.opencubicchunks.cubicchunks.testutils.Utils.forEachBlockColumn;
+import static io.github.opencubicchunks.cubicchunks.testutils.Utils.forEachBlockColumnSurfaceTrackerNode;
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldFail;
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldSucceed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 
 import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.HeightmapBlock;
 import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.NullHeightmapStorage;
-import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.TestHeightmapNode;
+import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.TestHeightmapNode32;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerBranch;
@@ -32,7 +32,7 @@ public class SurfaceTrackerLeafTest {
     public void testCubeLoadUnload() {
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
 
-        leaf.loadCube(0, 0, null, new TestHeightmapNode(0, 0, 0));
+        leaf.loadCube(0, 0, null, new TestHeightmapNode32(0, 0, 0));
         assertNotNull(leaf.getNode(), "Leaf had null HeightmapNode after being loaded");
 
         leaf.cubeUnloaded(0, 0, null);
@@ -48,7 +48,7 @@ public class SurfaceTrackerLeafTest {
 
         //Set up leaf and node with parent
         SurfaceTrackerBranch parent = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) 0);
-        parent.loadCube(0, 0, storage, new TestHeightmapNode(0, 0, 0));
+        parent.loadCube(0, 0, storage, new TestHeightmapNode32(0, 0, 0));
         SurfaceTrackerLeaf leaf = parent.getMinScaleNode(0);
 
         //Unload the node
@@ -66,12 +66,12 @@ public class SurfaceTrackerLeafTest {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(0, 0, 0);
+        TestHeightmapNode32 testNode = new TestHeightmapNode32(0, 0, 0);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> testNode.setBlock(block.x(), block.y() & (SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
 
-        forEachBlockColumn((x, z) -> {
+        forEachBlockColumnSurfaceTrackerNode((x, z) -> {
             assertEquals(Integer.MIN_VALUE, leaf.getHeight(x, z), "SurfaceTrackerLeaf does not return invalid height when no block is present");
 
             setHeight.accept(new HeightmapBlock(x, 0, z, false));
@@ -95,7 +95,7 @@ public class SurfaceTrackerLeafTest {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(0, 0, 0);
+        TestHeightmapNode32 testNode = new TestHeightmapNode32(0, 0, 0);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> {
@@ -103,7 +103,7 @@ public class SurfaceTrackerLeafTest {
             testNode.setBlock(block.x(), block.y() & (SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1), block.z(), block.isOpaque());
         };
 
-        forEachBlockColumn((x, z) -> {
+        forEachBlockColumnSurfaceTrackerNode((x, z) -> {
             reference.clear();
 
             assertEquals(reference.getHighest(), leaf.getHeight(x, z));
@@ -138,7 +138,7 @@ public class SurfaceTrackerLeafTest {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(nodeY, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(0, nodeY, 0);
+        TestHeightmapNode32 testNode = new TestHeightmapNode32(0, nodeY, 0);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> {
@@ -146,7 +146,7 @@ public class SurfaceTrackerLeafTest {
             testNode.setBlock(block.x(), Coords.blockToLocal(block.y()), block.z(), block.isOpaque());
         };
 
-        forEachBlockColumn((x, z) -> {
+        forEachBlockColumnSurfaceTrackerNode((x, z) -> {
             reference.clear();
 
             assertEquals(reference.getHighest(), leaf.getHeight(x, z));
@@ -180,7 +180,7 @@ public class SurfaceTrackerLeafTest {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        TestHeightmapNode testNode = new TestHeightmapNode(0, 0, 0);
+        TestHeightmapNode32 testNode = new TestHeightmapNode32(0, 0, 0);
         leaf.loadCube(0, 0, storage, testNode);
 
         Consumer<HeightmapBlock> setHeight = block -> {
@@ -190,7 +190,7 @@ public class SurfaceTrackerLeafTest {
 
         Random r = new Random(123);
 
-        forEachBlockColumn((x, z) -> {
+        forEachBlockColumnSurfaceTrackerNode((x, z) -> {
             reference.clear();
 
             for (int i = 0; i < 1000; i++) {
@@ -211,13 +211,13 @@ public class SurfaceTrackerLeafTest {
         NullHeightmapStorage storage = new NullHeightmapStorage();
 
         SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(0, null, (byte) 0);
-        leaf.loadCube(0, 0, storage, new TestHeightmapNode(0, 0, 0));
+        leaf.loadCube(0, 0, storage, new TestHeightmapNode32(0, 0, 0));
 
         Consumer<HeightmapBlock> setHeight = block -> {
             leaf.onSetBlock(block.x(), block.y(), block.z(), type -> block.isOpaque());
         };
 
-        forEachBlockColumn((x, z) -> {
+        forEachBlockColumnSurfaceTrackerNode((x, z) -> {
             //Test no exception within bounds
             shouldSucceed(() -> leaf.onSetBlock(0, 0, 0, type -> false),
                 "SurfaceTrackerLeaf refused height inside itself");
