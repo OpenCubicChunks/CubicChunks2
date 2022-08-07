@@ -3,13 +3,14 @@ package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.sur
 import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
 
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
 public class LightSurfaceTrackerWrapper extends SurfaceTrackerWrapper {
-    public LightSurfaceTrackerWrapper(ChunkAccess chunkAccess) {
+    public LightSurfaceTrackerWrapper(ChunkAccess chunkAccess, HeightmapStorage storage) {
         // type shouldn't matter
-        super(chunkAccess, Types.WORLD_SURFACE, new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) -1));
+        super(chunkAccess, Types.WORLD_SURFACE, loadOrCreateRoot(chunkAccess.getPos().x, chunkAccess.getPos().z, (byte) -1, storage));
     }
 
     @Override

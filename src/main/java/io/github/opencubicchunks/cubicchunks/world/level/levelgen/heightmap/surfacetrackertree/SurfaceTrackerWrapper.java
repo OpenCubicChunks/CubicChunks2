@@ -1,6 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree;
 
 import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
+import static io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode.MAX_SCALE;
 
 import java.util.function.IntPredicate;
 
@@ -25,11 +26,11 @@ public class SurfaceTrackerWrapper extends Heightmap {
     /** global z of min block in column */
     protected final int dz;
 
-    public SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types) {
+    public SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types, HeightmapStorage storage) {
         super(chunkAccess, types);
         //noinspection ConstantConditions
         ((HeightmapAccess) this).setIsOpaque(null);
-        this.surfaceTracker = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) types.ordinal());
+        this.surfaceTracker = loadOrCreateRoot(chunkAccess.getPos().x, chunkAccess.getPos().z, (byte) types.ordinal(), storage);
         this.dx = sectionToMinBlock(chunkAccess.getPos().x);
         this.dz = sectionToMinBlock(chunkAccess.getPos().z);
     }
@@ -114,5 +115,13 @@ public class SurfaceTrackerWrapper extends Heightmap {
                 return HEIGHTMAP_TYPES[heightmapType].isOpaque().test(blockState);
             }
         };
+    }
+
+    protected static SurfaceTrackerBranch loadOrCreateRoot(int globalSectionX, int globalSectionZ, byte type, HeightmapStorage storage) {
+        SurfaceTrackerNode loadedNode = storage.loadNode(globalSectionX, globalSectionZ, null, type, MAX_SCALE, 0);
+        if (loadedNode != null) {
+            return (SurfaceTrackerBranch) loadedNode;
+        }
+        return new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) -1);
     }
 }
