@@ -194,14 +194,19 @@ public class CubicLevelLoadingScreen {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
+        Matrix4f previousP = RenderSystem.getProjectionMatrix();
         RenderSystem.setProjectionMatrix(Matrix4f.perspective(60, aspectRatio, 0.01f, -10));
 
         Matrix4f modelViewMatrix = RenderSystem.getModelViewMatrix();
+        Matrix4f previousMV = modelViewMatrix.copy();
         modelViewMatrix.setIdentity();
         modelViewMatrix.translate(new Vector3f(0, 0, -20));
         modelViewMatrix.multiply(new Quaternion(30, (float) ((System.currentTimeMillis() * 0.04) % 360), 0, true));
 
         render3dDrawCubes(trackerParam, xBase, yBase, scaleWithCineSize, spacing, colors);
+
+        RenderSystem.setProjectionMatrix(previousP);
+        modelViewMatrix.load(previousMV);
 
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
