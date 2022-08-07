@@ -65,9 +65,12 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeStatus;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ImposterProtoCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.AsyncSaveData;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicSectionStorage;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicThreadedLevelLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.storage.CubeSerializer;
@@ -116,6 +119,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
 import net.minecraft.world.level.lighting.LevelLightEngine;
@@ -267,6 +271,32 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;
         }
+
+        // when saving all chunks we need to force all heightmaps to save, or cubes that aren't unloaded on quit don't have their heightmaps saved
+        this.visibleChunkMap.forEach((chunkPosLong, chunkHolder) -> {
+            ChunkAccess chunk = chunkHolder.getLastAvailable();
+            if (chunk == null) {
+                return;
+            }
+
+            for (Map.Entry<Heightmap.Types, Heightmap> heightmapEntry : chunk.getHeightmaps()) {
+                Heightmap heightmap = heightmapEntry.getValue();
+                if (heightmap != null) {
+                    ((SurfaceTrackerWrapper) heightmap).saveAll(((CubicServerLevel) this.level).getHeightmapStorage());
+                }
+            }
+
+            LightSurfaceTrackerWrapper lightHeightmap = ((LightHeightmapGetter) chunk).getServerLightHeightmap();
+            if (lightHeightmap != null) {
+                lightHeightmap.saveAll(((CubicServerLevel) this.level).getHeightmapStorage());
+            }
+        });
+        try {
+            ((CubicServerLevel) this.level).getHeightmapStorage().flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         if (flush) {
             List<ChunkHolder> list = this.visibleCubeMap.values().stream()
                 .filter(ChunkHolder::wasAccessibleSinceLastSave)

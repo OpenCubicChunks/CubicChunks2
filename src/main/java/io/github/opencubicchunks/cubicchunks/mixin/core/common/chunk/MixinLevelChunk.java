@@ -22,6 +22,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.Clie
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
+import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.server.level.ServerLevel;
@@ -114,7 +115,7 @@ public abstract class MixinLevelChunk implements ChunkAccess, LightHeightmapGett
         if (levelIn.isClientSide) {
             lightHeightmap = new ClientLightSurfaceTracker(this);
         } else {
-            lightHeightmap = new LightSurfaceTrackerWrapper(this);
+            lightHeightmap = new LightSurfaceTrackerWrapper(this, ((CubicServerLevel) this.level).getHeightmapStorage());
         }
         // TODO might want 4 columns that share the same BigCubes to have a reference to the same CubeMap?
         columnCubeMap = new ColumnCubeMap();
@@ -183,7 +184,7 @@ public abstract class MixinLevelChunk implements ChunkAccess, LightHeightmapGett
         if (this.level.isClientSide()) {
             return new ClientSurfaceTracker(chunkAccess, type);
         } else {
-            return new SurfaceTrackerWrapper(chunkAccess, type); //TODO: Load from this from files.
+            return new SurfaceTrackerWrapper(chunkAccess, type, ((CubicServerLevel) this.level).getHeightmapStorage());
         }
     }
 

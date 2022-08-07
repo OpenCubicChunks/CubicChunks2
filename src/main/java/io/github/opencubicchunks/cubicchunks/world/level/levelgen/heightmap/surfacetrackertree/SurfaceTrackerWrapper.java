@@ -1,6 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree;
 
 import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
+import static io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode.MAX_SCALE;
 
 import java.util.function.IntPredicate;
 
@@ -25,11 +26,11 @@ public class SurfaceTrackerWrapper extends Heightmap {
     /** global z of min block in column */
     protected final int dz;
 
-    public SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types) {
+    public SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types, HeightmapStorage storage) {
         super(chunkAccess, types);
         //noinspection ConstantConditions
         ((HeightmapAccess) this).setIsOpaque(null);
-        this.surfaceTracker = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) types.ordinal());
+        this.surfaceTracker = loadOrCreateRoot(chunkAccess.getPos().x, chunkAccess.getPos().z, (byte) types.ordinal(), storage);
         this.dx = sectionToMinBlock(chunkAccess.getPos().x);
         this.dz = sectionToMinBlock(chunkAccess.getPos().z);
     }
@@ -72,14 +73,31 @@ public class SurfaceTrackerWrapper extends Heightmap {
     @Override
     public long[] getRawData() {
         BitStorage data = ((HeightmapAccess) this).getData();
-        surfaceTracker.writeData(dx, dz, data, ((HeightmapAccess) this).getChunk().getMinBuildHeight());
+        surfaceTracker.writeDataForClient(dx, dz, data, ((HeightmapAccess) this).getChunk().getMinBuildHeight());
         return data.getRaw();
     }
 
     public synchronized void loadCube(HeightmapStorage storage, HeightmapNode node) {
-        this.surfaceTracker.loadCube(blockToCubeLocalSection(dx), blockToCubeLocalSection(dz), storage, node);
+        this.surfaceTracker.loadCube(blockToSection(dx), blockToSection(dz), storage, node);
     }
 
+    public void saveAll(HeightmapStorage storage) {
+        int globalSectionX = blockToSection(this.dx);
+        int globalSectionZ = blockToSection(this.dz);
+        saveAllChildren(globalSectionX, globalSectionZ, storage, this.surfaceTracker);
+    }
+
+    private void saveAllChildren(int globalSectionX, int globalSectionZ, HeightmapStorage storage, SurfaceTrackerNode node) {
+        node.save(globalSectionX, globalSectionZ, storage);
+        if (node.scale > 0) {
+            for (SurfaceTrackerNode child : ((SurfaceTrackerBranch) node).children) {
+                if (child == null) {
+                    continue;
+                }
+                saveAllChildren(globalSectionX, globalSectionZ, storage, child);
+            }
+        }
+    }
     @Nullable
     public SurfaceTrackerLeaf getMinScaleNode(int nodeY) {
         return surfaceTracker.getMinScaleNode(nodeY);
@@ -97,5 +115,13 @@ public class SurfaceTrackerWrapper extends Heightmap {
                 return HEIGHTMAP_TYPES[heightmapType].isOpaque().test(blockState);
             }
         };
+    }
+
+    protected static SurfaceTrackerBranch loadOrCreateRoot(int globalSectionX, int globalSectionZ, byte type, HeightmapStorage storage) {
+        SurfaceTrackerNode loadedNode = storage.loadNode(globalSectionX, globalSectionZ, null, type, MAX_SCALE, 0);
+        if (loadedNode != null) {
+            return (SurfaceTrackerBranch) loadedNode;
+        }
+        return new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) -1);
     }
 }

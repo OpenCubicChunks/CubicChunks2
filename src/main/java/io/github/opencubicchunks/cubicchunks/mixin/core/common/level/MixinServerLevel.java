@@ -1,6 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -19,7 +20,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.CubicFastServerTickList
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerSectionStorage;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.InterleavedHeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;
@@ -50,6 +51,7 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.ServerLevelData;
+import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -61,7 +63,10 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(ServerLevel.class)
 public abstract class MixinServerLevel extends MixinLevel implements CubicServerLevel {
-    private final HeightmapStorage heightmapStorage = new SurfaceTrackerSectionStorage();
+
+    @Shadow @Final private static Logger LOGGER;
+
+    private HeightmapStorage heightmapStorage;
 
     @Shadow @Final private PersistentEntitySectionManager<Entity> entityManager;
 
@@ -80,6 +85,8 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         var dataFixer = minecraftServer.getFixerUpper();
         File dimensionFolder = levelStorageAccess.getDimensionPath(dimension);
         var config = ((CubicMinecraftServer) minecraftServer).getServerConfig();
+
+        this.heightmapStorage = new InterleavedHeightmapStorage(new File(dimensionFolder, "tempHeightmap"));
 
         if (config == null) {
             CubicChunks.LOGGER.info("No cubic chunks config found; disabling CC for dimension " + dimension.location());
@@ -159,6 +166,15 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         ci.cancel();
         // cancelling skips a call to pop()
         profilerFiller.pop();
+    }
+
+    @Inject(method = "close", at = @At("TAIL"))
+    private void onLevelClose(CallbackInfo ci) {
+        try {
+            this.heightmapStorage.close();
+        } catch (IOException e) {
+            LOGGER.error("Error when closing heightmap storage", e);
+        }
     }
 
     @Redirect(method = "isPositionTickingWithEntitiesLoaded", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/ChunkPos;asLong(Lnet/minecraft/core/BlockPos;)J"))

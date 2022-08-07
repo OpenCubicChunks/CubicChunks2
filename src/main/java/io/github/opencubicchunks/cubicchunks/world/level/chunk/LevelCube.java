@@ -228,6 +228,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         this.heightmaps.putAll(protoCube.getCubeHeightmaps());
 
         SurfaceTrackerLeaf[] protoCubeLightHeightmaps = protoCube.getLightHeightmaps();
+        SectionPos cubeMinSection = this.cubePos.asSectionPos();
         for (int localZ = 0; localZ < CubeAccess.DIAMETER_IN_SECTIONS; localZ++) {
             for (int localX = 0; localX < CubeAccess.DIAMETER_IN_SECTIONS; localX++) {
                 int i = localX + localZ * CubeAccess.DIAMETER_IN_SECTIONS;
@@ -236,7 +237,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
                 if (this.lightHeightmaps[i] == null) {
                     System.out.println("Got a null light heightmap while upgrading from CubePrimer at " + this.cubePos);
                 } else {
-                    this.lightHeightmaps[i].loadCube(localX, localZ, ((CubicServerLevel) this.level).getHeightmapStorage(), this);
+                    this.lightHeightmaps[i].loadCube(cubeMinSection.x() + localX, cubeMinSection.z() + localZ, ((CubicServerLevel) this.level).getHeightmapStorage(), this);
                 }
             }
         }
@@ -262,12 +263,13 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
 
     @Override
     public void unloadNode(@Nonnull HeightmapStorage storage) {
+        SectionPos cubeMinSection = this.cubePos.asSectionPos();
         for (SurfaceTrackerLeaf[] heightmapLeaves : this.heightmaps.values()) {
             for (int localSectionZ = 0; localSectionZ < CubeAccess.DIAMETER_IN_SECTIONS; localSectionZ++) {
                 for (int localSectionX = 0; localSectionX < CubeAccess.DIAMETER_IN_SECTIONS; localSectionX++) {
                     int i = localSectionX + localSectionZ * CubeAccess.DIAMETER_IN_SECTIONS;
                     if (heightmapLeaves[i] != null) {
-                        heightmapLeaves[i].cubeUnloaded(localSectionX, localSectionZ, storage);
+                        heightmapLeaves[i].cubeUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                         heightmapLeaves[i] = null;
                     }
                 }
@@ -278,7 +280,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
             for (int localSectionX = 0; localSectionX < CubeAccess.DIAMETER_IN_SECTIONS; localSectionX++) {
                 int i = localSectionX + localSectionZ * CubeAccess.DIAMETER_IN_SECTIONS;
                 if (lightHeightmapLeaves[i] != null) {
-                    lightHeightmapLeaves[i].cubeUnloaded(localSectionX, localSectionZ, storage);
+                    lightHeightmapLeaves[i].cubeUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                     lightHeightmapLeaves[i] = null;
                 }
             }

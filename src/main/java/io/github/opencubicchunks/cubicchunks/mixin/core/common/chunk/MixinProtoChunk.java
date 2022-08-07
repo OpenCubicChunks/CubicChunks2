@@ -7,6 +7,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -138,7 +139,7 @@ public abstract class MixinProtoChunk implements LightHeightmapGetter, LevelHeig
         }
         if (lightHeightmap == null && this.getStatus().isOrAfter(ChunkStatus.FEATURES)) {
             // Lighting only starts happening after FEATURES, so we init here to avoid creating unnecessary heightmaps
-            lightHeightmap = new LightSurfaceTrackerWrapper((ChunkAccess) this);
+            lightHeightmap = new LightSurfaceTrackerWrapper((ChunkAccess) this, ((CubicServerLevel) this.levelHeightAccessor).getHeightmapStorage());
         }
     }
 }

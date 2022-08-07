@@ -19,6 +19,16 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         assert scale <= SurfaceTrackerNode.MAX_SCALE; //Branches cannot be > MAX_SCALE
     }
 
+    /**
+     * Should be used when loading from save
+     */
+    public SurfaceTrackerBranch(int scale, int scaledY,
+                                @Nullable SurfaceTrackerBranch parent, byte heightmapType, long[] heightsRaw) {
+        super(scale, scaledY, parent, heightmapType, heightsRaw);
+        assert scale > 0; //Branches cannot be scale 0
+        assert scale <= SurfaceTrackerNode.MAX_SCALE; //Branches cannot be > MAX_SCALE
+    }
+
     @Override
     protected int updateHeight(int x, int z, int idx) {
         synchronized(this) {
@@ -43,14 +53,14 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         }
     }
 
-    @Override public void loadCube(int localSectionX, int localSectionZ, HeightmapStorage storage, HeightmapNode newNode) {
+    @Override public void loadCube(int globalSectionX, int globalSectionZ, HeightmapStorage storage, HeightmapNode newNode) {
         int newScale = scale - 1;
 
         // Attempt to load all children from storage
         for (int i = 0; i < this.children.length; i++) {
             if (children[i] == null) {
                 int newScaledY = indexToScaledY(i, scale, scaledY);
-                children[i] = storage.loadNode(this, this.heightmapType, newScale, newScaledY);
+                children[i] = storage.loadNode(globalSectionX, globalSectionZ, this, this.heightmapType, newScale, newScaledY);
             }
         }
 
@@ -65,17 +75,21 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
                 children[idx] = new SurfaceTrackerBranch(newScale, newScaledY, this, this.heightmapType);
             }
         }
-        children[idx].loadCube(localSectionX, localSectionZ, storage, newNode);
+        children[idx].loadCube(globalSectionX, globalSectionZ, storage, newNode);
     }
 
-    @Override protected void unload(HeightmapStorage storage) {
+    @Override protected void unload(int globalSectionX, int globalSectionZ, HeightmapStorage storage) {
         for (SurfaceTrackerNode child : this.children) {
             assert child == null : "Heightmap branch being unloaded while holding a child?!";
         }
 
         this.parent = null;
 
-        storage.unloadNode(this);
+        this.save(globalSectionX, globalSectionZ, storage);
+    }
+
+    @Override protected void save(int globalSectionX, int globalSectionZ, HeightmapStorage storage) {
+        storage.saveNode(globalSectionX, globalSectionZ, this);
     }
 
     @Nullable public SurfaceTrackerLeaf getMinScaleNode(int y) {
@@ -98,23 +112,26 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         assert requiredChildren <= this.children.length : "More children than max?!";
     }
 
-    public void onChildUnloaded(HeightmapStorage storage) {
+    public void onChildUnloaded(int globalSectionX, int globalSectionZ, HeightmapStorage storage) {
         --requiredChildren;
 
         assert requiredChildren >= 0 : "Less than 0 required children?!";
+
+        // Before unloading a child, we (the parent) must have no dirty positions
+        updateDirtyHeights(globalSectionX, globalSectionZ);
 
         if (requiredChildren == 0) {
             SurfaceTrackerNode[] surfaceTrackerNodes = this.children;
             for (int i = 0, surfaceTrackerNodesLength = surfaceTrackerNodes.length; i < surfaceTrackerNodesLength; i++) {
                 SurfaceTrackerNode child = surfaceTrackerNodes[i];
                 if (child != null) {
-                    child.unload(storage);
+                    child.unload(globalSectionX, globalSectionZ, storage);
                     surfaceTrackerNodes[i] = null;
                 }
             }
 
             if (this.parent != null) {
-                this.parent.onChildUnloaded(storage);
+                this.parent.onChildUnloaded(globalSectionX, globalSectionZ, storage);
             }
         }
     }
