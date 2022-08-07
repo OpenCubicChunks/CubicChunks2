@@ -23,7 +23,6 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surf
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.server.level.ServerLevel;
