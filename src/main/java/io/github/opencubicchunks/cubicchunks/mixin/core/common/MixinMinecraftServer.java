@@ -18,7 +18,6 @@ import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.BiomeGenerationSettingsAccess;
 import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.CubeProgressListener;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.ForcedCubesSaveData;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
@@ -123,14 +122,10 @@ public abstract class MixinMinecraftServer implements CubicMinecraftServer {
         serverChunkCache.getLightEngine().setTaskPerBatch(500);
         this.nextTickTime = Util.getMillis();
         int radius = (int) Math.ceil(10 * (16 / (float) CubeAccess.DIAMETER_IN_BLOCKS)); //vanilla is 10, 32: 5, 64: 3
-        int chunkDiameter = Coords.cubeToSection(radius, 0) * 2 + 1;
         int d = radius * 2 + 1;
         ((ServerCubeCache) serverChunkCache).addCubeRegionTicket(TicketType.START, spawnPosCube, radius + 1, Unit.INSTANCE);
-//        serverChunkCache.addRegionTicket(TicketType.START, spawnPosCube.asChunkPos(), Coords.cubeToSection(radius + 1, 0), Unit.INSTANCE);
 
-        while (this.isRunning() && (/*serverChunkCache.getTickingGenerated() < chunkDiameter * chunkDiameter
-            ||*/ ((ServerCubeCache) serverChunkCache).getTickingGeneratedCubes() < d * d * d)) {
-            // from CC
+        while (this.isRunning() && ((ServerCubeCache) serverChunkCache).getTickingGeneratedCubes() < d * d * d) {
             this.nextTickTime = Util.getMillis() + 10L;
             this.waitUntilNextTick();
         }
