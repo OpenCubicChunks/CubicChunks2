@@ -30,7 +30,7 @@ public class PerNodeHeightmapStorage implements HeightmapStorage {
     }
 
     @Override
-    public void unloadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
+    public void saveNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
         // Save data to storage
         long[] longs = node.heights.getRaw();
         ByteBuffer data = ByteBuffer.allocate(longs.length * Long.BYTES); //.order(ByteOrder.LITTLE_ENDIAN);

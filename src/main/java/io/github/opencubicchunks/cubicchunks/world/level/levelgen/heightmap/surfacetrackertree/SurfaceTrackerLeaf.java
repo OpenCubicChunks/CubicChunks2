@@ -64,8 +64,13 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
 
         this.parent = null;
 
-        storage.unloadNode(globalSectionX, globalSectionZ, this);
+        this.save(globalSectionX, globalSectionZ, storage);
     }
+
+    @Override protected void save(int globalSectionX, int globalSectionZ, @Nonnull HeightmapStorage storage) {
+        storage.saveNode(globalSectionX, globalSectionZ, this);
+    }
+
 
     /**
      * Called by the node (cube) when it's unloaded. This informs the parent that one of its

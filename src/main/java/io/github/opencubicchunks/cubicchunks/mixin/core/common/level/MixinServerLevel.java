@@ -168,15 +168,6 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         profilerFiller.pop();
     }
 
-    @Inject(method = "saveLevelData", at = @At("TAIL"))
-    private void onLevelSave(CallbackInfo ci) {
-        try {
-            this.heightmapStorage.flush();
-        } catch (IOException e) {
-            LOGGER.error("Error when flushing heightmap storage", e);
-        }
-    }
-
     @Inject(method = "close", at = @At("TAIL"))
     private void onLevelClose(CallbackInfo ci) {
         try {

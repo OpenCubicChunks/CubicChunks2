@@ -54,7 +54,7 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
         );
     }
 
-    @Override public void unloadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
+    @Override public void saveNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
         if (isClosed) {
             throw new IllegalStateException("Heightmap storage already closed!");
         }
@@ -182,7 +182,7 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
         }
 
         IOException suppressed = null; // java is stupid
-        for (ObjectIterator<Map.Entry<NodeRegionPosition, BitSet>> iterator = this.fileCache.entrySet().iterator(); iterator.hasNext(); ) {
+        for (ObjectIterator<Map.Entry<NodeRegionPosition, BitSet>> iterator = this.fileCache.entrySet().iterator(); iterator.hasNext();) {
             Map.Entry<NodeRegionPosition, BitSet> entry = iterator.next();
             NodeRegionPosition nodeRegionPosition = entry.getKey();
             BitSet bitSet = entry.getValue();
@@ -219,17 +219,17 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
         return this.storageFolder;
     }
 
-    private record NodeRegionPosition(int regionX, int regionZ, int scale, int scaledY, int heightmapType) { }
-
-    int bin2gray(int n) {
+    private static int bin2gray(int n) {
         return n ^ (n >>> 1);
     }
 
-    int gray2bin(int n1) {
+    private static int gray2bin(int n1) {
         int n2 = n1;
         while ((n1 >>>= 1) != 0) {
             n2 ^= n1;
         }
         return n2;
     }
+
+    private record NodeRegionPosition(int regionX, int regionZ, int scale, int scaledY, int heightmapType) { }
 }

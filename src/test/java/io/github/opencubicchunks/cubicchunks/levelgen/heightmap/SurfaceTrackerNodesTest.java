@@ -491,7 +491,7 @@ public class SurfaceTrackerNodesTest {
      * Test heightmap storage that always returns null on load, and correctly nulls fields on unload
      */
     static class NullHeightmapStorage implements HeightmapStorage {
-        @Override public void unloadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
+        @Override public void saveNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
             if (node.getScale() == 0) {
                 ((SurfaceTrackerLeaf) node).setNode(null);
             } else {
@@ -523,7 +523,7 @@ public class SurfaceTrackerNodesTest {
     static class TestHeightmapStorage implements HeightmapStorage {
         Object2ReferenceMap<PackedTypeScaleScaledY, SurfaceTrackerNode> saved = new Object2ReferenceOpenHashMap<>();
 
-        @Override public void unloadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
+        @Override public void saveNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
             if (node.getScale() == 0) {
                 ((SurfaceTrackerLeaf) node).setNode(null);
             } else {

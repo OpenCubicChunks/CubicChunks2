@@ -55,7 +55,7 @@ public class HeightmapStorageTest {
         });
 
         // reload the node
-        storage.unloadNode(0, 0, leaf);
+        storage.saveNode(0, 0, leaf);
 
         SurfaceTrackerLeaf loadedLeaf = (SurfaceTrackerLeaf) storage.loadNode(0, 0, null, (byte) 1, 0, 1);
 
@@ -112,7 +112,7 @@ public class HeightmapStorageTest {
         // reload the node
         for (int nodeX = 0; nodeX < testSize; nodeX++) {
             for (int nodeZ = 0; nodeZ < testSize; nodeZ++) {
-                storage.unloadNode(nodeX, nodeZ, leaves[nodeX + nodeZ * testSize]);
+                storage.saveNode(nodeX, nodeZ, leaves[nodeX + nodeZ * testSize]);
             }
         }
 
@@ -160,7 +160,7 @@ public class HeightmapStorageTest {
         });
 
         // reload the node
-        storage.unloadNode(0, 0, leaf);
+        storage.saveNode(0, 0, leaf);
 
         SurfaceTrackerLeaf loadedLeaf = (SurfaceTrackerLeaf) storage.loadNode(0, 0, null, (byte) 1, 0, 1);
 

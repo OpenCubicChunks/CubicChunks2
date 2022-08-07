@@ -85,7 +85,11 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
 
         this.parent = null;
 
-        storage.unloadNode(globalSectionX, globalSectionZ, this);
+        this.save(globalSectionX, globalSectionZ, storage);
+    }
+
+    @Override protected void save(int globalSectionX, int globalSectionZ, HeightmapStorage storage) {
+        storage.saveNode(globalSectionX, globalSectionZ, this);
     }
 
     @Nullable public SurfaceTrackerLeaf getMinScaleNode(int y) {

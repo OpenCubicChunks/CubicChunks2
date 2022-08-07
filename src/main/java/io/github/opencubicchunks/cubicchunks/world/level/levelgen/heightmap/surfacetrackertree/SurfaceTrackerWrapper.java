@@ -80,6 +80,23 @@ public class SurfaceTrackerWrapper extends Heightmap {
         this.surfaceTracker.loadCube(blockToSection(dx), blockToSection(dz), storage, node);
     }
 
+    public void saveAll(HeightmapStorage storage) {
+        int globalSectionX = blockToSection(this.dx);
+        int globalSectionZ = blockToSection(this.dz);
+        saveAllChildren(globalSectionX, globalSectionZ, storage, this.surfaceTracker);
+    }
+
+    private void saveAllChildren(int globalSectionX, int globalSectionZ, HeightmapStorage storage, SurfaceTrackerNode node) {
+        node.save(globalSectionX, globalSectionZ, storage);
+        if (node.scale > 0) {
+            for (SurfaceTrackerNode child : ((SurfaceTrackerBranch) node).children) {
+                if (child == null) {
+                    continue;
+                }
+                saveAllChildren(globalSectionX, globalSectionZ, storage, child);
+            }
+        }
+    }
     @Nullable
     public SurfaceTrackerLeaf getMinScaleNode(int nodeY) {
         return surfaceTracker.getMinScaleNode(nodeY);

@@ -102,6 +102,8 @@ public abstract class SurfaceTrackerNode {
      */
     protected abstract void unload(int globalSectionX, int globalSectionZ, HeightmapStorage storage);
 
+    protected abstract void save(int globalSectionX, int globalSectionZ, HeightmapStorage storage);
+
     @Nullable public abstract SurfaceTrackerLeaf getMinScaleNode(int y);
 
     /**
