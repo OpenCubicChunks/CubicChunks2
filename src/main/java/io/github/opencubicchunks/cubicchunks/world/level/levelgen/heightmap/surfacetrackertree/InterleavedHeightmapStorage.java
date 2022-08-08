@@ -59,6 +59,10 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
             throw new IllegalStateException("Heightmap storage already closed!");
         }
 
+        if (!node.requiresSave()) {
+            return;
+        }
+
         int regionPosX = globalSectionX >> NODE_POSITION_SHIFT;
         int regionPosZ = globalSectionZ >> NODE_POSITION_SHIFT;
 
@@ -80,9 +84,10 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
             }
 
             writeNode(globalSectionX, globalSectionZ, node, bits);
+            // clear after writing so that if it fails we attempt to write again
+            node.clearRequiresSave();
 
             fileCache.put(nodeRegionPosition, bits);
-//            Files.write(this.storageFolder.toPath().resolve(regionFileName), bits.toByteArray());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

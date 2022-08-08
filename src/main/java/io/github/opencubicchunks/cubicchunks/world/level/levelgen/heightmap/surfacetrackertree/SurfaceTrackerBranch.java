@@ -60,7 +60,7 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         for (int i = 0; i < this.children.length; i++) {
             if (children[i] == null) {
                 int newScaledY = indexToScaledY(i, scale, scaledY);
-                children[i] = storage.loadNode(globalSectionX, globalSectionZ, this, this.heightmapType, newScale, newScaledY);
+                children[i] = storage.loadNode(globalSectionX, globalSectionZ, this, this.getRawType(), newScale, newScaledY);
             }
         }
 
@@ -70,9 +70,9 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
             // If the child containing new node has not been loaded from storage, create it
             // Scale 1 nodes create leaf node children
             if (newScale == 0) {
-                children[idx] = new SurfaceTrackerLeaf(newScaledY, this, this.heightmapType);
+                children[idx] = new SurfaceTrackerLeaf(newScaledY, this, this.getRawType());
             } else {
-                children[idx] = new SurfaceTrackerBranch(newScale, newScaledY, this, this.heightmapType);
+                children[idx] = new SurfaceTrackerBranch(newScale, newScaledY, this, this.getRawType());
             }
         }
         children[idx].loadCube(globalSectionX, globalSectionZ, storage, newNode);

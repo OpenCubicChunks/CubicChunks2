@@ -37,7 +37,11 @@ public abstract class SurfaceTrackerNode {
      */
     protected final int scaledY;
     protected final byte scale;
-    protected final byte heightmapType;
+    /**
+     * Most significant bit (sign bit) is requires save flag
+     * Other bits are the heightmap type
+     */
+    protected byte heightmapTypeAndRequiresSave = 0;
 
     public SurfaceTrackerNode(int scale, int scaledY, @Nullable SurfaceTrackerBranch parent, byte heightmapType) {
         // +1 in bit size to make room for null values
@@ -46,9 +50,13 @@ public abstract class SurfaceTrackerNode {
         this.parent = parent;
         this.scaledY = scaledY;
         this.scale = (byte) scale;
-        this.heightmapType = heightmapType;
+        setHeightmapType(heightmapType);
+        setRequiresSave(); // A clear node created always requires saving
     }
 
+    /**
+     * Should be used when loading from save
+     */
     public SurfaceTrackerNode(int scale, int scaledY, @Nullable SurfaceTrackerBranch parent, byte heightmapType, long[] heightsRaw) {
         // +1 in bit size to make room for null values
         this.heights = new BitStorage(getBitsForScale(scale), WIDTH_BLOCKS * WIDTH_BLOCKS, heightsRaw);
@@ -56,7 +64,7 @@ public abstract class SurfaceTrackerNode {
         this.parent = parent;
         this.scaledY = scaledY;
         this.scale = (byte) scale;
-        this.heightmapType = heightmapType;
+        setHeightmapType(heightmapType);
     }
 
     /**
@@ -157,6 +165,7 @@ public abstract class SurfaceTrackerNode {
 
     /** Sets the index in this SurfaceTrackerSection to dirty */
     protected void setDirty(int idx) {
+        setRequiresSave();
         dirtyPositions[idx >> 6] |= 1L << idx;
     }
 
@@ -202,11 +211,27 @@ public abstract class SurfaceTrackerNode {
     }
 
     public Heightmap.Types getType() {
-        return Heightmap.Types.values()[heightmapType];
+        return Heightmap.Types.values()[getRawType()];
     }
 
     public byte getRawType() {
-        return heightmapType;
+        return (byte) (heightmapTypeAndRequiresSave >> 1);
+    }
+
+    private void setHeightmapType(byte type) {
+        this.heightmapTypeAndRequiresSave = (byte) ((this.heightmapTypeAndRequiresSave & 0b0000_0001) | (type << 1));
+    }
+
+    public boolean requiresSave() {
+        return (heightmapTypeAndRequiresSave & 0b0000_0001) != 0;
+    }
+
+    private void setRequiresSave() {
+        this.heightmapTypeAndRequiresSave = (byte) (this.heightmapTypeAndRequiresSave | 0b0000_0001);
+    }
+
+    public void clearRequiresSave() {
+        this.heightmapTypeAndRequiresSave = (byte) (this.heightmapTypeAndRequiresSave & 0b1111_1110);
     }
 
     /** Get position x/z index within a column, from global/local pos */

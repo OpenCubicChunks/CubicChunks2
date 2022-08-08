@@ -30,7 +30,7 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
     protected int updateHeight(int x, int z, int idx) {
         synchronized(this) {
             // Node cannot be null here. If it is, the leaf was not updated on node unloading.
-            int maxY = this.node.getHighest(x, z, this.heightmapType);
+            int maxY = this.node.getHighest(x, z, this.getRawType());
 
             this.heights.set(idx, absToRelY(maxY, this.scaledY, this.scale));
             clearDirty(idx);
@@ -121,11 +121,11 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
             return;
         }
 
-        if (heightmapType == -1) { //TODO: need to add lighting predicate (optimisation)
+        if (this.getRawType() == -1) { //TODO: need to add lighting predicate (optimisation)
             markDirty(cubeLocalX, cubeLocalZ);
             return;
         }
-        boolean opaque = isOpaquePredicate.test(this.heightmapType);
+        boolean opaque = isOpaquePredicate.test(this.getRawType());
         if (globalY > height) {
             if (!opaque) {
                 return;

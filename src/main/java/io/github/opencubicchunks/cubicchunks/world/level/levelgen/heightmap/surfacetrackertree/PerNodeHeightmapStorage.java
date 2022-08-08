@@ -71,7 +71,7 @@ public class PerNodeHeightmapStorage implements HeightmapStorage {
     }
 
     private void save(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) throws IOException {
-        String filename = String.format("%d.%d.%d.%d.%d.stn", globalSectionX, globalSectionZ, node.scaledY, node.scale, node.heightmapType);
+        String filename = String.format("%d.%d.%d.%d.%d.stn", globalSectionX, globalSectionZ, node.getScaledY(), node.getScale(), node.getRawType());
         try (OutputStream file = new FileOutputStream(new File(storageFolder, filename))) {
             long[] heights = node.heights.getRaw();
 
