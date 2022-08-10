@@ -122,6 +122,6 @@ public class SurfaceTrackerWrapper extends Heightmap {
         if (loadedNode != null) {
             return (SurfaceTrackerBranch) loadedNode;
         }
-        return new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) -1);
+        return new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, type);
     }
 }
