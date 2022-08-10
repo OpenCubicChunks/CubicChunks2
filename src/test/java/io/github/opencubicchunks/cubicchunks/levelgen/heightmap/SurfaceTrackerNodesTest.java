@@ -674,8 +674,8 @@ public class SurfaceTrackerNodesTest {
         }
 
         @Override public int getHighest(int x, int z, byte heightmapType) {
-            x &= CubeAccess.DIAMETER_IN_BLOCKS - 1;
-            z &= CubeAccess.DIAMETER_IN_BLOCKS - 1;
+            x &= WIDTH_BLOCKS - 1;
+            z &= WIDTH_BLOCKS - 1;
 
             int highestY = this.blockBitsets[z][x].previousSetBit(this.blockBitsets[z][x].length());
             return highestY == -1 ? Integer.MIN_VALUE : highestY + (this.nodeY << SurfaceTrackerNode.SCALE_0_NODE_BITS);

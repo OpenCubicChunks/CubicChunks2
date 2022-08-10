@@ -8,40 +8,33 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
-import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Random;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.InterleavedHeightmapStorage;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.PerNodeHeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerBranch;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode;
-import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class HeightmapStorageTest {
-    /**
-     * Returns all HeightmapStorage implementations to test for all tests within this class
-     */
-    public static HeightmapStorage[] storageImplementationsToTest() throws IOException {
-        return new HeightmapStorage[] {
-            new PerNodeHeightmapStorage(Files.createTempDirectory("PerNodeHeightmapStorage").toFile()),
-            new InterleavedHeightmapStorage(Files.createTempDirectory("InterleavedHeightmapStorage").toFile())
-        };
-    }
+    @TempDir Path tempDirectory;
 
     /**
      * Tests unloading and loading a node with the same height in every position
      */
     @ParameterizedTest
-    @MethodSource("storageImplementationsToTest")
-    public void testReloadLeaf(HeightmapStorage storage) {
+    @ValueSource(bytes = { -1, 0, 1, 2, 3, 4, 5 })
+    public void testReloadLeaf(byte heightmapType) throws IOException {
         // setup
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(1, null, (byte) 1);
+        HeightmapStorage storage = new InterleavedHeightmapStorage(tempDirectory.toFile());
+        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(1, null, heightmapType);
         SurfaceTrackerNodesTest.TestHeightmapNode32 testNode = new SurfaceTrackerNodesTest.TestHeightmapNode32(0, 1, 0);
         leaf.loadCube(0, 0, storage, testNode);
 
@@ -55,9 +48,10 @@ public class HeightmapStorageTest {
         });
 
         // reload the node
+        testNode.unloadNode(storage);
         storage.saveNode(0, 0, leaf);
 
-        SurfaceTrackerLeaf loadedLeaf = (SurfaceTrackerLeaf) storage.loadNode(0, 0, null, (byte) 1, 0, 1);
+        SurfaceTrackerLeaf loadedLeaf = (SurfaceTrackerLeaf) storage.loadNode(0, 0, null, heightmapType, 0, 1);
 
         // check positions are the same
         assertNotNull(loadedLeaf);
@@ -66,21 +60,22 @@ public class HeightmapStorageTest {
             assertEquals(blockY, height);
         });
 
-        closeAndCleanup(storage);
+        storage.close();
     }
 
     /**
      * Tests unloading and loading two nodes (section xz (0, 0) and (1, 0)) with different heights
      */
     @ParameterizedTest
-    @MethodSource("storageImplementationsToTest")
-    public void testReloadManyLeaves(HeightmapStorage storage) {
+    @ValueSource(bytes = { -1, 0, 1, 2, 3, 4, 5 })
+    public void testReloadManyLeaves(byte heightmapType) throws IOException {
         // setup
+        HeightmapStorage storage = new InterleavedHeightmapStorage(tempDirectory.toFile());
         int testSize = 128;
         SurfaceTrackerLeaf[] leaves = new SurfaceTrackerLeaf[testSize * testSize];
         SurfaceTrackerNodesTest.TestHeightmapNode16[] nodes = new SurfaceTrackerNodesTest.TestHeightmapNode16[testSize * testSize];
         for (int i = 0; i < leaves.length; i++) {
-            leaves[i] = new SurfaceTrackerLeaf(1, null, (byte) 1);
+            leaves[i] = new SurfaceTrackerLeaf(1, null, heightmapType);
         }
 
         for (int nodeX = 0; nodeX < testSize; nodeX++) {
@@ -91,10 +86,10 @@ public class HeightmapStorageTest {
             }
         }
 
+        BiFunction<Integer, Integer, SurfaceTrackerNodesTest.TestHeightmapNode16> getNode = (sectionX, sectionZ) -> nodes[sectionX + sectionZ * testSize];
         // set heights
         Consumer<SurfaceTrackerNodesTest.HeightmapBlock> setHeight = block ->
-            nodes[blockToSection(block.x()) + blockToSection(block.z()) * testSize]
-                .setBlock(
+            getNode.apply(blockToSection(block.x()), blockToSection(block.z())).setBlock(
                     block.x() & (WIDTH_BLOCKS - 1),
                     block.y() & (SCALE_0_NODE_HEIGHT - 1),
                     block.z() & (WIDTH_BLOCKS - 1),
@@ -112,6 +107,7 @@ public class HeightmapStorageTest {
         // reload the node
         for (int nodeX = 0; nodeX < testSize; nodeX++) {
             for (int nodeZ = 0; nodeZ < testSize; nodeZ++) {
+                getNode.apply(nodeX, nodeZ).unloadNode(storage);
                 storage.saveNode(nodeX, nodeZ, leaves[nodeX + nodeZ * testSize]);
             }
         }
@@ -119,7 +115,7 @@ public class HeightmapStorageTest {
         SurfaceTrackerLeaf[] loadedLeaves = new SurfaceTrackerLeaf[testSize * testSize];
         for (int nodeX = 0; nodeX < testSize; nodeX++) {
             for (int nodeZ = 0; nodeZ < testSize; nodeZ++) {
-                SurfaceTrackerLeaf loadedLeaf = (SurfaceTrackerLeaf) storage.loadNode(nodeX, nodeZ, null, (byte) 1, 0, 1);
+                SurfaceTrackerLeaf loadedLeaf = (SurfaceTrackerLeaf) storage.loadNode(nodeX, nodeZ, null, heightmapType, 0, 1);
                 assertNotNull(loadedLeaf);
                 loadedLeaves[nodeX + nodeZ * testSize] = loadedLeaf;
             }
@@ -135,17 +131,18 @@ public class HeightmapStorageTest {
             }
         }
 
-        closeAndCleanup(storage);
+        storage.close();
     }
 
     /**
      * Tests unloading and loading a node with incrementing heights in every position
      */
     @ParameterizedTest
-    @MethodSource("storageImplementationsToTest")
-    public void testReloadLeaf2(HeightmapStorage storage) {
+    @ValueSource(bytes = { -1, 0, 1, 2, 3, 4, 5 })
+    public void testReloadLeaf2(byte heightmapType) throws IOException {
         // setup
-        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(1, null, (byte) 1);
+        HeightmapStorage storage = new InterleavedHeightmapStorage(tempDirectory.toFile());
+        SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(1, null, heightmapType);
         SurfaceTrackerNodesTest.TestHeightmapNode32 testNode = new SurfaceTrackerNodesTest.TestHeightmapNode32(0, 1, 0);
         leaf.loadCube(0, 0, storage, testNode);
 
@@ -160,9 +157,10 @@ public class HeightmapStorageTest {
         });
 
         // reload the node
+        testNode.unloadNode(storage);
         storage.saveNode(0, 0, leaf);
 
-        SurfaceTrackerLeaf loadedLeaf = (SurfaceTrackerLeaf) storage.loadNode(0, 0, null, (byte) 1, 0, 1);
+        SurfaceTrackerLeaf loadedLeaf = (SurfaceTrackerLeaf) storage.loadNode(0, 0, null, heightmapType, 0, 1);
 
         // check positions are the same
         assertNotNull(loadedLeaf);
@@ -172,14 +170,15 @@ public class HeightmapStorageTest {
             assertEquals(blockY, height);
         });
 
-        closeAndCleanup(storage);
+        storage.close();
     }
 
     @ParameterizedTest
-    @MethodSource("storageImplementationsToTest")
-    public void testReloadTree(HeightmapStorage storage) {
+    @ValueSource(bytes = { -1, 0, 1, 2, 3, 4, 5 })
+    public void testReloadTree(byte heightmapType) throws IOException {
         // setup
-        SurfaceTrackerBranch root = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) 0);
+        HeightmapStorage storage = new InterleavedHeightmapStorage(tempDirectory.toFile());
+        SurfaceTrackerBranch root = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, heightmapType);
         SurfaceTrackerNodesTest.TestHeightmapNode32 testNode = new SurfaceTrackerNodesTest.TestHeightmapNode32(0, 0, 0);
         root.loadCube(0, 0, storage, testNode);
 
@@ -195,12 +194,12 @@ public class HeightmapStorageTest {
         // reload the non MAX_SCALE nodes
         testNode.unloadNode(storage);
 
-        SurfaceTrackerLeaf loadedLeaf = (SurfaceTrackerLeaf) storage.loadNode(0, 0, null, (byte) 0, 0, 0);
-        SurfaceTrackerBranch loadedBranch1 = (SurfaceTrackerBranch) storage.loadNode(0, 0, null, (byte) 0, 1, 0);
-        SurfaceTrackerBranch loadedBranch2 = (SurfaceTrackerBranch) storage.loadNode(0, 0, null, (byte) 0, 2, 0);
-        SurfaceTrackerBranch loadedBranch3 = (SurfaceTrackerBranch) storage.loadNode(0, 0, null, (byte) 0, 3, 0);
-        SurfaceTrackerBranch loadedBranch4 = (SurfaceTrackerBranch) storage.loadNode(0, 0, null, (byte) 0, 4, 0);
-        SurfaceTrackerBranch loadedBranch5 = (SurfaceTrackerBranch) storage.loadNode(0, 0, null, (byte) 0, 5, 0);
+        SurfaceTrackerLeaf loadedLeaf = (SurfaceTrackerLeaf) storage.loadNode(0, 0, null, heightmapType, 0, 0);
+        SurfaceTrackerBranch loadedBranch1 = (SurfaceTrackerBranch) storage.loadNode(0, 0, null, heightmapType, 1, 0);
+        SurfaceTrackerBranch loadedBranch2 = (SurfaceTrackerBranch) storage.loadNode(0, 0, null, heightmapType, 2, 0);
+        SurfaceTrackerBranch loadedBranch3 = (SurfaceTrackerBranch) storage.loadNode(0, 0, null, heightmapType, 3, 0);
+        SurfaceTrackerBranch loadedBranch4 = (SurfaceTrackerBranch) storage.loadNode(0, 0, null, heightmapType, 4, 0);
+        SurfaceTrackerBranch loadedBranch5 = (SurfaceTrackerBranch) storage.loadNode(0, 0, null, heightmapType, 5, 0);
 
         // check positions are the same
         assertNotNull(loadedLeaf);
@@ -221,15 +220,6 @@ public class HeightmapStorageTest {
         assertNotNull(loadedBranch5);
         forEachBlockColumnSurfaceTrackerNode((x, z) -> assertEquals(blockY, loadedBranch5.getHeight(x, z)));
 
-        closeAndCleanup(storage);
-    }
-
-    private static void closeAndCleanup(HeightmapStorage storage) {
-        try {
-            storage.close();
-            FileUtils.deleteDirectory(storage.storageDirectory());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        storage.close();
     }
 }
