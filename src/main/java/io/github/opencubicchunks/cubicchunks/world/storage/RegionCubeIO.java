@@ -7,6 +7,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -15,6 +18,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -28,6 +32,14 @@ import com.mojang.datafixers.util.Either;
 import cubicchunks.regionlib.impl.EntryLocation2D;
 import cubicchunks.regionlib.impl.EntryLocation3D;
 import cubicchunks.regionlib.impl.SaveCubeColumns;
+import cubicchunks.regionlib.impl.header.TimestampHeaderEntryProvider;
+import cubicchunks.regionlib.impl.save.SaveSection2D;
+import cubicchunks.regionlib.impl.save.SaveSection3D;
+import cubicchunks.regionlib.lib.ExtRegion;
+import cubicchunks.regionlib.lib.Region;
+import cubicchunks.regionlib.lib.provider.SharedCachedRegionProvider;
+import cubicchunks.regionlib.lib.provider.SimpleRegionProvider;
+import cubicchunks.regionlib.util.Utils;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import net.minecraft.nbt.CompoundTag;
@@ -69,7 +81,7 @@ public class RegionCubeIO {
     }
 
     private void initSave() throws IOException {
-        this.saveCubeColumns = SaveCubeColumns.create(storageFolder.toPath());
+        this.saveCubeColumns = createSaveCubeColumns(this.storageFolder.toPath());
     }
 
     private synchronized void closeSave() throws IOException {
@@ -306,6 +318,56 @@ public class RegionCubeIO {
             this.storeChunk(entry.getKey(), entry.getValue());
             this.chunkExecutor.tell(new StrictQueue.IntRunnable(Priority.LOW.ordinal(), this::storePendingChunk));
         }
+    }
+
+    private static SaveCubeColumns createSaveCubeColumns(Path directory) throws IOException {
+        Utils.createDirectories(directory);
+
+        Path part2d = directory.resolve("region2d");
+        Utils.createDirectories(part2d);
+
+        Path part3d = directory.resolve("region3d");
+        Utils.createDirectories(part3d);
+
+        SaveSection2D section2d = new SaveSection2D(
+            new SharedCachedRegionProvider<>(
+                new SimpleRegionProvider<>(new EntryLocation2D.Provider(), directory, (keyProv, r) ->
+                    new Region.Builder<EntryLocation2D>()
+                        .setDirectory(directory)
+                        .setRegionKey(r)
+                        .setKeyProvider(keyProv)
+                        .setSectorSize(512)
+                        .addHeaderEntry(new TimestampHeaderEntryProvider<>(TimeUnit.MILLISECONDS))
+                        .build(),
+                    (dir, key) -> Files.exists(dir.resolve(key.getRegionKey().getName()))
+                )
+            ),
+            new SharedCachedRegionProvider<>(
+                new SimpleRegionProvider<>(new EntryLocation2D.Provider(), directory,
+                    (keyProvider, regionKey) -> new ExtRegion<>(directory, Collections.emptyList(), keyProvider, regionKey),
+                    (dir, key) -> Files.exists(dir.resolve(key.getRegionKey().getName() + ".ext"))
+                )
+            ));
+        SaveSection3D section3d = new SaveSection3D(
+            new SharedCachedRegionProvider<>(
+                new SimpleRegionProvider<>(new EntryLocation3D.Provider(), directory, (keyProv, r) ->
+                    new Region.Builder<EntryLocation3D>()
+                        .setDirectory(directory)
+                        .setRegionKey(r)
+                        .setKeyProvider(keyProv)
+                        .setSectorSize(512)
+                        .addHeaderEntry(new TimestampHeaderEntryProvider<>(TimeUnit.MILLISECONDS))
+                        .build(),
+                    (dir, key) -> Files.exists(dir.resolve(key.getRegionKey().getName()))
+                )
+            ),
+            new SharedCachedRegionProvider<>(
+                new SimpleRegionProvider<>(new EntryLocation3D.Provider(), directory,
+                    (keyProvider, regionKey) -> new ExtRegion<>(directory, Collections.emptyList(), keyProvider, regionKey),
+                    (dir, key) -> Files.exists(dir.resolve(key.getRegionKey().getName() + ".ext"))
+                )
+            ));
+        return new SaveCubeColumns(section2d, section3d);
     }
 
     static class SaveEntry {
