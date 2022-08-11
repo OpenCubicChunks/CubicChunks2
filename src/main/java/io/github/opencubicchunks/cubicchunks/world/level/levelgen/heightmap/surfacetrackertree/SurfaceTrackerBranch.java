@@ -8,7 +8,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.Heig
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 
 public class SurfaceTrackerBranch extends SurfaceTrackerNode {
-    protected SurfaceTrackerNode[] children = new SurfaceTrackerNode[NODE_COUNT];
+    protected final SurfaceTrackerNode[] children;
 
     private int requiredChildren;
 
@@ -17,6 +17,9 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         super(scale, scaledY, parent, heightmapType);
         assert scale > 0; //Branches cannot be scale 0
         assert scale <= SurfaceTrackerNode.MAX_SCALE; //Branches cannot be > MAX_SCALE
+
+        // MAX_SCALE nodes have 2 children
+        this.children = new SurfaceTrackerNode[scale == MAX_SCALE ? 2 : NODE_COUNT];
     }
 
     /**
@@ -27,6 +30,9 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         super(scale, scaledY, parent, heightmapType, heightsRaw);
         assert scale > 0; //Branches cannot be scale 0
         assert scale <= SurfaceTrackerNode.MAX_SCALE; //Branches cannot be > MAX_SCALE
+
+        // MAX_SCALE nodes have 2 children
+        this.children = new SurfaceTrackerNode[scale == MAX_SCALE ? 2 : NODE_COUNT];
     }
 
     @Override
