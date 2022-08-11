@@ -11,7 +11,7 @@ import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 public abstract class SurfaceTrackerNode {
-    // TODO: This currently covers y = -2^28 to 2^28 or so. One more would allow us to cover the entire integer block range
+    // This currently covers y = -2^28 to 2^28 or so. One more would allow us to cover the entire integer block range
     public static final int MAX_SCALE = 6;
     /**
      * Number of bits needed to represent the children nodes (i.e. log2(NODE_COUNT)) This is also the number of bits that are added on each scale increase.
@@ -114,9 +114,15 @@ public abstract class SurfaceTrackerNode {
      */
     protected abstract void unload(int globalSectionX, int globalSectionZ, HeightmapStorage storage);
 
+    /**
+     * Tells a node to save itself to the provided storage
+     */
     protected abstract void save(int globalSectionX, int globalSectionZ, HeightmapStorage storage);
 
-    @Nullable public abstract SurfaceTrackerLeaf getMinScaleNode(int y);
+    /**
+     * Gets the leaf node at the specified Y (delegates to children if required)
+     */
+    @Nullable public abstract SurfaceTrackerLeaf getLeaf(int y);
 
     /**
      * Updates any positions that are dirty (used for unloading section)
@@ -136,16 +142,7 @@ public abstract class SurfaceTrackerNode {
         }
     }
 
-    public void markAncestorsDirty() {
-        for (int z = 0; z < WIDTH_BLOCKS; z++) {
-            for (int x = 0; x < WIDTH_BLOCKS; x++) {
-                // here we mark the tree dirty if their positions are below the top block of this cube
-                this.markTreeDirtyIfRequired(x, z, relToAbsY(SCALE_0_NODE_HEIGHT << this.scale, this.scaledY, this.scale) + 1);
-            }
-        }
-    }
-
-    /** Returns if any position in the SurfaceTrackerSection is dirty*/
+    /** Returns if any position in the SurfaceTrackerNode is dirty*/
     public boolean isAnyDirty() {
         assert dirtyPositions.length == 4;
 
@@ -157,22 +154,7 @@ public abstract class SurfaceTrackerNode {
         return l != 0;
     }
 
-    /** Returns if this SurfaceTrackerSection is dirty at the specified index */
-    protected boolean isDirty(int idx) {
-        return (dirtyPositions[idx >> 6] & (1L << idx)) != 0;
-    }
-
-    /** Sets the index in this SurfaceTrackerSection to non-dirty */
-    protected void clearDirty(int idx) {
-        dirtyPositions[idx >> 6] &= ~(1L << idx);
-    }
-
-    /** Sets the index in this SurfaceTrackerSection to dirty */
-    protected void setDirty(int idx) {
-        setRequiresSave();
-        dirtyPositions[idx >> 6] |= 1L << idx;
-    }
-
+    /** Sets all positions within the SurfaceTrackerNode to clear */
     public void setAllDirty() {
         assert dirtyPositions.length == 4;
 
@@ -181,12 +163,38 @@ public abstract class SurfaceTrackerNode {
         dirtyPositions[2] = -1;
         dirtyPositions[3] = -1;
     }
+    
+    /** Returns if this SurfaceTrackerNode is dirty at the specified index */
+    protected boolean isDirty(int idx) {
+        return (dirtyPositions[idx >> 6] & (1L << idx)) != 0;
+    }
 
-    /** Sets the index in this and all parent SurfaceTrackerSections to dirty */
+    /** Sets the index in this SurfaceTrackerNode to non-dirty */
+    protected void clearDirty(int idx) {
+        dirtyPositions[idx >> 6] &= ~(1L << idx);
+    }
+
+    /** Sets the index in this SurfaceTrackerNode to dirty */
+    protected void setDirty(int idx) {
+        setRequiresSave();
+        dirtyPositions[idx >> 6] |= 1L << idx;
+    }
+
+    /** Sets the index in this and all parent SurfaceTrackerNodes to dirty */
     protected void markDirty(int x, int z) {
         setDirty(index(x, z));
         if (parent != null) {
             parent.markDirty(x, z);
+        }
+    }
+
+    /** For all positions, marks all parents dirty if their heights are below this node */
+    public void markAncestorsDirty() {
+        for (int z = 0; z < WIDTH_BLOCKS; z++) {
+            for (int x = 0; x < WIDTH_BLOCKS; x++) {
+                // here we mark the tree dirty if their positions are below the top block of this node
+                this.markTreeDirtyIfRequired(x, z, relToAbsY(SCALE_0_NODE_HEIGHT << this.scale, this.scaledY, this.scale) + 1);
+            }
         }
     }
 
@@ -201,8 +209,7 @@ public abstract class SurfaceTrackerNode {
     }
 
 
-    @Nullable
-    public SurfaceTrackerBranch getParent() {
+    @Nullable public SurfaceTrackerBranch getParent() {
         return parent;
     }
 
@@ -311,6 +318,9 @@ public abstract class SurfaceTrackerNode {
         }
     }
 
+    /**
+     * Returns the number of bits required to contain a single position at this scale
+     */
     public static int getBitsForScale(int scale) {
         return BASE_SIZE_BITS + 1 + scale * NODE_COUNT_BITS;
     }

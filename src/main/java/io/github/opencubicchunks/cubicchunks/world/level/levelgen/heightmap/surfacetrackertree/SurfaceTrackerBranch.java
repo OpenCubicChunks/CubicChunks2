@@ -98,13 +98,13 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         storage.saveNode(globalSectionX, globalSectionZ, this);
     }
 
-    @Nullable public SurfaceTrackerLeaf getMinScaleNode(int y) {
+    @Nullable public SurfaceTrackerLeaf getLeaf(int y) {
         int idx = indexOfRawHeightNode(y, scale, scaledY);
         SurfaceTrackerNode node = this.children[idx];
         if (node == null) {
             return null;
         }
-        return node.getMinScaleNode(y);
+        return node.getLeaf(y);
     }
 
 
@@ -118,6 +118,9 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         assert requiredChildren <= this.children.length : "More children than max?!";
     }
 
+    /**
+     * Called by a child when it has no required children left, to inform the parent to check its own required state
+     */
     public void onChildUnloaded(int globalSectionX, int globalSectionZ, HeightmapStorage storage) {
         --requiredChildren;
 

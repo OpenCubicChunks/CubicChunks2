@@ -85,7 +85,7 @@ public class MixinServerLevel {
         //Collect all leaves in the cubemap
         List<SurfaceTrackerLeaf> requiredLeaves = new ArrayList<>();
         for (Integer cubeY : cubeMap.getLoaded()) {
-            SurfaceTrackerLeaf leaf = root.getMinScaleNode(cubeY);
+            SurfaceTrackerLeaf leaf = root.getLeaf(cubeY);
             if (leaf != null) {
                 //Leaves can be null when a protocube is marked as loaded in the cubemap, but hasn't yet been added to the global heightmap
                 requiredLeaves.add(leaf);

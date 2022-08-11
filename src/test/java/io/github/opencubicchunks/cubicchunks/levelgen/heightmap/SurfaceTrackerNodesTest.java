@@ -226,8 +226,8 @@ public class SurfaceTrackerNodesTest {
         nodes.get(-1).unloadNode(storage);
 
         for (SurfaceTrackerNode root : roots) {
-            assertNull(root.getMinScaleNode(-1), "Did not unload non-required node?!");
-            assertNotNull(root.getMinScaleNode(0), "Unloaded required node?!");
+            assertNull(root.getLeaf(-1), "Did not unload non-required node?!");
+            assertNotNull(root.getLeaf(0), "Unloaded required node?!");
 
             verifyHeightmapTree((SurfaceTrackerBranch) root, nodes.entrySet());
         }
@@ -279,12 +279,12 @@ public class SurfaceTrackerNodesTest {
         for (SurfaceTrackerNode root : roots) {
             for (TestHeightmapStorage.PackedTypeScaleScaledY packed : storage.saved.keySet()) {
                 if (packed.scale == 0) {
-                    assertNull(root.getMinScaleNode(packed.scaledY), "Did not unload non-required node?!");
+                    assertNull(root.getLeaf(packed.scaledY), "Did not unload non-required node?!");
                 }
             }
 
             for (Integer integer : nodes.keySet()) {
-                assertNotNull(root.getMinScaleNode(integer), "Unloaded required node?!");
+                assertNotNull(root.getLeaf(integer), "Unloaded required node?!");
             }
 
             verifyHeightmapTree((SurfaceTrackerBranch) root, nodes.entrySet());
@@ -338,12 +338,12 @@ public class SurfaceTrackerNodesTest {
         for (SurfaceTrackerNode root : roots) {
             for (TestHeightmapStorage.PackedTypeScaleScaledY packed : storage.saved.keySet()) {
                 if (packed.scale == 0) {
-                    assertNull(root.getMinScaleNode(packed.scaledY), "Did not unload non-required node?!");
+                    assertNull(root.getLeaf(packed.scaledY), "Did not unload non-required node?!");
                 }
             }
 
             for (Integer integer : nodes.keySet()) {
-                assertNotNull(root.getMinScaleNode(integer), "Unloaded required node?!");
+                assertNotNull(root.getLeaf(integer), "Unloaded required node?!");
             }
 
             verifyHeightmapTree((SurfaceTrackerBranch) root, nodes.entrySet());
@@ -375,7 +375,7 @@ public class SurfaceTrackerNodesTest {
 
         loadNode.apply(0);
         loadNode.apply(1);
-        SurfaceTrackerLeaf node0 = root.getMinScaleNode(0);
+        SurfaceTrackerLeaf node0 = root.getLeaf(0);
 
         SurfaceTrackerBranch parent = node0.getParent();
         HeightmapNode cubeNode = node0.getNode();
@@ -384,7 +384,7 @@ public class SurfaceTrackerNodesTest {
 
         root.loadCube(0, 0, storage, cubeNode);
 
-        SurfaceTrackerLeaf reloadedNode = root.getMinScaleNode(0);
+        SurfaceTrackerLeaf reloadedNode = root.getLeaf(0);
 
         assertEquals(parent, reloadedNode.getParent());
         assertEquals(cubeNode, reloadedNode.getNode());
@@ -415,7 +415,7 @@ public class SurfaceTrackerNodesTest {
 
         loadNode.apply(0);
         loadNode.apply(1);
-        SurfaceTrackerLeaf node0 = root.getMinScaleNode(0);
+        SurfaceTrackerLeaf node0 = root.getLeaf(0);
 
         forEachBlockColumnSurfaceTrackerNode((x, z) -> {
             ((TestHeightmapNode32) node0.getNode()).setBlock(x, 29, z, true);
@@ -482,7 +482,7 @@ public class SurfaceTrackerNodesTest {
         //Collect all leaves in the cubemap
         List<SurfaceTrackerLeaf> requiredLeaves = new ArrayList<>();
         for (Map.Entry<Integer, TestHeightmapNode32> entry : entries) {
-            SurfaceTrackerLeaf leaf = root.getMinScaleNode(entry.getKey());
+            SurfaceTrackerLeaf leaf = root.getLeaf(entry.getKey());
             if (leaf != null) {
                 //Leaves can be null when a protocube is marked as loaded in the cubemap, but hasn't yet been added to the global heightmap
                 requiredLeaves.add(leaf);

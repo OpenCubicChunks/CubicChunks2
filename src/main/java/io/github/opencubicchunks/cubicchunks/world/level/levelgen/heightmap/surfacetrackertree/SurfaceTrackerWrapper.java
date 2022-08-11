@@ -54,7 +54,7 @@ public class SurfaceTrackerWrapper extends Heightmap {
      */
     @Override
     public boolean update(int columnLocalX, int globalY, int columnLocalZ, BlockState blockState) {
-        surfaceTracker.getMinScaleNode(blockToCube(globalY)).onSetBlock(dx + columnLocalX, globalY, dz + columnLocalZ, opaquePredicateForState(blockState));
+        surfaceTracker.getLeaf(blockToCube(globalY)).onSetBlock(dx + columnLocalX, globalY, dz + columnLocalZ, opaquePredicateForState(blockState));
         // We always return false, because the result is never used anywhere anyway (by either vanilla or us)
         return false;
     }
@@ -64,7 +64,6 @@ public class SurfaceTrackerWrapper extends Heightmap {
         return surfaceTracker.getHeight(columnLocalX + dx, columnLocalZ + dz) + 1;
     }
 
-    // TODO not sure what to do about these methods
     @Override
     public void setRawData(ChunkAccess clv, Types a, long[] ls) {
         throw new UnsupportedOperationException();
@@ -98,9 +97,10 @@ public class SurfaceTrackerWrapper extends Heightmap {
             }
         }
     }
+
     @Nullable
-    public SurfaceTrackerLeaf getMinScaleNode(int nodeY) {
-        return surfaceTracker.getMinScaleNode(nodeY);
+    public SurfaceTrackerLeaf getLeaf(int nodeY) {
+        return surfaceTracker.getLeaf(nodeY);
     }
 
     public SurfaceTrackerBranch getSurfaceTrackerSection() {

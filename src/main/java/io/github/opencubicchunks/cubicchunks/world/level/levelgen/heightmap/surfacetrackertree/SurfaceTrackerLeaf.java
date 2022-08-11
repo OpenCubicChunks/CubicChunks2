@@ -91,7 +91,7 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
     }
 
     @Nullable
-    public SurfaceTrackerLeaf getMinScaleNode(int y) {
+    public SurfaceTrackerLeaf getLeaf(int y) {
         if (y != this.scaledY) {
             throw new IllegalArgumentException("Invalid Y: " + y + ", expected " + this.scaledY);
         }
@@ -161,7 +161,7 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
     @Nullable
     public SurfaceTrackerLeaf getSectionAbove() {
         // TODO this can be optimized - don't need to go to the root every time, just the lowest node that is a parent of both this node and the node above.
-        return this.getRoot().getMinScaleNode(scaledY + 1);
+        return this.getRoot().getLeaf(scaledY + 1);
     }
 
     @VisibleForTesting
