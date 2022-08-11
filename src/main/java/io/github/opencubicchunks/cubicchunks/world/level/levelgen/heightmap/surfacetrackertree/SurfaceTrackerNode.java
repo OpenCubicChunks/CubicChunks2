@@ -19,6 +19,10 @@ public abstract class SurfaceTrackerNode {
     public static final int NODE_COUNT_BITS = 4;
     /** Number of children nodes */
     public static final int NODE_COUNT = 1 << NODE_COUNT_BITS;
+    /** Number of bits needed to represent the children of the root node*/
+    public static final int ROOT_NODE_COUNT_BITS = 1;
+    /** Number of children of the root node */
+    public static final int ROOT_NODE_COUNT = 1 << ROOT_NODE_COUNT_BITS;
 
     // Use width of 16 to match columns.
     public static final int WIDTH_BLOCKS = 16;

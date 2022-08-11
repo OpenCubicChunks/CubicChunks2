@@ -19,7 +19,7 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         assert scale <= SurfaceTrackerNode.MAX_SCALE; //Branches cannot be > MAX_SCALE
 
         // MAX_SCALE nodes have 2 children
-        this.children = new SurfaceTrackerNode[scale == MAX_SCALE ? 2 : NODE_COUNT];
+        this.children = new SurfaceTrackerNode[scale == MAX_SCALE ? ROOT_NODE_COUNT : NODE_COUNT];
     }
 
     /**
@@ -32,7 +32,7 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         assert scale <= SurfaceTrackerNode.MAX_SCALE; //Branches cannot be > MAX_SCALE
 
         // MAX_SCALE nodes have 2 children
-        this.children = new SurfaceTrackerNode[scale == MAX_SCALE ? 2 : NODE_COUNT];
+        this.children = new SurfaceTrackerNode[scale == MAX_SCALE ? ROOT_NODE_COUNT : NODE_COUNT];
     }
 
     @Override

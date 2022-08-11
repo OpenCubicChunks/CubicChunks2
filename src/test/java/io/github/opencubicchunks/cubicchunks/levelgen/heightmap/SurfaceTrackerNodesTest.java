@@ -2,6 +2,9 @@ package io.github.opencubicchunks.cubicchunks.levelgen.heightmap;
 
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.forEachBlockColumnCube;
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.forEachBlockColumnSurfaceTrackerNode;
+import static io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode.MAX_SCALE;
+import static io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode.NODE_COUNT;
+import static io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode.ROOT_NODE_COUNT;
 import static io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode.WIDTH_BLOCKS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,7 +55,7 @@ public class SurfaceTrackerNodesTest {
      */
     @Test
     public void sanityTest() {
-        TestHeightmapStorage storage = new TestHeightmapStorage();
+        HeightmapStorage storage = new NullHeightmapStorage();
 
         ReferenceHeightmap reference = new ReferenceHeightmap(2048);
         
@@ -100,7 +103,7 @@ public class SurfaceTrackerNodesTest {
      */
     @Test
     public void testNoValidHeights() {
-        TestHeightmapStorage storage = new TestHeightmapStorage();
+        HeightmapStorage storage = new NullHeightmapStorage();
 
         ReferenceHeightmap reference = new ReferenceHeightmap(2048);
 
@@ -146,7 +149,7 @@ public class SurfaceTrackerNodesTest {
 
     @Test
     public void seededRandom() {
-        TestHeightmapStorage storage = new TestHeightmapStorage();
+        HeightmapStorage storage = new NullHeightmapStorage();
 
         int maxCoordinate = 2048;
 
@@ -266,10 +269,10 @@ public class SurfaceTrackerNodesTest {
         };
 
 
-        for (int i = -1; i < SurfaceTrackerNode.NODE_COUNT; i++) {
+        for (int i = -1; i < NODE_COUNT; i++) {
             loadNode.apply(i);
         }
-        loadNode.apply(SurfaceTrackerNode.NODE_COUNT * 2);
+        loadNode.apply(NODE_COUNT * 2);
 
         unloadNode.apply(-1);
 
@@ -426,6 +429,48 @@ public class SurfaceTrackerNodesTest {
 
         // parent had a child unloaded, so it must have no dirty positions
         assertFalse(parent.isAnyDirty());
+    }
+
+    /**
+     * Tests that all branch nodes have the correct number of children
+     * (root has {@link SurfaceTrackerNode#ROOT_NODE_COUNT}, all others have {@link SurfaceTrackerNode#NODE_COUNT})
+     */
+    @Test
+    public void testNodeChildrenArraySizes() throws IOException {
+        HeightmapStorage storage = new NullHeightmapStorage();
+
+        TestHeightmapNode16 node = new TestHeightmapNode16(0, 0, 0);
+        SurfaceTrackerBranch root = new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, (byte) 0);
+
+        root.loadCube(0, 0, storage, node);
+
+        assertNotNull(node.leaf); // if the leaf is null loading has failed, this test should fail immediately.
+
+        forAllNodes(root, child -> {
+            if (child.getScale() == MAX_SCALE) {
+                assertEquals(ROOT_NODE_COUNT, ((SurfaceTrackerBranch) child).getChildren().length);
+            } else if (child.getScale() > 0) {
+                assertEquals(NODE_COUNT, ((SurfaceTrackerBranch) child).getChildren().length);
+            }
+        });
+
+        storage.close();
+    }
+
+    private void forAllNodes(SurfaceTrackerBranch branch, Consumer<SurfaceTrackerNode> nodeConsumer) {
+        nodeConsumer.accept(branch);
+        forAllChildren(branch, nodeConsumer);
+    }
+    private void forAllChildren(SurfaceTrackerBranch branch, Consumer<SurfaceTrackerNode> childConsumer) {
+        for (SurfaceTrackerNode child : branch.getChildren()) {
+            if (child == null) {
+                continue;
+            }
+            childConsumer.accept(child);
+            if (child.getScale() > 0) {
+                forAllChildren((SurfaceTrackerBranch) child, childConsumer);
+            }
+        }
     }
 
     /**
