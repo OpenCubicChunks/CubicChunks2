@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
@@ -537,12 +536,7 @@ public class SurfaceTrackerNodesTest {
      */
     static class NullHeightmapStorage implements HeightmapStorage {
         @Override public void saveNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
-            if (node.getScale() == 0) {
-                ((SurfaceTrackerLeaf) node).setNode(null);
-            } else {
-                Arrays.fill(((SurfaceTrackerBranch) node).getChildren(), null);
-            }
-            node.setParent(null);
+
         }
 
         @Nullable @Override public SurfaceTrackerNode loadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerBranch parent, byte heightmapType, int scale, int scaledY) {
@@ -569,13 +563,6 @@ public class SurfaceTrackerNodesTest {
         Object2ReferenceMap<PackedTypeScaleScaledY, SurfaceTrackerNode> saved = new Object2ReferenceOpenHashMap<>();
 
         @Override public void saveNode(int globalSectionX, int globalSectionZ, SurfaceTrackerNode node) {
-            if (node.getScale() == 0) {
-                ((SurfaceTrackerLeaf) node).setNode(null);
-            } else {
-                Arrays.fill(((SurfaceTrackerBranch) node).getChildren(), null);
-            }
-            node.setParent(null);
-
             saved.put(new PackedTypeScaleScaledY(node.getRawType(), node.getScale(), node.getScaledY()), node);
         }
         @Override public SurfaceTrackerNode loadNode(int globalSectionX, int globalSectionZ, SurfaceTrackerBranch parent, byte heightmapType, int scale, int scaledY) {

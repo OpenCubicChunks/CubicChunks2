@@ -7,7 +7,6 @@ import java.util.function.IntPredicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
@@ -162,10 +161,5 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
     public SurfaceTrackerLeaf getSectionAbove() {
         // TODO this can be optimized - don't need to go to the root every time, just the lowest node that is a parent of both this node and the node above.
         return this.getRoot().getLeaf(scaledY + 1);
-    }
-
-    @VisibleForTesting
-    public void setNode(@Nullable HeightmapNode node) {
-        this.node = node;
     }
 }
