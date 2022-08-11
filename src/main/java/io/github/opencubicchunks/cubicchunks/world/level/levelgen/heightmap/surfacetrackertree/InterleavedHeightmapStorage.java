@@ -66,15 +66,12 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
         int regionPosX = globalSectionX >> NODE_POSITION_SHIFT;
         int regionPosZ = globalSectionZ >> NODE_POSITION_SHIFT;
 
-        NodeRegionPosition nodeRegionPosition = new NodeRegionPosition(regionPosX, regionPosZ,
-            node.getScale(), node.getScaledY(), node.getRawType());
-        String regionFileName = getRegionName(nodeRegionPosition);
-
         try {
+            NodeRegionPosition nodeRegionPosition = new NodeRegionPosition(regionPosX, regionPosZ, node.getScale(), node.getScaledY(), node.getRawType());
             BitSet bits = fileCache.remove(nodeRegionPosition);
             if (bits == null) {
                 ByteBuffer data;
-                Path filePath = storageFolder.toPath().resolve(regionFileName);
+                Path filePath = storageFolder.toPath().resolve(getRegionName(nodeRegionPosition));
                 if (Files.exists(filePath)) {
                     data = ByteBuffer.wrap(Files.readAllBytes(filePath));
                     bits = BitSet.valueOf(data.position(0));
@@ -101,14 +98,12 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
         int regionPosX = globalSectionX >> NODE_POSITION_SHIFT;
         int regionPosZ = globalSectionZ >> NODE_POSITION_SHIFT;
 
-        String regionFileName = String.format("%d.%d.%d.%d.%d.str", regionPosX, regionPosZ, scaledY, scale, heightmapType);
-
         try {
             NodeRegionPosition nodeRegionPosition = new NodeRegionPosition(regionPosX, regionPosZ, scale, scaledY, heightmapType);
             BitSet bits = fileCache.get(nodeRegionPosition);
             if (bits == null) {
                 ByteBuffer data;
-                Path filePath = storageFolder.toPath().resolve(regionFileName);
+                Path filePath = storageFolder.toPath().resolve(getRegionName(nodeRegionPosition));
                 if (Files.exists(filePath)) {
                     try (InputStream inputStream = new InflaterInputStream(new FileInputStream(filePath.toFile()))) {
                         data = ByteBuffer.wrap(inputStream.readAllBytes());
@@ -186,7 +181,7 @@ public class InterleavedHeightmapStorage implements HeightmapStorage {
             return;
         }
 
-        IOException suppressed = null; // java is stupid
+        IOException suppressed = null;
         for (ObjectIterator<Map.Entry<NodeRegionPosition, BitSet>> iterator = this.fileCache.entrySet().iterator(); iterator.hasNext();) {
             Map.Entry<NodeRegionPosition, BitSet> entry = iterator.next();
             NodeRegionPosition nodeRegionPosition = entry.getKey();
