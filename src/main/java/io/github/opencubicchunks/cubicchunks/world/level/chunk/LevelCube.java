@@ -50,7 +50,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.ClassInstanceMultiMap;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ChunkTickList;
 import net.minecraft.world.level.EmptyTickList;
@@ -105,7 +104,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
     private final UpgradeData upgradeData;
     private TickList<Block> blockTicks;
     private TickList<Fluid> fluidTicks;
-    private final LevelChunkSection[] sections = new LevelChunkSection[SECTION_COUNT];
+    private final LevelChunkSection[] sections;
     private final ShortList[] postProcessing;
 
     private final HashMap<BlockPos, BlockEntity> blockEntities = new HashMap<>();
@@ -170,7 +169,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
 //        this.fluidsToBeTicked = tickFluidsIn;
         this.inhabitedTime = inhabitedTime;
         this.postLoad = postLoad;
-
+        this.sections = new LevelChunkSection[SECTION_COUNT];
         if (sections != null) {
             if (sections.length != SECTION_COUNT) {
                 throw new IllegalStateException("Number of Sections must equal BigCube.CUBESIZE");
@@ -194,23 +193,14 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         isCubic = ((CubicLevelHeightAccessor) level).isCubic();
         generates2DChunks = ((CubicLevelHeightAccessor) level).generates2DChunks();
         worldStyle = ((CubicLevelHeightAccessor) level).worldStyle();
-
-//        this.gatherCapabilities();
     }
 
     public LevelCube(Level level, ProtoCube protoCube, @Nullable Consumer<LevelCube> postLoad) {
-        //TODO: reimplement full BigCube constructor from CubePrimer
+        //TODO: reimplement upgrade data
 //        this(level, cubePrimer.getCubePos(), cubePrimer.getCubeBiomes(), cubePrimer.getUpgradeData(), cubePrimer.getBlocksToBeTicked(),
 //            cubePrimer.getFluidsToBeTicked(), cubePrimer.getInhabitedTime(), cubePrimer.getSections(), (Consumer<BigCube>)null);
         this(level, protoCube.getCubePos(), protoCube.getBiomes(), null, protoCube.getBlockTicks(),
             protoCube.getLiquidTicks(), protoCube.getCubeInhabitedTime(), protoCube.getCubeSections(), postLoad);
-
-        for (CompoundTag tag : protoCube.getCubeEntities()) {
-            EntityType.loadEntityRecursive(tag, level, (entity) -> {
-                this.addEntity(entity);
-                return entity;
-            });
-        }
 
         for (BlockEntity blockEntity : protoCube.getCubeBlockEntities().values()) {
             this.setBlockEntity(blockEntity);
@@ -225,7 +215,12 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         this.setAllStarts(protoCube.getAllCubeStructureStarts());
         this.setAllReferences(protoCube.getAllReferences());
 
-        this.heightmaps.putAll(protoCube.getCubeHeightmaps());
+        // Add only the required heightmaps after ChunkStatus.FULL
+        protoCube.getCubeHeightmaps().forEach(((type, leaf) -> {
+            if (ChunkStatus.FULL.heightmapsAfter().contains(type)) {
+                this.heightmaps.put(type, leaf);
+            }
+        }));
 
         SurfaceTrackerLeaf[] protoCubeLightHeightmaps = protoCube.getLightHeightmaps();
         SectionPos cubeMinSection = this.cubePos.asSectionPos();

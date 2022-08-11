@@ -136,13 +136,12 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
         this.cubePos = cubePos;
         this.levelHeightAccessor = levelHeightAccessor;
 
-        if (sections == null) {
-            this.sections = new LevelChunkSection[CubeAccess.SECTION_COUNT];
-        } else {
-            if (sections.length == CubeAccess.SECTION_COUNT) {
-                this.sections = sections;
+        this.sections = new LevelChunkSection[CubeAccess.SECTION_COUNT];
+        if (sections != null) {
+            if (this.sections.length == sections.length) {
+                System.arraycopy(sections, 0, this.sections, 0, this.sections.length);
             } else {
-                throw new IllegalStateException("Number of Sections must equal IBigCube.CUBESIZE | " + CubeAccess.SECTION_COUNT);
+                throw new IllegalStateException("Number of Sections must equal CubeAccess.SECTION_COUNT | " + CubeAccess.SECTION_COUNT);
             }
         }
         isCubic = ((CubicLevelHeightAccessor) levelHeightAccessor).isCubic();
