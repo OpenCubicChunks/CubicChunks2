@@ -322,6 +322,9 @@ public abstract class SurfaceTrackerNode {
      * Returns the number of bits required to contain a single position at this scale
      */
     public static int getBitsForScale(int scale) {
+        if (scale < 0 || scale > MAX_SCALE) {
+            throw new SurfaceTrackerBranch.InvalidScaleException("Invalid scale for node: " + scale);
+        }
         return BASE_SIZE_BITS + 1 + scale * NODE_COUNT_BITS;
     }
 }

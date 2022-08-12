@@ -104,9 +104,10 @@ public class SurfaceTrackerLeaf extends SurfaceTrackerNode {
      * @param isOpaquePredicate takes heightmap type
      */
     public void onSetBlock(int cubeLocalX, int y, int cubeLocalZ, IntPredicate isOpaquePredicate) {
-        assert y >= Coords.cubeToMinBlock(this.scaledY) && y <= Coords.cubeToMaxBlock(this.scaledY) :
-            String.format("Leaf node (scaledY: %d) got Y position %d which is out of inclusive bounds %d to %d",
-                this.scaledY, y, Coords.cubeToMinBlock(this.scaledY), Coords.cubeToMaxBlock(this.scaledY));
+        if (y < Coords.cubeToMinBlock(this.scaledY) || y > Coords.cubeToMaxBlock(this.scaledY)) {
+            throw new IndexOutOfBoundsException(String.format("Leaf node (scaledY: %d) got Y position %d which is out of inclusive bounds %d to %d",
+                this.scaledY, y, Coords.cubeToMinBlock(this.scaledY), Coords.cubeToMaxBlock(this.scaledY)));
+        }
 
         int index = index(cubeLocalX, cubeLocalZ);
         if (isDirty(index)) {

@@ -1,11 +1,11 @@
 package io.github.opencubicchunks.cubicchunks.levelgen.heightmap;
 
 import static io.github.opencubicchunks.cubicchunks.testutils.Utils.forEachBlockColumnSurfaceTrackerNode;
-import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldFail;
-import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldSucceed;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.BitSet;
 import java.util.Random;
@@ -219,15 +219,15 @@ public class SurfaceTrackerLeafTest {
 
         forEachBlockColumnSurfaceTrackerNode((x, z) -> {
             //Test no exception within bounds
-            shouldSucceed(() -> leaf.onSetBlock(0, 0, 0, type -> false),
+            assertDoesNotThrow(() -> leaf.onSetBlock(0, 0, 0, type -> false),
                 "SurfaceTrackerLeaf refused height inside itself");
-            shouldSucceed(() -> leaf.onSetBlock(0, SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1, 0, type -> false),
+            assertDoesNotThrow(() -> leaf.onSetBlock(0, SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT - 1, 0, type -> false),
                 "SurfaceTrackerLeaf refused height inside itself");
 
             //Test exception outside of bounds
-            shouldFail(() -> leaf.onSetBlock(0, -1, 0, type -> false),
+            assertThrows(IndexOutOfBoundsException.class, () -> leaf.onSetBlock(0, -1, 0, type -> false),
                 "SurfaceTrackerLeaf accepted height below itself without throwing an exception");
-            shouldFail(() -> leaf.onSetBlock(0, SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT, 0, type -> false),
+            assertThrows(IndexOutOfBoundsException.class, () -> leaf.onSetBlock(0, SurfaceTrackerLeaf.SCALE_0_NODE_HEIGHT, 0, type -> false),
                 "SurfaceTrackerLeaf accepted height above itself without throwing an exception");
         });
     }

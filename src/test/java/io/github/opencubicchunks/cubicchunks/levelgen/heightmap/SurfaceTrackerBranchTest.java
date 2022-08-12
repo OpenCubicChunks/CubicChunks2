@@ -1,8 +1,8 @@
 package io.github.opencubicchunks.cubicchunks.levelgen.heightmap;
 
-import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldFail;
-import static io.github.opencubicchunks.cubicchunks.testutils.Utils.shouldSucceed;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.NullHeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.levelgen.heightmap.SurfaceTrackerNodesTest.TestHeightmapSource32;
@@ -18,14 +18,12 @@ public class SurfaceTrackerBranchTest {
      */
     @Test
     public void testValidScaleBounds() {
-        shouldFail(() -> new SurfaceTrackerBranch(0, 0, null, (byte) 0),
-            "SurfaceTrackerBranch didn't throw when given scale 0");
-        shouldFail(() -> new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE + 1, 0, null, (byte) 0),
-            "SurfaceTrackerBranch didn't throw when given scale MAX_SCALE + 1");
+        assertThrows(SurfaceTrackerBranch.InvalidScaleException.class, () -> new SurfaceTrackerBranch(0, 0, null, (byte) 0));
+        assertThrows(SurfaceTrackerBranch.InvalidScaleException.class, () -> new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE + 1, 0, null, (byte) 0));
 
         for (int i = 1; i <= SurfaceTrackerNode.MAX_SCALE; i++) {
             int finalI = i;
-            shouldSucceed(() -> new SurfaceTrackerBranch(finalI, 0, null, (byte) 0),
+            assertDoesNotThrow(() -> new SurfaceTrackerBranch(finalI, 0, null, (byte) 0),
                 String.format("SurfaceTrackerBranch threw when given scale %d", i));
         }
     }

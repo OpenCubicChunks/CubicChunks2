@@ -15,8 +15,9 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
     public SurfaceTrackerBranch(int scale, int scaledY,
                                 @Nullable SurfaceTrackerBranch parent, byte heightmapType) {
         super(scale, scaledY, parent, heightmapType);
-        assert scale > 0; //Branches cannot be scale 0
-        assert scale <= SurfaceTrackerNode.MAX_SCALE; //Branches cannot be > MAX_SCALE
+        if (scale <= 0 || scale > MAX_SCALE) {
+            throw new InvalidScaleException("Invalid scale for branch: " + scale);
+        }
 
         // MAX_SCALE nodes have 2 children
         this.children = new SurfaceTrackerNode[scale == MAX_SCALE ? ROOT_NODE_COUNT : NODE_COUNT];
@@ -28,8 +29,9 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
     public SurfaceTrackerBranch(int scale, int scaledY,
                                 @Nullable SurfaceTrackerBranch parent, byte heightmapType, long[] heightsRaw) {
         super(scale, scaledY, parent, heightmapType, heightsRaw);
-        assert scale > 0; //Branches cannot be scale 0
-        assert scale <= SurfaceTrackerNode.MAX_SCALE; //Branches cannot be > MAX_SCALE
+        if (scale <= 0 || scale > MAX_SCALE) {
+            throw new InvalidScaleException("Invalid scale for branch: " + scale);
+        }
 
         // MAX_SCALE nodes have 2 children
         this.children = new SurfaceTrackerNode[scale == MAX_SCALE ? ROOT_NODE_COUNT : NODE_COUNT];
@@ -148,5 +150,11 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
     @VisibleForTesting
     @Nonnull public SurfaceTrackerNode[] getChildren() {
         return this.children;
+    }
+
+    public static class InvalidScaleException extends RuntimeException {
+        public InvalidScaleException(String message) {
+            super(message);
+        }
     }
 }
