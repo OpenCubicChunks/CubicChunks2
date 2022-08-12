@@ -4,15 +4,15 @@ import javax.annotation.Nonnull;
 
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 
-public interface HeightmapNode {
+public interface HeightmapSource {
 
     default void sectionLoaded(@Nonnull SurfaceTrackerLeaf surfaceTrackerLeaf, int localSectionX, int localSectionZ) {
         throw new IllegalStateException("Should not be reached");
     }
 
-    void unloadNode(@Nonnull HeightmapStorage storage);
+    void unloadSource(@Nonnull HeightmapStorage storage);
 
     int getHighest(int x, int z, byte heightmapType);
 
-    int getNodeY();
+    int getSourceY();
 }

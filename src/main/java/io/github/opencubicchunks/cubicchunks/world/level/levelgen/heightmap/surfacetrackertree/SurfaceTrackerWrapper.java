@@ -9,7 +9,7 @@ import java.util.function.IntPredicate;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.HeightmapAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapSource;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.block.state.BlockState;
@@ -76,8 +76,8 @@ public class SurfaceTrackerWrapper extends Heightmap {
         return data.getRaw();
     }
 
-    public synchronized void loadCube(HeightmapStorage storage, HeightmapNode node) {
-        this.surfaceTracker.loadCube(blockToSection(dx), blockToSection(dz), storage, node);
+    public synchronized void loadCube(HeightmapStorage storage, HeightmapSource source) {
+        this.surfaceTracker.loadSource(blockToSection(dx), blockToSection(dz), storage, source);
     }
 
     public void saveAll(HeightmapStorage storage) {

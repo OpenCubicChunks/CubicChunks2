@@ -9,7 +9,7 @@ import javax.annotation.Nullable;
 import io.github.opencubicchunks.cubicchunks.config.EarlyConfig;
 import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapSource;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -25,7 +25,7 @@ import net.minecraft.world.level.levelgen.feature.StructureFeature;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import org.apache.logging.log4j.LogManager;
 
-public interface CubeAccess extends BlockGetter, ChunkAccess, FeatureAccess, HeightmapNode {
+public interface CubeAccess extends BlockGetter, ChunkAccess, FeatureAccess, HeightmapSource {
 
     int SECTION_DIAMETER = 16;
     int DIAMETER_IN_SECTIONS = EarlyConfig.getDiameterInSections();

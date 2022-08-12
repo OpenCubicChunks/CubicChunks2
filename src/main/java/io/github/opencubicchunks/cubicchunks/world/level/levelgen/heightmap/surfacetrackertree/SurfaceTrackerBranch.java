@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapSource;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 
 public class SurfaceTrackerBranch extends SurfaceTrackerNode {
@@ -59,7 +59,7 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
         }
     }
 
-    @Override public void loadCube(int globalSectionX, int globalSectionZ, HeightmapStorage storage, HeightmapNode newNode) {
+    @Override public void loadSource(int globalSectionX, int globalSectionZ, HeightmapStorage storage, HeightmapSource newSource) {
         int newScale = scale - 1;
 
         // Attempt to load all children from storage
@@ -70,10 +70,10 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
             }
         }
 
-        int idx = indexOfRawHeightNode(newNode.getNodeY(), scale, scaledY);
+        int idx = indexOfRawHeightNode(newSource.getSourceY(), scale, scaledY);
         int newScaledY = indexToScaledY(idx, scale, scaledY);
         if (children[idx] == null) {
-            // If the child containing new node has not been loaded from storage, create it
+            // If the child containing new source has not been loaded from storage, create it
             // Scale 1 nodes create leaf node children
             if (newScale == 0) {
                 children[idx] = new SurfaceTrackerLeaf(newScaledY, this, this.getRawType());
@@ -81,7 +81,7 @@ public class SurfaceTrackerBranch extends SurfaceTrackerNode {
                 children[idx] = new SurfaceTrackerBranch(newScale, newScaledY, this, this.getRawType());
             }
         }
-        children[idx].loadCube(globalSectionX, globalSectionZ, storage, newNode);
+        children[idx].loadSource(globalSectionX, globalSectionZ, storage, newSource);
     }
 
     @Override protected void unload(int globalSectionX, int globalSectionZ, HeightmapStorage storage) {

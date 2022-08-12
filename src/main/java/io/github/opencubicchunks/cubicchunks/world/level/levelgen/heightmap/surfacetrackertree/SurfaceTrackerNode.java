@@ -5,7 +5,7 @@ import javax.annotation.Nullable;
 import com.google.common.annotations.VisibleForTesting;
 import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapNode;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapSource;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -107,7 +107,7 @@ public abstract class SurfaceTrackerNode {
      */
     protected abstract int updateHeight(int x, int z, int idx);
 
-    public abstract void loadCube(int globalSectionX, int globalSectionZ, HeightmapStorage storage, HeightmapNode newNode);
+    public abstract void loadSource(int globalSectionX, int globalSectionZ, HeightmapStorage storage, HeightmapSource newSource);
 
     /**
      * Tells a node to unload itself, nulling its parent, and passing itself to the provided storage

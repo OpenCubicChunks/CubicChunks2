@@ -232,7 +232,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
                 if (this.lightHeightmaps[i] == null) {
                     System.out.println("Got a null light heightmap while upgrading from CubePrimer at " + this.cubePos);
                 } else {
-                    this.lightHeightmaps[i].loadCube(cubeMinSection.x() + localX, cubeMinSection.z() + localZ, ((CubicServerLevel) this.level).getHeightmapStorage(), this);
+                    this.lightHeightmaps[i].loadSource(cubeMinSection.x() + localX, cubeMinSection.z() + localZ, ((CubicServerLevel) this.level).getHeightmapStorage(), this);
                 }
             }
         }
@@ -257,14 +257,14 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
     }
 
     @Override
-    public void unloadNode(@Nonnull HeightmapStorage storage) {
+    public void unloadSource(@Nonnull HeightmapStorage storage) {
         SectionPos cubeMinSection = this.cubePos.asSectionPos();
         for (SurfaceTrackerLeaf[] heightmapLeaves : this.heightmaps.values()) {
             for (int localSectionZ = 0; localSectionZ < CubeAccess.DIAMETER_IN_SECTIONS; localSectionZ++) {
                 for (int localSectionX = 0; localSectionX < CubeAccess.DIAMETER_IN_SECTIONS; localSectionX++) {
                     int i = localSectionX + localSectionZ * CubeAccess.DIAMETER_IN_SECTIONS;
                     if (heightmapLeaves[i] != null) {
-                        heightmapLeaves[i].cubeUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
+                        heightmapLeaves[i].sourceUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                         heightmapLeaves[i] = null;
                     }
                 }
@@ -275,7 +275,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
             for (int localSectionX = 0; localSectionX < CubeAccess.DIAMETER_IN_SECTIONS; localSectionX++) {
                 int i = localSectionX + localSectionZ * CubeAccess.DIAMETER_IN_SECTIONS;
                 if (lightHeightmapLeaves[i] != null) {
-                    lightHeightmapLeaves[i].cubeUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
+                    lightHeightmapLeaves[i].sourceUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                     lightHeightmapLeaves[i] = null;
                 }
             }
@@ -311,10 +311,10 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
 
         // TODO unknown behavior for occlusion on a loading boundary (i.e. sectionAbove == null)
         BlockState above;
-        if (sectionAbove == null || sectionAbove.getNode() == null) {
+        if (sectionAbove == null || sectionAbove.getSource() == null) {
             above = Blocks.AIR.defaultBlockState();
         } else {
-            above = ((CubeAccess) sectionAbove.getNode()).getBlockState(x, 0, z);
+            above = ((CubeAccess) sectionAbove.getSource()).getBlockState(x, 0, z);
         }
         BlockState state = this.getBlockState(x, dy, z);
 
@@ -346,7 +346,7 @@ public class LevelCube implements ChunkAccess, CubeAccess, CubicLevelHeightAcces
         return blockState.canOcclude() && blockState.useShapeForLightOcclusion() ? blockState.getFaceOcclusionShape(this, pos, facing) : Shapes.empty();
     }
 
-    @Override public int getNodeY() {
+    @Override public int getSourceY() {
         return this.cubePos.getY();
     }
 

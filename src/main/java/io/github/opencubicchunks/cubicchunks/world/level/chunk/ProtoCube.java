@@ -253,14 +253,14 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
     }
 
     @Override
-    public void unloadNode(@Nonnull HeightmapStorage storage) {
+    public void unloadSource(@Nonnull HeightmapStorage storage) {
         SectionPos cubeMinSection = this.cubePos.asSectionPos();
         for (SurfaceTrackerLeaf[] heightmapLeaves : this.heightmaps.values()) {
             for (int localSectionZ = 0; localSectionZ < CubeAccess.DIAMETER_IN_SECTIONS; localSectionZ++) {
                 for (int localSectionX = 0; localSectionX < CubeAccess.DIAMETER_IN_SECTIONS; localSectionX++) {
                     int i = localSectionX + localSectionZ * CubeAccess.DIAMETER_IN_SECTIONS;
                     if (heightmapLeaves[i] != null) {
-                        heightmapLeaves[i].cubeUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
+                        heightmapLeaves[i].sourceUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                         heightmapLeaves[i] = null;
                     }
                 }
@@ -271,7 +271,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
             for (int localSectionX = 0; localSectionX < CubeAccess.DIAMETER_IN_SECTIONS; localSectionX++) {
                 int i = localSectionX + localSectionZ * CubeAccess.DIAMETER_IN_SECTIONS;
                 if (lightHeightmapLeaves[i] != null) {
-                    lightHeightmapLeaves[i].cubeUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
+                    lightHeightmapLeaves[i].sourceUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                     lightHeightmapLeaves[i] = null;
                 }
             }
@@ -370,7 +370,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
                 for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
                     int idx = dx + dz * CubeAccess.DIAMETER_IN_SECTIONS;
                     SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(cubePos.getY(), null, (byte) type.ordinal());
-                    leaf.loadCube(cubeMinSection.x() + dx, cubeMinSection.z() + dz,
+                    leaf.loadSource(cubeMinSection.x() + dx, cubeMinSection.z() + dz,
                         ((CubicServerLevel) ((ServerLevelAccessor) this.levelHeightAccessor).getLevel()).getHeightmapStorage(), this);
                     // On creation of a new node for a cube, both the node and its parents must be marked dirty
                     leaf.setAllDirty();
@@ -547,10 +547,10 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
 
         // TODO unknown behavior for occlusion on a loading boundary (i.e. sectionAbove == null)
         BlockState above;
-        if (sectionAbove == null || sectionAbove.getNode() == null) {
+        if (sectionAbove == null || sectionAbove.getSource() == null) {
             above = Blocks.AIR.defaultBlockState();
         } else {
-            above = ((CubeAccess) sectionAbove.getNode()).getBlockState(x, 0, z);
+            above = ((CubeAccess) sectionAbove.getSource()).getBlockState(x, 0, z);
         }
         BlockState state = this.getBlockState(x, dy, z);
 
@@ -582,7 +582,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
         return blockState.canOcclude() && blockState.useShapeForLightOcclusion() ? blockState.getFaceOcclusionShape(this, pos, facing) : Shapes.empty();
     }
 
-    @Override public int getNodeY() {
+    @Override public int getSourceY() {
         return this.cubePos.getY();
     }
 
