@@ -17,9 +17,10 @@ import javax.annotation.Nullable;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.dasm.RedirectsParseException;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.dasm.RedirectsParser;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.FabricMappingsProvider;
+import io.github.opencubicchunks.dasm.RedirectsParseException;
+import io.github.opencubicchunks.dasm.RedirectsParser;
+import io.github.opencubicchunks.dasm.Transformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.tree.ClassNode;
@@ -34,7 +35,11 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
 
     private final Throwable constructException;
 
+    private final Transformer transformer;
+
     public ASMConfigPlugin() {
+        this.transformer = new Transformer(new FabricMappingsProvider(), FabricLoader.getInstance().isDevelopmentEnvironment());
+
         List<RedirectsParser.RedirectSet> redirectSets;
         List<RedirectsParser.ClassTarget> targetClasses;
         try {
@@ -92,7 +97,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         //Ideally the input json would all have the same, and we'd just figure it out here
         RedirectsParser.ClassTarget target = classTargetByName.get(map.unmapClassName("intermediary", targetClassName).replace(".", "/"));
         if (target != null) {
-            MainTransformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
+            this.transformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
         } else {
             throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
         }
