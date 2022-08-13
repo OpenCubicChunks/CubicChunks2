@@ -90,13 +90,13 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.math.Matrix4f;
 import com.mojang.math.Vector3f;
 import com.mojang.math.Vector4f;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.client.gui.screens.CubicLevelLoadingScreen;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.UserFunction;
+import io.github.opencubicchunks.cubicchunks.mixin.access.common.Matrix4fAccess;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeHolder;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import it.unimi.dsi.fastutil.longs.Long2ByteLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ByteMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
@@ -637,7 +637,7 @@ public class DebugVisualization {
 
         glUseProgram(shaderProgram);
 
-        Matrix4f ortho = MathUtil.createMatrix(new float[] {
+        Matrix4f ortho = createMatrix(new float[] {
             2f / screenWidth, 0, 0, -1f,
             0, 2f / screenHeight, 0, -1f,
             0, 0, -2f / 2000f, 0,
@@ -746,6 +746,27 @@ public class DebugVisualization {
         buffer.vertex(x, y, z);
         buffer.color(r, g, b, a);
         buffer.endVertex();
+    }
+
+    @SuppressWarnings("ConstantConditions") public static Matrix4f createMatrix(float[] data) {
+        Matrix4fAccess m = (Matrix4fAccess) (Object) new Matrix4f();
+        m.setM00(data[0]);
+        m.setM01(data[1]);
+        m.setM02(data[2]);
+        m.setM03(data[3]);
+        m.setM10(data[4]);
+        m.setM11(data[5]);
+        m.setM12(data[6]);
+        m.setM13(data[7]);
+        m.setM20(data[8]);
+        m.setM21(data[9]);
+        m.setM22(data[10]);
+        m.setM23(data[11]);
+        m.setM30(data[12]);
+        m.setM31(data[13]);
+        m.setM32(data[14]);
+        m.setM33(data[15]);
+        return (Matrix4f) (Object) m;
     }
 
     static class Vertex {

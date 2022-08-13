@@ -1,7 +1,7 @@
 {
     "chunkHolderSet": {
         "typeRedirects": {
-            "net/minecraft/class_1923": "io/github/opencubicchunks/cubicchunks/world/level/CubePos",
+            "net/minecraft/class_1923": "io/github/opencubicchunks/cc_core/api/CubePos",
             "net/minecraft/class_2818": "io/github/opencubicchunks/cubicchunks/world/level/chunk/LevelCube",
             "net/minecraft/class_3193$1": "io/github/opencubicchunks/cubicchunks/server/level/CubeHolder$CubeLoadingError"
         },
@@ -20,7 +20,7 @@
     },
     "chunkMapSet": {
         "typeRedirects": {
-            "net/minecraft/class_1923": "io/github/opencubicchunks/cubicchunks/world/level/CubePos",
+            "net/minecraft/class_1923": "io/github/opencubicchunks/cc_core/api/CubePos",
             "net/minecraft/class_3900": "io/github/opencubicchunks/cubicchunks/server/level/CubeTaskPriorityQueueSorter"
         },
         "fieldRedirects": {
@@ -40,7 +40,7 @@
     },
     "naturalSpawnerSet": {
         "typeRedirects": {
-            "net/minecraft/class_1923": "io/github/opencubicchunks/cubicchunks/world/level/CubePos",
+            "net/minecraft/class_1923": "io/github/opencubicchunks/cc_core/api/CubePos",
             "net/minecraft/class_1948$class_5260": "io/github/opencubicchunks/cubicchunks/world/CubicNaturalSpawner$CubeGetter",
             "net/minecraft/class_2818": "net/minecraft/class_2791"
         },

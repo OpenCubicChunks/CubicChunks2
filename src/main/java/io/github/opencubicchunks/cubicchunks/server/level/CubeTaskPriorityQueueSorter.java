@@ -14,8 +14,8 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.Sets;
 import com.mojang.datafixers.util.Either;
-import io.github.opencubicchunks.cubicchunks.utils.Utils;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Utils;
 import net.minecraft.Util;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.util.Unit;

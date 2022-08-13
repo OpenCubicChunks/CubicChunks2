@@ -12,9 +12,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.google.common.collect.Queues;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventHandler;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ServerTickListAccess;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.CubicServerTickList;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;

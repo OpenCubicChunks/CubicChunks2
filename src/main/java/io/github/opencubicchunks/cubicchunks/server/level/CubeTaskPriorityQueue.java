@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Lists;
 import com.mojang.datafixers.util.Either;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubePos;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;

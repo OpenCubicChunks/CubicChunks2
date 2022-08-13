@@ -1,10 +1,11 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
-import io.github.opencubicchunks.cubicchunks.world.SpawnPlaceFinder;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cc_core.world.SpawnPlaceFinder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.PlayerRespawnLogic;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,6 +23,8 @@ public abstract class MixinPlayerRespawnLogic {
         if (!((CubicLevelHeightAccessor) world).isCubic()) {
             return;
         }
-        cir.setReturnValue(SpawnPlaceFinder.getTopBlockBisect(world, new BlockPos(posX, 0, posZ), checkValid));
+        cir.setReturnValue(SpawnPlaceFinder.getTopBlockBisect(world, new BlockPos(posX, 0, posZ), checkValid,
+            pos -> world.getBlockState((BlockPos) pos).is(BlockTags.VALID_SPAWN),
+            pos -> world.getBlockState((BlockPos) pos).getCollisionShape(world, (BlockPos) pos).isEmpty()));
     }
 }

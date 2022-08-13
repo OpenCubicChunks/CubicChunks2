@@ -1,16 +1,21 @@
 package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree;
 
-import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
-import static io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerNode.MAX_SCALE;
+import static io.github.opencubicchunks.cc_core.utils.Coords.blockToCube;
+import static io.github.opencubicchunks.cc_core.utils.Coords.blockToSection;
+import static io.github.opencubicchunks.cc_core.utils.Coords.sectionToMinBlock;
+import static io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerNode.MAX_SCALE;
 
 import java.util.function.IntPredicate;
 
 
 import javax.annotation.Nullable;
 
+import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapSource;
+import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
+import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerBranch;
+import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
+import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerNode;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.HeightmapAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapSource;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import net.minecraft.util.BitStorage;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -88,8 +93,8 @@ public class SurfaceTrackerWrapper extends Heightmap {
 
     private void saveAllChildren(int globalSectionX, int globalSectionZ, HeightmapStorage storage, SurfaceTrackerNode node) {
         node.save(globalSectionX, globalSectionZ, storage);
-        if (node.scale > 0) {
-            for (SurfaceTrackerNode child : ((SurfaceTrackerBranch) node).children) {
+        if (node.getScale() > 0) {
+            for (SurfaceTrackerNode child : ((SurfaceTrackerBranch) node).getChildren()) {
                 if (child == null) {
                     continue;
                 }
@@ -122,6 +127,6 @@ public class SurfaceTrackerWrapper extends Heightmap {
         if (loadedNode != null) {
             return (SurfaceTrackerBranch) loadedNode;
         }
-        return new SurfaceTrackerBranch(SurfaceTrackerNode.MAX_SCALE, 0, null, type);
+        return new SurfaceTrackerBranch(MAX_SCALE, 0, null, type);
     }
 }

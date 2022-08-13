@@ -13,14 +13,14 @@ import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.datafixers.DataFixer;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.config.ServerConfig;
 import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.BiomeGenerationSettingsAccess;
 import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.CubeProgressListener;
 import io.github.opencubicchunks.cubicchunks.world.ForcedCubesSaveData;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import it.unimi.dsi.fastutil.longs.LongIterator;
@@ -105,6 +105,8 @@ public abstract class MixinMinecraftServer implements CubicMinecraftServer {
      */
     @Inject(method = "prepareLevels", at = @At("HEAD"), cancellable = true)
     private void prepareLevels(ChunkProgressListener statusListener, CallbackInfo ci) {
+        System.out.println("PREPARELEVELS HERE " + MinecraftServer.class.getClassLoader().getClass().getName());
+
         ServerLevel serverLevel = this.overworld();
         if (!((CubicLevelHeightAccessor) serverLevel).isCubic()) {
             return;
