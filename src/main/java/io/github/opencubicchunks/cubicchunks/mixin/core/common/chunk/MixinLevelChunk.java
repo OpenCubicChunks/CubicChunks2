@@ -5,13 +5,13 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.ColumnCubeMap;
+import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnBiomeContainer;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeGetter;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMap;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.EmptyLevelCube;

@@ -24,7 +24,7 @@ public class GeneratePackageInfo {
                         
             import javax.annotation.ParametersAreNonnullByDefault;
                         
-            import io.github.opencubicchunks.cubicchunks.annotation.MethodsReturnNonnullByDefault;""";
+            import io.github.opencubicchunks.cc_core.annotation.MethodsReturnNonnullByDefault;""";
         for (Path pkg : packages.keySet()) {
             Path absolutePath = packages.get(pkg);
             Path file = absolutePath.resolve("package-info.java");

@@ -1,5 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.config;
 
+import static io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor.WorldStyle;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -12,7 +14,6 @@ import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.Config;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LevelStorageAccessAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.LevelStorageSource;
@@ -26,25 +27,25 @@ public class ServerConfig extends BaseConfig {
     private static final String KEY_HYBRID_DIMENSIONS = KEY_WORLDSTYLES + ".hybridDimensions";
     private static final String KEY_CHUNK_DIMENSIONS = KEY_WORLDSTYLES + ".vanillaDimensions";
 
-    private final CubicLevelHeightAccessor.WorldStyle defaultWorldStyle;
+    private final WorldStyle defaultWorldStyle;
     // TODO should this be a Map<ResourceLocation, ...> instead?
-    private final Map<String, CubicLevelHeightAccessor.WorldStyle> overrides = new HashMap<>();
+    private final Map<String, WorldStyle> overrides = new HashMap<>();
 
     private ServerConfig(CommentedConfig config) {
         // TODO actually give proper user feedback if this crashes due to incorrect values
         defaultWorldStyle = worldStyleFromString(config.get(KEY_DEFAULT_WORLD_STYLE));
 
-        config.<List<String>>get(KEY_CUBIC_DIMENSIONS).forEach((s) -> overrides.put(s, CubicLevelHeightAccessor.WorldStyle.CUBIC));
-        config.<List<String>>get(KEY_HYBRID_DIMENSIONS).forEach((s) -> overrides.put(s, CubicLevelHeightAccessor.WorldStyle.HYBRID));
-        config.<List<String>>get(KEY_CHUNK_DIMENSIONS).forEach((s) -> overrides.put(s, CubicLevelHeightAccessor.WorldStyle.CHUNK));
+        config.<List<String>>get(KEY_CUBIC_DIMENSIONS).forEach((s) -> overrides.put(s, WorldStyle.CUBIC));
+        config.<List<String>>get(KEY_HYBRID_DIMENSIONS).forEach((s) -> overrides.put(s, WorldStyle.HYBRID));
+        config.<List<String>>get(KEY_CHUNK_DIMENSIONS).forEach((s) -> overrides.put(s, WorldStyle.CHUNK));
     }
 
-    private static CubicLevelHeightAccessor.WorldStyle worldStyleFromString(String string) {
-        if (string.equals("VANILLA")) return CubicLevelHeightAccessor.WorldStyle.CHUNK;
-        return CubicLevelHeightAccessor.WorldStyle.valueOf(string);
+    private static WorldStyle worldStyleFromString(String string) {
+        if (string.equals("VANILLA")) return WorldStyle.CHUNK;
+        return WorldStyle.valueOf(string);
     }
 
-    public CubicLevelHeightAccessor.WorldStyle getWorldStyle(ResourceKey<Level> dimension) {
+    public WorldStyle getWorldStyle(ResourceKey<Level> dimension) {
         return overrides.getOrDefault(dimension.location().toString(), defaultWorldStyle);
     }
 
@@ -52,7 +53,7 @@ public class ServerConfig extends BaseConfig {
         // TODO some way of setting different defaults for specific modids? e.g. for things like RFTools and Mystcraft - maybe things like "mystcraft:*"
         Config.setInsertionOrderPreserved(true);
         var config = CommentedConfig.inMemory();
-        config.set(KEY_DEFAULT_WORLD_STYLE, CubicLevelHeightAccessor.WorldStyle.CUBIC);
+        config.set(KEY_DEFAULT_WORLD_STYLE, WorldStyle.CUBIC);
         config.setComment(KEY_DEFAULT_WORLD_STYLE, """
  The default world style used for dimensions that are not explicitly defined in one of the three lists below.
  Possible values:

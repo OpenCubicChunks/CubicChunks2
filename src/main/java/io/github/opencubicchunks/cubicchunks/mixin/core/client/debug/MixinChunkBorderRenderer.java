@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.debug;
 
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
+import io.github.opencubicchunks.cc_core.utils.Coords;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.debug.ChunkBorderRenderer;

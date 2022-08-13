@@ -1,17 +1,17 @@
 package io.github.opencubicchunks.cubicchunks.network;
 
-import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
+import static io.github.opencubicchunks.cc_core.utils.Coords.cubeToSection;
 
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.MathUtil;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.client.multiplayer.ClientCubeCache;
-import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeBiomeContainer;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;

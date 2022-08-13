@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.placement;
 
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.placement.DecorationContext;

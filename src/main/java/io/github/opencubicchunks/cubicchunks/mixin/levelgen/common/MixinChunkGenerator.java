@@ -1,10 +1,14 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common;
 
-import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
+import static io.github.opencubicchunks.cc_core.utils.Coords.cubeToMinBlock;
+import static io.github.opencubicchunks.cc_core.utils.Coords.cubeToSection;
+import static io.github.opencubicchunks.cc_core.utils.Coords.sectionToMinBlock;
 
 import java.util.List;
 import java.util.function.Supplier;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRandom;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.BiomeGetter;
@@ -15,8 +19,6 @@ import io.github.opencubicchunks.cubicchunks.levelgen.util.CubicWorldGenUtils;
 import io.github.opencubicchunks.cubicchunks.levelgen.util.NonAtomicWorldgenRandom;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.BiomeManagerAccess;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.OverworldBiomeSourceAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import net.minecraft.CrashReport;

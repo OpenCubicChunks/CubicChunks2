@@ -2,8 +2,8 @@ package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 
 import javax.annotation.Nullable;
 
+import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import net.minecraft.core.IdMap;
 import net.minecraft.data.BuiltinRegistries;
 import net.minecraft.world.level.Level;

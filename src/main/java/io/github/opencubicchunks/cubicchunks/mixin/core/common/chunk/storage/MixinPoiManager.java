@@ -1,5 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk.storage;
 
+import static io.github.opencubicchunks.cc_core.utils.Utils.unsafeCast;
+
 import java.io.File;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -10,10 +12,10 @@ import java.util.stream.Stream;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.PoiSectionAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.PoiDeserializationContext;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.Util;
@@ -97,7 +99,7 @@ public abstract class MixinPoiManager extends SectionStorage<PoiSection> impleme
             return;
         }
         ci.cancel();
-        CubePos.sectionsAroundCube(new CubePos(pos), Math.floorDiv(radius, 16)).map((sectionPos) -> {
+        ((Stream<SectionPos>) unsafeCast(CubePos.sectionsAroundCube(new CubePos(pos), Math.floorDiv(radius, 16)))).map((sectionPos) -> {
             return Pair.of(sectionPos, this.getOrLoad(sectionPos.asLong()));
         }).filter((pair) -> {
             return !(Boolean) pair.getSecond().map(poi -> ((PoiSectionAccess) poi).invokeIsValid()).orElse(false);

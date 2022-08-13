@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
+import io.github.opencubicchunks.cc_core.utils.MathUtil;
 import net.minecraft.util.Mth;
 
 //TODO: Datapack Codec for user customization.

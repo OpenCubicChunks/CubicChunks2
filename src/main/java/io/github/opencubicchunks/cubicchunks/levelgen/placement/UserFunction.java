@@ -8,7 +8,7 @@ import java.util.Objects;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
+import io.github.opencubicchunks.cc_core.utils.MathUtil;
 
 public class UserFunction {
 

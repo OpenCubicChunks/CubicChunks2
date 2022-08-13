@@ -1,9 +1,11 @@
 package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree;
 
-import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
+import static io.github.opencubicchunks.cc_core.utils.Coords.blockToCube;
+import static io.github.opencubicchunks.cc_core.utils.Coords.blockToLocal;
 
+import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
+import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 

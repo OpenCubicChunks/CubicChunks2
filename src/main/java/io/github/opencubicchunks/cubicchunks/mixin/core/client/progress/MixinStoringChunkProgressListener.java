@@ -2,10 +2,10 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.client.progress;
 
 import javax.annotation.Nullable;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.CubeProgressListener;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.StoringCubeProgressListener;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.server.level.progress.LoggerChunkProgressListener;
 import net.minecraft.server.level.progress.StoringChunkProgressListener;

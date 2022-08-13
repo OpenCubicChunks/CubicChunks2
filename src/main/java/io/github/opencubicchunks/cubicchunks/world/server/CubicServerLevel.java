@@ -1,7 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.world.server;
 
+import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 
 public interface CubicServerLevel {
     void onCubeUnloading(LevelCube cube);

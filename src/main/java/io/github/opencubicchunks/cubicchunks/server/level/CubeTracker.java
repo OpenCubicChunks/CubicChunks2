@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.server.level;
 
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubePos;
 import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
 
 public abstract class CubeTracker extends DynamicGraphMinFixedPoint {

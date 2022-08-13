@@ -2,7 +2,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.blockentity;
 
 import java.util.List;
 
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.ConduitBlockEntity;

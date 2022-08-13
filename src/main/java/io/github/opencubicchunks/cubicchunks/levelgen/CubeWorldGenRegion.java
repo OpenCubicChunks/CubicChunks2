@@ -2,7 +2,7 @@
 
 package io.github.opencubicchunks.cubicchunks.levelgen;
 
-import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
+import static io.github.opencubicchunks.cc_core.utils.Coords.blockToCube;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -16,9 +16,9 @@ import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.WorldGenRegionAccess;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import it.unimi.dsi.fastutil.longs.LongSet;

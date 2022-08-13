@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 
-import static io.github.opencubicchunks.cubicchunks.utils.Coords.*;
+import static io.github.opencubicchunks.cc_core.utils.Coords.blockToCubeLocalSection;
 import static net.minecraft.world.level.chunk.LevelChunk.EMPTY_SECTION;
 
 import java.util.BitSet;
@@ -20,15 +20,16 @@ import javax.annotation.Nullable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
+import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkBiomeContainerAccess;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
@@ -246,7 +247,7 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
         if (surfaceTrackerLeaf.getRawType() == -1) { //light
             this.lightHeightmaps[idx] = surfaceTrackerLeaf;
         } else { // normal heightmap
-            this.heightmaps.computeIfAbsent(surfaceTrackerLeaf.getType(),
+            this.heightmaps.computeIfAbsent(Heightmap.Types.values()[surfaceTrackerLeaf.getRawType()],
                 type -> new SurfaceTrackerLeaf[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS]
             )[idx] = surfaceTrackerLeaf;
         }
@@ -345,8 +346,8 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
 
         EnumSet<Heightmap.Types> heightMapsAfter = this.getStatus().heightmapsAfter();
 
-        int xChunk = Coords.blockToCubeLocalSection(pos.getX());
-        int zChunk = Coords.blockToCubeLocalSection(pos.getZ());
+        int xChunk = blockToCubeLocalSection(pos.getX());
+        int zChunk = blockToCubeLocalSection(pos.getZ());
         int chunkIdx = xChunk + zChunk * DIAMETER_IN_SECTIONS;
 
         IntPredicate isOpaquePredicate = SurfaceTrackerWrapper.opaquePredicateForState(state);
@@ -588,8 +589,8 @@ public class ProtoCube extends ProtoChunk implements CubeAccess, CubicLevelHeigh
 
     @Override public int getCubeLocalHeight(Heightmap.Types type, int x, int z) {
         SurfaceTrackerLeaf[] leaves = getHeightmapSections(type);
-        int xSection = Coords.blockToCubeLocalSection(x);
-        int zSection = Coords.blockToCubeLocalSection(z);
+        int xSection = blockToCubeLocalSection(x);
+        int zSection = blockToCubeLocalSection(z);
 
         int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
 
