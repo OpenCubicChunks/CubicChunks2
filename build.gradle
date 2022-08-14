@@ -21,18 +21,6 @@ apply plugin: "fabric-loom"
 apply plugin: "io.github.opencubicchunks.gradle.mcGitVersion"
 apply plugin: "io.github.opencubicchunks.gradle.mixingen"
 
-test {
-    useJUnitPlatform()
-
-    // Always run tests, even when nothing changed.
-    dependsOn 'cleanTest'
-
-    // Show test results.
-    testLogging {
-        events "passed", "skipped", "failed"
-    }
-}
-
 mcGitVersion {
     snapshot = true
     mcVersion = "${project.minecraft_version}"
@@ -109,6 +97,7 @@ configurations {
     debugRuntime {
         extendsFrom(debugCompile)
     }
+    extraTests
 }
 
 sourceSets {
@@ -253,11 +242,11 @@ abstract class AddMinecraftVariants implements TransformAction<Parameters> {
     void transform(TransformOutputs outputs) {
         def fileName = inputArtifact.get().asFile.name
 
-        if (fileName == "CubicChunksCore.jar") {
-            println "found cc-core ${fileName}"
+        if (fileName.contains("CubicChunksCore") || fileName.contains("CubicChunksCore-tests")) {
+            println "found ${fileName}"
             def outputFileName = "CubicChunksCore-minecraftvariants.jar";
             CoreTransformer.transformCoreLibrary(inputArtifact.get().asFile, outputs.file(outputFileName))
-            println "transformed cc-core ${outputFileName}"
+            println "transformed ${outputFileName}"
             return
         }
         outputs.file(inputArtifact)
@@ -291,6 +280,22 @@ dependencies {
 //        exclude module: "fabric-loader"
 //    }
 
+    include implementation(project(':CubicChunksCore'))
+
+    debugCompile "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
+    debugRuntime "org.lwjgl:lwjgl::$lwjglNatives"
+
+    include implementation('com.github.OpenCubicChunks:dasm:6e2eb04231')
+    include implementation('io.github.opencubicchunks:regionlib:0.63.0-SNAPSHOT')
+    include implementation('org.spongepowered:noise:2.0.0-SNAPSHOT')
+
+    include implementation('com.electronwill.night-config:core:3.6.0')
+    include implementation('com.electronwill.night-config:toml:3.6.0')
+
+    extraTests(project(':CubicChunksCore')) {
+        targetConfiguration = "testArchivesOutput"
+    }
+
     compileOnly('com.google.code.findbugs:jsr305:3.0.1')
     testCompileOnly('com.google.code.findbugs:jsr305:3.0.1')
 
@@ -298,18 +303,37 @@ dependencies {
     testImplementation('org.junit.jupiter:junit-jupiter-params:5.9.0')
     testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.9.0')
 
+    testImplementation('org.hamcrest:hamcrest-junit:2.0.0.0')
     testImplementation('org.hamcrest:hamcrest:2.2')
 
-    debugCompile "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
-    debugRuntime "org.lwjgl:lwjgl::$lwjglNatives"
+}
 
-    include implementation(project(':CubicChunksCore'))
-    include implementation('com.github.OpenCubicChunks:dasm:6e2eb04231')
-    include implementation('io.github.opencubicchunks:regionlib:0.63.0-SNAPSHOT')
-    include implementation('org.spongepowered:noise:2.0.0-SNAPSHOT')
+// unzipping subproject (CubicChunksCore) tests
+task unzipTests(type: Copy) {
+    outputs.upToDateWhen {
+        false
+    }
+    dependsOn(configurations["extraTests"])
+    from(configurations["extraTests"])
+    doFirst {
+        var testsFile = configurations["extraTests"].resolve().iterator().next()
+        from zipTree(testsFile)
+        exclude testsFile.name
+    }
+    into(sourceSets.test.output.classesDirs.asPath)
+}
 
-    include implementation('com.electronwill.night-config:core:3.6.0')
-    include implementation('com.electronwill.night-config:toml:3.6.0')
+test {
+    dependsOn(unzipTests)
+    useJUnitPlatform()
+
+    // Always run tests, even when nothing changed.
+    dependsOn 'cleanTest'
+
+    // Show test results.
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
 }
 
 processResources {
