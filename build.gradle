@@ -68,6 +68,7 @@ mixinGen {
         it.required = true
         it.conformVisibility = true
         it.injectorsDefaultRequire = 1
+        it.configurationPlugin = 'io.github.opencubicchunks.cubicchunks.mixin.AnnotationConfigPlugin'
     }
 
     config("levelgen") {
