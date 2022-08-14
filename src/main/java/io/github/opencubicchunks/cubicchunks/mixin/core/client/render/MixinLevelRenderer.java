@@ -54,7 +54,7 @@ public class MixinLevelRenderer {
             target = "Lcom/mojang/blaze3d/vertex/BufferBuilder;vertex(DDD)Lcom/mojang/blaze3d/vertex/VertexConsumer;",
             shift = At.Shift.AFTER
         ),
-        name = "u"
+        index = 29
     )
     private int swapUPre(int u) {
         int temp = this.betterUForUV;
@@ -70,7 +70,7 @@ public class MixinLevelRenderer {
             target = "Lcom/mojang/blaze3d/vertex/BufferBuilder;vertex(DDD)Lcom/mojang/blaze3d/vertex/VertexConsumer;",
             shift = At.Shift.AFTER
         ),
-        name = "v"
+        index = 30
     )
     private int swapVPre(int v) {
         int temp = this.betterVForUV;
@@ -86,7 +86,7 @@ public class MixinLevelRenderer {
             target = "Lcom/mojang/blaze3d/vertex/VertexConsumer;uv(FF)Lcom/mojang/blaze3d/vertex/VertexConsumer;",
             shift = At.Shift.AFTER
         ),
-        name = "u"
+        index = 29
     )
     private int swapUPost(int u) {
         int temp = this.betterUForUV;
@@ -102,7 +102,7 @@ public class MixinLevelRenderer {
             target = "Lcom/mojang/blaze3d/vertex/VertexConsumer;uv(FF)Lcom/mojang/blaze3d/vertex/VertexConsumer;",
             shift = At.Shift.AFTER
         ),
-        name = "v"
+        index = 30
     )
     private int swapVPost(int v) {
         int temp = this.betterVForUV;
