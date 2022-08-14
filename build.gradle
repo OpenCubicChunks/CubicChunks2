@@ -224,6 +224,54 @@ switch (OperatingSystem.current()) {
         break
 }
 
+def artifactType = Attribute.of('artifactType', String)
+def hasMinecraftVariants = Attribute.of('hasMinecraftVariants', Boolean)
+
+dependencies {
+    attributesSchema {
+        attribute(hasMinecraftVariants)
+    }
+    artifactTypes.getByName("jar") {
+        attributes.attribute(hasMinecraftVariants, false)
+    }
+}
+
+configurations.all {
+    if (canBeResolved) {
+        attributes.attribute(hasMinecraftVariants, true)
+    }
+}
+import io.github.opencubicchunks.gradle.CoreTransformer
+abstract class AddMinecraftVariants implements TransformAction<Parameters> {
+    interface Parameters extends TransformParameters {}
+
+    @PathSensitive(PathSensitivity.NAME_ONLY)
+    @InputArtifact
+    abstract Provider<FileSystemLocation> getInputArtifact()
+
+    @Override
+    void transform(TransformOutputs outputs) {
+        def fileName = inputArtifact.get().asFile.name
+
+        if (fileName == "CubicChunksCore.jar") {
+            println "found cc-core ${fileName}"
+            def outputFileName = "CubicChunksCore-minecraftvariants.jar";
+            CoreTransformer.transformCoreLibrary(inputArtifact.get().asFile, outputs.file(outputFileName))
+            println "transformed cc-core ${outputFileName}"
+            return
+        }
+        outputs.file(inputArtifact)
+    }
+}
+
+dependencies {
+    //intellij is dumb, this isn't deprecated @gradle 7.3
+    registerTransform(AddMinecraftVariants) {
+        from.attribute(hasMinecraftVariants, false).attribute(artifactType, "jar")
+        to.attribute(hasMinecraftVariants, true).attribute(artifactType, "jar")
+    }
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.layered() {
@@ -256,7 +304,7 @@ dependencies {
     debugRuntime "org.lwjgl:lwjgl::$lwjglNatives"
 
     include implementation(project(':CubicChunksCore'))
-    include implementation('com.github.OpenCubicChunks:dasm:13cb8d501a')
+    include implementation('com.github.OpenCubicChunks:dasm:6e2eb04231')
     include implementation('io.github.opencubicchunks:regionlib:0.63.0-SNAPSHOT')
     include implementation('org.spongepowered:noise:2.0.0-SNAPSHOT')
 
