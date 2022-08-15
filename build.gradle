@@ -1,3 +1,4 @@
+import io.github.opencubicchunks.gradle.AddMinecraftVariants
 import io.github.opencubicchunks.gradle.GeneratePackageInfo
 import org.gradle.internal.os.OperatingSystem
 
@@ -215,6 +216,16 @@ switch (OperatingSystem.current()) {
 
 def artifactType = Attribute.of('artifactType', String)
 def hasMinecraftVariants = Attribute.of('hasMinecraftVariants', Boolean)
+configurations.all {
+    if (canBeResolved) {
+        attributes.attribute(hasMinecraftVariants, true)
+    }
+}
+
+Set targetJars = [
+        "CubicChunksCore.jar",
+        "CubicChunksCore-tests.jar"
+]
 
 dependencies {
     attributesSchema {
@@ -223,41 +234,16 @@ dependencies {
     artifactTypes.getByName("jar") {
         attributes.attribute(hasMinecraftVariants, false)
     }
-}
 
-configurations.all {
-    if (canBeResolved) {
-        attributes.attribute(hasMinecraftVariants, true)
-    }
-}
-import io.github.opencubicchunks.gradle.CoreTransformer
-abstract class AddMinecraftVariants implements TransformAction<Parameters> {
-    interface Parameters extends TransformParameters {}
-
-    @PathSensitive(PathSensitivity.NAME_ONLY)
-    @InputArtifact
-    abstract Provider<FileSystemLocation> getInputArtifact()
-
-    @Override
-    void transform(TransformOutputs outputs) {
-        def fileName = inputArtifact.get().asFile.name
-
-        if (fileName.contains("CubicChunksCore") || fileName.contains("CubicChunksCore-tests")) {
-            println "found ${fileName}"
-            def outputFileName = "CubicChunksCore-minecraftvariants.jar";
-            CoreTransformer.transformCoreLibrary(inputArtifact.get().asFile, outputs.file(outputFileName))
-            println "transformed ${outputFileName}"
-            return
-        }
-        outputs.file(inputArtifact)
-    }
-}
-
-dependencies {
     //intellij is dumb, this isn't deprecated @gradle 7.3
     registerTransform(AddMinecraftVariants) {
         from.attribute(hasMinecraftVariants, false).attribute(artifactType, "jar")
         to.attribute(hasMinecraftVariants, true).attribute(artifactType, "jar")
+
+        parameters {
+            targetJarNames = targetJars
+            debug = project.debugArtifactTransforms == "true" ? System.nanoTime() : 0
+        }
     }
 }
 
