@@ -31,22 +31,7 @@ import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
 class CustomClassWriter {
-    private final Transformer transformer = new Transformer(new MappingsProvider() {
-        @Override
-        public String mapFieldName(String namespace, String owner, String fieldName, String descriptor) {
-            return fieldName;
-        }
-
-        @Override
-        public String mapMethodName(String namespace, String owner, String methodName, String descriptor) {
-            return methodName;
-        }
-
-        @Override
-        public String mapClassName(String namespace, String className) {
-            return className;
-        }
-    }, true);
+    private final Transformer transformer = new Transformer(MappingsProvider.IDENTITY, true);
 
     private final RedirectSet redirectSet;
 
@@ -78,7 +63,8 @@ public class CoreTransformer {
             List<ClassNode> classNodes = loadClasses(coreJar);
             List<ClassNode> outputClassNodes = new ArrayList<>();
 
-            // Annotation scanning
+            // Scans through all class nodes and looks for @DeclaresClass
+            // adds type redirects from the class node to the specified DeclaresClass#value
             RedirectSet redirectSet = new RedirectSet("");
             for (ClassNode classNode : classNodes) {
                 if (classNode.visibleAnnotations == null) {
@@ -105,8 +91,7 @@ public class CoreTransformer {
 
             // transformation
             CustomClassWriter customClassWriter = new CustomClassWriter(redirectSet);
-            classNodes.parallelStream()
-                .forEach(classNode -> customClassWriter.transformClass(classNode).ifPresent(outputClassNodes::add));
+            classNodes.parallelStream().forEach(classNode -> customClassWriter.transformClass(classNode).ifPresent(outputClassNodes::add));
 
             saveAsJar(outputClassNodes, coreJar, outputCoreJar);
             System.out.printf("Writing jar %s\n", outputCoreJar);
@@ -115,6 +100,9 @@ public class CoreTransformer {
         }
     }
 
+    /**
+     * Loads all class entries from a jar outputJar
+     */
     private static List<ClassNode> loadClasses(File jarFile) throws IOException {
         try (JarFile jar = new JarFile(jarFile); Stream<JarEntry> str = jar.stream()) {
             return str.flatMap(z -> readJarClasses(jar, z).stream())
@@ -142,29 +130,13 @@ public class CoreTransformer {
         return Optional.empty();
     }
 
-    private static void readNonJars(JarFile jar, JarEntry entry, Map<String, byte[]> nonClasses) {
-        String name = entry.getName();
-        try (InputStream inputStream = jar.getInputStream(entry)){
-            if (!name.endsWith(".class")) {
-                byte[] bytes = inputStream.readAllBytes();
-                nonClasses.put(name, bytes);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private static Map<String, byte[]> loadNonClasses(File jarFile) throws IOException {
-        Map<String, byte[]> classes = new HashMap<>();
-        JarFile jar = new JarFile(jarFile);
-        Stream<JarEntry> str = jar.stream();
-        str.forEach(z -> readNonJars(jar, z, classes));
-        jar.close();
-        return classes;
-    }
-
-    static void saveAsJar(List<ClassNode> classNodes, File inputJar, File file) {
-        try (JarOutputStream outputStream = new JarOutputStream(new FileOutputStream(file))) {
+    /**
+     * Takes a list of class nodes and writes them to the output outputJar
+     *
+     * All non-class entries from the specified input jar are also written to the output jar
+     */
+    static void saveAsJar(List<ClassNode> classNodes, File inputJar, File outputJar) {
+        try (JarOutputStream outputStream = new JarOutputStream(new FileOutputStream(outputJar))) {
             Map<String, byte[]> nonClassEntries = loadNonClasses(inputJar);
 
             // write all non-class entries from the input jar
@@ -189,5 +161,29 @@ public class CoreTransformer {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Loads all NON-class entries from a jar outputJar
+     */
+    private static void readNonJars(JarFile jar, JarEntry entry, Map<String, byte[]> nonClasses) {
+        String name = entry.getName();
+        try (InputStream inputStream = jar.getInputStream(entry)){
+            if (!name.endsWith(".class")) {
+                byte[] bytes = inputStream.readAllBytes();
+                nonClasses.put(name, bytes);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Map<String, byte[]> loadNonClasses(File jarFile) throws IOException {
+        Map<String, byte[]> classes = new HashMap<>();
+        JarFile jar = new JarFile(jarFile);
+        Stream<JarEntry> str = jar.stream();
+        str.forEach(z -> readNonJars(jar, z, classes));
+        jar.close();
+        return classes;
     }
 }
