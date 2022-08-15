@@ -7,13 +7,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
@@ -24,6 +27,7 @@ import io.github.opencubicchunks.dasm.RedirectsParser.RedirectSet.TypeRedirect;
 import io.github.opencubicchunks.dasm.Transformer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 
 class CustomClassWriter {
@@ -44,105 +48,146 @@ class CustomClassWriter {
         }
     }, true);
 
-    ClassReader reader;
-    ClassWriter writer;
+    private final RedirectSet redirectSet;
 
-    RedirectSet redirectSet;
-
-    public CustomClassWriter(byte[] b) throws IOException {
-        reader = new ClassReader(b);
-        writer = new ClassWriter(0);
-
-        redirectSet = new RedirectSet("1");
-        redirectSet.addRedirect(new TypeRedirect("io.github.opencubicchunks.cc_core.minecraft.MCBitStorage", "net/minecraft/util/BitStorage"));
-        redirectSet.addRedirect(new TypeRedirect("io.github.opencubicchunks.cc_core.minecraft.MCBlockGetter", "net/minecraft/world/level/BlockGetter"));
-        redirectSet.addRedirect(new TypeRedirect("io.github.opencubicchunks.cc_core.minecraft.MCBlockPos", "net/minecraft/core/BlockPos"));
-        redirectSet.addRedirect(new TypeRedirect("io.github.opencubicchunks.cc_core.minecraft.MCBlockState", "net/minecraft/world/level/block/state/BlockState"));
-        redirectSet.addRedirect(new TypeRedirect("io.github.opencubicchunks.cc_core.minecraft.MCChunkPos", "net/minecraft/world/level/ChunkPos"));
-        redirectSet.addRedirect(new TypeRedirect("io.github.opencubicchunks.cc_core.minecraft.MCEntity", "net/minecraft/world/entity/Entity"));
-        redirectSet.addRedirect(new TypeRedirect("io.github.opencubicchunks.cc_core.minecraft.MCLevelHeightAccessor", "net/minecraft/world/level/LevelHeightAccessor"));
-        redirectSet.addRedirect(new TypeRedirect("io.github.opencubicchunks.cc_core.minecraft.MCSectionPos", "net/minecraft/core/SectionPos"));
-        redirectSet.addRedirect(new TypeRedirect("io.github.opencubicchunks.cc_core.minecraft.MCVec3i", "net/minecraft/core/Vec3i"));
+    public CustomClassWriter(RedirectSet redirectSet) throws IOException {
+        this.redirectSet = redirectSet;
     }
 
-    public Optional<byte[]> changeSignatures() {
+    /**
+     * @param inputClassNode input class to transform
+     * @return If not present, the class should not be added to the output
+     */
+    public Optional<ClassNode> transformClass(ClassNode inputClassNode) {
 
-        ClassNode classNode = new ClassNode(ASM9);
-        reader.accept(classNode, 0);
-
-        if (redirectSet.getTypeRedirects().stream().anyMatch(typeRedirect -> typeRedirect.srcClassName().equals(classNode.name.replace("/", ".")))) {
+        if (redirectSet.getTypeRedirects().stream().anyMatch(typeRedirect -> typeRedirect.srcClassName().equals(inputClassNode.name.replace("/", ".")))) {
             return Optional.empty();
         }
 
-        ClassTarget classTarget = new ClassTarget(classNode.name);
-
+        ClassTarget classTarget = new ClassTarget(inputClassNode.name);
         classTarget.targetWholeClass();
+        transformer.transformClass(inputClassNode, classTarget, Collections.singletonList(redirectSet));
 
-        transformer.transformClass(classNode, classTarget, Collections.singletonList(redirectSet));
-
-        classNode.accept(writer);
-        return Optional.of(writer.toByteArray());
+        return Optional.of(inputClassNode);
     }
 }
 
 public class CoreTransformer {
     public static void transformCoreLibrary(File coreJar, File outputCoreJar) {
         try {
-            Map<String, byte[]> originalClassBytes = loadClasses(coreJar);
-            Map<String, byte[]> transformedClassBytes = new HashMap<>();
-            for (Map.Entry<String, byte[]> entry : originalClassBytes.entrySet()) {
-                String name = entry.getKey();
+            List<ClassNode> classNodes = loadClasses(coreJar);
+            List<ClassNode> outputClassNodes = new ArrayList<>();
 
-                try {
-                    Optional<byte[]> bytes = new CustomClassWriter(entry.getValue()).changeSignatures();
-                    bytes.ifPresent(value -> transformedClassBytes.put(name, value));
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                    throw t;
+            // Annotation scanning
+            RedirectSet redirectSet = new RedirectSet("");
+            for (ClassNode classNode : classNodes) {
+                if (classNode.visibleAnnotations == null) {
+                    continue;
+                }
+
+                for (AnnotationNode visibleAnnotation : classNode.visibleAnnotations) {
+                    if (visibleAnnotation.desc.contains("DeclaresClass")) {
+                        List<Object> values = visibleAnnotation.values;
+                        assert (values.size() & 1) == 0;
+                        for (int i = 0; i < values.size(); i+=2) {
+                            String key = (String) values.get(i);
+                            Object value = values.get(i+1);
+
+                            if (key.equals("value")) {
+                                if (value instanceof String stringValue) {
+                                    redirectSet.addRedirect(new TypeRedirect(classNode.name.replace("/", "."), stringValue.replace(".", "/")));
+                                }
+                            }
+                        }
+                    }
                 }
             }
-            saveAsJar(transformedClassBytes, outputCoreJar);
+
+            // transformation
+            CustomClassWriter customClassWriter = new CustomClassWriter(redirectSet);
+            classNodes.parallelStream()
+                .forEach(classNode -> customClassWriter.transformClass(classNode).ifPresent(outputClassNodes::add));
+
+            saveAsJar(outputClassNodes, coreJar, outputCoreJar);
             System.out.printf("Writing jar %s\n", outputCoreJar);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static Map<String, byte[]> loadClasses(File jarFile) throws IOException {
+    private static List<ClassNode> loadClasses(File jarFile) throws IOException {
+        try (JarFile jar = new JarFile(jarFile); Stream<JarEntry> str = jar.stream()) {
+            return str.flatMap(z -> readJarClasses(jar, z).stream())
+                .map(CoreTransformer::classNodeFromBytes)
+                .collect(Collectors.toList());
+        }
+    }
+
+    private static ClassNode classNodeFromBytes(byte[] bytes) {
+        ClassReader reader = new ClassReader(bytes);
+        ClassNode classNode = new ClassNode(ASM9);
+        reader.accept(classNode, 0);
+        return classNode;
+    }
+
+    private static Optional<byte[]> readJarClasses(JarFile jar, JarEntry entry) {
+        String name = entry.getName();
+        try (InputStream inputStream = jar.getInputStream(entry)){
+            if (name.endsWith(".class")) {
+                return Optional.of(inputStream.readAllBytes());
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return Optional.empty();
+    }
+
+    private static void readNonJars(JarFile jar, JarEntry entry, Map<String, byte[]> nonClasses) {
+        String name = entry.getName();
+        try (InputStream inputStream = jar.getInputStream(entry)){
+            if (!name.endsWith(".class")) {
+                byte[] bytes = inputStream.readAllBytes();
+                nonClasses.put(name, bytes);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Map<String, byte[]> loadNonClasses(File jarFile) throws IOException {
         Map<String, byte[]> classes = new HashMap<>();
         JarFile jar = new JarFile(jarFile);
         Stream<JarEntry> str = jar.stream();
-        str.forEach(z -> readJar(jar, z, classes));
+        str.forEach(z -> readNonJars(jar, z, classes));
         jar.close();
         return classes;
     }
 
-    private static void readJar(JarFile jar, JarEntry entry, Map<String, byte[]> classes) {
-        String name = entry.getName();
-        try (InputStream inputStream = jar.getInputStream(entry)){
-            if (name.endsWith(".class")) {
-                byte[] bytes = inputStream.readAllBytes();
-                classes.put(name, bytes);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+    static void saveAsJar(List<ClassNode> classNodes, File inputJar, File file) {
+        try (JarOutputStream outputStream = new JarOutputStream(new FileOutputStream(file))) {
+            Map<String, byte[]> nonClassEntries = loadNonClasses(inputJar);
 
-    static void saveAsJar(Map<String, byte[]> outBytes, File file) {
-        try {
-            JarOutputStream outputStream = new JarOutputStream(new FileOutputStream(file));
-            for (String entry : outBytes.keySet()) {
-                String ext = entry.contains(".") ? "" : ".class";
-                outputStream.putNextEntry(new ZipEntry(entry + ext));
-                outputStream.write(outBytes.get(entry));
+            // write all non-class entries from the input jar
+            for (Map.Entry<String, byte[]> e : nonClassEntries.entrySet()) {
+                outputStream.putNextEntry(new ZipEntry(e.getKey()));
+                outputStream.write(e.getValue());
                 outputStream.closeEntry();
             }
-            outputStream.close();
+
+            // write all class nodes
+            for (ClassNode classNode : classNodes) {
+                ClassWriter writer = new ClassWriter(0);
+                classNode.accept(writer);
+                byte[] bytes = writer.toByteArray();
+
+                outputStream.putNextEntry(new ZipEntry(classNode.name));
+
+                outputStream.putNextEntry(new ZipEntry(classNode.name + ".class"));
+                outputStream.write(bytes);
+                outputStream.closeEntry();
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new UncheckedIOException(e);
         }
     }
 }
