@@ -1,16 +1,21 @@
-import io.github.opencubicchunks.gradle.AddMinecraftVariants
 import io.github.opencubicchunks.gradle.GeneratePackageInfo
 import org.gradle.internal.os.OperatingSystem
 
 buildscript {
     repositories {
+        mavenLocal()
         maven {
             name = 'Fabric'
             url = 'https://maven.fabricmc.net/'
         }
+        maven {
+            name = "JitPack"
+            url = "https://jitpack.io"
+        }
     }
     dependencies {
         classpath 'net.fabricmc:fabric-loom:0.10-SNAPSHOT'
+        classpath 'io.github.opencubicchunks:javaheaders:1.0'
     }
 }
 plugins {
@@ -21,6 +26,12 @@ plugins {
 apply plugin: "fabric-loom"
 apply plugin: "io.github.opencubicchunks.gradle.mcGitVersion"
 apply plugin: "io.github.opencubicchunks.gradle.mixingen"
+apply plugin: 'io.github.opencubicchunks.javaheaders'
+
+linkHeadersConfig {
+    acceptedJars = ".*CubicChunksCore.*"
+    debug = project.debugArtifactTransforms == "true"
+}
 
 mcGitVersion {
     snapshot = true
@@ -214,39 +225,6 @@ switch (OperatingSystem.current()) {
         break
 }
 
-def artifactType = Attribute.of('artifactType', String)
-def hasMinecraftVariants = Attribute.of('hasMinecraftVariants', Boolean)
-configurations.all {
-    if (canBeResolved) {
-        attributes.attribute(hasMinecraftVariants, true)
-    }
-}
-
-Set targetJars = [
-        "CubicChunksCore.jar",
-        "CubicChunksCore-tests.jar"
-]
-
-dependencies {
-    attributesSchema {
-        attribute(hasMinecraftVariants)
-    }
-    artifactTypes.getByName("jar") {
-        attributes.attribute(hasMinecraftVariants, false)
-    }
-
-    //intellij is dumb, this isn't deprecated @gradle 7.3
-    registerTransform(AddMinecraftVariants) {
-        from.attribute(hasMinecraftVariants, false).attribute(artifactType, "jar")
-        to.attribute(hasMinecraftVariants, true).attribute(artifactType, "jar")
-
-        parameters {
-            targetJarNames = targetJars
-            debug = project.debugArtifactTransforms == "true" ? System.nanoTime() : 0
-        }
-    }
-}
-
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.layered() {
@@ -271,7 +249,7 @@ dependencies {
     debugCompile "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
     debugRuntime "org.lwjgl:lwjgl::$lwjglNatives"
 
-    include implementation('com.github.OpenCubicChunks:dasm:4b378b37b0')
+    include implementation('com.github.OpenCubicChunks:dasm:1ceaf6f68d')
     include implementation('io.github.opencubicchunks:regionlib:0.63.0-SNAPSHOT')
     include implementation('org.spongepowered:noise:2.0.0-SNAPSHOT')
 
