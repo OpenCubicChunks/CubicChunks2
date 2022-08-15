@@ -308,6 +308,8 @@ task unzipTests(type: Copy) {
     }
     into(sourceSets.test.output.classesDirs.asPath)
 }
+// add explicit dependency to silence gradle warnings when building
+checkstyleTest.dependsOn(unzipTests)
 
 test {
     dependsOn(unzipTests)
