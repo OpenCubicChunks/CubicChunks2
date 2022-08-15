@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.OpenCubicChunks:dasm:6e2eb04231'
+    implementation 'com.github.OpenCubicChunks:dasm:4b378b37b0'
     implementation 'org.ow2.asm:asm:9.3'
     implementation 'org.ow2.asm:asm-tree:9.1'
     implementation 'org.ow2.asm:asm-util:9.1'
