@@ -15,7 +15,7 @@ buildscript {
     }
     dependencies {
         classpath 'net.fabricmc:fabric-loom:0.10-SNAPSHOT'
-        classpath 'io.github.opencubicchunks:javaheaders:1.0'
+        classpath 'io.github.opencubicchunks:javaheaders:1.1.3'
     }
 }
 plugins {
