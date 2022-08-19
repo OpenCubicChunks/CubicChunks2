@@ -13,7 +13,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'net.fabricmc:fabric-loom:0.10-SNAPSHOT'
+        classpath 'net.fabricmc:fabric-loom:0.13.1'
         classpath 'io.github.opencubicchunks:javaheaders:1.2.2'
         classpath 'com.google.code.gson:gson:2.8.5'
     }
@@ -30,8 +30,8 @@ apply plugin: 'io.github.opencubicchunks.javaheaders'
 
 linkHeadersConfig {
     acceptedJars = ".*CubicChunksCore.*"
-    debug = project.debugArtifactTransforms == "true"
     config = file("javaHeaders.json")
+    debug = project.debugArtifactTransforms == "true"
 }
 
 mcGitVersion {
@@ -244,8 +244,7 @@ dependencies {
 //    modRuntime ("supercoder79:databreaker:0.2.8") {
 //        exclude module: "fabric-loader"
 //    }
-
-    include implementation(project(':CubicChunksCore'))
+    implementation(project(':CubicChunksCore'))
 
     debugCompile "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
     debugRuntime "org.lwjgl:lwjgl::$lwjglNatives"
