@@ -76,7 +76,11 @@ public abstract class MixinViewArea {
                     int yTemp = viewY - 8 - yBase / 2;
                     int posY = yTemp + Math.floorMod(yIndex * 16 - yTemp, yBase);
                     ChunkRenderDispatcher.RenderChunk renderChunk = this.chunks[this.getChunkIndex(xIndex, yIndex, zIndex)];
-                    renderChunk.setOrigin(posX, posY, posZ);
+                    BlockPos currOrigin = renderChunk.getOrigin();
+
+                    if (posX != currOrigin.getX() || posY != currOrigin.getY() || posZ != currOrigin.getZ()) {
+                        renderChunk.setOrigin(posX, posY, posZ);
+                    }
                 }
             }
         }

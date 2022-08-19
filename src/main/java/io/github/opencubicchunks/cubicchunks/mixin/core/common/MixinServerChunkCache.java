@@ -373,7 +373,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
         });
     }
 
-    private void getFullCube(long pos, Consumer<ChunkAccess> chunkConsumer) {
+    private void getFullCube(long pos, Consumer<CubeAccess> chunkConsumer) {
         ChunkHolder chunkHolder = this.getVisibleCubeIfPresent(pos);
         if (chunkHolder != null) {
             CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> o = unsafeCast((chunkHolder.getFullChunkFuture()));

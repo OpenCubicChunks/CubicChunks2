@@ -28,13 +28,13 @@ public abstract class MixinServerPlayer extends Player {
 
     @Shadow public abstract ServerLevel getLevel();
 
-    @Redirect(method = "trackChunk",
+    /*@Redirect(method = "trackChunk",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;send(Lnet/minecraft/network/protocol/Packet;)V", ordinal = 0))
     public void onSendChunkLoad(ServerGamePacketListenerImpl packetListener, Packet<?> packet) {
         if (!((CubicLevelHeightAccessor) this.getLevel()).isCubic()) {
             packetListener.send(packet);
         }
-    }
+    }*/
 
     // ClientboundRespawnPacket instantiates the ClientLevel on the client, so we send our packet just before that
     @Inject(method = "changeDimension", at = @At(value = "NEW", target = "net/minecraft/network/protocol/game/ClientboundRespawnPacket"))

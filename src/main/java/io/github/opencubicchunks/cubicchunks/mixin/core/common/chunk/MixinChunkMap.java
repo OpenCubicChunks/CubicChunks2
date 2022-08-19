@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -91,6 +92,7 @@ import net.minecraft.Util;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagType;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
@@ -242,6 +244,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Shadow public static boolean isChunkInRange(int i, int j, int k, int l, int m) {
         throw new Error("Mixin didn't apply");
     }
+
+    @Shadow protected abstract boolean playerIsCloseEnoughForSpawning(ServerPlayer serverPlayer, ChunkPos chunkPos);
 
     @SuppressWarnings("UnresolvedMixinReference")
     @Redirect(method = "<init>", at = @At(value = "NEW", target = "(Lnet/minecraft/server/level/ChunkMap;Ljava/util/concurrent/Executor;Ljava/util/concurrent/Executor;)"
@@ -980,7 +984,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             final CompletableFuture<CompoundTag> poiFuture = ((IOWorkerAccess) ((CubicSectionStorage) this.poiManager).getIOWorker()).invokeLoadAsync(cubePos.asChunkPos());
             return cubeNBTFuture.thenCombineAsync(poiFuture, (cubeNBT, poiNBT) -> {
                 if (cubeNBT != null) {
-                    boolean flag = cubeNBT.contains("Level", 10) && cubeNBT.getCompound("Level").contains("Status", 8);
+                    boolean flag = cubeNBT.contains("Status", 8);
                     if (flag) {
                         ChunkIoMainThreadTaskUtils.executeMain(() -> {
                             if (poiNBT != null) {
@@ -1346,8 +1350,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
         CubePos pos = cubeIn.getCubePos();
 
-        PacketDispatcher.sendTo(packetCache[1], player);
         PacketDispatcher.sendTo(packetCache[0], player);
+        PacketDispatcher.sendTo(packetCache[1], player);
         List<Entity> leashedEntities = Lists.newArrayList();
         List<Entity> passengerEntities = Lists.newArrayList();
 
@@ -1383,6 +1387,36 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         long cubePosAsLong = cubePos.asLong();
         return !((CubicDistanceManager) this.distanceManager).hasCubePlayersNearby(cubePosAsLong) || this.playerMap.getPlayers(cubePosAsLong).stream().noneMatch(
             (serverPlayer) -> !serverPlayer.isSpectator() && euclideanDistanceSquared(cubePos, serverPlayer) < (TICK_UPDATE_DISTANCE * TICK_UPDATE_DISTANCE));
+    }
+
+    @Override
+    public List<ServerPlayer> getPlayersCloseForSpawning(CubePos cubePos) {
+        Set<ServerPlayer> players = this.playerMap.getPlayers(cubePos.asLong());
+
+        if (players.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return players.stream()
+            .filter(player -> this.playerIsCloseEnoughForSpawning(player, cubePos))
+            .toList();
+    }
+
+    private boolean playerIsCloseEnoughForSpawning(ServerPlayer player, CubePos cube) {
+        if (player.isSpectator()) {
+            return false;
+        } else {
+            double cubeX = Coords.cubeToCenterBlock(cube.getX());
+            double cubeY = Coords.cubeToCenterBlock(cube.getY());
+            double cubeZ = Coords.cubeToCenterBlock(cube.getZ());
+
+            double distance =
+                  (player.getX() - cubeX) * (player.getX() - cubeX)
+                + (player.getY() - cubeY) * (player.getY() - cubeY)
+                + (player.getZ() - cubeZ) * (player.getZ() - cubeZ);
+
+            return distance < 16384;
+        }
     }
 
     @Override

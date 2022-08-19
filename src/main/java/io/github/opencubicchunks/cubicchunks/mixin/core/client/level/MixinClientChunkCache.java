@@ -100,8 +100,7 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
     @Override
     public LevelCube replaceWithPacketData(int cubeX, int cubeY, int cubeZ,
                                            FriendlyByteBuf readBuffer, CompoundTag tag,
-                                           BiConsumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput, CubePos> blockEntityTagOutputConsumer,
-                                           boolean cubeExists) {
+                                           BiConsumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput, CubePos> blockEntityTagOutputConsumer) {
 
         if (!this.cubeArray.inRange(cubeX, cubeY, cubeZ)) {
             LOGGER.warn("Ignoring cube since it's not in the view range: {}, {}, {}", cubeX, cubeY, cubeZ);
@@ -113,10 +112,10 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
 
         if (!isCubeValid(cube, cubeX, cubeY, cubeZ)) {
             cube = new LevelCube(this.level, CubePos.of(cubeX, cubeY, cubeZ));
-            cube.read(readBuffer, tag, blockEntityTagOutputConsumer, cubeExists);
+            cube.read(readBuffer, tag, blockEntityTagOutputConsumer);
             this.cubeArray.replace(index, cube);
         } else {
-            cube.read(readBuffer, tag, blockEntityTagOutputConsumer, cubeExists);
+            cube.read(readBuffer, tag, blockEntityTagOutputConsumer);
         }
 
         ((CubicClientLevel) this.level).onCubeLoaded(cubeX, cubeY, cubeZ);

@@ -164,6 +164,16 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
         return this.isUnsaved();
     }
 
+    @Deprecated @Override
+    public void setUnsaved(boolean modified) {
+        super.setUnsaved(modified);
+    }
+
+    @Deprecated @Override
+    public boolean isUnsaved() {
+        return super.isUnsaved();
+    }
+
     //TODO: remove isEmptyCube from IBigCube to match IChunk
     public boolean isEmptyCube() {
         for (LevelChunkSection section : sections) {

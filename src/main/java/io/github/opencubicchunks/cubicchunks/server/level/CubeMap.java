@@ -142,5 +142,7 @@ public interface CubeMap {
     // noPlayersCloseForSpawning
     boolean noPlayersCloseForSpawning(CubePos cubePos);
 
+    List<ServerPlayer> getPlayersCloseForSpawning(CubePos cubePos);
+
     Long2ObjectLinkedOpenHashMap<ChunkHolder> getUpdatingCubeMap();
 }

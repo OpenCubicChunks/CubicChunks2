@@ -715,15 +715,6 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         return super.getInhabitedTime();
     }
 
-    @Deprecated @Override public boolean isUnsaved() {
-        return isDirty();
-    }
-
-    //MISC
-    @Deprecated @Override public void setUnsaved(boolean newUnsaved) {
-        super.setUnsaved(newUnsaved);
-    }
-
     @Deprecated @Override public Stream<BlockPos> getLights() {
         return getCubeLights();
     }

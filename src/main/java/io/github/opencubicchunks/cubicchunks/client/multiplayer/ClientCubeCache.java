@@ -19,6 +19,5 @@ public interface ClientCubeCache extends CubeSource {
     void updateCubeViewRadius(int hDistance, int vDistance);
 
     LevelCube replaceWithPacketData(int cubeX, int cubeY, int cubeZ, FriendlyByteBuf readBuffer, CompoundTag tag,
-                                    BiConsumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput, CubePos> blockEntityTagOutputConsumer,
-                                    boolean cubeExists);
+                                    BiConsumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput, CubePos> blockEntityTagOutputConsumer);
 }

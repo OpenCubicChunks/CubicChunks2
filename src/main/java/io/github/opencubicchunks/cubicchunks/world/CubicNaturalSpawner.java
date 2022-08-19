@@ -5,9 +5,12 @@ import java.lang.reflect.Method;
 import java.util.function.Consumer;
 
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.NaturalSpawnerAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.LocalMobCapCalculator;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -21,9 +24,9 @@ public class CubicNaturalSpawner {
     private static final Method CREATE_CUBIC_STATE;
     private static final Method IS_RIGHT_DISTANCE_TO_PLAYER_AND_SPAWN_POINT_FOR_CUBE;
 
-    public static void spawnForCube(ServerLevel level, ChunkAccess chunk, NaturalSpawner.SpawnState spawnState, boolean spawnAnimals, boolean spawnMonsters, boolean shouldSpawnAnimals) {
+    public static void spawnForCube(ServerLevel level, CubeAccess cube, NaturalSpawner.SpawnState spawnState, boolean spawnAnimals, boolean spawnMonsters, boolean shouldSpawnAnimals) {
         try {
-            SPAWN_FOR_CUBE.invoke(null, level, chunk, spawnState, spawnAnimals, spawnMonsters, shouldSpawnAnimals);
+            SPAWN_FOR_CUBE.invoke(null, level, cube, spawnState, spawnAnimals, spawnMonsters, shouldSpawnAnimals);
         } catch (IllegalAccessException e) {
             throw new Error(e);
         } catch (InvocationTargetException e) {
@@ -58,7 +61,7 @@ public class CubicNaturalSpawner {
     static {
         try {
             SPAWN_FOR_CUBE =
-                NaturalSpawner.class.getMethod("spawnForCube", ServerLevel.class, ChunkAccess.class, NaturalSpawner.SpawnState.class, boolean.class, boolean.class, boolean.class);
+                NaturalSpawner.class.getMethod("spawnForCube", ServerLevel.class, CubeAccess.class, NaturalSpawner.SpawnState.class, boolean.class, boolean.class, boolean.class);
 
             CREATE_CUBIC_STATE = NaturalSpawner.class.getMethod("createCubicState", int.class, Iterable.class, CubicNaturalSpawner.CubeGetter.class, LocalMobCapCalculator.class);
             IS_RIGHT_DISTANCE_TO_PLAYER_AND_SPAWN_POINT_FOR_CUBE = NaturalSpawner.class.getMethod("isRightDistanceToPlayerAndSpawnPointForCube", ServerLevel.class, ChunkAccess.class,
@@ -70,6 +73,10 @@ public class CubicNaturalSpawner {
 
     @FunctionalInterface
     public interface CubeGetter {
-        void query(long pos, Consumer<ChunkAccess> chunkConsumer);
+        void query(long pos, Consumer<CubeAccess> chunkConsumer);
+    }
+
+    public interface CubicSpawnState {
+        boolean canSpawnForCategory(MobCategory mobCategory, CubePos cubePos);
     }
 }

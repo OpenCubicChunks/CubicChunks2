@@ -78,7 +78,7 @@ public abstract class MixinNoiseChunk {
 
     }
 
-    //TODO: IMPORTANT. This is a hack to fix a ConcurrentModificationException. It would be MUCH better to fix the underlying issue.
+    //TODO: This is a hack to fix a ConcurrentModificationException. It would be MUCH better to fix the underlying issue.
     @Inject(
         method = "wrap",
         at = @At("HEAD"),

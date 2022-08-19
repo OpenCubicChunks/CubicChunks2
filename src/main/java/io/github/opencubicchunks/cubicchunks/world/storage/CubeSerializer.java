@@ -28,6 +28,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.ImposterProtoCube
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.AsyncSaveData;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.PoiDeserializationContext;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLevelLightEngine;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -139,6 +140,11 @@ public class CubeSerializer {
                     sectionPos.getY(),
                     blocks,
                     biomes
+                );
+
+                sections[sectionIndex] = section;
+                ChunkIoMainThreadTaskUtils.executeMain(
+                    () -> ((PoiDeserializationContext) poiManager).checkConsistencyWithBlocksForCube(sectionPos, section)
                 );
             }
 
@@ -350,30 +356,6 @@ public class CubeSerializer {
                 lightEngine.getLayerListener(LightLayer.SKY).getDataLayerData(Coords.sectionPosByIndex(pos, i));
             CompoundTag sectionNBT = new CompoundTag();
             if (blockData != null || skyData != null) {
-                sectionNBT.put(
-                    "block_states",
-                    ChunkSerializerAccess.getBLOCK_STATE_CODEC().encodeStart(
-                        NbtOps.INSTANCE,
-                        section.getStates()
-                    ).getOrThrow(
-                        false,
-                        LOGGER::error
-                    )
-                );
-
-                sectionNBT.put(
-                    "biomes",
-                    palettedBiomeContainerCodec.encodeStart(
-                        NbtOps.INSTANCE,
-                        section.getBiomes()
-                    ).getOrThrow(
-                        false,
-                        LOGGER::error
-                    )
-                );
-
-                sectionNBT.putShort("i", (byte) (i));
-
                 if (blockData != null && !blockData.isEmpty()) {
                     sectionNBT.putByteArray("BlockLight", blockData.getData());
                 }
@@ -382,6 +364,30 @@ public class CubeSerializer {
                     sectionNBT.putByteArray("SkyLight", skyData.getData());
                 }
             }
+
+            sectionNBT.put(
+                "block_states",
+                ChunkSerializerAccess.getBLOCK_STATE_CODEC().encodeStart(
+                    NbtOps.INSTANCE,
+                    section.getStates()
+                ).getOrThrow(
+                    false,
+                    LOGGER::error
+                )
+            );
+
+            sectionNBT.put(
+                "biomes",
+                palettedBiomeContainerCodec.encodeStart(
+                    NbtOps.INSTANCE,
+                    section.getBiomes()
+                ).getOrThrow(
+                    false,
+                    LOGGER::error
+                )
+            );
+
+            sectionNBT.putShort("i", (byte) (i));
 
             sectionsNBTList.add(sectionNBT);
         }

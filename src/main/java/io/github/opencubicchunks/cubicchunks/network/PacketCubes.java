@@ -35,16 +35,14 @@ public class PacketCubes {
 
     private final CubePos[] cubePositions;
     private final LevelCube[] cubes;
-    private final BitSet cubeExists;
     private final byte[] cubeData;
     private final List<CubeBlockEntityInfo> blockEntities;
 
     public PacketCubes(List<LevelCube> cubes) {
         this.cubes = cubes.toArray(new LevelCube[0]);
         this.cubePositions = new CubePos[this.cubes.length];
-        this.cubeExists = new BitSet(cubes.size());
         this.cubeData = new byte[calculateDataSize(cubes)];
-        fillDataBuffer(wrapBuffer(this.cubeData), cubes, cubeExists);
+        fillDataBuffer(wrapBuffer(this.cubeData), cubes);
         this.blockEntities = cubes.stream()
             .flatMap(cube -> cube.getTileEntityMap().values().stream())
             .map(CubeBlockEntityInfo::of)
@@ -61,7 +59,6 @@ public class PacketCubes {
 
         // one long stores information about 64 chunks
         int length = MathUtil.ceilDiv(cubes.length, 64);
-        this.cubeExists = BitSet.valueOf(buf.readLongArray(new long[length]));
 
         int packetLength = buf.readVarInt();
         if (packetLength > MAX_CUBE_SIZE * cubes.length) {
@@ -85,7 +82,6 @@ public class PacketCubes {
             buf.writeInt(cube.getCubePos().getZ());
         }
 
-        buf.writeLongArray(cubeExists.toLongArray());
 
         buf.writeVarInt(this.cubeData.length);
         buf.writeBytes(this.cubeData);
@@ -96,12 +92,11 @@ public class PacketCubes {
         }
     }
 
-    private static void fillDataBuffer(FriendlyByteBuf buf, List<LevelCube> cubes, BitSet existingChunks) {
+    private static void fillDataBuffer(FriendlyByteBuf buf, List<LevelCube> cubes) {
         buf.writerIndex(0);
         int i = 0;
         for (LevelCube cube : cubes) {
             if (!cube.isEmptyCube()) {
-                existingChunks.set(i);
                 cube.write(buf);
             }
             i++;
@@ -115,7 +110,6 @@ public class PacketCubes {
 
     private static int calculateDataSize(List<LevelCube> cubes) {
         return cubes.stream()
-            .filter(c -> !c.isEmptyCube())
             .flatMap(c -> Arrays.stream(c.getCubeSections()))
             .mapToInt(LevelChunkSection::getSerializedSize)
             .sum();
@@ -127,7 +121,6 @@ public class PacketCubes {
             ClientLevel clientLevel = (ClientLevel) level;
 
             FriendlyByteBuf dataReader = wrapBuffer(packet.cubeData);
-            BitSet cubeExists = packet.cubeExists;
             for (int i = 0; i < packet.cubes.length; i++) {
                 CubePos pos = packet.cubePositions[i];
                 int x = pos.getX();
@@ -156,8 +149,7 @@ public class PacketCubes {
                                 );
                             }
                         }
-                    },
-                    cubeExists.get(i)
+                    }
                 );
 
                 for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {

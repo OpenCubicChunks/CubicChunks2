@@ -721,14 +721,6 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         return (this.level.isClientSide() || this.getFullStatus().isOrAfter(ChunkHolder.FullChunkStatus.TICKING)) && this.level.getWorldBorder().isWithinBounds(blockPos);
     }
 
-    @Deprecated @Override public void setUnsaved(boolean modified) {
-        super.setUnsaved(modified);
-    }
-
-    @Deprecated @Override public boolean isUnsaved() {
-        return isDirty();
-    }
-
     @Override public boolean isEmptyCube() {
         for (LevelChunkSection section : this.sections) {
             if (!section.hasOnlyAir()) {
@@ -743,7 +735,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
     }
 
     @Deprecated @Override public void setInhabitedTime(long newInhabitedTime) {
-        this.setCubeInhabitedTime(newInhabitedTime);
+        super.setInhabitedTime(newInhabitedTime);
     }
 
     @Override public void setCubeInhabitedTime(long newInhabitedTime) {
@@ -766,12 +758,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         }
     }
 
-    public void read(FriendlyByteBuf readBuffer, CompoundTag tag, BiConsumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput, CubePos> consumer, boolean cubeExists) {
-        if (!cubeExists) {
-            Arrays.fill(sections, null);
-            return;
-        }
-
+    public void read(FriendlyByteBuf readBuffer, CompoundTag tag, BiConsumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput, CubePos> consumer) {
         //Clear all block entities
         this.blockEntities.values().forEach(this::onBlockEntityRemove);
         this.blockEntities.clear();
@@ -780,20 +767,8 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         });
         this.tickersInLevel.clear();
 
-        //Load sections
-        /*byte[] emptyFlagsBytes = new byte[MathUtil.ceilDiv(sections.length, Byte.SIZE)];
-        readBuffer.readBytes(emptyFlagsBytes);
-        BitSet emptyFlags = BitSet.valueOf(emptyFlagsBytes);*/
-
-        for (int i = 0; i < CubeAccess.SECTION_COUNT; i++) {
-            //boolean exists = emptyFlags.get(i);
-
-            int dy = indexToY(i);
-
-            SectionPos sectionPos = getCubePos().asSectionPos();
-            int y = sectionPos.getY() + dy;
-
-            readSection(i, y, readBuffer, tag/*, exists*/); //TODO
+        for (LevelChunkSection section : sections) {
+            section.read(readBuffer);
         }
 
         //Load block entities
@@ -803,41 +778,6 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
                 blockEntity.load(compundTagX);
             }
         }, this.cubePos);
-
-        /*
-
-        if (biomes != null) {
-            this.cubeBiomeContainer = biomes;
-        }
-
-        // TODO: support partial updates // TODO: is this still relevant?
-        this.blockEntities.values().forEach(this::onBlockEntityRemove);
-        this.blockEntities.clear();
-
-        for (int i = 0; i < CubeAccess.SECTION_COUNT; i++) {
-            boolean exists = emptyFlags.get(i);
-
-            //        byte emptyFlags = 0;
-            //        for (int i = 0; i < sections.length; i++) {
-            //            if (sections[i] != null && !sections[i].isEmpty()) {
-            //                emptyFlags |= 1 << i;
-            //            }
-            //        }
-            //        buf.writeByte(emptyFlags);
-            //        for (int i = 0; i < sections.length; i++) {
-            //            if (sections[i] != null && !sections[i].isEmpty()) {
-            //                sections[i].write(buf);
-            //            }
-            //        }
-            //        return false;
-
-            int dy = indexToY(i);
-
-            SectionPos sectionPos = getCubePos().asSectionPos();
-            int y = sectionPos.getY() + dy;
-
-            readSection(i, y, null, readBuffer, tag, exists);
-        }*/
     }
 
     private void onBlockEntityRemove(BlockEntity blockEntity) {

@@ -21,3 +21,6 @@ extendable method net/minecraft/world/ticks/LevelTicks forContainersInArea (Lnet
 accessible class net/minecraft/world/ticks/LevelTicks$PosAndContainerConsumer
 
 accessible class net/minecraft/client/renderer/chunk/RenderChunk
+
+accessible class net/minecraft/world/level/LocalMobCapCalculator$MobCounts
+accessible method net/minecraft/world/level/LocalMobCapCalculator$MobCounts <init> ()V

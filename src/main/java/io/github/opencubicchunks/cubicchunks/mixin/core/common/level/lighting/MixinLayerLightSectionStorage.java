@@ -50,6 +50,10 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
 
     @Shadow protected abstract boolean hasInconsistencies();
 
+    @Shadow protected abstract void checkEdgesForSection(LayerLightEngine<M, ?> layerLightEngine, long l);
+
+    @Shadow @Final private LongSet untrustedSections;
+
     @Override
     public void retainCubeData(long cubeSectionPos, boolean retain) {
         if (retain) {
@@ -106,59 +110,14 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
                 }
             }
 
-            DynamicGraphMinFixedPointAccess engineAccess = ((DynamicGraphMinFixedPointAccess) engine);
-
             this.updatingSectionData.clearCache();
             if (!updateBlockLight) {
                 for (long newArray : this.queuedSections.keySet()) {
-                    if (this.storingLightForSection(newArray)) {
-                        int newX = SectionPos.sectionToBlockCoord(SectionPos.x(newArray));
-                        int newY = SectionPos.sectionToBlockCoord(SectionPos.y(newArray));
-                        int newZ = SectionPos.sectionToBlockCoord(SectionPos.z(newArray));
-
-                        for (Direction direction : DIRECTIONS) {
-                            long posOffset = SectionPos.offset(newArray, direction);
-                            if (!this.queuedSections.containsKey(posOffset) && this.storingLightForSection(posOffset)) {
-                                for (int i1 = 0; i1 < 16; ++i1) {
-                                    for (int j1 = 0; j1 < 16; ++j1) {
-                                        long k1;
-                                        long l1;
-                                        switch (direction) {
-                                            case DOWN -> {
-                                                k1 = BlockPos.asLong(newX + j1, newY, newZ + i1);
-                                                l1 = BlockPos.asLong(newX + j1, newY - 1, newZ + i1);
-                                            }
-                                            case UP -> {
-                                                k1 = BlockPos.asLong(newX + j1, newY + 16 - 1, newZ + i1);
-                                                l1 = BlockPos.asLong(newX + j1, newY + 16, newZ + i1);
-                                            }
-                                            case NORTH -> {
-                                                k1 = BlockPos.asLong(newX + i1, newY + j1, newZ);
-                                                l1 = BlockPos.asLong(newX + i1, newY + j1, newZ - 1);
-                                            }
-                                            case SOUTH -> {
-                                                k1 = BlockPos.asLong(newX + i1, newY + j1, newZ + 16 - 1);
-                                                l1 = BlockPos.asLong(newX + i1, newY + j1, newZ + 16);
-                                            }
-                                            case WEST -> {
-                                                k1 = BlockPos.asLong(newX, newY + i1, newZ + j1);
-                                                l1 = BlockPos.asLong(newX - 1, newY + i1, newZ + j1);
-                                            }
-                                            default -> {
-                                                k1 = BlockPos.asLong(newX + 16 - 1, newY + i1, newZ + j1);
-                                                l1 = BlockPos.asLong(newX + 16, newY + i1, newZ + j1);
-                                            }
-                                        }
-
-                                        engineAccess.invokeCheckEdge(k1, l1, engineAccess.invokeComputeLevelFromNeighbor(k1, l1, engineAccess.invokeGetLevel(k1)),
-                                            false);
-                                        engineAccess.invokeCheckEdge(l1, k1, engineAccess.invokeComputeLevelFromNeighbor(l1, k1, engineAccess.invokeGetLevel(l1)),
-                                            false);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    checkEdgesForSection(engine, newArray);
+                }
+            } else {
+                for (long newArray : this.untrustedSections) {
+                    checkEdgesForSection(engine, newArray);
                 }
             }
 

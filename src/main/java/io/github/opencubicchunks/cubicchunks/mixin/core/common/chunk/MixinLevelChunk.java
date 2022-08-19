@@ -52,7 +52,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = LevelChunk.class, priority = 0) //Priority 0 to always ensure our redirects are on top. Should also prevent fabric api crashes that have occur(ed) here. See removeTileEntity
 public abstract class MixinLevelChunk extends ChunkAccess implements LightHeightmapGetter, ColumnCubeMapGetter, CubicLevelHeightAccessor, ColumnCubeGetter {
-
     @Shadow @Final private Level level;
 
     private Heightmap lightHeightmap;
@@ -175,10 +174,22 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
         int sectionY = getSectionYFromSectionIndex(sectionIndex);
         CubeAccess cube = this.getCube(sectionY);
         if (cube instanceof EmptyLevelCube) {
+            //In 1.18 sections shouldn't be null. However, to make things simpler we return null from this and the redirect just below will handle it similarly to 1.17
             return null;
         }
         LevelChunkSection[] cubeSections = cube.getCubeSections();
         return cubeSections[Coords.sectionToIndex(chunkPos.x, sectionY, chunkPos.z)];
+    }
+
+    @Redirect(
+        method = { "getBlockState", "getFluidState(III)Lnet/minecraft/world/level/material/FluidState;" },
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/level/chunk/LevelChunkSection;hasOnlyAir()Z"
+        )
+    )
+    private boolean hasOnlyAir(@Nullable LevelChunkSection section) {
+        return section == null || section.hasOnlyAir();
     }
 
     @Redirect(

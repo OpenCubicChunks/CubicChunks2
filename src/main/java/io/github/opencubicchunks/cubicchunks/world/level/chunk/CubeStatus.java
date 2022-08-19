@@ -25,6 +25,7 @@ public class CubeStatus {
         ChunkStatus.FULL,
         ChunkStatus.FEATURES,
         ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS,
@@ -39,6 +40,7 @@ public class CubeStatus {
         ChunkStatus.FULL,
         ChunkStatus.FEATURES,
         ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS,
@@ -49,6 +51,7 @@ public class CubeStatus {
         ChunkStatus.FULL,
         ChunkStatus.FEATURES,
         ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS
     );
@@ -57,6 +60,7 @@ public class CubeStatus {
         ChunkStatus.FULL,
         ChunkStatus.FEATURES,
         ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS
     );
 

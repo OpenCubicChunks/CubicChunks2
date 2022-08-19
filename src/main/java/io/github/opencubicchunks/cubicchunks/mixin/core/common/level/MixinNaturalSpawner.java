@@ -6,6 +6,8 @@ import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
+import io.github.opencubicchunks.cubicchunks.mixin.access.common.NaturalSpawnerAccess;
+import io.github.opencubicchunks.cubicchunks.world.CubicLocalMobCapCalculator;
 import io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
@@ -30,6 +32,7 @@ import net.minecraft.world.level.pathfinder.PathComputationType;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Group;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -125,8 +128,8 @@ public abstract class MixinNaturalSpawner {
     }
 
     //Called from ASM
-    private static BlockPos getRandomPosWithinCube(Level level, ChunkAccess chunkAccess) {
-        CubePos pos = ((CubeAccess) chunkAccess).getCubePos();
+    private static BlockPos getRandomPosWithinCube(Level level, CubeAccess cubeAccess) {
+        CubePos pos = cubeAccess.getCubePos();
         int blockX = pos.minCubeX() + level.random.nextInt(CubeAccess.DIAMETER_IN_BLOCKS);
         int blockZ = pos.minCubeZ() + level.random.nextInt(CubeAccess.DIAMETER_IN_BLOCKS);
 
@@ -194,5 +197,39 @@ public abstract class MixinNaturalSpawner {
         + "Lio/github/opencubicchunks/cc_core/api/CubePos;", remap = false), require = 0, remap = false)
     private static CubePos useGetCubePosMapping(ChunkAccess chunkAccess) {
         return ((CubeAccess) chunkAccess).getCubePos();
+    }
+
+    @Dynamic
+    @Group(name = "cubeSpawnCheck", min = 1, max = 1)
+    @Redirect(
+        method = "spawnForCube",
+        at = @At(
+            value = "INVOKE",
+            target =
+                "Lnet/minecraft/world/level/NaturalSpawner$SpawnState;canSpawnForCategory("
+                    + "Lnet/minecraft/world/entity/MobCategory;"
+                    + "Lio/github/opencubicchunks/cubicchunks/world/level/CubePos;)"
+                    + "Z"
+        )
+    )
+    private static boolean doCubeChecks(NaturalSpawner.SpawnState spawnState, MobCategory mobCategory, CubePos cubePos) {
+        return ((CubicNaturalSpawner.CubicSpawnState) spawnState).canSpawnForCategory(mobCategory, cubePos);
+    }
+
+    @Dynamic
+    @Group(name = "cubeSpawnCheck", min = 1, max = 1)
+    @Redirect(
+        method = "spawnForCube",
+        at = @At(
+            value = "INVOKE",
+            target =
+                "Lnet/minecraft/class_1948$class_5262;canSpawnForCategory("
+                    + "Lnet/minecraft/class_1311;"
+                    + "Lio/github/opencubicchunks/cubicchunks/world/level/CubePos;)"
+                    + "Z"
+        )
+    )
+    private static boolean doCubeChecksMapping(NaturalSpawner.SpawnState spawnState, MobCategory mobCategory, CubePos cubePos) {
+        return ((CubicNaturalSpawner.CubicSpawnState) spawnState).canSpawnForCategory(mobCategory, cubePos);
     }
 }

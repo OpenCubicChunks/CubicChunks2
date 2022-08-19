@@ -36,7 +36,7 @@ public class MixinHeightMapRenderer {
 
     @ModifyVariable(method = "render", ordinal = 0, at = @At(value = "STORE", ordinal = 0), require = 1)
     private LevelAccessor useServerHeightMaps(LevelAccessor original) {
-        if (RENDER_SERVER_HEIGHTMAPS) {
+        if (!RENDER_SERVER_HEIGHTMAPS) {
             return Minecraft.getInstance().getSingleplayerServer().getLevel(Minecraft.getInstance().player.level.dimension());
         }
         return original;
@@ -68,10 +68,10 @@ public class MixinHeightMapRenderer {
 
     @ModifyConstant(method = "render", constant = @Constant(intValue = -2))
     private int changeRadiusLower(int constant) {
-        return -CHUNK_RENDER_RADIUS;
+        return 0;//-CHUNK_RENDER_RADIUS;
     }
     @ModifyConstant(method = "render", constant = @Constant(intValue = 2))
     private int changeRadiusUpper(int constant) {
-        return CHUNK_RENDER_RADIUS;
+        return 0;//CHUNK_RENDER_RADIUS;
     }
 }
