@@ -10,12 +10,16 @@ import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.utils.MathUtil;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.SectionPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.DataLayer;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 
 public class PacketUpdateLight {
@@ -117,6 +121,22 @@ public class PacketUpdateLight {
                 }
                 if (packet.dataExists.get(i * 2 + 1)) {
                     lightEngine.queueSectionData(LightLayer.BLOCK, sectionPos, new DataLayer(blockIterator.next()), packet.lightFlag);
+                    clientLevel.setSectionDirtyWithNeighbors(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ());
+                }
+            }
+
+            LevelCube cube = (LevelCube) ((CubeSource) level.getChunkSource()).getCube(packet.cubePos.getX(), packet.cubePos.getY(), packet.cubePos.getZ(), ChunkStatus.FULL, false);
+
+            if (cube != null) {
+                LevelLightEngine engine = level.getChunkSource().getLightEngine();
+                LevelChunkSection[] sections = cube.getCubeSections();
+
+                //enableLightSources?
+
+                for (int i = 0; i < sections.length; i++) {
+                    LevelChunkSection section = sections[i];
+                    SectionPos sectionPos = Coords.sectionPosByIndex(packet.cubePos, i);
+                    engine.updateSectionStatus(sectionPos, section.hasOnlyAir());
                     clientLevel.setSectionDirtyWithNeighbors(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ());
                 }
             }
