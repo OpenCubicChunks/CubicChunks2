@@ -244,7 +244,9 @@ dependencies {
 //    modRuntime ("supercoder79:databreaker:0.2.8") {
 //        exclude module: "fabric-loader"
 //    }
-    implementation(project(':CubicChunksCore'))
+    include implementation(project(':CubicChunksCore')) {
+        targetConfiguration = "jarOutputs"
+    }
 
     debugCompile "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
     debugRuntime "org.lwjgl:lwjgl::$lwjglNatives"
