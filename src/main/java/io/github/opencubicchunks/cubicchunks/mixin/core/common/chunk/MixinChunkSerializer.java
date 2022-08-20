@@ -48,12 +48,11 @@ public abstract class MixinChunkSerializer {
         }
         cir.cancel();
 
-        CompoundTag level = compound.getCompound("Level");
-        ChunkPos loadedPos = new ChunkPos(level.getInt("xPos"), level.getInt("zPos"));
+        ChunkPos loadedPos = new ChunkPos(compound.getInt("xPos"), compound.getInt("zPos"));
         if (!Objects.equals(pos, loadedPos)) {
             LOGGER.error("Chunk file at {} is in the wrong location; relocating. (Expected {}, got {})", pos, pos, loadedPos);
         }
-        long inhabitedTime = level.getLong("InhabitedTime");
+        long inhabitedTime = compound.getLong("InhabitedTime");
         ChunkStatus.ChunkType statusType = getChunkTypeFromTag(compound);
         ChunkAccess newChunk;
         if (statusType == ChunkStatus.ChunkType.LEVELCHUNK) {
@@ -63,7 +62,7 @@ public abstract class MixinChunkSerializer {
 
             newChunk = chunkprimer;
             chunkprimer.setInhabitedTime(inhabitedTime);
-            chunkprimer.setStatus(ChunkStatus.byName(level.getString("Status")));
+            chunkprimer.setStatus(ChunkStatus.byName(compound.getString("Status")));
             if (chunkprimer.getStatus().isOrAfter(ChunkStatus.FEATURES)) {
                 chunkprimer.setLightEngine(serverLevel.getChunkSource().getLightEngine());
             }
@@ -79,7 +78,7 @@ public abstract class MixinChunkSerializer {
 //        }
         // for ChunkSerializerMixin from fabric-structure-api-v1.mixins to target
         newChunk.setAllReferences(new HashMap<>());
-        if (level.getBoolean("shouldSave")) {
+        if (compound.getBoolean("shouldSave")) {
             newChunk.setUnsaved(true);
         }
         if (statusType == ChunkStatus.ChunkType.LEVELCHUNK) {
@@ -103,13 +102,11 @@ public abstract class MixinChunkSerializer {
 
         ChunkPos chunkpos = column.getPos();
         CompoundTag compoundnbt = new CompoundTag();
-        CompoundTag level = new CompoundTag();
         compoundnbt.putInt("DataVersion", SharedConstants.getCurrentVersion().getWorldVersion());
-        compoundnbt.put("Level", level);
-        level.putInt("xPos", chunkpos.x);
-        level.putInt("zPos", chunkpos.z);
-        level.putLong("InhabitedTime", column.getInhabitedTime());
-        level.putString("Status", column.getStatus().getName());
+        compoundnbt.putInt("xPos", chunkpos.x);
+        compoundnbt.putInt("zPos", chunkpos.z);
+        compoundnbt.putLong("InhabitedTime", column.getInhabitedTime());
+        compoundnbt.putString("Status", column.getStatus().getName());
 
 //        CompoundTag heightmaps = new CompoundTag();
 //        for(Map.Entry<Heightmap.Types, Heightmap> entry : chunkIn.getHeightmaps()) {

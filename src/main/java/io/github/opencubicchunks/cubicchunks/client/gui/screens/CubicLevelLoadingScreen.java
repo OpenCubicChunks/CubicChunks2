@@ -41,7 +41,7 @@ public class CubicLevelLoadingScreen {
     private static final UserFunction STATUS_ALPHAS =
         UserFunction.builder().point(0, 1f)
             .point(ChunkStatus.STRUCTURE_STARTS.getIndex(), 0.15f)
-            .point(ChunkStatus.STRUCTURE_REFERENCES.getIndex(), 0.28f)
+            .point(ChunkStatus.BIOMES.getIndex(), 0.28f)
             .point(ChunkStatus.CARVERS.getIndex(), 0.7f)
             .point(ChunkStatus.LIQUID_CARVERS.getIndex(), 0.2f)
             .point(ChunkStatus.FULL.getIndex(), 1).build();

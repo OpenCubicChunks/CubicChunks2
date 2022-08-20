@@ -392,7 +392,7 @@ public class CubeSerializer {
             sectionsNBTList.add(sectionNBT);
         }
 
-        root.put("Sections", sectionsNBTList);
+        root.put("sections", sectionsNBTList);
 
         if (cubeHasLight) {
             root.putBoolean("isLightOn", true);
