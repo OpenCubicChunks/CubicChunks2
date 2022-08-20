@@ -14,7 +14,7 @@ buildscript {
     }
     dependencies {
         classpath 'net.fabricmc:fabric-loom:0.13.1'
-        classpath 'io.github.opencubicchunks:javaheaders:1.2.2'
+        classpath 'io.github.opencubicchunks:javaheaders:1.2.4'
         classpath 'com.google.code.gson:gson:2.8.5'
     }
 }
@@ -28,7 +28,7 @@ apply plugin: "io.github.opencubicchunks.gradle.mcGitVersion"
 apply plugin: "io.github.opencubicchunks.gradle.mixingen"
 apply plugin: 'io.github.opencubicchunks.javaheaders'
 
-linkHeadersConfig {
+javaHeaders {
     acceptedJars = ".*CubicChunksCore.*"
     config = file("javaHeaders.json")
     debug = project.debugArtifactTransforms == "true"
