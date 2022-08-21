@@ -245,7 +245,9 @@ dependencies {
 //        exclude module: "fabric-loader"
 //    }
     include implementation(project(':CubicChunksCore')) {
-        targetConfiguration = "jarOutputs"
+        attributes {
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+        }
     }
 
     debugCompile "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
