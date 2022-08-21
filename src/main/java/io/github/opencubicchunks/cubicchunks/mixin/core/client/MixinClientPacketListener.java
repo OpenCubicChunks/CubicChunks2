@@ -5,6 +5,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnBiomeContai
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,5 +28,18 @@ public abstract class MixinClientPacketListener {
             return clientLevel.getMaxSection();
         }
         return clientLevel.getMinSection() - 1; // disable the loop, cube packets do the necessary work
+    }
+
+    //Don't need to iterate over all sections to check for updates in cubic
+    @Redirect(
+        method = "readSectionList",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;getLightSectionCount()I")
+    )
+    private int getFakeSectionCount(LevelLightEngine engine) {
+        if (!((CubicLevelHeightAccessor) getLevel()).isCubic()) {
+            return engine.getLightSectionCount();
+        }
+
+        return 1; // Disable loop - same as above
     }
 }
