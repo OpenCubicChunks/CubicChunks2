@@ -12,6 +12,10 @@ import io.netty.util.internal.PlatformDependent;
  * @author DaPorkchop_
  */
 public class Int3HashSet implements AutoCloseable {
+    protected static final int BUCKET_AXIS_BITS = 2; //the number of bits per axis which are used inside of the bucket rather than identifying the bucket
+    protected static final int BUCKET_AXIS_MASK = (1 << BUCKET_AXIS_BITS) - 1;
+    protected static final int BUCKET_SIZE = 1 << (BUCKET_AXIS_BITS * 3); //the number of entries per bucket
+
     protected static final long KEY_X_OFFSET = 0L;
     protected static final long KEY_Y_OFFSET = KEY_X_OFFSET + Integer.BYTES;
     protected static final long KEY_Z_OFFSET = KEY_Y_OFFSET + Integer.BYTES;
@@ -25,25 +29,10 @@ public class Int3HashSet implements AutoCloseable {
 
     protected static final long DEFAULT_TABLE_SIZE = 16L;
 
-    protected static final int BUCKET_AXIS_BITS = 2; //the number of bits per axis which are used inside of the bucket rather than identifying the bucket
-    protected static final int BUCKET_AXIS_MASK = (1 << BUCKET_AXIS_BITS) - 1;
-    protected static final int BUCKET_SIZE = (BUCKET_AXIS_MASK << (BUCKET_AXIS_BITS * 2)) | (BUCKET_AXIS_MASK << BUCKET_AXIS_BITS) | BUCKET_AXIS_MASK;
-
-    protected static long hashPosition(int x, int y, int z) {
-        return x * 1403638657883916319L //some random prime numbers
-            + y * 4408464607732138253L
-            + z * 2587306874955016303L;
-    }
-
-    protected static long positionFlag(int x, int y, int z) {
-        return 1L << (((x & BUCKET_AXIS_MASK) << (BUCKET_AXIS_BITS * 2)) | ((y & BUCKET_AXIS_MASK) << BUCKET_AXIS_BITS) | (z & BUCKET_AXIS_MASK));
-    }
-
-    protected static long allocateTable(long tableSize) {
-        long size = tableSize * BUCKET_BYTES;
-        long addr = PlatformDependent.allocateMemory(size); //allocate
-        PlatformDependent.setMemory(addr, size, (byte) 0); //clear
-        return addr;
+    static {
+        if (!PlatformDependent.isUnaligned()) {
+            throw new AssertionError("your CPU doesn't support unaligned memory access!");
+        }
     }
 
     protected long tableAddr = 0L; //the address of the table in memory
@@ -63,6 +52,40 @@ public class Int3HashSet implements AutoCloseable {
         initialCapacity = (int) Math.ceil(initialCapacity * (1.0d / 0.75d)); //scale according to resize threshold
         initialCapacity = 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(initialCapacity - 1)); //round up to next power of two
         this.setTableSize(Math.max(initialCapacity, DEFAULT_TABLE_SIZE));
+    }
+
+    protected Int3HashSet(Int3HashSet src) {
+        if (src.tableAddr != 0L) { //source table is allocated, let's copy it
+            long tableSizeBytes = src.tableSize * BUCKET_BYTES;
+            this.tableAddr = PlatformDependent.allocateMemory(tableSizeBytes);
+            PlatformDependent.copyMemory(src.tableAddr, this.tableAddr, tableSizeBytes);
+        }
+
+        this.tableSize = src.tableSize;
+        this.resizeThreshold = src.resizeThreshold;
+        this.usedBuckets = src.usedBuckets;
+        this.size = src.size;
+    }
+
+    protected static long hashPosition(int x, int y, int z) {
+        return x * 1403638657883916319L //some random prime numbers
+            + y * 4408464607732138253L
+            + z * 2587306874955016303L;
+    }
+
+    protected static int positionIndex(int x, int y, int z) {
+        return ((x & BUCKET_AXIS_MASK) << (BUCKET_AXIS_BITS * 2)) | ((y & BUCKET_AXIS_MASK) << BUCKET_AXIS_BITS) | (z & BUCKET_AXIS_MASK);
+    }
+
+    protected static long positionFlag(int x, int y, int z) {
+        return 1L << positionIndex(x, y, z);
+    }
+
+    protected static long allocateTable(long tableSize) {
+        long size = tableSize * BUCKET_BYTES;
+        long addr = PlatformDependent.allocateMemory(size); //allocate
+        PlatformDependent.setMemory(addr, size, (byte) 0); //clear
+        return addr;
     }
 
     /**
@@ -200,9 +223,11 @@ public class Int3HashSet implements AutoCloseable {
     }
 
     /**
-     * Runs the given function on every position in this set.
+     * Runs the given callback function on every position in this set.
+     * <p>
+     * The callback function must not modify this set.
      *
-     * @param action the function to run
+     * @param action the callback function
      *
      * @see java.util.Set#forEach(java.util.function.Consumer)
      */
@@ -219,18 +244,18 @@ public class Int3HashSet implements AutoCloseable {
             int bucketY = PlatformDependent.getInt(bucket + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);
             int bucketZ = PlatformDependent.getInt(bucket + BUCKET_KEY_OFFSET + KEY_Z_OFFSET);
             long value = PlatformDependent.getLong(bucket + BUCKET_VALUE_OFFSET);
-            if (value == 0L) { //the bucket is unset, so there's no reason to look at it
-                continue;
-            }
 
-            for (int i = 0; i <= BUCKET_SIZE; i++) { //check each flag in the bucket value to see if it's set
-                if ((value & (1L << i)) == 0L) { //the flag isn't set
-                    continue;
-                }
+            while (value != 0L) {
+                //this is intrinsic and compiles into TZCNT, which has a latency of 3 cycles - much faster than iterating through all 64 bits
+                //  and checking each one individually!
+                int index = Long.numberOfTrailingZeros(value);
 
-                int dx = i >> (BUCKET_AXIS_BITS * 2);
-                int dy = (i >> BUCKET_AXIS_BITS) & BUCKET_AXIS_MASK;
-                int dz = i & BUCKET_AXIS_MASK;
+                //clear the bit in question so that it won't be returned next time around
+                value &= ~(1L << index);
+
+                int dx = index >> (BUCKET_AXIS_BITS * 2);
+                int dy = (index >> BUCKET_AXIS_BITS) & BUCKET_AXIS_MASK;
+                int dz = index & BUCKET_AXIS_MASK;
                 action.accept((bucketX << BUCKET_AXIS_BITS) + dx, (bucketY << BUCKET_AXIS_BITS) + dy, (bucketZ << BUCKET_AXIS_BITS) + dz);
             }
         }
@@ -269,7 +294,7 @@ public class Int3HashSet implements AutoCloseable {
             int bucketY = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);
             int bucketZ = PlatformDependent.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET);
             long value = PlatformDependent.getLong(bucketAddr + BUCKET_VALUE_OFFSET);
-            if (value == 0L) { //the bucket is unset. we've reached the end of the bucket chain for this hash, which means
+            if (value == 0L) { //the bucket is unset. we've reached the end of the bucket chain for this hash, which means it doesn't exist
                 return false;
             } else if (bucketX != searchBucketX || bucketY != searchBucketY || bucketZ != searchBucketZ) { //the bucket doesn't match, so the search must go on
                 continue;
@@ -318,15 +343,14 @@ public class Int3HashSet implements AutoCloseable {
                     currZ = PlatformDependent.getInt(currAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET)) & mask;
 
                 if (last <= pos ? last >= slot || slot > pos : last >= slot && slot > pos) {
+                    long lastAddr = tableAddr + last * BUCKET_BYTES;
+                    PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET, currX);
+                    PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET, currY);
+                    PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET, currZ);
+                    PlatformDependent.putLong(lastAddr + BUCKET_VALUE_OFFSET, currValue);
                     break;
                 }
             }
-
-            long lastAddr = tableAddr + last * BUCKET_BYTES;
-            PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET, currX);
-            PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET, currY);
-            PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET, currZ);
-            PlatformDependent.putLong(lastAddr + BUCKET_VALUE_OFFSET, currValue);
         }
     }
 
@@ -368,10 +392,15 @@ public class Int3HashSet implements AutoCloseable {
         return this.size == 0L;
     }
 
+    @Override
+    public Int3HashSet clone() {
+        return new Int3HashSet(this);
+    }
+
     /**
      * Irrevocably releases the resources claimed by this instance.
      * <p>
-     * Once this method has been calls, all methods in this class will produce undefined behavior.
+     * Once this method has been called, all methods in this class will produce undefined behavior.
      */
     @Override
     public void close() {
@@ -387,7 +416,8 @@ public class Int3HashSet implements AutoCloseable {
     }
 
     @Override
-    protected void finalize() throws Throwable {
+    @SuppressWarnings("deprecation")
+    protected void finalize() {
         //using a finalizer is bad, i know. however, there's no other reasonable way for me to clean up the memory without pulling in PorkLib:unsafe or
         // using sun.misc.Cleaner directly...
         this.close();
