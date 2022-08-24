@@ -45,10 +45,6 @@ public class MixinChunkAccess implements CubicLevelHeightAccessor {
         isCubic = ((CubicLevelHeightAccessor) levelHeightAccessor).isCubic();
         generates2DChunks = ((CubicLevelHeightAccessor) levelHeightAccessor).generates2DChunks();
         worldStyle = ((CubicLevelHeightAccessor) levelHeightAccessor).worldStyle();
-
-        if (!this.isCubic()) {
-            return;
-        }
     }
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/LevelHeightAccessor;getSectionsCount()I"))

@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk;
 
 import java.util.concurrent.CompletionException;
-import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
@@ -24,7 +23,6 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surf
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;

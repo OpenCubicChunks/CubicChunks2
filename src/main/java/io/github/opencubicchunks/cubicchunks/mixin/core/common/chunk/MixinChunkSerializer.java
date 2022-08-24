@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -101,12 +100,12 @@ public abstract class MixinChunkSerializer {
         cir.cancel();
 
         ChunkPos chunkpos = column.getPos();
-        CompoundTag compoundnbt = new CompoundTag();
-        compoundnbt.putInt("DataVersion", SharedConstants.getCurrentVersion().getWorldVersion());
-        compoundnbt.putInt("xPos", chunkpos.x);
-        compoundnbt.putInt("zPos", chunkpos.z);
-        compoundnbt.putLong("InhabitedTime", column.getInhabitedTime());
-        compoundnbt.putString("Status", column.getStatus().getName());
+        CompoundTag compound = new CompoundTag();
+        compound.putInt("DataVersion", SharedConstants.getCurrentVersion().getWorldVersion());
+        compound.putInt("xPos", chunkpos.x);
+        compound.putInt("zPos", chunkpos.z);
+        compound.putLong("InhabitedTime", column.getInhabitedTime());
+        compound.putString("Status", column.getStatus().getName());
 
 //        CompoundTag heightmaps = new CompoundTag();
 //        for(Map.Entry<Heightmap.Types, Heightmap> entry : chunkIn.getHeightmaps()) {
@@ -115,6 +114,6 @@ public abstract class MixinChunkSerializer {
 //            }
 //        }
 //        level.put("Heightmaps", heightmaps);
-        cir.setReturnValue(compoundnbt);
+        cir.setReturnValue(compound);
     }
 }

@@ -8,7 +8,6 @@ import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import io.github.opencubicchunks.cubicchunks.world.CubicLocalMobCapCalculator;
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
-import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerPlayer;

@@ -25,7 +25,7 @@ public abstract class MixinClientLevel extends Level {
                                ResourceKey<Level> resourceKey, Holder<DimensionType> dimensionType,
                                Supplier<ProfilerFiller> supplier, boolean bl, boolean bl2, long l) {
         super(writableLevelData, resourceKey, dimensionType, supplier, bl, bl2, l);
-        throw new Error("Unable to instantiate MixinClientLevel");
+        throw new Error("Mixin failed to apply!");
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))

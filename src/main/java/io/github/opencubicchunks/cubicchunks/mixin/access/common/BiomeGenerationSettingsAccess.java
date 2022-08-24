@@ -1,11 +1,9 @@
 package io.github.opencubicchunks.cubicchunks.mixin.access.common;
 
 import java.util.List;
-import java.util.function.Supplier;
 
 import net.minecraft.core.HolderSet;
 import net.minecraft.world.level.biome.BiomeGenerationSettings;
-import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;

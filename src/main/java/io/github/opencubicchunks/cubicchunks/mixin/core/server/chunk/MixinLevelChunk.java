@@ -47,7 +47,7 @@ public abstract class MixinLevelChunk extends ChunkAccess {
     }
 
     // TODO: handle it better, no redirects on all map access
-    @SuppressWarnings({ "rawtypes", "UnresolvedMixinReference" })
+    @SuppressWarnings("rawtypes")
     @Redirect(method = "*",
         at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
     private Object getTileEntity(Map map, Object key) {
@@ -67,7 +67,8 @@ public abstract class MixinLevelChunk extends ChunkAccess {
         return map.get(key);
     }
 
-    @SuppressWarnings({ "rawtypes", "UnresolvedMixinReference" }) @Nullable
+    @SuppressWarnings("rawtypes")
+    @Nullable
     @Redirect(
         method = "*",
         at = @At(value = "INVOKE", target = "Ljava/util/Map;remove(Ljava/lang/Object;)Ljava/lang/Object;"))
@@ -104,7 +105,8 @@ public abstract class MixinLevelChunk extends ChunkAccess {
         return map.remove(key);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked", "UnresolvedMixinReference" }) @Nullable
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Nullable
     @Redirect(method = "*",
         at = @At(value = "INVOKE", target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"))
     private Object putTileEntity(Map map, Object key, Object value) {
@@ -127,5 +129,4 @@ public abstract class MixinLevelChunk extends ChunkAccess {
         }
         return map.put(key, value);
     }
-
 }

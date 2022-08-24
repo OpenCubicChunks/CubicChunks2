@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
-import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.world.level.LevelReader;

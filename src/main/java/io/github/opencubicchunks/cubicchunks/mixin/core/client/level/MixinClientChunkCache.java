@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.level;
 
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
 
@@ -106,10 +105,8 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
             LOGGER.warn("Ignoring cube since it's not in the view range: {}, {}, {}", cubeX, cubeY, cubeZ);
             return null;
         }
-
         int index = this.cubeArray.getIndex(cubeX, cubeY, cubeZ);
         LevelCube cube = this.cubeArray.cubes.get(index);
-
         if (!isCubeValid(cube, cubeX, cubeY, cubeZ)) {
             cube = new LevelCube(this.level, CubePos.of(cubeX, cubeY, cubeZ));
             cube.read(readBuffer, tag, blockEntityTagOutputConsumer);

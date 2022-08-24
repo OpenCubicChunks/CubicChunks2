@@ -722,18 +722,16 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         return future.thenComposeAsync((sectionOrError) -> {
             return sectionOrError.map((neighborSections) -> {
                 try {
-                    CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> finalFuture = Utils.unsafeCast(
-                        chunkStatusIn.generate(
-                            executor,
-                            this.level,
-                            this.generator,
-                            this.structureManager,
-                            this.lightEngine,
-                            (chunk) -> Utils.unsafeCast(this.protoCubeToFullCube(cubeHolder)),
-                            Utils.unsafeCast(neighborSections),
-                            false
-                        )
-                    );
+                    CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> finalFuture = Utils.unsafeCast(chunkStatusIn.generate(
+                        executor,
+                        this.level,
+                        this.generator,
+                        this.structureManager,
+                        this.lightEngine,
+                        (chunk) -> Utils.unsafeCast(this.protoCubeToFullCube(cubeHolder)),
+                        Utils.unsafeCast(neighborSections),
+                        false
+                    ));
                     ((CubeProgressListener) this.progressListener).onCubeStatusChange(cubePos, chunkStatusIn);
                     return finalFuture;
                 } catch (Exception exception) {
@@ -900,9 +898,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Override
     public CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareAccessibleCube(ChunkHolder chunkHolder) {
         return ((CubeHolder) chunkHolder).getOrScheduleCubeFuture(ChunkStatus.FULL, (ChunkMap) (Object) this).thenApplyAsync((o) -> {
-            return o.mapLeft((icube) -> {
-                return (LevelCube) icube;
-            });
+            return o.mapLeft((cubeAccess) -> (LevelCube) cubeAccess);
         }, (runnable) -> {
             this.cubeMainThreadMailbox.tell(CubeTaskPriorityQueueSorter.createMsg(chunkHolder, runnable));
         });
@@ -957,7 +953,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         regionCubeIO.saveChunkNBT(chunkPos, chunkNBT);
     }
 
-    @SuppressWarnings({ "UnresolvedMixinReference", "ConstantConditions" })
+    @SuppressWarnings("ConstantConditions")
     @Redirect(method = "method_17256" /*"lambda$scheduleChunkLoad$13(Lnet/minecraft/world/level/ChunkPos;)Lcom/mojang/datafixers/util/Either;"*/,
         at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;readChunk(Lnet/minecraft/world/level/ChunkPos;)Lnet/minecraft/nbt/CompoundTag;"))
     private CompoundTag readColumn(ChunkMap chunkManager, ChunkPos chunkPos) throws IOException {
@@ -1201,30 +1197,30 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         int oldSectionX = managedSectionPos.x();
         int oldSectionZ = managedSectionPos.z();
         if (Math.abs(oldSectionX - newSectionX) <= this.viewDistance * 2 && Math.abs(oldSectionZ - newSectionZ) <= this.viewDistance * 2) {
-            int k2 = Math.min(newSectionX, oldSectionX) - this.viewDistance;
-            int i3 = Math.min(newSectionZ, oldSectionZ) - this.viewDistance;
-            int j3 = Math.max(newSectionX, oldSectionX) + this.viewDistance;
-            int k3 = Math.max(newSectionZ, oldSectionZ) + this.viewDistance;
+            int minViewX = Math.min(newSectionX, oldSectionX) - this.viewDistance;
+            int minViewZ = Math.min(newSectionZ, oldSectionZ) - this.viewDistance;
+            int maxViewX = Math.max(newSectionX, oldSectionX) + this.viewDistance;
+            int maxViewZ = Math.max(newSectionZ, oldSectionZ) + this.viewDistance;
 
-            for (int l3 = k2; l3 <= j3; ++l3) {
-                for (int k1 = i3; k1 <= k3; ++k1) {
-                    ChunkPos chunkpos1 = new ChunkPos(l3, k1);
-                    boolean flag5 = isChunkInRange(l3, k1, oldSectionX, oldSectionZ, this.viewDistance);
-                    boolean flag6 = isChunkInRange(l3, k1, newSectionX, newSectionZ, this.viewDistance);
-                    this.updateChunkTracking(player, chunkpos1, new MutableObject<>(), flag5, flag6);
+            for (int viewX = minViewX; viewX <= maxViewX; ++viewX) {
+                for (int viewZ = minViewZ; viewZ <= maxViewZ; ++viewZ) {
+                    ChunkPos viewChunkPos = new ChunkPos(viewX, viewZ);
+                    boolean wasInRange = isChunkInRange(viewX, viewZ, oldSectionX, oldSectionZ, this.viewDistance);
+                    boolean isInRange = isChunkInRange(viewX, viewZ, newSectionX, newSectionZ, this.viewDistance);
+                    this.updateChunkTracking(player, viewChunkPos, new MutableObject<>(), wasInRange, isInRange);
                 }
             }
         } else {
-            for (int i1 = oldSectionX - this.viewDistance; i1 <= oldSectionX + this.viewDistance; ++i1) {
-                for (int j1 = oldSectionZ - this.viewDistance; j1 <= oldSectionZ + this.viewDistance; ++j1) {
-                    ChunkPos chunkpos = new ChunkPos(i1, j1);
-                    this.updateChunkTracking(player, chunkpos, new MutableObject<>(), true, false);
+            for (int oldViewX = oldSectionX - this.viewDistance; oldViewX <= oldSectionX + this.viewDistance; ++oldViewX) {
+                for (int oldViewZ = oldSectionZ - this.viewDistance; oldViewZ <= oldSectionZ + this.viewDistance; ++oldViewZ) {
+                    ChunkPos viewChunkPos = new ChunkPos(oldViewX, oldViewZ);
+                    this.updateChunkTracking(player, viewChunkPos, new MutableObject<>(), true, false);
                 }
             }
-            for (int j2 = newSectionX - this.viewDistance; j2 <= newSectionX + this.viewDistance; ++j2) {
-                for (int l2 = newSectionZ - this.viewDistance; l2 <= newSectionZ + this.viewDistance; ++l2) {
-                    ChunkPos chunkpos2 = new ChunkPos(j2, l2);
-                    this.updateChunkTracking(player, chunkpos2, new MutableObject<>(), false, true);
+            for (int newViewX = newSectionX - this.viewDistance; newViewX <= newSectionX + this.viewDistance; ++newViewX) {
+                for (int newViewZ = newSectionZ - this.viewDistance; newViewZ <= newSectionZ + this.viewDistance; ++newViewZ) {
+                    ChunkPos viewChunkPos = new ChunkPos(newViewX, newViewZ);
+                    this.updateChunkTracking(player, viewChunkPos, new MutableObject<>(), false, true);
                 }
             }
         }

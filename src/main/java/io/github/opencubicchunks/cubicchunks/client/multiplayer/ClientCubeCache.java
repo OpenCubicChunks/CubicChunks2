@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.client.multiplayer;
 
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;

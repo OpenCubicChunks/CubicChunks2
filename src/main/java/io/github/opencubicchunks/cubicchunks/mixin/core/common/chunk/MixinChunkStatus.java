@@ -13,11 +13,9 @@ import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
-import io.github.opencubicchunks.cubicchunks.levelgen.chunk.CubeGenerator;
 import io.github.opencubicchunks.cubicchunks.levelgen.chunk.NoiseAndSurfaceBuilderHelper;
 import io.github.opencubicchunks.cubicchunks.levelgen.util.CubicWorldGenUtils;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkMapAccess;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.StructureFeatureManagerAccess;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ThreadedLevelLightEngineAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnBiomeContainer;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
@@ -27,7 +25,6 @@ import net.minecraft.core.Registry;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ThreadedLevelLightEngine;
-import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureFeatureManager;
 import net.minecraft.world.level.biome.Biome;
@@ -92,7 +89,7 @@ public class MixinChunkStatus {
     // method_38280 = lambda$generate$20
 
 
-    @SuppressWarnings({ "UnresolvedMixinReference", "target" })
+    @SuppressWarnings("target")
     @Inject(
         method = "method_20615",
         at = @At("HEAD")

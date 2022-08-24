@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.levelgen.carver;
 
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseChunk;
 import net.minecraft.world.level.levelgen.carver.CarvingContext;

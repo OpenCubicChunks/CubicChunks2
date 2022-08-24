@@ -1,7 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.render;
 
-import java.awt.Color;
-
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.mixin.access.client.ChunkRenderDispatcherAccess;
