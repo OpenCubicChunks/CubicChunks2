@@ -83,7 +83,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     public CubeAccess(CubePos pos, UpgradeData upgradeData, LevelHeightAccessor heightAccessor, Registry<Biome> biomeRegistry, long inhabitedTime,
                       @Nullable LevelChunkSection[] sections, @Nullable BlendingData blendingData) {
         super(
-            pos.asChunkPos(), //TODO: Maybe there is a better way to handle the fact that we must now pass a ChunkPos
+            null, // parameter is unused in the constructor. We want it to crash if used anyway, so pass null here
             upgradeData,
             heightAccessor,
             biomeRegistry,
