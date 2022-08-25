@@ -1,6 +1,6 @@
 {
     "implementations": {
-        "net.minecraft.util.BitStorage": [ "io.github.opencubicchunks.cc_core.minecraft.MCBitStorage" ],
+        "net.minecraft.util.SimpleBitStorage": [ "io.github.opencubicchunks.cc_core.minecraft.MCBitStorage" ],
         "net.minecraft.world.level.BlockGetter": [ "io.github.opencubicchunks.cc_core.minecraft.MCBlockGetter" ],
         "net.minecraft.core.BlockPos": [ "io.github.opencubicchunks.cc_core.minecraft.MCBlockPos" ],
         "net.minecraft.world.level.block.state.BlockState": [ "io.github.opencubicchunks.cc_core.minecraft.MCBlockState" ],

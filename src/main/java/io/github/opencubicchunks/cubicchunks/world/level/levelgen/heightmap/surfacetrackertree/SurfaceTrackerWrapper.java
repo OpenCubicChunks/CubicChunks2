@@ -17,6 +17,7 @@ import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.Surf
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerNode;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.HeightmapAccess;
 import net.minecraft.util.BitStorage;
+import net.minecraft.util.SimpleBitStorage;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -77,7 +78,7 @@ public class SurfaceTrackerWrapper extends Heightmap {
     @Override
     public long[] getRawData() {
         BitStorage data = ((HeightmapAccess) this).getData();
-        surfaceTracker.writeDataForClient(dx, dz, data, ((HeightmapAccess) this).getChunk().getMinBuildHeight());
+        surfaceTracker.writeDataForClient(dx, dz, (SimpleBitStorage) data, ((HeightmapAccess) this).getChunk().getMinBuildHeight());
         return data.getRaw();
     }
 
