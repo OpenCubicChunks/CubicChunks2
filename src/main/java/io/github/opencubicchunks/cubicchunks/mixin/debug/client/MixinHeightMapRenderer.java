@@ -68,10 +68,10 @@ public class MixinHeightMapRenderer {
 
     @ModifyConstant(method = "render", constant = @Constant(intValue = -2))
     private int changeRadiusLower(int constant) {
-        return 0;//-CHUNK_RENDER_RADIUS;
+        return -CHUNK_RENDER_RADIUS;
     }
     @ModifyConstant(method = "render", constant = @Constant(intValue = 2))
     private int changeRadiusUpper(int constant) {
-        return 0;//CHUNK_RENDER_RADIUS;
+        return CHUNK_RENDER_RADIUS;
     }
 }
