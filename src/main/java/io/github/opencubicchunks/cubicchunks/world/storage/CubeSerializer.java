@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.world.storage;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -12,16 +11,15 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.mojang.logging.LogUtils;
+import com.mojang.serialization.Codec;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.ChunkIoMainThreadTaskUtils;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
-import com.mojang.logging.LogUtils;
-import com.mojang.serialization.Codec;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkSerializerAccess;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ProtoChunkTicksAccess;
-import io.github.opencubicchunks.cubicchunks.world.CubicServerTickList;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ImposterProtoCube;
@@ -57,7 +55,6 @@ import net.minecraft.world.level.chunk.CarvingMask;
 import net.minecraft.world.level.chunk.ChunkSource;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.DataLayer;
-import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.chunk.UpgradeData;

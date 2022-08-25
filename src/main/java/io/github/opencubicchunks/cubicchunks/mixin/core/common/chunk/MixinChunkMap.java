@@ -155,7 +155,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         DUMMY_LIGHT_GETTER,
         true,
         true
-    ){
+    ) {
         @Override public int getLightSectionCount() {
             return 0;
         }
@@ -255,7 +255,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     private void onConstruct(ServerLevel serverLevel, LevelStorageSource.LevelStorageAccess levelStorageAccess, DataFixer dataFixer, StructureManager structureManager_, Executor executor,
                              BlockableEventLoop<Runnable> blockableEventLoop, LightChunkGetter lightChunkGetter, ChunkGenerator chunkGenerator, ChunkProgressListener chunkProgressListener,
                              ChunkStatusUpdateListener chunkStatusUpdateListener, Supplier<DimensionDataStorage> supplier, int i, boolean bl,
-                             CallbackInfo ci, Path path, ProcessorMailbox<Runnable> worldgenMailbox, ProcessorHandle<Runnable> mainThreadProcessorHandle, ProcessorMailbox<Runnable> lightMailbox) {
+                             CallbackInfo ci, Path path, ProcessorMailbox<Runnable> worldgenMailbox, ProcessorHandle<Runnable> mainThreadProcessorHandle,
+                             ProcessorMailbox<Runnable> lightMailbox) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;
         }
@@ -1322,7 +1323,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         }
     }
 
-    @Redirect(method = "playerLoadedChunk", at = @At(value = "NEW", target = "(Lnet/minecraft/world/level/chunk/LevelChunk;Lnet/minecraft/world/level/lighting/LevelLightEngine;Ljava/util/BitSet;Ljava/util/BitSet;Z)Lnet/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket;"))
+    @Redirect(method = "playerLoadedChunk", at = @At(value = "NEW", target = "(Lnet/minecraft/world/level/chunk/LevelChunk;Lnet/minecraft/world/level/lighting/LevelLightEngine;"
+        + "Ljava/util/BitSet;Ljava/util/BitSet;Z)Lnet/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket;"))
     private ClientboundLevelChunkWithLightPacket onVanillaLightPacketConstruct(LevelChunk levelChunk, LevelLightEngine levelLightEngine, BitSet bitSet, BitSet bitSet2, boolean bl) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return new ClientboundLevelChunkWithLightPacket(levelChunk, levelLightEngine, bitSet, bitSet2, bl);

@@ -77,10 +77,10 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void getServerLevel(Path path, Function function, Function function2, DataFixer dataFixer, DataFixTypes dataFixTypes, boolean bl, LevelHeightAccessor levelHeightAccessor,
+    private void getServerLevel(Path path, Function function, Function function2, DataFixer dataFixer, DataFixTypes dataFixTypes, boolean bl, LevelHeightAccessor levelAccessor,
                                 CallbackInfo ci) throws IOException {
 
-        if (((CubicLevelHeightAccessor) levelHeightAccessor).isCubic()) {
+        if (((CubicLevelHeightAccessor) levelAccessor).isCubic()) {
             cubeWorker = new RegionCubeIO(path.toFile(), path.toFile().getName() + "-chunk", path.toFile().getName());
         }
     }

@@ -540,7 +540,7 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
     private static class DummyChunkAccess extends ChunkAccess {
 
 
-        public DummyChunkAccess(LevelHeightAccessor accessor) {
+        DummyChunkAccess(LevelHeightAccessor accessor) {
             super(null, null, new ProtoCube.FakeSectionCount(accessor, 0), null, 0, null, null);
         }
 

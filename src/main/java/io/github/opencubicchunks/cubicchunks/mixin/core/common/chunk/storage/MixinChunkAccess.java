@@ -32,11 +32,11 @@ public class MixinChunkAccess implements CubicLevelHeightAccessor {
     private CubicLevelHeightAccessor.WorldStyle worldStyle;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void onInit(ChunkPos chunkPos, UpgradeData upgradeData, LevelHeightAccessor levelHeightAccessor, Registry registry, long l, LevelChunkSection[] levelChunkSections,
+    private void onInit(ChunkPos chunkPos, UpgradeData upgradeData, LevelHeightAccessor levelAccessor, Registry registry, long l, LevelChunkSection[] levelChunkSections,
                         BlendingData blendingData, CallbackInfo ci) {
-        isCubic = ((CubicLevelHeightAccessor) levelHeightAccessor).isCubic();
-        generates2DChunks = ((CubicLevelHeightAccessor) levelHeightAccessor).generates2DChunks();
-        worldStyle = ((CubicLevelHeightAccessor) levelHeightAccessor).worldStyle();
+        isCubic = ((CubicLevelHeightAccessor) levelAccessor).isCubic();
+        generates2DChunks = ((CubicLevelHeightAccessor) levelAccessor).generates2DChunks();
+        worldStyle = ((CubicLevelHeightAccessor) levelAccessor).worldStyle();
     }
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/LevelHeightAccessor;getSectionsCount()I"))

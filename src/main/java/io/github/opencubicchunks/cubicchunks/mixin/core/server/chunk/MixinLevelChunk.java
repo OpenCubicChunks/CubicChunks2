@@ -25,7 +25,6 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.levelgen.blending.BlendingData;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,8 +34,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Environment(EnvType.SERVER)
 @Mixin(value = LevelChunk.class, priority = 0) // Priority 0 to always ensure our redirects are on top. Should also prevent fabric api crashes that have occur(ed) here. See removeTileEntity
 public abstract class MixinLevelChunk extends ChunkAccess {
-    @Shadow public abstract Level getLevel();
-
     public MixinLevelChunk(ChunkPos chunkPos, UpgradeData upgradeData,
                            LevelHeightAccessor levelHeightAccessor,
                            Registry<Biome> registry, long l,
@@ -45,6 +42,8 @@ public abstract class MixinLevelChunk extends ChunkAccess {
         super(chunkPos, upgradeData, levelHeightAccessor, registry, l, levelChunkSections, blendingData);
         throw new RuntimeException("MixinLevelChunk constructor should never be called");
     }
+
+    @Shadow public abstract Level getLevel();
 
     // TODO: handle it better, no redirects on all map access
     @SuppressWarnings("rawtypes")

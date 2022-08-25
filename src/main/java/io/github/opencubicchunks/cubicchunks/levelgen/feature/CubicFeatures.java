@@ -108,11 +108,11 @@ public class CubicFeatures {
         return BuiltinRegistries.register(BuiltinRegistries.CONFIGURED_FEATURE, resourceLocation, configuredFeature);
     }
 
-    public static  Holder<PlacedFeature> createPlacedFeature(String id, Holder<ConfiguredFeature<?, ?>> feature, PlacementModifier... modifiers) {
+    public static Holder<PlacedFeature> createPlacedFeature(String id, Holder<ConfiguredFeature<?, ?>> feature, PlacementModifier... modifiers) {
         return createPlacedFeature(id, feature, List.of(modifiers));
     }
 
-    private static  Holder<PlacedFeature> createPlacedFeature(String id, Holder<ConfiguredFeature<?, ?>> feature, List<PlacementModifier> modifiers) {
+    private static Holder<PlacedFeature> createPlacedFeature(String id, Holder<ConfiguredFeature<?, ?>> feature, List<PlacementModifier> modifiers) {
         ResourceLocation loc = new ResourceLocation(CubicChunks.MODID, id);
 
         if (BuiltinRegistries.PLACED_FEATURE.containsKey(loc)) {

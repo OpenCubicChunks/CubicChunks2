@@ -6,7 +6,6 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureFeatureManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Beardifier;

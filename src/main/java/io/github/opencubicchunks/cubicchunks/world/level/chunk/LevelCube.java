@@ -118,8 +118,8 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         this(level, cubePos, UpgradeData.EMPTY, new LevelChunkTicks<>(), new LevelChunkTicks<>(), 0L, null, null, null);
     }
 
-    public LevelCube(Level level, CubePos cubePos, UpgradeData upgradeData, LevelChunkTicks<Block> blockTicks,
-                     LevelChunkTicks<Fluid> fluidTicks, long inhabitedTime, @Nullable LevelChunkSection[] sections, @Nullable BlendingData blendingData, @Nullable Consumer<LevelCube> postLoad) {
+    public LevelCube(Level level, CubePos cubePos, UpgradeData upgradeData, LevelChunkTicks<Block> blockTicks, LevelChunkTicks<Fluid> fluidTicks, long inhabitedTime,
+                     @Nullable LevelChunkSection[] sections, @Nullable BlendingData blendingData, @Nullable Consumer<LevelCube> postLoad) {
         super(
             cubePos,
             upgradeData,

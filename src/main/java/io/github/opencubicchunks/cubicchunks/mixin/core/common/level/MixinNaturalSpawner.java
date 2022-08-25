@@ -6,8 +6,6 @@ import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.NaturalSpawnerAccess;
-import io.github.opencubicchunks.cubicchunks.world.CubicLocalMobCapCalculator;
 import io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;

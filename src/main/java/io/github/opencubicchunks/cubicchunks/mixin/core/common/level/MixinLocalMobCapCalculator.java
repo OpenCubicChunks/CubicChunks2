@@ -30,8 +30,8 @@ public class MixinLocalMobCapCalculator implements CubicLocalMobCapCalculator {
     private boolean isCubic;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void setCubic(ChunkMap chunkMap, CallbackInfo ci) {
-        this.isCubic = ((CubicLevelAccessor) ((ChunkMapAccess) chunkMap).getLevel()).isCubic();
+    private void setCubic(ChunkMap map, CallbackInfo ci) {
+        this.isCubic = ((CubicLevelAccessor) ((ChunkMapAccess) map).getLevel()).isCubic();
     }
 
     @Inject(method = "getPlayersNear", at = @At("HEAD"))

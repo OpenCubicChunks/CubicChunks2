@@ -59,8 +59,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ChunkHolder.class)
 public abstract class MixinChunkHolder implements CubeHolder {
 
-    @Shadow private int ticketLevel;
     @Mutable @Final @Shadow ChunkPos pos;
+
+    @Shadow private int ticketLevel;
 
     // these are using java type erasure as a feature - because the generic type information
     // doesn't exist at runtime, we can shadow those fields with different generic types

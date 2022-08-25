@@ -58,7 +58,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MinecraftServer.class)
 public abstract class MixinMinecraftServer implements CubicMinecraftServer {
-    @Shadow protected long nextTickTime;
+    @Shadow @Final private static Logger LOGGER;
+
+    @Shadow private long nextTickTime;
     @Shadow @Final private Map<ResourceKey<Level>, ServerLevel> levels;
 
     @Nullable private ServerConfig cubicChunksServerConfig;
@@ -68,8 +70,6 @@ public abstract class MixinMinecraftServer implements CubicMinecraftServer {
     @Shadow public abstract boolean isRunning();
 
     @Shadow public abstract RegistryAccess.Frozen registryAccess();
-
-    @Shadow @Final private static Logger LOGGER;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void injectFeatures(Thread thread, LevelStorageSource.LevelStorageAccess levelStorageAccess, PackRepository packRepository, WorldStem worldStem, Proxy proxy, DataFixer dataFixer,

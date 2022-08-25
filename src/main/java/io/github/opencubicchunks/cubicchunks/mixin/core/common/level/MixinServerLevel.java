@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -67,20 +66,19 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
 
     @Shadow @Final private PersistentEntitySectionManager<Entity> entityManager;
 
-    @Shadow public abstract ServerChunkCache getChunkSource();
-
-    @Shadow @Final private MinecraftServer server;
-
     @Shadow @Final private LevelTicks<Fluid> fluidTicks;
 
     @Shadow @Final private LevelTicks<Block> blockTicks;
+
+    @Shadow public abstract ServerChunkCache getChunkSource();
 
     @Inject(
         method = "<init>",
         at = @At(
             value = "INVOKE",
             shift = At.Shift.AFTER,
-            target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/core/Holder;Ljava/util/function/Supplier;ZZJ)V"
+            target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/core/Holder;"
+                + "Ljava/util/function/Supplier;ZZJ)V"
         )
     )
     private void initSetCubic(MinecraftServer minecraftServer, Executor executor, LevelStorageSource.LevelStorageAccess levelStorageAccess, ServerLevelData serverLevelData,

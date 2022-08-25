@@ -108,10 +108,7 @@ public class MixinChunkStatus {
     // EMPTY -> does nothing already
 
     // structure starts - replace setStatus, handled by MixinChunkGenerator
-    @Inject(
-        method = "method_39464",
-        at= @At("HEAD"), cancellable = true
-    )
+    @Inject(method = "method_39464", at = @At("HEAD"), cancellable = true)
     private static void generateStructureStatus(
         ChunkStatus status, Executor executor, ServerLevel level, ChunkGenerator generator,
         StructureManager structureManager, ThreadedLevelLightEngine lightEngine,

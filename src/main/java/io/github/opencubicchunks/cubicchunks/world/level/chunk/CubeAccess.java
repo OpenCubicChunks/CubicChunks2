@@ -10,7 +10,6 @@ import io.github.opencubicchunks.cc_core.config.EarlyConfig;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapSource;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
-import io.github.opencubicchunks.cubicchunks.world.storage.CubeSerializer;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;

@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk.storage;
 
 import static io.github.opencubicchunks.cc_core.utils.Utils.unsafeCast;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.BiConsumer;

@@ -2,15 +2,12 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level.lighting;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.DynamicGraphMinFixedPointAccess;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightSectionStorage;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.SectionTracker;
 import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LightChunkGetter;
@@ -26,15 +23,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LayerLightSectionStorage.class)
 public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMap<M>> extends SectionTracker implements CubicLayerLightSectionStorage {
-
     @Shadow @Final private static Direction[] DIRECTIONS;
 
     @Shadow @Final protected Long2ObjectMap<DataLayer> queuedSections;
+
     @Shadow @Final protected M updatingSectionData;
-    @Shadow protected volatile boolean hasToRemove;
+
     @Shadow @Final protected LongSet changedSections;
+
+    @Shadow protected volatile boolean hasToRemove;
+
     @Shadow @Final private LongSet toRemove;
+
     @Shadow @Final private LightChunkGetter chunkSource;
+
+    @Shadow @Final private LongSet untrustedSections;
 
     private final LongSet cubesToRetain = new LongOpenHashSet();
 
@@ -51,8 +54,6 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
     @Shadow protected abstract boolean hasInconsistencies();
 
     @Shadow protected abstract void checkEdgesForSection(LayerLightEngine<M, ?> layerLightEngine, long l);
-
-    @Shadow @Final private LongSet untrustedSections;
 
     @Override
     public void retainCubeData(long cubeSectionPos, boolean retain) {

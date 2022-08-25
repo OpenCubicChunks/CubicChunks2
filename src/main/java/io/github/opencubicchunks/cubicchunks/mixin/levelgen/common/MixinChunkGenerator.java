@@ -13,11 +13,11 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import com.mojang.datafixers.util.Pair;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.utils.Utils;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
-import com.mojang.datafixers.util.Pair;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRandom;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.BiomeGetter;
@@ -95,7 +95,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         method = "<init>(Lnet/minecraft/core/Registry;Ljava/util/Optional;Lnet/minecraft/world/level/biome/BiomeSource;Lnet/minecraft/world/level/biome/BiomeSource;J)V",
         at = @At("RETURN")
     )
-    private void switchBiomeSource(Registry<StructureSet> registry, Optional<HolderSet<StructureSet>> optional, BiomeSource biomeSource, BiomeSource biomeSource2, long l, CallbackInfo ci) {
+    private void switchBiomeSource(Registry<StructureSet> registry, Optional<HolderSet<StructureSet>> optional, BiomeSource biomeSource1, BiomeSource biomeSource2, long l, CallbackInfo ci) {
         if (System.getProperty("cubicchunks.debug.biomes", "false").equalsIgnoreCase("true")) {
             this.biomeSource = new StripedBiomeSource(this.biomeSource.possibleBiomes());
             this.runtimeBiomeSource = new StripedBiomeSource(this.runtimeBiomeSource.possibleBiomes());
@@ -107,7 +107,8 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         at = @At("HEAD"),
         cancellable = true
     )
-    private void createCubicStructures(RegistryAccess registryAccess, StructureFeatureManager structureFeatureManager, ChunkAccess chunkAccess, StructureManager structureManager, long seed, CallbackInfo ci) {
+    private void createCubicStructures(RegistryAccess registryAccess, StructureFeatureManager structureFeatureManager, ChunkAccess chunkAccess, StructureManager structureManager,
+                                       long seed, CallbackInfo ci) {
         if (((CubicLevelHeightAccessor) chunkAccess).generates2DChunks()) {
             return;
         }
@@ -158,11 +159,11 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
                         totalWeight += structure.weight();
                     }
 
-                    while(!arrayList.isEmpty()) {
+                    while (!arrayList.isEmpty()) {
                         int j = worldgenRandom.nextInt(totalWeight);
                         int k = 0;
 
-                        for(Iterator<StructureSet.StructureSelectionEntry> var17 = arrayList.iterator(); var17.hasNext(); ++k) {
+                        for (Iterator<StructureSet.StructureSelectionEntry> var17 = arrayList.iterator(); var17.hasNext(); ++k) {
                             StructureSet.StructureSelectionEntry structureSelectionEntry3 = var17.next();
                             j -= structureSelectionEntry3.weight();
                             if (j < 0) {
