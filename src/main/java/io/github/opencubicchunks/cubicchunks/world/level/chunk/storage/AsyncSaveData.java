@@ -44,14 +44,14 @@ public class AsyncSaveData {
             this.skyLight.put(sectionPos, skyData);
         }
 
-        this.blockEntities = cube.getCubeBlockEntitiesPos().stream()
+        this.blockEntities = cube.getBlockEntitiesPos().stream()
             .map(cube::getBlockEntity)
             .filter(Objects::nonNull)
             .collect(Collectors.toMap(BlockEntity::getBlockPos, Function.identity()));
         if (cube instanceof LevelCube) {
             this.blockEntitiesDeferred = new HashMap<>(((LevelCube) cube).getPendingBlockEntities());
         } else if (cube instanceof ProtoCube) {
-            this.blockEntitiesDeferred = new HashMap<>(((ProtoCube) cube).getCubeBlockEntityNbts());
+            this.blockEntitiesDeferred = new HashMap<>(((ProtoCube) cube).getBlockEntityNbts());
         } else {
             this.blockEntitiesDeferred = new HashMap<>();
         }

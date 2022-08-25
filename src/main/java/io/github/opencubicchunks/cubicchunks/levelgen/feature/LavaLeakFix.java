@@ -45,7 +45,7 @@ public class LavaLeakFix extends Feature<NoneFeatureConfiguration> {
             for (int localX = 0; localX < CubeAccess.DIAMETER_IN_BLOCKS; localX++) {
                 for (int localZ = 0; localZ < CubeAccess.DIAMETER_IN_BLOCKS; localZ++) {
                     mutable.set(localX, localY, localZ);
-                    if (cube.getBlockState(localX, localY, localZ).getBlock() != Blocks.LAVA) {
+                    if (cube.getBlockState(new BlockPos(localX, localY, localZ)).getBlock() != Blocks.LAVA) {
                         continue;
                     }
 

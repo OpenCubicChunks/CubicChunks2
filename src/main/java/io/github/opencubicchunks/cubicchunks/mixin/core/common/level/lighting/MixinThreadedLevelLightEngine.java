@@ -114,10 +114,10 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
     @Override
     public CompletableFuture<CubeAccess> lightCube(CubeAccess cube, boolean flagIn) {
         CubePos cubePos = cube.getCubePos();
-        cube.setCubeLight(false);
+        cube.setLightCorrect(false);
         this.addTask(cubePos.getX(), cubePos.getY(), cubePos.getZ(), ThreadedLevelLightEngine.TaskType.PRE_UPDATE, Util.name(() -> {
             for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
-                LevelChunkSection chunksection = cube.getCubeSections()[i];
+                LevelChunkSection chunksection = cube.getSections()[i];
                 if (!chunksection.hasOnlyAir()) {
                     super.updateSectionStatus(Coords.sectionPosByIndex(cubePos, i), false);
                 }
@@ -125,7 +125,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
 
             super.enableLightSources(cubePos, true);
             if (!flagIn) {
-                cube.getCubeLights().forEach((blockPos) -> {
+                cube.getLights().forEach((blockPos) -> {
                     assert blockPos != null;
                     super.onBlockEmissionIncrease(blockPos, cube.getLightEmission(blockPos));
                 });
@@ -135,7 +135,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
 
         }, () -> "lightCube " + cubePos + " " + flagIn));
         return CompletableFuture.supplyAsync(() -> {
-            cube.setCubeLight(true);
+            cube.setLightCorrect(true);
             super.retainData(cubePos, false);
             ((CubeMap) this.chunkMap).releaseCubeLightTicket(cubePos);
             return cube;

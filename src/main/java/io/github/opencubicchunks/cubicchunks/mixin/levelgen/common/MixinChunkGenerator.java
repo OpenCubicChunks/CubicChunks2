@@ -312,7 +312,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
                 for (int z = cubeZ - 8 / CubeAccess.DIAMETER_IN_SECTIONS; z <= cubeZ + 8 / CubeAccess.DIAMETER_IN_SECTIONS; ++z) {
                     long cubePosAsLong = CubePos.asLong(x, y, z);
 
-                    for (StructureStart structureStart : world.getCube(CubePos.of(x, y, z)).getAllCubeStructureStarts().values()) {
+                    for (StructureStart structureStart : world.getCube(CubePos.of(x, y, z)).getAllStarts().values()) {
                         try {
                             if (structureStart != StructureStart.INVALID_START && structureStart.getBoundingBox().intersects(cubeBounds)) {
                                 //The First Param is a SectionPos arg that is not used anywhere so we make it null.

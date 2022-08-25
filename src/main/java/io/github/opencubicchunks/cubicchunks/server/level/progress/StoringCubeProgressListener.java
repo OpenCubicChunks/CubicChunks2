@@ -6,5 +6,5 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 
 public interface StoringCubeProgressListener {
 
-    @Nullable ChunkStatus getCubeStatus(int x, int y, int z);
+    @Nullable ChunkStatus getStatus(int x, int y, int z);
 }

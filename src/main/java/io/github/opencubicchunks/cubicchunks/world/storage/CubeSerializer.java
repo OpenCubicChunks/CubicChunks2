@@ -227,11 +227,11 @@ public class CubeSerializer {
 
             protoCube.setCubeStatus(ChunkStatus.byName(root.getString("Status")));
 
-            if (protoCube.getCubeStatus().isOrAfter(ChunkStatus.FEATURES)) {
-                protoCube.setCubeLightEngine(lightEngine);
+            if (protoCube.getStatus().isOrAfter(ChunkStatus.FEATURES)) {
+                protoCube.setLightEngine(lightEngine);
             }
 
-            //if (!isLightOn && cubePrimer.getCubeStatus().isOrAfter(ChunkStatus.LIGHT)) {
+            //if (!isLightOn && cubePrimer.getStatus().isOrAfter(ChunkStatus.LIGHT)) {
             //    for (BlockPos blockpos : BlockPos.betweenClosed(cubePos.minCubeX(), cubePos.minCubeY(), cubePos.minCubeZ(), cubePos.maxCubeX(), cubePos.maxCubeY(), cubePos.maxCubeZ())) {
             //        if (cube.getBlockState(blockpos).getLightEmission() != 0) {
             //            //TODO: reimplement light positions in save format
@@ -241,7 +241,7 @@ public class CubeSerializer {
             //}
         }
 
-        cube.setCubeLight(isLightOn);
+        cube.setLightCorrect(isLightOn);
 
         CompoundTag structures = root.getCompound("structures");
         cube.setAllStarts(ChunkSerializerAccess.invokeUnpackStructureStart(
@@ -251,7 +251,7 @@ public class CubeSerializer {
         ));
         cube.setAllReferences(unpackCubeStructureReferences(serverLevel.registryAccess(), new ImposterChunkPos(cubePos), structures));
         if (root.getBoolean("shouldSave")) {
-            cube.setDirty(true);
+            cube.setUnsaved(true);
         }
 
         ListTag postProcessingNBTList = root.getList("PostProcessing", 9);
@@ -280,7 +280,7 @@ public class CubeSerializer {
 
             for (int i1 = 0; i1 < tileEntitiesNBTList.size(); ++i1) {
                 CompoundTag tileEntityNBT = tileEntitiesNBTList.getCompound(i1);
-                cube.setCubeBlockEntity(tileEntityNBT);
+                cube.setBlockEntityNbt(tileEntityNBT);
             }
 
             ListTag lightsNBTList = root.getList("Lights", 9);
@@ -289,7 +289,7 @@ public class CubeSerializer {
                 ListTag lightList = lightsNBTList.getList(j2);
 
                 for (int j1 = 0; j1 < lightList.size(); ++j1) {
-                    protoCube.addCubeLight(lightList.getShort(j1), j2);
+                    protoCube.addLight(lightList.getShort(j1), j2);
                 }
             }
 
@@ -337,15 +337,15 @@ public class CubeSerializer {
         root.putInt("zPos", pos.getZ());
 
         root.putLong("LastUpdate", serverLevel.getGameTime());
-        root.putLong("InhabitedTime", cube.getCubeInhabitedTime());
-        root.putString("Status", cube.getCubeStatus().getName());
+        root.putLong("InhabitedTime", cube.getInhabitedTime());
+        root.putString("Status", cube.getStatus().getName());
 
-        LevelChunkSection[] sections = cube.getCubeSections();
+        LevelChunkSection[] sections = cube.getSections();
         ListTag sectionsNBTList = new ListTag();
         LevelLightEngine lightEngine = serverLevel.getChunkSource().getLightEngine();
         Registry<Biome> biomeRegistry = serverLevel.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY);
         Codec<PalettedContainer<Holder<Biome>>> palettedBiomeContainerCodec = makeBiomePaletteCodec(biomeRegistry);
-        boolean cubeHasLight = cube.hasCubeLight();
+        boolean cubeHasLight = cube.isLightCorrect();
 
         for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
             LevelChunkSection section = sections[i];
@@ -402,7 +402,7 @@ public class CubeSerializer {
 
         if (data != null) {
             data.blockEntities.forEach((blockPos, blockEntity) -> {
-                CompoundTag tileEntityNBT = cube.getCubeBlockEntityNbtForSaving(blockPos);
+                CompoundTag tileEntityNBT = cube.getBlockEntityNbtForSaving(blockPos);
                 if (tileEntityNBT != null) {
                     tileEntitiesNBTList.add(tileEntityNBT);
                 }
@@ -412,8 +412,8 @@ public class CubeSerializer {
                 tileEntitiesNBTList.add(tag);
             });
         } else {
-            for (BlockPos blockpos : cube.getCubeBlockEntitiesPos()) {
-                CompoundTag tileEntityNBT = cube.getCubeBlockEntityNbtForSaving(blockpos);
+            for (BlockPos blockpos : cube.getBlockEntitiesPos()) {
+                CompoundTag tileEntityNBT = cube.getBlockEntityNbtForSaving(blockpos);
                 if (tileEntityNBT != null) {
                     CubicChunks.LOGGER.debug("Saving block entity at " + blockpos.toString());
                     tileEntitiesNBTList.add(tileEntityNBT);
@@ -422,7 +422,7 @@ public class CubeSerializer {
         }
 
         root.put("block_entities", tileEntitiesNBTList);
-        if (cube.getCubeStatus().getChunkType() == ChunkStatus.ChunkType.PROTOCHUNK) {
+        if (cube.getStatus().getChunkType() == ChunkStatus.ChunkType.PROTOCHUNK) {
             ProtoCube protoCube = (ProtoCube) cube;
             ListTag listTag3 = new ListTag();
             listTag3.addAll(protoCube.getCubeEntities());
@@ -468,7 +468,7 @@ public class CubeSerializer {
 //
         //TODO: reimplement heightmaps
 //        for(Map.Entry<Heightmap.Type, Heightmap> entry : cube.getHeightmaps()) {
-//            if (cube.getCubeStatus().getHeightMaps().contains(entry.getKey())) {
+//            if (cube.getStatus().getHeightMaps().contains(entry.getKey())) {
 //                compoundnbt6.put(entry.getKey().getId(), new LongArrayNBT(entry.getValue().getDataArray()));
 //            }
 //        }
@@ -509,12 +509,12 @@ public class CubeSerializer {
             CompoundTag beNbt = blockEntitiesNbt.getCompound(j);
             boolean flag = beNbt.getBoolean("keepPacked");
             if (flag) {
-                cube.setCubeBlockEntity(beNbt);
+                cube.setBlockEntityNbt(beNbt);
             } else {
                 BlockPos blockpos = new BlockPos(beNbt.getInt("x"), beNbt.getInt("y"), beNbt.getInt("z"));
                 BlockEntity blockEntity = BlockEntity.loadStatic(blockpos, cube.getBlockState(blockpos), beNbt);
                 if (blockEntity != null) {
-                    cube.setCubeBlockEntity(blockEntity);
+                    cube.setBlockEntity(blockEntity);
                 }
             }
         }

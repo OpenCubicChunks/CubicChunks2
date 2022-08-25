@@ -129,7 +129,7 @@ public class PacketUpdateLight {
 
             if (cube != null) {
                 LevelLightEngine engine = level.getChunkSource().getLightEngine();
-                LevelChunkSection[] sections = cube.getCubeSections();
+                LevelChunkSection[] sections = cube.getSections();
 
                 //enableLightSources?
 

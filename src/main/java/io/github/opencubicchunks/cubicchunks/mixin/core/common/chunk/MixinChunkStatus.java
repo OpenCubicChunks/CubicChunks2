@@ -124,7 +124,7 @@ public class MixinChunkStatus {
             if (!(chunk instanceof CubeAccess)) {
                 return;
             }
-            if (!((CubeAccess) chunk).getCubeStatus().isOrAfter(status)) {
+            if (!chunk.getStatus().isOrAfter(status)) {
                 if (chunk instanceof ProtoCube) {
                     ((ProtoCube) chunk).updateCubeStatus(status);
                 }
@@ -139,7 +139,7 @@ public class MixinChunkStatus {
             return;
         }
         //cc
-        if (!((CubeAccess) chunk).getCubeStatus().isOrAfter(status)) {
+        if (!chunk.getStatus().isOrAfter(status)) {
             if (level.getServer().getWorldData().worldGenSettings().generateFeatures()) { // check if structures are enabled
                 // structureFeatureManager ==  getStructureManager?
                 generator.createStructures(level.registryAccess(), level.structureFeatureManager(), chunk, structureManager, level.getSeed());
@@ -150,7 +150,7 @@ public class MixinChunkStatus {
         }
     }
 
-    @SuppressWarnings({ "UnresolvedMixinReference", "target" })
+    @SuppressWarnings({ "target" })
     @Inject(
         method = "method_16565",
         at = @At("HEAD"), cancellable = true
@@ -295,7 +295,7 @@ public class MixinChunkStatus {
         for (int yScan = 0; yScan < CubeAccess.DIAMETER_IN_SECTIONS; yScan++) {
             int sectionY = Coords.cubeToSection(cubeY, yScan);
             int sectionIndex = Coords.sectionToIndex(pos.x, sectionY, pos.z);
-            LevelChunkSection cubeSection = cube.getCubeSections()[sectionIndex];
+            LevelChunkSection cubeSection = cube.getSections()[sectionIndex];
             if (cubeSection.hasOnlyAir()) {
                 emptySections++;
             }
@@ -320,7 +320,7 @@ public class MixinChunkStatus {
         //}
     }
 
-    @SuppressWarnings({ "UnresolvedMixinReference", "target" })
+    @SuppressWarnings({ "target" })
     @Inject(
         method = "method_38282",
         at = @At("HEAD"), cancellable = true
@@ -397,7 +397,7 @@ public class MixinChunkStatus {
             if (!(chunk instanceof ProtoCube protoCube)) {
                 return;
             }
-            if (!protoCube.getCubeStatus().isOrAfter(status)) {
+            if (!protoCube.getStatus().isOrAfter(status)) {
                 protoCube.updateCubeStatus(status);
             }
             cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
@@ -409,8 +409,8 @@ public class MixinChunkStatus {
             cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
             return;
         }
-        protoCube.setCubeLightEngine(lightEngine);
-        if (!protoCube.getCubeStatus().isOrAfter(status)) {
+        protoCube.setLightEngine(lightEngine);
+        if (!protoCube.getStatus().isOrAfter(status)) {
             // TODO: reimplement heightmaps
             //Heightmap.updateChunkHeightmaps(chunk, EnumSet
             //        .of(Heightmap.Type.MOTION_BLOCKING, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, Heightmap.Type.OCEAN_FLOOR,
@@ -448,7 +448,7 @@ public class MixinChunkStatus {
             cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
             return;
         }
-        boolean flag = ((ProtoCube) chunk).getCubeStatus().isOrAfter(status) && ((ProtoCube) chunk).hasCubeLight();
+        boolean flag = ((ProtoCube) chunk).getStatus().isOrAfter(status) && chunk.isLightCorrect();
         if (!chunk.getStatus().isOrAfter(status)) {
             ((ProtoCube) chunk).updateCubeStatus(status);
         }

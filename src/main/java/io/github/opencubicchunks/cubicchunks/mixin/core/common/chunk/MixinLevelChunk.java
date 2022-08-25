@@ -175,7 +175,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
             //In 1.18 sections shouldn't be null. However, to make things simpler we return null from this and the redirect just below will handle it similarly to 1.17
             return null;
         }
-        LevelChunkSection[] cubeSections = cube.getCubeSections();
+        LevelChunkSection[] cubeSections = cube.getSections();
         return cubeSections[Coords.sectionToIndex(chunkPos.x, sectionY, chunkPos.z)];
     }
 
@@ -211,7 +211,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
         if (cube instanceof EmptyLevelCube) {
             return null;
         }
-        LevelChunkSection[] cubeSections = cube.getCubeSections();
+        LevelChunkSection[] cubeSections = cube.getSections();
         return cubeSections[Coords.sectionToIndex(chunkPos.x, sectionY, chunkPos.z)];
     }
 
@@ -264,7 +264,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
             this.unsaved = isModifiedIn;
             return;
         }
-        this.getCube(Coords.blockToSection(pos.getY())).setDirty(isModifiedIn);
+        this.getCube(Coords.blockToSection(pos.getY())).setUnsaved(isModifiedIn);
     }
 
     @Inject(method = "addAndRegisterBlockEntity", at = @At("HEAD"), cancellable = true)

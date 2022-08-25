@@ -52,7 +52,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
         super(
             delegate.getCubePos().asChunkPos(),
             UpgradeData.EMPTY,
-            delegate.getCubeSections(),
+            delegate.getSections(),
             (ProtoChunkTicks<Block>) delegate.getBlockTicks(),
             (ProtoChunkTicks<Fluid>) delegate.getFluidTicks(),
             new ProtoCube.FakeSectionCount(delegate, CubeAccess.SECTION_COUNT),
@@ -83,7 +83,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
             int sectionY = relativeSectionY + ((CubeAccess) delegates[0]).getCubePos().asSectionPos().getY();
             CubeAccess delegateCube = (CubeAccess) getDelegateFromSectionY(sectionY);
             assert delegateCube != null;
-            getSections()[relativeSectionY] = delegateCube.getCubeSections()[Coords.sectionToIndex(newColumnX, sectionY, newColumnZ)];
+            getSections()[relativeSectionY] = delegateCube.getSections()[Coords.sectionToIndex(newColumnX, sectionY, newColumnZ)];
         }
     }
 
@@ -94,10 +94,10 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
             CubeAccess delegateCube = (CubeAccess) getDelegateFromSectionY(sectionY);
             assert delegateCube != null;
             int cubeSectionIndex = Coords.sectionToIndex(columnX, sectionY, columnZ);
-            LevelChunkSection cubeSection = delegateCube.getCubeSections()[cubeSectionIndex];
+            LevelChunkSection cubeSection = delegateCube.getSections()[cubeSectionIndex];
 
             if (cubeSection == null) {
-                delegateCube.getCubeSections()[cubeSectionIndex] = getSections()[idx];
+                delegateCube.getSections()[cubeSectionIndex] = getSections()[idx];
             }
             LevelChunkSection section = getSections()[idx];
             if (section == null) {

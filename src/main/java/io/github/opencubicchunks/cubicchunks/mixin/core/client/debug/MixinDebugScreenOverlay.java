@@ -100,7 +100,7 @@ public abstract class MixinDebugScreenOverlay {
             if (((CubicLevelHeightAccessor) level).isCubic()) {
                 var cube = ((CubeSource) level.getChunkSource())
                         .getCube(Coords.blockToCube(blockPos.getX()), Coords.blockToCube(blockPos.getY()), Coords.blockToCube(blockPos.getZ()), ChunkStatus.FULL, false);
-                list.add("Cube inhabited time: " + (cube == null ? "???" : "" + cube.getCubeInhabitedTime()));
+                list.add("Cube inhabited time: " + (cube == null ? "???" : "" + cube.getInhabitedTime()));
             }
         }
     }

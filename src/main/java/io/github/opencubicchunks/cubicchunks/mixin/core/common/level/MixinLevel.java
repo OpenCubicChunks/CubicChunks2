@@ -62,7 +62,7 @@ public abstract class MixinLevel implements CubicLevelAccessor, LevelReader {
         if (!isCubic()) {
             return;
         }
-        this.getCubeAt(blockPos).setDirty(true);
+        this.getCubeAt(blockPos).setUnsaved(true);
     }
 
     public CubeAccess getCubeAt(BlockPos pos) {

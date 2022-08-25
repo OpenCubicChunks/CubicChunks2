@@ -2,14 +2,10 @@ package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 
 import static io.github.opencubicchunks.cc_core.utils.Coords.blockToCubeLocalSection;
 
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.IntPredicate;
 import java.util.stream.Stream;
 
@@ -60,9 +56,6 @@ import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.blending.BlendingData;
-import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
-import net.minecraft.world.level.levelgen.feature.StructureFeature;
-import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
@@ -167,10 +160,6 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
 
     @Override public CubePos getCubePos() {
         return this.cubePos;
-    }
-
-    @Override public LevelChunkSection[] getCubeSections() {
-        return this.sections;
     }
 
     private ChunkSource getChunkSource() {
@@ -288,14 +277,8 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         return lightHeightmaps;
     }
 
-    @Override public ChunkStatus getCubeStatus() {
-        return this.status;
-    }
-
-
-
     @Override @Nullable
-    public BlockState setBlock(BlockPos pos, BlockState state, boolean isMoving) {
+    public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
         int xSection = pos.getX() & 0xF;
         int ySection = pos.getY() & 0xF;
         int zSection = pos.getZ() & 0xF;
@@ -393,18 +376,12 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
 
     public void applyFeatureStates() {
         featuresStateMap.forEach((pos, state) -> {
-            setBlock(pos, state, false);
+            setBlockState(pos, state, false);
         });
     }
 
     public Map<BlockPos, BlockState> getFeaturesStateMap() {
         return featuresStateMap;
-    }
-
-    public void addCubeEntity(Entity entity) {
-        CompoundTag nbt = new CompoundTag();
-        entity.save(nbt);
-        this.addCubeEntity(nbt);
     }
 
     public void addCubeEntity(CompoundTag entityCompound) {
@@ -415,100 +392,13 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         return this.entities;
     }
 
-    @Override public void setCubeBlockEntity(CompoundTag nbt) {
-        this.pendingBlockEntities.put(new BlockPos(nbt.getInt("x"), nbt.getInt("y"), nbt.getInt("z")), nbt);
-    }
-
-    @Override public void setCubeBlockEntity(BlockEntity blockEntity) {
-        this.blockEntities.put(blockEntity.getBlockPos(), blockEntity);
-    }
-
-    @Override public void removeCubeBlockEntity(BlockPos pos) {
-        this.blockEntities.remove(pos);
-        this.pendingBlockEntities.remove(pos);
-    }
-
     @Nullable @Override public BlockEntity getBlockEntity(BlockPos pos) {
         return this.blockEntities.get(pos);
     }
 
-    @Override public Set<BlockPos> getCubeBlockEntitiesPos() {
-        Set<BlockPos> set = Sets.newHashSet(this.pendingBlockEntities.keySet());
-        set.addAll(this.blockEntities.keySet());
-        return set;
+    public Map<BlockPos, CompoundTag> getBlockEntityNbts() {
+        return this.pendingBlockEntities;
     }
-
-    @Nullable @Override public CompoundTag getCubeBlockEntityNbtForSaving(BlockPos pos) {
-        BlockEntity tileEntity = this.getBlockEntity(pos);
-        return tileEntity != null ? tileEntity.saveWithFullMetadata() : this.pendingBlockEntities.get(pos);
-    }
-
-    @Nullable @Override public CompoundTag getCubeBlockEntityNbt(BlockPos pos) {
-        return this.pendingBlockEntities.get(pos);
-    }
-
-    public Map<BlockPos, BlockEntity> getCubeBlockEntities() {
-        return this.blockEntities;
-    }
-
-    public Map<BlockPos, CompoundTag> getCubeBlockEntityNbts() {
-        return Collections.unmodifiableMap(this.pendingBlockEntities);
-    }
-
-    @Override public boolean hasCubeLight() {
-        return this.hasLight;
-    }
-
-    @Override public void setCubeLight(boolean lightCorrectIn) {
-        this.hasLight = lightCorrectIn;
-        this.setDirty(true);
-    }
-
-    @Override public Stream<BlockPos> getCubeLights() {
-        return this.lightPositions.stream();
-    }
-
-    public void addCubeLight(short packedPosition, int yOffset) {
-        this.addCubeLight(unpackToWorld(packedPosition, yOffset, this.cubePos));
-    }
-
-    public void addCubeLight(BlockPos lightPos) {
-        this.lightPositions.add(lightPos.immutable());
-    }
-
-    public void setCubeLightEngine(LevelLightEngine newLightEngine) {
-        this.lightEngine = newLightEngine;
-    }
-
-    @Nullable private LevelLightEngine getCubeLightEngine() {
-        return this.lightEngine;
-    }
-
-    @Override public void setDirty(boolean newUnsaved) {
-        this.modified = newUnsaved;
-    }
-
-    @Override public boolean isDirty() {
-        return modified;
-    }
-
-    @Override public boolean isEmptyCube() {
-        for (LevelChunkSection section : this.sections) {
-            if (!section.hasOnlyAir()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override public void setCubeInhabitedTime(long newInhabitedTime) {
-        super.setInhabitedTime(newInhabitedTime);
-    }
-
-    @Override public long getCubeInhabitedTime() {
-        return super.getCubeInhabitedTime();
-    }
-
 
     @Override public FluidState getFluidState(BlockPos pos) {
         int x = pos.getX();
@@ -529,7 +419,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         } else { //normal heightmaps
             int maxY = Integer.MIN_VALUE;
             for (int dy = CubeAccess.DIAMETER_IN_BLOCKS - 1; dy >= 0; dy--) {
-                if (SurfaceTrackerWrapper.HEIGHTMAP_TYPES[heightmapType].isOpaque().test(this.getBlockState(x, dy, z))) {
+                if (SurfaceTrackerWrapper.HEIGHTMAP_TYPES[heightmapType].isOpaque().test(this.getBlockState(new BlockPos(x, dy, z)))) {
                     int minY = this.cubePos.getY() * DIAMETER_IN_BLOCKS;
                     maxY = minY + dy;
                     break;
@@ -555,9 +445,9 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         if (sectionAbove == null || sectionAbove.getSource() == null) {
             above = Blocks.AIR.defaultBlockState();
         } else {
-            above = ((CubeAccess) sectionAbove.getSource()).getBlockState(x, 0, z);
+            above = ((CubeAccess) sectionAbove.getSource()).getBlockState(new BlockPos(x, 0, z));
         }
-        BlockState state = this.getBlockState(x, dy, z);
+        BlockState state = this.getBlockState(new BlockPos(x, dy, z));
 
         // note that this BlockPos relies on `cubePos.blockY` returning correct results when the local coord is not inside the cube
         VoxelShape voxelShapeAbove = sectionAbove == null
@@ -575,7 +465,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
             dy--;
             if (dy >= 0) {
                 above = state;
-                state = this.getBlockState(x, dy, z);
+                state = this.getBlockState(new BlockPos(x, dy, z));
                 voxelShapeAbove = this.getShape(above, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy + 1), cubePos.blockZ(z)), Direction.DOWN);
                 voxelShape = this.getShape(state, new BlockPos(cubePos.blockX(x), cubePos.blockY(dy), cubePos.blockZ(z)), Direction.UP);
             }
@@ -615,7 +505,9 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
     }
 
     @Override public BlockState getBlockState(BlockPos pos) {
-        return this.getBlockState(pos.getX(), pos.getY(), pos.getZ());
+        int index = Coords.blockToIndex(pos.getX(), pos.getY(), pos.getZ());
+        LevelChunkSection section = this.sections[index];
+        return section.hasOnlyAir() ? EMPTY_BLOCK : section.getBlockState(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
     }
 
     /*****ChunkPrimer Overrides*****/
@@ -631,40 +523,16 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         return shortLists;
     }
 
-
-    //@Override
-    public void addLight(short chunkSliceRel, int sectionY) {
-        this.addCubeLight(chunkSliceRel, Coords.sectionToIndex(columnX, sectionY, columnZ));
+    public void setLightEngine(LevelLightEngine lightEngine) {
+        this.lightEngine = lightEngine;
     }
 
-    //@Override
-    public void addLight(BlockPos pos) {
-        this.addCubeLight(pos);
+    public void addLight(short packedPosition, int yOffset) {
+        addLight(unpackToWorld(packedPosition, yOffset, this.cubePos));
     }
 
-    //@Override
-    public void addEntity(CompoundTag entityTag) {
-        this.addCubeEntity(entityTag);
-    }
-
-    //@Override
-    public List<CompoundTag> getEntities() {
-        return this.getCubeEntities();
-    }
-
-    //@Override
-    public void setStatus(ChunkStatus status) {
-        this.updateCubeStatus(status);
-    }
-
-    //@Override
-    public Map<BlockPos, CompoundTag> getBlockEntityNbts() {
-        return this.pendingBlockEntities;
-    }
-
-    //@Override
-    public void setLightEngine(LevelLightEngine lightingProvider) {
-        this.setCubeLightEngine(lightingProvider);
+    public void addLight(BlockPos lightPos) {
+        this.lightPositions.add(lightPos.immutable());
     }
 
     @Nullable
@@ -690,33 +558,13 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         }
     }
 
-    @Override public UpgradeData getUpgradeData() {
-        throw new UnsupportedOperationException("For later implementation");
+    @Nullable @Override public CompoundTag getBlockEntityNbtForSaving(BlockPos pos) {
+        BlockEntity tileEntity = this.getBlockEntity(pos);
+        return tileEntity != null ? tileEntity.saveWithFullMetadata() : this.pendingBlockEntities.get(pos);
     }
 
-    @Override
-    public Map<ConfiguredStructureFeature<?, ?>, StructureStart> getAllStarts() {
-        return getAllCubeStructureStarts();
-    }
-
-    @Override public Collection<Map.Entry<Heightmap.Types, Heightmap>> getHeightmaps() {
-        throw new UnsupportedOperationException("For later implementation");
-    }
-
-    @Override public void setHeightmap(Heightmap.Types type, long[] data) {
-        throw new UnsupportedOperationException("For later implementation");
-    }
-
-    @Override public Heightmap getOrCreateHeightmapUnprimed(Heightmap.Types typeIn) {
-        throw new UnsupportedOperationException("For later implementation");
-    }
-
-    @Deprecated @Override public long getInhabitedTime() {
-        return super.getInhabitedTime();
-    }
-
-    @Deprecated @Override public Stream<BlockPos> getLights() {
-        return getCubeLights();
+    @Override public Stream<BlockPos> getLights() {
+        return this.lightPositions.stream();
     }
 
     @Override
@@ -734,65 +582,37 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         return new TicksToSave(this.blockTicks, this.fluidTicks);
     }
 
-    @Deprecated @Override public void setLightCorrect(boolean lightCorrectIn) {
-        throw new UnsupportedOperationException("Chunk method called on a cube!");
-    }
-
-    //LIGHTING
-    @Deprecated @Override public boolean isLightCorrect() {
-        throw new UnsupportedOperationException("Chunk method called on a cube!");
-    }
-
     public Map<BlockPos, BlockEntity> getBlockEntities() {
-        return this.getCubeBlockEntities();
+        return this.blockEntities;
     }
 
-    @Deprecated @Nullable @Override public CompoundTag getBlockEntityNbt(BlockPos pos) {
-        return this.getCubeBlockEntityNbt(pos);
+    @Override public void removeBlockEntity(BlockPos pos) {
+        this.blockEntities.remove(pos);
+        this.pendingBlockEntities.remove(pos);
     }
 
-    @Deprecated @Override public Set<BlockPos> getBlockEntitiesPos() {
-        return this.getCubeBlockEntitiesPos();
+    @Override public void setBlockEntity(BlockEntity blockEntity) {
+        this.blockEntities.put(blockEntity.getBlockPos(), blockEntity);
     }
 
-    @Deprecated @Nullable @Override public CompoundTag getBlockEntityNbtForSaving(BlockPos pos) {
-        return this.getCubeBlockEntityNbtForSaving(pos);
-    }
-
-    @Deprecated @Override public void removeBlockEntity(BlockPos pos) {
-        this.removeCubeBlockEntity(pos);
-    }
-
-    @Deprecated @Override public void setBlockEntity(BlockEntity tileEntityIn) {
-        this.setCubeBlockEntity(tileEntityIn);
-    }
-
-    @Deprecated @Override public void setBlockEntityNbt(CompoundTag nbt) {
-        this.setCubeBlockEntity(nbt);
-    }
-
-    @Override public BlockState getBlockState(int x, int y, int z) {
-        int index = Coords.blockToIndex(x, y, z);
-        LevelChunkSection section = this.sections[index];
-        return section.hasOnlyAir() ? EMPTY_BLOCK : section.getBlockState(x & 15, y & 15, z & 15);
+    public void setBlockEntityNbt(CompoundTag tag) {
+        this.pendingBlockEntities.put(BlockEntity.getPosFromTag(tag), tag);
     }
 
     //ENTITY
-    @Deprecated @Override public void addEntity(Entity entityIn) {
-        this.addCubeEntity(entityIn);
+    @Override public void addEntity(Entity entity) {
+        CompoundTag nbt = new CompoundTag();
+        entity.save(nbt);
+        this.addCubeEntity(nbt);
     }
 
-    //BLOCK
-    @Deprecated @Nullable @Override public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
-        return setBlock(pos, state, isMoving);
+    public void setStatus(ChunkStatus status) {
+        this.status = status;
+        this.setUnsaved(true);
     }
 
-    @Deprecated @Override public ChunkStatus getStatus() {
-        return getCubeStatus();
-    }
-
-    @Deprecated @Override public LevelChunkSection[] getSections() {
-        return getCubeSections();
+    @Override public ChunkStatus getStatus() {
+        return this.status;
     }
 
     //@Override

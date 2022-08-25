@@ -360,7 +360,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
 
                 if (!((CubeMap) this.chunkMap).noPlayersCloseForSpawning(cube.getCubePos())) {
                     // TODO probably want to make sure column-based inhabited time works too
-                    cube.setCubeInhabitedTime(cube.getCubeInhabitedTime() + timeSinceUpdate);
+                    cube.setInhabitedTime(cube.getInhabitedTime() + timeSinceUpdate);
 
                     if (this.level.random.nextInt(((CubicNaturalSpawner.SPAWN_RADIUS / CubeAccess.DIAMETER_IN_BLOCKS) * 2) + 1) == 0) {
                         if (this.level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING) && (this.spawnEnemies || this.spawnFriendlies) && this.level.getWorldBorder().isWithinBounds(cube.getCubePos().asChunkPos())) {

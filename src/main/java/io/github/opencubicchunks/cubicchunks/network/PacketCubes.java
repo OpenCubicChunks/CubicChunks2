@@ -110,7 +110,7 @@ public class PacketCubes {
 
     private static int calculateDataSize(List<LevelCube> cubes) {
         return cubes.stream()
-            .flatMap(c -> Arrays.stream(c.getCubeSections()))
+            .flatMap(cube -> Arrays.stream(cube.getSections()))
             .mapToInt(LevelChunkSection::getSerializedSize)
             .sum();
     }

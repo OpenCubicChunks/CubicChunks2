@@ -203,7 +203,7 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
             int dy = y - this.minCubeY;
             int dz = z - this.minCubeZ;
             icube = this.cubePrimers[this.diameter * (dx * this.diameter + dy) + dz];
-            if (icube.getCubeStatus().isOrAfter(requiredStatus)) {
+            if (icube.getStatus().isOrAfter(requiredStatus)) {
                 return icube;
             }
         } else {
@@ -221,7 +221,7 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
                 cornerCube2.getCubePos().getX(), cornerCube2.getCubePos().getY(), cornerCube2.getCubePos().getZ());
             if (icube != null) {
                 throw Util.pauseInIde(new RuntimeException(String.format("Section is not of correct status. Expecting %s, got %s "
-                    + "| %s %s %s", requiredStatus, icube.getCubeStatus(), x, y, z)));
+                    + "| %s %s %s", requiredStatus, icube.getStatus(), x, y, z)));
             } else {
                 throw Util.pauseInIde(new RuntimeException(String.format("We are asking a region for a section out of bound | "
                     + "%s %s %s", x, y, z) + "\n" + String.format("Bound | " + "%s %s %s", this.minCubeX, this.minCubeY, this.minCubeZ)));
@@ -438,13 +438,13 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
             return true;
         }
 
-        BlockState blockstate = icube.setBlock(pos, newState, false);
+        BlockState blockstate = icube.setBlockState(pos, newState, false);
 
         if (blockstate != null) {
             this.getLevel().onBlockStateChange(pos, blockstate, newState);
         }
         if (newState.hasBlockEntity()) {
-            if (icube.getCubeStatus().getChunkType() == ChunkStatus.ChunkType.LEVELCHUNK) {
+            if (icube.getStatus().getChunkType() == ChunkStatus.ChunkType.LEVELCHUNK) {
                 BlockEntity tileEntity = ((EntityBlock) newState.getBlock()).newBlockEntity(pos, newState);
                 if (tileEntity != null) {
                     icube.setBlockEntity(tileEntity);
@@ -460,7 +460,7 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
                 icube.setBlockEntityNbt(compoundnbt);
             }
         } else if (blockstate != null && blockstate.hasBlockEntity()) {
-            icube.removeCubeBlockEntity(pos);
+            icube.removeBlockEntity(pos);
         }
 
         if (newState.hasPostProcess(this, pos)) {

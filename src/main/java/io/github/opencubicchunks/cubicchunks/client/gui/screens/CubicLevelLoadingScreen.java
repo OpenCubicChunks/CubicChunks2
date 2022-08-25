@@ -241,7 +241,7 @@ public class CubicLevelLoadingScreen {
         for (int dx = -1; dx <= renderRadius + 1; dx++) {
             for (int dz = -1; dz <= renderRadius + 1; dz++) {
                 for (int dy = -1; dy <= renderRadius + 1; dy++) {
-                    ChunkStatus status = tracker.getCubeStatus(dx, dy, dz);
+                    ChunkStatus status = tracker.getStatus(dx, dy, dz);
                     if (status == null) {
                         continue;
                     }
@@ -250,7 +250,7 @@ public class CubicLevelLoadingScreen {
                     int alpha = (int) (0x20 + ratio * (0xFF - 0x20));
                     int c = colors.getOrDefault(status, 0xFFFF00FF) | (alpha << 24);
                     for (Direction value : Direction.values()) {
-                        ChunkStatus cubeStatus = tracker.getCubeStatus(dx + value.getStepX(), dy + value.getStepY(), dz + value.getStepZ());
+                        ChunkStatus cubeStatus = tracker.getStatus(dx + value.getStepX(), dy + value.getStepY(), dz + value.getStepZ());
                         if (cubeStatus == null || !cubeStatus.isOrAfter(status)) {
                             renderFaces.add(value);
                         }
@@ -379,7 +379,7 @@ public class CubicLevelLoadingScreen {
             for (int dz = 0; dz < totalDiameter; ++dz) {
                 Map<ChunkStatus, Integer> statusCounts = new HashMap<>();
                 for (int dy = 0; dy < totalDiameter; dy++) {
-                    ChunkStatus chunkstatus = ((StoringCubeProgressListener) trackerParam).getCubeStatus(dx, dy, dz);
+                    ChunkStatus chunkstatus = ((StoringCubeProgressListener) trackerParam).getStatus(dx, dy, dz);
                     statusCounts.putIfAbsent(chunkstatus, 0);
                     //noinspection ConstantConditions
                     statusCounts.compute(chunkstatus, (status, count) -> count + 1);

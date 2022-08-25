@@ -215,7 +215,7 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         // TODO this method should probably use ASM and exclude lightning/snow rather than copying randomTicks
         profilerFiller.push("tickBlocks");
         if (randomTicks > 0) {
-            LevelChunkSection[] sections = cube.getCubeSections();
+            LevelChunkSection[] sections = cube.getSections();
             CubePos cubePos = cube.getCubePos();
             for (int i = 0; i < sections.length; i++) {
                 LevelChunkSection chunkSection = sections[i];

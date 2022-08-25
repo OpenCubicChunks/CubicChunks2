@@ -57,7 +57,7 @@ public abstract class MixinStoringChunkProgressListener implements CubeProgressL
     }
 
     @Nullable @Override
-    public ChunkStatus getCubeStatus(int x, int y, int z) {
+    public ChunkStatus getStatus(int x, int y, int z) {
         int radiusCubes = Coords.sectionToCubeCeil(this.radius);
 
         if (spawnCube == null) {

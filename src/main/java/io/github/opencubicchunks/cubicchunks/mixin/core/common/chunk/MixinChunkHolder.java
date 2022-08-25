@@ -330,7 +330,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
         if (cubePos == null) {
             return getStatus(level);
         } else {
-            return getCubeStatus(level);
+            return getStatus(level);
         }
     }
 
@@ -568,6 +568,6 @@ public abstract class MixinChunkHolder implements CubeHolder {
                 }
             }
         }
-        this.updateChunkToSave(unsafeCast(CompletableFuture.completedFuture(Either.left((CubeAccess) primer.getCube()))), "replaceProtoCube");
+        this.updateChunkToSave(unsafeCast(CompletableFuture.completedFuture(Either.left((CubeAccess) primer.getWrapped()))), "replaceProtoCube");
     }
 }
