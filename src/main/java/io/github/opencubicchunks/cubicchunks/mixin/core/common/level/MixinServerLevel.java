@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.utils.Utils;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.InterleavedHeightmapStorage;
@@ -18,7 +19,6 @@ import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventS
 import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubicNoiseBasedChunkGenerator;
 import io.github.opencubicchunks.cubicchunks.world.CubicChunksSavedData;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicFastServerTickList;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelTicks;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
@@ -50,7 +50,6 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.ServerLevelData;
-import org.apache.logging.log4j.Logger;
 import net.minecraft.world.ticks.LevelTicks;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -63,8 +62,6 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(ServerLevel.class)
 public abstract class MixinServerLevel extends MixinLevel implements CubicServerLevel {
-
-    @Shadow @Final private static Logger LOGGER;
 
     private HeightmapStorage heightmapStorage;
 

@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.world;
 
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubePos;
 import net.minecraft.world.entity.MobCategory;
 
 public interface CubicLocalMobCapCalculator {

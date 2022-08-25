@@ -22,8 +22,6 @@ import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkBiomeContainerAccess;
-import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
@@ -84,10 +82,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
     private final Map<GenerationStep.Carving, CarvingMask> carvingMasks;
     private final Map<BlockPos, BlockState> featuresStateMap = new HashMap<>();
 
-    private volatile boolean modified = true;
-
     private final List<BlockPos> lightPositions = Lists.newArrayList();
-    private volatile boolean hasLight;
     private LevelLightEngine lightEngine;
 
     private final boolean isCubic;

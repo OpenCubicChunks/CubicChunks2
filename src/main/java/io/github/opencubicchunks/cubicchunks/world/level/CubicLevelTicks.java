@@ -1,19 +1,16 @@
 package io.github.opencubicchunks.cubicchunks.world.level;
 
-import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.LongPredicate;
 import java.util.function.Supplier;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.utils.Utils;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventHandler;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LevelTicksAccess;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import io.github.opencubicchunks.cubicchunks.world.CubicServerTickList;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;

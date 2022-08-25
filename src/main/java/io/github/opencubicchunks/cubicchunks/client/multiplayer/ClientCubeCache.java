@@ -2,7 +2,7 @@ package io.github.opencubicchunks.cubicchunks.client.multiplayer;
 
 import java.util.function.BiConsumer;
 
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import net.minecraft.nbt.CompoundTag;

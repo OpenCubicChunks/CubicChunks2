@@ -18,6 +18,7 @@ import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.BiomeGenerationSettingsAccess;
 import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.CubeProgressListener;
+import io.github.opencubicchunks.cubicchunks.utils.MutableHolderSet;
 import io.github.opencubicchunks.cubicchunks.world.ForcedCubesSaveData;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;

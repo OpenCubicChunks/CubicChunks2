@@ -1,12 +1,8 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.NoiseChunkAccess;
-import io.github.opencubicchunks.cubicchunks.utils.ConcurrentModificationDetectingMap;
-import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Aquifer;

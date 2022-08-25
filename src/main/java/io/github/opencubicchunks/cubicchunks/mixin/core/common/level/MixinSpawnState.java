@@ -1,8 +1,8 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.CubicLocalMobCapCalculator;
 import io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.ChunkPos;

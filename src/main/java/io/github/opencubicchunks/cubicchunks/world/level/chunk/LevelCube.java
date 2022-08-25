@@ -3,12 +3,10 @@ package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 import static io.github.opencubicchunks.cc_core.utils.Coords.blockToCubeLocalSection;
 import static io.github.opencubicchunks.cc_core.utils.Coords.blockToIndex;
 import static io.github.opencubicchunks.cc_core.utils.Coords.blockToLocal;
-import static io.github.opencubicchunks.cc_core.utils.Coords.cubeToSection;
 import static io.github.opencubicchunks.cc_core.utils.Coords.indexToX;
 import static io.github.opencubicchunks.cc_core.utils.Coords.indexToY;
 import static io.github.opencubicchunks.cc_core.utils.Coords.indexToZ;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,8 +31,7 @@ import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerNode;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.LevelChunkSectionAccess;
-import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelTicks;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import it.unimi.dsi.fastutil.shorts.ShortList;
@@ -176,7 +173,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         // Add only the required heightmaps after ChunkStatus.FULL
         protoCube.getCubeHeightmaps().forEach(((type, leaf) -> {
             if (ChunkStatus.FULL.heightmapsAfter().contains(type)) {
-                this.heightmaps.put(type, leaf);
+                this.cubeHeightmaps.put(type, leaf);
             }
         }));
 

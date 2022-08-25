@@ -25,7 +25,6 @@ import io.github.opencubicchunks.cubicchunks.server.level.CubeHolder;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeHolderPlayerProvider;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicFastServerTickList;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ImposterProtoCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
@@ -61,7 +60,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinChunkHolder implements CubeHolder {
 
     @Shadow private int ticketLevel;
-    @Mutable @Final @Shadow private ChunkPos pos;
+    @Mutable @Final @Shadow ChunkPos pos;
 
     // these are using java type erasure as a feature - because the generic type information
     // doesn't exist at runtime, we can shadow those fields with different generic types
