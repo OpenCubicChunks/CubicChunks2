@@ -14,7 +14,6 @@
             "net/minecraft/class_3898#method_31417(net.minecraft.class_3193);java.util.concurrent.CompletableFuture": "prepareAccessibleCube",
             "net/minecraft/class_3898#method_17235(net.minecraft.class_3193);java.util.concurrent.CompletableFuture": "prepareTickingCube",
             "net/minecraft/class_3898#method_17247(net.minecraft.class_1923);java.util.concurrent.CompletableFuture": "prepareEntityTickingCube",
-            "net/minecraft/class_3898#method_20576(net.minecraft.class_2818);java.util.concurrent.CompletableFuture": "packCubeTicks",
             "net/minecraft/class_3193$class_3896#method_17209(net.minecraft.class_1923, java.util.function.IntSupplier, int, java.util.function.IntConsumer);void": "onCubeLevelChange"
         }
     },
@@ -42,14 +41,18 @@
         "typeRedirects": {
             "net/minecraft/class_1923": "io/github/opencubicchunks/cc_core/api/CubePos",
             "net/minecraft/class_1948$class_5260": "io/github/opencubicchunks/cubicchunks/world/CubicNaturalSpawner$CubeGetter",
-            "net/minecraft/class_2818": "net/minecraft/class_2791"
+            "net/minecraft/class_2818": "io/github/opencubicchunks/cubicchunks/world/level/chunk/CubeAccess"
         },
         "fieldRedirects": { },
         "methodRedirects": {
             "net/minecraft/class_1948#method_8663(net.minecraft.class_1311, net.minecraft.class_3218, net.minecraft.class_2818, net.minecraft.class_1948$class_5261, net.minecraft.class_1948$class_5259);void": "spawnCategoryForCube",
             "net/minecraft/class_1948#method_8657(net.minecraft.class_1937, net.minecraft.class_2818);net.minecraft.class_2338": "getRandomPosWithinCube",
             "net/minecraft/class_1923#method_8324();long": "asLong",
-            "net/minecraft/class_1923#method_8331(int, int);long": "asLong"
+            "net/minecraft/class_1923#method_8331(int, int);long": "asLong",
+            "net/minecraft/class_2818#method_12004();net.minecraft.class_1923": {
+                "newName": "getCubePos",
+                "mappingsOwner": "net/minecraft/class_2791"
+            }
         }
     },
     "chunkMap$DistanceManagerSet": {
