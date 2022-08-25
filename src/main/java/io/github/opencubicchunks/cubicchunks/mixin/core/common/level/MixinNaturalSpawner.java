@@ -207,7 +207,7 @@ public abstract class MixinNaturalSpawner {
             target =
                 "Lnet/minecraft/world/level/NaturalSpawner$SpawnState;canSpawnForCategory("
                     + "Lnet/minecraft/world/entity/MobCategory;"
-                    + "Lio/github/opencubicchunks/cubicchunks/world/level/CubePos;)"
+                    + "Lio/github/opencubicchunks/cc_core/api/CubePos;)"
                     + "Z"
         )
     )
@@ -224,7 +224,7 @@ public abstract class MixinNaturalSpawner {
             target =
                 "Lnet/minecraft/class_1948$class_5262;canSpawnForCategory("
                     + "Lnet/minecraft/class_1311;"
-                    + "Lio/github/opencubicchunks/cubicchunks/world/level/CubePos;)"
+                    + "Lio/github/opencubicchunks/cc_core/api/CubePos;)"
                     + "Z"
         )
     )
