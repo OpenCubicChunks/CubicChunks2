@@ -59,9 +59,9 @@ public class ImposterProtoCube extends ProtoCube {
         return this.wrapped;
     }
 
-    @Deprecated @Override public ChunkPos getPos() {
-        return this.wrapped.getPos();
-    }
+//    @Deprecated @Override public ChunkPos getPos() {
+//        return this.wrapped.getPos();
+//    }
 
     @Override public CubePos getCubePos() {
         return this.wrapped.getCubePos();
