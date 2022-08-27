@@ -112,7 +112,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         super(
             cubePos,
             upgradeData,
-            new FakeSectionCount(levelHeightAccessor, CubeAccess.SECTION_COUNT),
+            new FakeSectionCount(cubePos.getY(), levelHeightAccessor, CubeAccess.SECTION_COUNT),
             biomes,
             0L,
             sections,
@@ -675,19 +675,25 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         private final boolean isCubic;
         private final boolean generates2DChunks;
         private final WorldStyle worldStyle;
+        private final int cubeY;
 
-        public FakeSectionCount(LevelHeightAccessor levelHeightAccessor, int sectionCount) {
-            this(levelHeightAccessor.getHeight(), levelHeightAccessor.getMinBuildHeight(), sectionCount, ((CubicLevelHeightAccessor) levelHeightAccessor).isCubic(),
+        public FakeSectionCount(int cubeY, LevelHeightAccessor levelHeightAccessor, int sectionCount) {
+            this(cubeY, levelHeightAccessor.getHeight(), levelHeightAccessor.getMinBuildHeight(), sectionCount, ((CubicLevelHeightAccessor) levelHeightAccessor).isCubic(),
                 ((CubicLevelHeightAccessor) levelHeightAccessor).generates2DChunks(), ((CubicLevelHeightAccessor) levelHeightAccessor).worldStyle());
         }
 
-        private FakeSectionCount(int height, int minHeight, int sectionCount, boolean isCubic, boolean generates2DChunks, WorldStyle worldStyle) {
+        private FakeSectionCount(int cubeY, int height, int minHeight, int sectionCount, boolean isCubic, boolean generates2DChunks, WorldStyle worldStyle) {
             this.height = height;
+            this.cubeY = cubeY;
             this.minHeight = minHeight;
             this.fakeSectionCount = sectionCount;
             this.isCubic = isCubic;
             this.generates2DChunks = generates2DChunks;
             this.worldStyle = worldStyle;
+        }
+
+        @Override public int getSectionYFromSectionIndex(int sectionIndex) {
+            return Coords.cubeToSection(this.cubeY, Coords.indexToY(sectionIndex));
         }
 
         @Override public int getHeight() {

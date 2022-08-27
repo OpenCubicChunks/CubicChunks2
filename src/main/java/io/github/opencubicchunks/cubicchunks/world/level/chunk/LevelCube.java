@@ -123,7 +123,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         super(
             cubePos,
             upgradeData,
-            new ProtoCube.FakeSectionCount(level, CubeAccess.SECTION_COUNT),
+            new ProtoCube.FakeSectionCount(cubePos.getY(), level, CubeAccess.SECTION_COUNT),
             level.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY),
             inhabitedTime,
             sections,
