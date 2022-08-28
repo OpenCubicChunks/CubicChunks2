@@ -72,7 +72,7 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
 
     @Shadow @Nullable protected abstract Optional<R> get(long pos);
 
-    @Shadow protected static int getVersion(Dynamic<?> dynamic) {
+    @Shadow private static int getVersion(Dynamic<?> dynamic) {
         throw new Error("Mixin didn't apply");
     }
 

@@ -48,7 +48,7 @@ public abstract class MixinLevelChunk extends ChunkAccess {
     @Shadow public abstract Level getLevel();
 
     // TODO: don't target all Map.get()
-    @SuppressWarnings({ "rawtypes", "UnresolvedMixinReference" })
+    @SuppressWarnings("rawtypes")
     @Redirect(method = "*",
         at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
     private Object getBlockEntity(Map map, Object key) {
@@ -68,7 +68,8 @@ public abstract class MixinLevelChunk extends ChunkAccess {
         return map.get(key);
     }
 
-    @SuppressWarnings({ "rawtypes", "UnresolvedMixinReference" }) @Nullable
+    @SuppressWarnings("rawtypes")
+    @Nullable
     @Redirect(
         method = "*",
         at = @At(value = "INVOKE", target = "Ljava/util/Map;remove(Ljava/lang/Object;)Ljava/lang/Object;"))
@@ -109,7 +110,8 @@ public abstract class MixinLevelChunk extends ChunkAccess {
         return map.remove(key);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked", "UnresolvedMixinReference" }) @Nullable
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Nullable
     @Redirect(method = "*",
         at = @At(value = "INVOKE", target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"))
     private Object putBlockEntity(Map map, Object key, Object value) {

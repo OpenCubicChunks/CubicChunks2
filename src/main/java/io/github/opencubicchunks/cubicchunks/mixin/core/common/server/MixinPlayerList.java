@@ -44,7 +44,7 @@ public abstract class MixinPlayerList implements VerticalViewDistanceListener {
         return this.verticalViewDistance;
     }
 
-    @Inject(method = "setViewDistance", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "setViewDistance", at = @At("HEAD"))
     private void setVerticalViewDistance(int viewDistance, CallbackInfo ci) {
         this.verticalViewDistance = incomingVerticalViewDistance;
 

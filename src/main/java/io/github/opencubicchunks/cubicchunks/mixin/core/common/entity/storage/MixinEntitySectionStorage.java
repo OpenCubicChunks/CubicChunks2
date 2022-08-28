@@ -34,7 +34,6 @@ public abstract class MixinEntitySectionStorage<T extends EntityAccess> implemen
         throw new Error("Mixin did not apply");
     }
 
-    @SuppressWarnings("UnresolvedMixinReference")
     @Redirect(method = "*", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/entity/EntitySectionStorage;getChunkKeyFromSectionKey(J)J"))
     private long getCubeKeyFromSectionKey(long sectionKey) {
         if (isCubic) {

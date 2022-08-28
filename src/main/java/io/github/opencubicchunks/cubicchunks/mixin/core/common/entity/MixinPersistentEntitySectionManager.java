@@ -36,11 +36,10 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(PersistentEntitySectionManager.class)
 public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess> implements IsCubicEntityContext, ChunkEntityStateEventSource, CubicPersistentEntitySectionManager {
-
+    @Shadow @Final EntitySectionStorage<T> sectionStorage;
     @Shadow @Final private Long2ObjectMap<Object> chunkLoadStatuses;
     @Shadow @Final private EntityPersistentStorage<T> permanentStorage;
     @Shadow @Final private Queue<ChunkEntities<T>> loadingInbox;
-    @Shadow @Final private EntitySectionStorage<T> sectionStorage;
     @Shadow @Final private Long2ObjectMap<Visibility> chunkVisibility;
 
     // Tracks which chunks are ticking in a CC world (where `chunkVisibility` is instead used for Cubes)

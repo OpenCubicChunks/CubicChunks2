@@ -18,7 +18,7 @@ public class MixinIntegratedServer {
 
     @Shadow @Final private Minecraft minecraft;
 
-    @Inject(method = "tickServer", at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(II)I"), cancellable = true)
+    @Inject(method = "tickServer", at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(II)I"))
     private void updateVerticalViewDistance(BooleanSupplier shouldKeepTicking, CallbackInfo ci) {
         int horizontalViewDistance = Math.max(2, this.minecraft.options.renderDistance + -1);
 
