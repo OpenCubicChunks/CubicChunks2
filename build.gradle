@@ -235,7 +235,9 @@ switch (OperatingSystem.current()) {
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.layered() {
-        officialMojangMappings()
+        officialMojangMappings {
+            nameSyntheticMembers = true
+        }
         parchment("org.parchmentmc.data:parchment-1.18.2:2022.05.22@zip")
     }
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"

@@ -35,7 +35,7 @@ public class MixinBeardifier {
     }
 
     @SuppressWarnings("UnresolvedMixinReference")
-    @Redirect(method = "method_38319" /*In <init>*/,
+    @Redirect(method = "lambda$new$2(Lnet/minecraft/world/level/ChunkPos;IILnet/minecraft/world/level/levelgen/structure/StructureStart;)V",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/levelgen/structure/pools/JigsawJunction;getSourceX()I"))
     private int checkYBounds(JigsawJunction junction) {
         if (chunkAccess == null) {

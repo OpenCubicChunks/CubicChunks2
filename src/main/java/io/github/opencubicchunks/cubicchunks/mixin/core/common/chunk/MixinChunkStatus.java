@@ -45,52 +45,29 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkStatus.class)
 public class MixinChunkStatus {
-    //Pre 1.18
-    // lambda$static$0 == NOOP_LOADING_WORKER
+    // lambda$static$0 == PASSTHROUGH_LOAD_TASK
     // lambda$static$1 == EMPTY
     // lambda$static$2 == STRUCTURE_STARTS
-    // lambda$static$3 == STRUCTURE_REFERENCES
-    // lambda$static$4 == BIOMES
-    // lambda$static$5 == NOISE
-    // lambda$static$6 == SURFACE
-    // lambda$static$7 == CARVERS
-    // lambda$static$8 == LIQUID_CARVERS
-    // lambda$static$9 == FEATURES
-    // lambda$static$10 == LIGHT
-    // lambda$static$11 == LIGHT (loading worker)
-    // lambda$static$12 == SPAWM
-    // lambda$static$13 == HEIGHTMAPS
-    // lambda$static$14 == FULL
-    // lambda$static$15 == FULL (loading worker)
-
-    //1.18
-    // unnamed - named
-    // method_20615 = lambda$static$0 = PASSTHROUGH_LOAD_TASK
-    // method_17036 = lambda$static$1 = EMPTY
-    // method_39464 = lambda$static$2 = STRUCTURE_STARTS (generation task)
-    // method_39790 = lambda$static$3 = STRUCTURE_STARTS (loading_task)
-    // method_16565 = lambda$static$4 = STRUCTURE_REFERENCES (generation_task)
-    // method_38283 = lambda$static$5
-    // method_38285 = lambda$static$6
-    // method_39463 = lambda$static$7
-    // method_38284 = lambda$static$8
-    // method_16569 = lambda$static$9
-    // method_38282 = lambda$static$10
-    // method_39789 = lambda$static$11
-    // method_20613 = lambda$static$12
-    // method_20614 = lambda$static$13
-    // method_16566 = lambda$static$14
-    // method_17033 = lambda$static$15
-    // method_38277 = lambda$static$16
-    // method_20609 = lambda$static$17
-    // method_38278 = lambda$static$18
-    // method_12166 = lambda$static$19
-    // method_38280 = lambda$generate$20
-
+    // lambda$static$3 == STRUCTURE_STARTS (loading worker)
+    // lambda$static$4 == STRUCTURE_REFERENCES
+    // lambda$static$6 == BIOMES
+    // lambda$static$8 == NOISE
+    // lambda$static$9 == SURFACE
+    // lambda$static$10 == CARVERS
+    // lambda$static$11 == LIQUID_CARVERS
+    // lambda$static$12 == FEATURES
+    // lambda$static$13 == LIGHT
+    // lambda$static$14 == LIGHT (loading worker)
+    // lambda$static$15 == SPAWM
+    // lambda$static$16 == HEIGHTMAPS
+    // lambda$static$17 == FULL
+    // lambda$static$18 == FULL (loading worker)
 
     @SuppressWarnings("target")
     @Inject(
-        method = "method_20615",
+        method = "lambda$static$0(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;"
+            + "Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;Lnet/minecraft/server/level/ThreadedLevelLightEngine;Ljava/util/function/Function;"
+            + "Lnet/minecraft/world/level/chunk/ChunkAccess;)Ljava/util/concurrent/CompletableFuture;",
         at = @At("HEAD")
     )
     private static void noopLoadingWorker(
@@ -108,7 +85,12 @@ public class MixinChunkStatus {
     // EMPTY -> does nothing already
 
     // structure starts - replace setStatus, handled by MixinChunkGenerator
-    @Inject(method = "method_39464", at = @At("HEAD"), cancellable = true)
+    @Inject(
+        method = "lambda$static$2(Lnet/minecraft/world/level/chunk/ChunkStatus;Ljava/util/concurrent/Executor;Lnet/minecraft/server/level/ServerLevel;"
+            + "Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;"
+            + "Lnet/minecraft/server/level/ThreadedLevelLightEngine;Ljava/util/function/Function;Ljava/util/List;Lnet/minecraft/world/level/chunk/ChunkAccess;Z)"
+            + "Ljava/util/concurrent/CompletableFuture;",
+        at = @At("HEAD"), cancellable = true)
     private static void generateStructureStatus(
         ChunkStatus status, Executor executor, ServerLevel level, ChunkGenerator generator,
         StructureManager structureManager, ThreadedLevelLightEngine lightEngine,
@@ -148,7 +130,8 @@ public class MixinChunkStatus {
 
     @SuppressWarnings({ "target" })
     @Inject(
-        method = "method_16565",
+        method = "lambda$static$4(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Ljava/util/List;"
+            + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
         at = @At("HEAD"), cancellable = true
     )
     private static void cubicChunksStructureReferences(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
@@ -162,7 +145,10 @@ public class MixinChunkStatus {
     }
 
     @Inject(
-        method = "method_38285",
+        method = "lambda$static$6(Lnet/minecraft/world/level/chunk/ChunkStatus;Ljava/util/concurrent/Executor;Lnet/minecraft/server/level/ServerLevel;"
+            + "Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;"
+            + "Lnet/minecraft/server/level/ThreadedLevelLightEngine;Ljava/util/function/Function;Ljava/util/List;Lnet/minecraft/world/level/chunk/ChunkAccess;Z)"
+            + "Ljava/util/concurrent/CompletableFuture;",
         at = @At("HEAD"), cancellable = true
     )
     private static void cubicChunksBiome(ChunkStatus chunkStatus, Executor executor, ServerLevel level, ChunkGenerator chunkGenerator, StructureManager structureManager,
@@ -204,7 +190,10 @@ public class MixinChunkStatus {
 
     // biomes -> handled by MixinChunkGenerator
     @Inject(
-        method = "method_38284",
+        method = "lambda$static$8(Lnet/minecraft/world/level/chunk/ChunkStatus;Ljava/util/concurrent/Executor;Lnet/minecraft/server/level/ServerLevel;"
+            + "Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;"
+            + "Lnet/minecraft/server/level/ThreadedLevelLightEngine;Ljava/util/function/Function;Ljava/util/List;Lnet/minecraft/world/level/chunk/ChunkAccess;Z)"
+            + "Ljava/util/concurrent/CompletableFuture;",
         at = @At("HEAD"), cancellable = true
     )
     private static void cubicChunksNoise(ChunkStatus status, Executor executor, ServerLevel level, ChunkGenerator chunkGenerator, StructureManager structureManager,
@@ -303,7 +292,8 @@ public class MixinChunkStatus {
     }
 
     @Inject(
-        method = "method_16569",
+        method = "lambda$static$9(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Ljava/util/List;"
+            + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
         at = @At("HEAD"), cancellable = true
     )
     private static void cubicChunksSurface(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
@@ -318,7 +308,8 @@ public class MixinChunkStatus {
 
     @SuppressWarnings({ "target" })
     @Inject(
-        method = "method_38282",
+        method = "lambda$static$10(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Ljava/util/List;"
+            + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
         at = @At("HEAD"), cancellable = true
     )
     private static void cubicChunksCarvers(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
@@ -348,7 +339,8 @@ public class MixinChunkStatus {
     }
 
     @Inject(
-        method = "method_39789",
+        method = "lambda$static$11(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Ljava/util/List;"
+            + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
         at = @At("HEAD"), cancellable = true
     )
     private static void cubicChunksLiquidCarvers(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
@@ -379,7 +371,10 @@ public class MixinChunkStatus {
     }
 
     @Inject(
-        method = "method_20613",
+        method = "lambda$static$12(Lnet/minecraft/world/level/chunk/ChunkStatus;Ljava/util/concurrent/Executor;Lnet/minecraft/server/level/ServerLevel;"
+            + "Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;"
+            + "Lnet/minecraft/server/level/ThreadedLevelLightEngine;Ljava/util/function/Function;Ljava/util/List;Lnet/minecraft/world/level/chunk/ChunkAccess;Z)"
+            + "Ljava/util/concurrent/CompletableFuture;",
         at = @At(value = "HEAD"), cancellable = true
     )
     private static void featuresSetStatus(
@@ -451,9 +446,9 @@ public class MixinChunkStatus {
         cir.setReturnValue(unsafeCast(((CubicThreadedLevelLightEngine) lightEngine).lightCube((CubeAccess) chunk, flag).thenApply(Either::left)));
     }
 
-    //lambda$static$12
     @Inject(
-        method = "method_17033",
+        method = "lambda$static$15(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Ljava/util/List;"
+            + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
         at = @At("HEAD"), cancellable = true
     )
     //TODO: Expose the above and bottom cubes via neighbors or thing else. Check if chunk generator overrides "spawnOriginalMobs" and redirect to our spawner instead.

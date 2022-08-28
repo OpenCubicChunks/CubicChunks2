@@ -414,7 +414,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
 
     @Nullable
     @SuppressWarnings("UnresolvedMixinReference")
-    @Inject(method = "method_14118"/*"lambda$onLightUpdate$7(Lnet/minecraft/core/SectionPos;Lnet/minecraft/world/level/LightLayer;)V"*/, at = @At(value = "HEAD"), cancellable = true)
+    @Inject(method = "lambda$onLightUpdate$6(Lnet/minecraft/core/SectionPos;Lnet/minecraft/world/level/LightLayer;)V", at = @At(value = "HEAD"), cancellable = true)
     private void onlyCubes(SectionPos pos, LightLayer type, CallbackInfo ci) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;

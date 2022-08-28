@@ -591,7 +591,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     @SuppressWarnings("UnresolvedMixinReference")
-    // lambda$scheduleUnload$10 or lambda$scheduleSave$10 or ???
+    // lambda$scheduleUnload$13 or schedule or ???
     @Inject(method = "*", at = @At(
         value = "INVOKE",
         target = "Lnet/minecraft/server/level/progress/ChunkProgressListener;onStatusChange(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/level/chunk/ChunkStatus;)V")
@@ -608,10 +608,10 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         }
     }
 
-    //A lambda inside a lambda in the method scheduleChunkGeneration.
     @SuppressWarnings({ "UnresolvedMixinReference", "target" })
     @Inject(
-        method = "method_17225",
+        method = "lambda$scheduleChunkGeneration$22(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/server/level/ChunkHolder;Lnet/minecraft/world/level/chunk/ChunkStatus;"
+            + "Ljava/util/concurrent/Executor;Ljava/util/List;)Ljava/util/concurrent/CompletableFuture;",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/server/level/progress/ChunkProgressListener;onStatusChange(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/level/chunk/ChunkStatus;)V"
@@ -949,7 +949,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     @SuppressWarnings("ConstantConditions")
-    @Redirect(method = "method_17256" /*"lambda$scheduleChunkLoad$13(Lnet/minecraft/world/level/ChunkPos;)Lcom/mojang/datafixers/util/Either;"*/,
+    @Redirect(method = "lambda$scheduleChunkLoad$16(Lnet/minecraft/world/level/ChunkPos;)Lcom/mojang/datafixers/util/Either;",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;readChunk(Lnet/minecraft/world/level/ChunkPos;)Lnet/minecraft/nbt/CompoundTag;"))
     private CompoundTag readColumn(ChunkMap chunkManager, ChunkPos chunkPos) throws IOException {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
