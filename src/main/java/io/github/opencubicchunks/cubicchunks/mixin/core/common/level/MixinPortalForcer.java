@@ -26,6 +26,7 @@ public class MixinPortalForcer {
 
     @Shadow @Final private ServerLevel level;
 
+    @SuppressWarnings("target")
     @Redirect(method = "lambda$findPortalAround$6(Lnet/minecraft/world/entity/ai/village/poi/PoiRecord;)Lnet/minecraft/BlockUtil$FoundRectangle;", at = @At(value =
         "INVOKE",
         target = "Lnet/minecraft/server/level/ServerChunkCache;addRegionTicket(Lnet/minecraft/server/level/TicketType;Lnet/minecraft/world/level/ChunkPos;ILjava/lang/Object;)V"))

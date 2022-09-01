@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Main.class)
 public class MixinMain {
+    @SuppressWarnings("target")
     @Inject(
         method = "lambda$main$1(Lnet/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess;Ljoptsimple/OptionSet;Ljoptsimple/OptionSpec;"
             + "Lnet/minecraft/server/dedicated/DedicatedServerSettings;Ljoptsimple/OptionSpec;Lnet/minecraft/server/packs/resources/ResourceManager;"

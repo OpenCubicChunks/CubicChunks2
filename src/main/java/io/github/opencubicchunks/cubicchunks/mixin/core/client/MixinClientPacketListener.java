@@ -20,6 +20,7 @@ public abstract class MixinClientPacketListener {
 
     //Removed handleLevelChunk because it didn't seem like it would change anything
 
+    @SuppressWarnings("target")
     @Redirect(method = "lambda$queueLightUpdate$4(Lnet/minecraft/network/protocol/game/ClientboundForgetLevelChunkPacket;)V",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getMaxSection()I"))
     private int getFakeMaxSectionY(ClientLevel clientLevel) {

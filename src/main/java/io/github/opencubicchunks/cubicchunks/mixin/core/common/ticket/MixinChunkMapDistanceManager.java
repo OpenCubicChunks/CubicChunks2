@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(ChunkMap.DistanceManager.class)
 public abstract class MixinChunkMapDistanceManager extends MixinDistanceManager {
-    @Shadow @Final ChunkMap this$0;
+    @SuppressWarnings("target") @Shadow @Final ChunkMap this$0;
 
     @Override
     public boolean containsCubes(long cubePosIn) {

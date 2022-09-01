@@ -138,7 +138,7 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
     // "event handlers" for CubicFastServerTickList
 
     @Inject(method = "processPendingLoads",
-        at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lit/unimi/dsi/fastutil/longs/Long2ObjectMap;put(JLjava/lang/Object;)Ljava/lang/Object;"),
+        at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lit/unimi/dsi/fastutil/longs/Long2ObjectMap;put(JLjava/lang/Object;)Ljava/lang/Object;", remap = false),
         locals = LocalCapture.CAPTURE_FAILHARD)
     private void onLoad(CallbackInfo ci, ChunkEntities<T> entities) {
         if (!isCubic) {
@@ -151,7 +151,7 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
     }
 
     @Inject(method = "processChunkUnload",
-        at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lit/unimi/dsi/fastutil/longs/Long2ObjectMap;remove(J)Ljava/lang/Object;"))
+        at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lit/unimi/dsi/fastutil/longs/Long2ObjectMap;remove(J)Ljava/lang/Object;", remap = false))
     private void onUnload(long posLong, CallbackInfoReturnable<Boolean> cir) {
         if (!isCubic) {
             return;

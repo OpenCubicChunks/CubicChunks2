@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(Minecraft.class)
 public class MixinMinecraft {
     // Target inside the lambda so we can use the levelStorageAccess
+    @SuppressWarnings("target")
     @Inject(method = "lambda$createLevel$31(Lnet/minecraft/world/level/LevelSettings;Lnet/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess;)" +
             "Lnet/minecraft/server/WorldStem$DataPackConfigSupplier;", at = @At("HEAD"))
     private static void onCreateLevel(LevelSettings levelSettings, LevelStorageSource.LevelStorageAccess levelStorageAccess, CallbackInfoReturnable<DataPackConfig> cir) {

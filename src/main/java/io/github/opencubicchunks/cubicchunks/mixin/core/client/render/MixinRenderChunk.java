@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkRenderDispatcher.RenderChunk.class)
 public abstract class MixinRenderChunk {
-    @Shadow @Final ChunkRenderDispatcher this$0;
+    @SuppressWarnings("target") @Shadow @Final ChunkRenderDispatcher this$0;
 
     @Shadow @Final private BlockPos.MutableBlockPos[] relativeOrigins;
 

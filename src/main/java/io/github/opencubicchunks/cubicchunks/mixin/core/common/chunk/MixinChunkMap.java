@@ -946,7 +946,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         regionCubeIO.saveChunkNBT(chunkPos, chunkNBT);
     }
 
-    @SuppressWarnings("ConstantConditions")
+    @SuppressWarnings({ "ConstantConditions", "target" })
     @Redirect(method = "lambda$scheduleChunkLoad$16(Lnet/minecraft/world/level/ChunkPos;)Lcom/mojang/datafixers/util/Either;",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;readChunk(Lnet/minecraft/world/level/ChunkPos;)Lnet/minecraft/nbt/CompoundTag;"))
     private CompoundTag readColumn(ChunkMap chunkManager, ChunkPos chunkPos) throws IOException {

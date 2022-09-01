@@ -85,6 +85,7 @@ public class MixinChunkStatus {
     // EMPTY -> does nothing already
 
     // structure starts - replace setStatus, handled by MixinChunkGenerator
+    @SuppressWarnings("target")
     @Inject(
         method = "lambda$static$2(Lnet/minecraft/world/level/chunk/ChunkStatus;Ljava/util/concurrent/Executor;Lnet/minecraft/server/level/ServerLevel;"
             + "Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;"
@@ -128,7 +129,7 @@ public class MixinChunkStatus {
         }
     }
 
-    @SuppressWarnings({ "target" })
+    @SuppressWarnings("target")
     @Inject(
         method = "lambda$static$4(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Ljava/util/List;"
             + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
@@ -144,6 +145,7 @@ public class MixinChunkStatus {
         }
     }
 
+    @SuppressWarnings("target")
     @Inject(
         method = "lambda$static$6(Lnet/minecraft/world/level/chunk/ChunkStatus;Ljava/util/concurrent/Executor;Lnet/minecraft/server/level/ServerLevel;"
             + "Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;"
@@ -189,6 +191,7 @@ public class MixinChunkStatus {
 
 
     // biomes -> handled by MixinChunkGenerator
+    @SuppressWarnings("target")
     @Inject(
         method = "lambda$static$8(Lnet/minecraft/world/level/chunk/ChunkStatus;Ljava/util/concurrent/Executor;Lnet/minecraft/server/level/ServerLevel;"
             + "Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;"
@@ -291,6 +294,7 @@ public class MixinChunkStatus {
         return false;
     }
 
+    @SuppressWarnings("target")
     @Inject(
         method = "lambda$static$9(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Ljava/util/List;"
             + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
@@ -306,7 +310,7 @@ public class MixinChunkStatus {
         //}
     }
 
-    @SuppressWarnings({ "target" })
+    @SuppressWarnings("target")
     @Inject(
         method = "lambda$static$10(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Ljava/util/List;"
             + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
@@ -338,6 +342,7 @@ public class MixinChunkStatus {
 //        }
     }
 
+    @SuppressWarnings("target")
     @Inject(
         method = "lambda$static$11(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Ljava/util/List;"
             + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
@@ -370,6 +375,7 @@ public class MixinChunkStatus {
 //        }
     }
 
+    @SuppressWarnings("target")
     @Inject(
         method = "lambda$static$12(Lnet/minecraft/world/level/chunk/ChunkStatus;Ljava/util/concurrent/Executor;Lnet/minecraft/server/level/ServerLevel;"
             + "Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructureManager;"
@@ -446,6 +452,7 @@ public class MixinChunkStatus {
         cir.setReturnValue(unsafeCast(((CubicThreadedLevelLightEngine) lightEngine).lightCube((CubeAccess) chunk, flag).thenApply(Either::left)));
     }
 
+    @SuppressWarnings("target")
     @Inject(
         method = "lambda$static$15(Lnet/minecraft/world/level/chunk/ChunkStatus;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Ljava/util/List;"
             + "Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
