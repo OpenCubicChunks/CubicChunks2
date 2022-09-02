@@ -20,10 +20,10 @@ import com.mojang.math.Quaternion;
 import com.mojang.math.Transformation;
 import com.mojang.math.Vector3f;
 import com.mojang.math.Vector4f;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.UserFunction;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.StoringCubeProgressListener;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
@@ -187,7 +187,7 @@ public class CubicLevelLoadingScreen {
                                  Object2IntMap<ChunkStatus> colors) {
         float aspectRatio = Minecraft.getInstance().screen.width / (float) Minecraft.getInstance().screen.height;
 
-        float scaleWithCineSize = scale * CubeAccess.DIAMETER_IN_SECTIONS / 2.0f;
+        float scaleWithCineSize = scale * CubicConstants.DIAMETER_IN_SECTIONS / 2.0f;
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.disableTexture();
@@ -231,7 +231,7 @@ public class CubicLevelLoadingScreen {
                 int alpha = 0xB0;
                 int c = colors.getOrDefault(columnStatus, 0xFFFF00FF) | (alpha << 24);
                 drawCube(buffer, cdx - sectionRenderRadius / 2, -30, cdz - sectionRenderRadius / 2,
-                    0.12f * scale / CubeAccess.DIAMETER_IN_SECTIONS, c, EnumSet.of(Direction.UP));
+                    0.12f * scale / CubicConstants.DIAMETER_IN_SECTIONS, c, EnumSet.of(Direction.UP));
             }
         }
 

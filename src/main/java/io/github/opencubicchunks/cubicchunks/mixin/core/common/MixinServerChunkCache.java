@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.datafixers.util.Either;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
@@ -336,7 +337,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
             return NaturalSpawner.createState(spawnableChunkCount, entities, chunkGetter, localMobCapCalculator);
         }
         int naturalSpawnCountForColumns = ((CubicDistanceManager) this.distanceManager).getNaturalSpawnCubeCount()
-            * CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS / (CubicNaturalSpawner.SPAWN_RADIUS * 2 / CubeAccess.DIAMETER_IN_BLOCKS + 1);
+            * CubicConstants.DIAMETER_IN_SECTIONS * CubicConstants.DIAMETER_IN_SECTIONS / (CubicNaturalSpawner.SPAWN_RADIUS * 2 / CubicConstants.DIAMETER_IN_BLOCKS + 1);
 
         return CubicNaturalSpawner.createState(naturalSpawnCountForColumns, entities, this::getFullCube, localMobCapCalculator);
     }
@@ -363,7 +364,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
                     // TODO probably want to make sure column-based inhabited time works too
                     cube.setInhabitedTime(cube.getInhabitedTime() + timeSinceUpdate);
 
-                    if (this.level.random.nextInt(((CubicNaturalSpawner.SPAWN_RADIUS / CubeAccess.DIAMETER_IN_BLOCKS) * 2) + 1) == 0) {
+                    if (this.level.random.nextInt(((CubicNaturalSpawner.SPAWN_RADIUS / CubicConstants.DIAMETER_IN_BLOCKS) * 2) + 1) == 0) {
                         if (this.level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING) && (this.spawnEnemies || this.spawnFriendlies) &&
                                 this.level.getWorldBorder().isWithinBounds(cube.getCubePos().asChunkPos())) {
                             CubicNaturalSpawner.spawnForCube(this.level, cube, spawnState, this.spawnFriendlies, this.spawnEnemies, bl2);

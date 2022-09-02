@@ -3,6 +3,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 import java.util.Iterator;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
@@ -127,8 +128,8 @@ public abstract class MixinNaturalSpawner {
     //Called from ASM
     private static BlockPos getRandomPosWithinCube(Level level, CubeAccess cubeAccess) {
         CubePos pos = cubeAccess.getCubePos();
-        int blockX = pos.minCubeX() + level.random.nextInt(CubeAccess.DIAMETER_IN_BLOCKS);
-        int blockZ = pos.minCubeZ() + level.random.nextInt(CubeAccess.DIAMETER_IN_BLOCKS);
+        int blockX = pos.minCubeX() + level.random.nextInt(CubicConstants.DIAMETER_IN_BLOCKS);
+        int blockZ = pos.minCubeZ() + level.random.nextInt(CubicConstants.DIAMETER_IN_BLOCKS);
 
         int height = level.getHeight(Heightmap.Types.WORLD_SURFACE, blockX, blockZ) + 1; //This is wrong, we need to use the one from the BigCube(ChunkAccess)
 
@@ -138,7 +139,7 @@ public abstract class MixinNaturalSpawner {
         }
 
         if (pos.maxCubeY() <= height) {
-            int blockY = minY + level.random.nextInt(CubeAccess.DIAMETER_IN_BLOCKS);
+            int blockY = minY + level.random.nextInt(CubicConstants.DIAMETER_IN_BLOCKS);
             return new BlockPos(blockX, blockY, blockZ);
         }
 

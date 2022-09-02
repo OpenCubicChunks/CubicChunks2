@@ -12,6 +12,7 @@ import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.datafixers.DataFixer;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.config.ServerConfig;
 import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
@@ -20,7 +21,6 @@ import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.CubeProgressListener;
 import io.github.opencubicchunks.cubicchunks.utils.MutableHolderSet;
 import io.github.opencubicchunks.cubicchunks.world.ForcedCubesSaveData;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import net.minecraft.Util;
@@ -130,7 +130,7 @@ public abstract class MixinMinecraftServer implements CubicMinecraftServer {
         ServerChunkCache serverChunkCache = serverLevel.getChunkSource();
         serverChunkCache.getLightEngine().setTaskPerBatch(500);
         this.nextTickTime = Util.getMillis();
-        int radius = (int) Math.ceil(10 * (16 / (float) CubeAccess.DIAMETER_IN_BLOCKS)); //vanilla is 10, 32: 5, 64: 3
+        int radius = (int) Math.ceil(10 * (16 / (float) CubicConstants.DIAMETER_IN_BLOCKS)); //vanilla is 10, 32: 5, 64: 3
         int d = radius * 2 + 1;
         ((ServerCubeCache) serverChunkCache).addCubeRegionTicket(TicketType.START, spawnPosCube, radius + 1, Unit.INSTANCE);
 

@@ -1,12 +1,14 @@
 package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 
+import static io.github.opencubicchunks.cc_core.api.CubicConstants.DIAMETER_IN_BLOCKS;
+import static io.github.opencubicchunks.cc_core.api.CubicConstants.DIAMETER_IN_SECTIONS;
+
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.Maps;
 import io.github.opencubicchunks.cc_core.api.CubePos;
-import io.github.opencubicchunks.cc_core.config.EarlyConfig;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapSource;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
@@ -34,16 +36,6 @@ import net.minecraft.world.level.levelgen.blending.BlendingData;
 //TODO: Change most of the places where sections are accesses since they are done with the y coordinate and
 //now they must be done by all three
 public abstract class CubeAccess extends ChunkAccess implements BlockGetter, FeatureAccess, HeightmapSource {
-
-    public static final int SECTION_DIAMETER = 16;
-    public static final int DIAMETER_IN_SECTIONS = EarlyConfig.getDiameterInSections();
-    public static final int SECTION_COUNT = DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS;
-    public static final int CHUNK_COUNT = DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS;
-    public static final int DIAMETER_IN_BLOCKS = SECTION_DIAMETER * DIAMETER_IN_SECTIONS;
-    public static final int BLOCK_COUNT = DIAMETER_IN_BLOCKS * DIAMETER_IN_BLOCKS * DIAMETER_IN_BLOCKS;
-    public static final int BLOCK_COLUMNS_PER_SECTION = SECTION_DIAMETER * SECTION_DIAMETER;
-    public static final int SIZE_BITS = (int) Math.round(Math.log(DIAMETER_IN_BLOCKS) / Math.log(2.0D));
-
     protected final CubePos cubePos;
 
     //TODO: Figure out what to do with carverBiome and noiseChunk

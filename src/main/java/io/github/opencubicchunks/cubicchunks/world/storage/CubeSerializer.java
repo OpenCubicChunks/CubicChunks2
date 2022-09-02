@@ -14,6 +14,7 @@ import com.google.common.collect.Maps;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.ChunkIoMainThreadTaskUtils;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
@@ -86,7 +87,7 @@ public class CubeSerializer {
         boolean hasSkyLight = serverLevel.dimensionType().hasSkyLight();
 
         ListTag sectionsData = root.getList("sections", 10);
-        final int numSections = CubeAccess.SECTION_COUNT;
+        final int numSections = CubicConstants.SECTION_COUNT;
         LevelChunkSection[] sections = new LevelChunkSection[numSections];
 
         ChunkSource chunkSource = serverLevel.getChunkSource();
@@ -344,7 +345,7 @@ public class CubeSerializer {
         Codec<PalettedContainer<Holder<Biome>>> palettedBiomeContainerCodec = makeBiomePaletteCodec(biomeRegistry);
         boolean cubeHasLight = cube.isLightCorrect();
 
-        for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
+        for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
             LevelChunkSection section = sections[i];
 
             DataLayer blockData = data != null ? data.blockLight.get(Coords.sectionPosByIndex(pos, i)) :

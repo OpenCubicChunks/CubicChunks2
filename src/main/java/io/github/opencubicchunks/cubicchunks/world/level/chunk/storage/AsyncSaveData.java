@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
@@ -18,7 +19,6 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.DataLayer;
 
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class AsyncSaveData {
 
     public final HashMap<SectionPos, DataLayer> blockLight;
@@ -27,9 +27,9 @@ public class AsyncSaveData {
     public final Map<BlockPos, CompoundTag> blockEntitiesDeferred;
 
     public AsyncSaveData(ServerLevel level, CubeAccess cube) {
-        this.blockLight = new HashMap<>(CubeAccess.SECTION_COUNT, 1f);
-        this.skyLight = new HashMap<>(CubeAccess.SECTION_COUNT, 1f);
-        for (int i = 0; i < CubeAccess.SECTION_COUNT; i++) {
+        this.blockLight = new HashMap<>(CubicConstants.SECTION_COUNT, 1f);
+        this.skyLight = new HashMap<>(CubicConstants.SECTION_COUNT, 1f);
+        for (int i = 0; i < CubicConstants.SECTION_COUNT; i++) {
             final SectionPos sectionPos = Coords.sectionPosByIndex(cube.getCubePos(), i);
             DataLayer blockData = level.getChunkSource().getLightEngine().getLayerListener(LightLayer.BLOCK).getDataLayerData(sectionPos);
             DataLayer skyData = level.getChunkSource().getLightEngine().getLayerListener(LightLayer.SKY).getDataLayerData(sectionPos);

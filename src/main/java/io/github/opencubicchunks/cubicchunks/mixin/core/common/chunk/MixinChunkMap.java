@@ -33,6 +33,7 @@ import com.google.common.collect.Queues;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.datafixers.util.Either;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.ChunkIoMainThreadTaskUtils;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.utils.ExecutorUtils;
@@ -519,8 +520,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     this.lightEngine.tryScheduleUpdate();
                     CubePos pos = CubePos.from(cubePos);
 
-                    for (int localX = 0; localX < CubeAccess.DIAMETER_IN_SECTIONS; localX++) {
-                        for (int localZ = 0; localZ < CubeAccess.DIAMETER_IN_SECTIONS; localZ++) {
+                    for (int localX = 0; localX < CubicConstants.DIAMETER_IN_SECTIONS; localX++) {
+                        for (int localZ = 0; localZ < CubicConstants.DIAMETER_IN_SECTIONS; localZ++) {
                             long chunkPos = pos.asChunkPos(localX, localZ).toLong();
 
                             //Remove cubic COLUMN tickets
@@ -746,8 +747,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
         CompletableFuture<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> nestedChainedFuture = CompletableFuture.supplyAsync(() -> {
             CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> chainedFutures = null;
-            for (int localX = 0; localX < CubeAccess.DIAMETER_IN_SECTIONS; localX++) {
-                for (int localZ = 0; localZ < CubeAccess.DIAMETER_IN_SECTIONS; localZ++) {
+            for (int localX = 0; localX < CubicConstants.DIAMETER_IN_SECTIONS; localX++) {
+                for (int localZ = 0; localZ < CubicConstants.DIAMETER_IN_SECTIONS; localZ++) {
                     ChunkPos chunkPos = cubePos.asChunkPos(localX, localZ);
                     CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> columnFutureForCube =
                         ((ServerCubeCache) serverChunkCache).getColumnFutureForCube(cubePos, chunkPos.x, chunkPos.z, targetStatus, true);
@@ -921,8 +922,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                 this.getPlayers(cubePos, false).forEach((serverPlayerEntity) -> {
                     this.playerLoadedCube(serverPlayerEntity, objects, cube);
                 });
-                for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {
-                    for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
+                for (int dx = 0; dx < CubicConstants.DIAMETER_IN_SECTIONS; dx++) {
+                    for (int dz = 0; dz < CubicConstants.DIAMETER_IN_SECTIONS; dz++) {
                         ChunkPos pos = cubePos.asChunkPos(dx, dz);
                         this.getPlayers(pos, false).forEach(player -> {
                             this.updatePlayerHeightmap(player, pos);
@@ -1280,8 +1281,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     LevelCube cube = ((CubeHolder) chunkholder).getTickingCube();
                     if (cube != null) {
                         this.playerLoadedCube(player, packetCache, cube);
-                        for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {
-                            for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
+                        for (int dx = 0; dx < CubicConstants.DIAMETER_IN_SECTIONS; dx++) {
+                            for (int dz = 0; dz < CubicConstants.DIAMETER_IN_SECTIONS; dz++) {
                                 ChunkPos pos = cubePosIn.asChunkPos(dx, dz);
                                 this.getPlayers(pos, false).forEach(p -> {
                                     this.updatePlayerHeightmap(p, pos);

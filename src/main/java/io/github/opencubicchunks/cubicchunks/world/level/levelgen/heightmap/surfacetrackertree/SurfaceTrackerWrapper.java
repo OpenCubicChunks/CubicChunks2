@@ -7,7 +7,6 @@ import static io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertr
 
 import java.util.function.IntPredicate;
 
-
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapSource;

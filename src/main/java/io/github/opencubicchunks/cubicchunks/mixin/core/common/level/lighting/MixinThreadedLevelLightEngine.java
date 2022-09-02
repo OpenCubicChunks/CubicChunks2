@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 
 import com.mojang.datafixers.util.Pair;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
@@ -100,11 +101,11 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
             super.retainData(cubePos, false);
             super.enableLightSources(cubePos, false);
 
-            for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
+            for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
                 super.queueSectionData(LightLayer.BLOCK, Coords.sectionPosByIndex(cubePos, i), (DataLayer) null, true);
                 super.queueSectionData(LightLayer.SKY, Coords.sectionPosByIndex(cubePos, i), (DataLayer) null, true);
             }
-            for (int j = 0; j < CubeAccess.SECTION_COUNT; ++j) {
+            for (int j = 0; j < CubicConstants.SECTION_COUNT; ++j) {
                 super.updateSectionStatus(Coords.sectionPosByIndex(cubePos, j), true);
             }
         }, () -> "setCubeStatusEmpty " + cubePos + " " + true));
@@ -116,7 +117,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
         CubePos cubePos = cube.getCubePos();
         cube.setLightCorrect(false);
         this.addTask(cubePos.getX(), cubePos.getY(), cubePos.getZ(), ThreadedLevelLightEngine.TaskType.PRE_UPDATE, Util.name(() -> {
-            for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
+            for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
                 LevelChunkSection chunksection = cube.getSections()[i];
                 if (!chunksection.hasOnlyAir()) {
                     super.updateSectionStatus(Coords.sectionPosByIndex(cubePos, i), false);

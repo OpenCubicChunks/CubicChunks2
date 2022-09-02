@@ -3,8 +3,8 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.progress;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.CubeProgressListener;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.server.level.progress.LoggerChunkProgressListener;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
@@ -35,7 +35,7 @@ public abstract class MixinLoggerChunkProgressListener implements CubeProgressLi
         // Except we subtract one before the ceil and readd it after, for... some reason
         // Multiply by two to convert cube radius -> diameter,
         // And then add one for the center cube
-        int ccCubeRadius = 1 + (int) Math.ceil((vanillaSpawnRadius - 1) / ((float) CubeAccess.DIAMETER_IN_SECTIONS));
+        int ccCubeRadius = 1 + (int) Math.ceil((vanillaSpawnRadius - 1) / ((float) CubicConstants.DIAMETER_IN_SECTIONS));
         int ccCubeDiameter = ccCubeRadius * 2 + 1;
         totalCubes = ccCubeDiameter * ccCubeDiameter * ccCubeDiameter;
     }

@@ -3,9 +3,9 @@ package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.sur
 import static io.github.opencubicchunks.cc_core.utils.Coords.blockToCube;
 import static io.github.opencubicchunks.cc_core.utils.Coords.blockToLocal;
 
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
@@ -25,7 +25,7 @@ public class LightSurfaceTrackerWrapper extends SurfaceTrackerWrapper {
             if (leaf != null) {
                 leaf.markDirty(columnLocalX, columnLocalZ);
             }
-        } else if (relY == CubeAccess.DIAMETER_IN_BLOCKS - 1) {
+        } else if (relY == CubicConstants.DIAMETER_IN_BLOCKS - 1) {
             SurfaceTrackerLeaf leaf = surfaceTracker.getLeaf(blockToCube(globalY + 1));
             if (leaf != null) {
                 leaf.markDirty(columnLocalX, columnLocalZ);

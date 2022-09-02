@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.DummyHeightmap;
@@ -54,7 +55,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
             delegate.getSections(),
             (ProtoChunkTicks<Block>) delegate.getBlockTicks(),
             (ProtoChunkTicks<Fluid>) delegate.getFluidTicks(),
-            new ProtoCube.FakeSectionCount(delegate.getCubePos().getY(), delegate, CubeAccess.SECTION_COUNT),
+            new ProtoCube.FakeSectionCount(delegate.getCubePos().getY(), delegate, CubicConstants.SECTION_COUNT),
             biomeRegistry,
             null
         );
@@ -78,7 +79,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
         this.columnX = newColumnX;
         this.columnZ = newColumnZ;
 
-        for (int relativeSectionY = 0; relativeSectionY < CubeAccess.DIAMETER_IN_SECTIONS * 2; relativeSectionY++) {
+        for (int relativeSectionY = 0; relativeSectionY < CubicConstants.DIAMETER_IN_SECTIONS * 2; relativeSectionY++) {
             int sectionY = relativeSectionY + ((CubeAccess) delegates[0]).getCubePos().asSectionPos().getY();
             CubeAccess delegateCube = (CubeAccess) getDelegateFromSectionY(sectionY);
             assert delegateCube != null;
@@ -87,7 +88,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
     }
 
     public void applySections() {
-        for (int relativeSectionY = 0; relativeSectionY < CubeAccess.DIAMETER_IN_SECTIONS * 2; relativeSectionY++) {
+        for (int relativeSectionY = 0; relativeSectionY < CubicConstants.DIAMETER_IN_SECTIONS * 2; relativeSectionY++) {
             int sectionY = relativeSectionY + ((CubeAccess) delegates[0]).getCubePos().asSectionPos().getY();
             int idx = getSectionIndex(Coords.sectionToMinBlock(sectionY));
             CubeAccess delegateCube = (CubeAccess) getDelegateFromSectionY(sectionY);
@@ -129,7 +130,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
     }
 
     @Override public int getSectionIndex(int y) {
-        return Coords.blockToCubeLocalSection(y) + CubeAccess.DIAMETER_IN_SECTIONS * getDelegateIndex(Coords.blockToCube(y));
+        return Coords.blockToCubeLocalSection(y) + CubicConstants.DIAMETER_IN_SECTIONS * getDelegateIndex(Coords.blockToCube(y));
     }
 
     @Override public int getMinBuildHeight() {
@@ -137,13 +138,13 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
     }
 
     @Override public int getSectionYFromSectionIndex(int sectionIndex) {
-        int delegateIDX = sectionIndex / CubeAccess.DIAMETER_IN_SECTIONS;
-        int cubeSectionIDX = sectionIndex % CubeAccess.DIAMETER_IN_SECTIONS;
+        int delegateIDX = sectionIndex / CubicConstants.DIAMETER_IN_SECTIONS;
+        int cubeSectionIDX = sectionIndex % CubicConstants.DIAMETER_IN_SECTIONS;
         return getDelegateByIndex(delegateIDX).getCubePos().asSectionPos().getY() + cubeSectionIDX;
     }
 
     @Override public int getHeight() {
-        return this.needsExtraHeight ? CubeAccess.DIAMETER_IN_BLOCKS + 8 : CubeAccess.DIAMETER_IN_BLOCKS;
+        return this.needsExtraHeight ? CubicConstants.DIAMETER_IN_BLOCKS + 8 : CubicConstants.DIAMETER_IN_BLOCKS;
     }
 
     @Override public WorldStyle worldStyle() {
@@ -295,7 +296,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
 
         private HeightAccessor(ChunkAccess cube) {
             this.minBuildHeight = ((CubeAccess) cube).getCubePos().minCubeY();
-            this.height = CubeAccess.DIAMETER_IN_BLOCKS * 2;
+            this.height = CubicConstants.DIAMETER_IN_BLOCKS * 2;
             isCubic = ((CubicLevelHeightAccessor) cube).isCubic();
             generates2DChunks = ((CubicLevelHeightAccessor) cube).generates2DChunks();
             worldStyle = ((CubicLevelHeightAccessor) cube).worldStyle();

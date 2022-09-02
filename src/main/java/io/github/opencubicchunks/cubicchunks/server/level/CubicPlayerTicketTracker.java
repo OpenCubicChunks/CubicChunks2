@@ -1,9 +1,9 @@
 package io.github.opencubicchunks.cubicchunks.server.level;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.TicketAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import it.unimi.dsi.fastutil.longs.Long2ByteMap;
 import it.unimi.dsi.fastutil.longs.Long2IntMap;
 import it.unimi.dsi.fastutil.longs.Long2IntMaps;
@@ -26,9 +26,9 @@ public class CubicPlayerTicketTracker extends FixedPlayerDistanceCubeTracker {
 
     public CubicPlayerTicketTracker(CubicDistanceManager cubicDistanceManager, int i) {
         //possibly make this a constant - there is only ever one playercubeticketracker at a time, so this should be fine.
-        super(cubicDistanceManager, (32 / CubeAccess.DIAMETER_IN_SECTIONS) + 1);
-        horizontalGraphGroup = new HorizontalGraphGroup(cubicDistanceManager, (32 / CubeAccess.DIAMETER_IN_SECTIONS) + 1, this);
-        verticalGraphGroup = new VerticalGraphGroup(cubicDistanceManager, (32 / CubeAccess.DIAMETER_IN_SECTIONS) + 1, this);
+        super(cubicDistanceManager, (32 / CubicConstants.DIAMETER_IN_SECTIONS) + 1);
+        horizontalGraphGroup = new HorizontalGraphGroup(cubicDistanceManager, (32 / CubicConstants.DIAMETER_IN_SECTIONS) + 1, this);
+        verticalGraphGroup = new VerticalGraphGroup(cubicDistanceManager, (32 / CubicConstants.DIAMETER_IN_SECTIONS) + 1, this);
         this.cubicDistanceManager = cubicDistanceManager;
         this.horizontalViewDistance = 0;
         this.verticalViewDistance = 0;

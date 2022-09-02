@@ -16,9 +16,9 @@ import com.mojang.serialization.Dynamic;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.OptionalDynamic;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicSectionStorage;
 import io.github.opencubicchunks.cubicchunks.world.storage.RegionCubeIO;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -139,7 +139,7 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
 
     private <T> void readCube(CubePos cubePos, DynamicOps<T> dynamicOps, @Nullable T data) {
         if (data == null) {
-            for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
+            for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
                 SectionPos sectionPos = Coords.sectionPosByIndex(cubePos, i);
                 long sectionLong = sectionPos.asLong();
                 this.storage.put(sectionLong, Optional.empty());
@@ -152,7 +152,7 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
             Dynamic<T> dynamic2 = this.fixerUpper.update(this.type.getType(), dynamic, j, k);
             OptionalDynamic<T> optionalDynamic = dynamic2.get("Sections");
 
-            for (int l = 0; l < CubeAccess.SECTION_COUNT; ++l) {
+            for (int l = 0; l < CubicConstants.SECTION_COUNT; ++l) {
                 SectionPos sectionPos = Coords.sectionPosByIndex(cubePos, l);
                 long sectionLong = sectionPos.asLong();
                 Optional<R> optional = optionalDynamic.get(Integer.toString(l)).result().flatMap((dynamicx) -> (this.codec.apply(() -> {
@@ -184,7 +184,7 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
     private <T> Dynamic<T> writeCube(CubePos cubePos, DynamicOps<T> dynamicOps) {
         Map<T, T> map = Maps.newHashMap();
 
-        for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
+        for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
             SectionPos sectionPos = Coords.sectionPosByIndex(cubePos, i);
             long sectionLong = sectionPos.asLong();
             this.dirty.remove(sectionLong);
@@ -207,7 +207,7 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
 
     public void flush(CubePos cubePos) {
         if (!this.dirty.isEmpty()) {
-            for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
+            for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
                 SectionPos sectionPos = Coords.sectionPosByIndex(cubePos, i);
                 long sectionLong = sectionPos.asLong();
                 if (this.dirty.contains(sectionLong)) {
@@ -220,7 +220,7 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
     }
 
     @Override public void updateCube(CubePos pos, CompoundTag tag) {
-        for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
+        for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
             SectionPos sectionPos = Coords.sectionPosByIndex(pos, i);
             if (this.get(sectionPos.asLong()) != null) {
                 readCube(pos, NbtOps.INSTANCE, tag);

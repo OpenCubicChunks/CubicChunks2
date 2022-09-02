@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 
 import com.mojang.datafixers.util.Pair;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.utils.Utils;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
@@ -300,14 +301,14 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
 
         BoundingBox cubeBounds = new BoundingBox(
             blockX, blockY, blockZ,
-            blockX + CubeAccess.DIAMETER_IN_BLOCKS - 1,
-            blockY + CubeAccess.DIAMETER_IN_BLOCKS - 1,
-            blockZ + CubeAccess.DIAMETER_IN_BLOCKS - 1
+            blockX + CubicConstants.DIAMETER_IN_BLOCKS - 1,
+            blockY + CubicConstants.DIAMETER_IN_BLOCKS - 1,
+            blockZ + CubicConstants.DIAMETER_IN_BLOCKS - 1
         );
 
-        for (int x = cubeX - 8 / CubeAccess.DIAMETER_IN_SECTIONS; x <= cubeX + 8 / CubeAccess.DIAMETER_IN_SECTIONS; ++x) {
-            for (int y = cubeY - 8 / CubeAccess.DIAMETER_IN_SECTIONS; y <= cubeY + 8 / CubeAccess.DIAMETER_IN_SECTIONS; ++y) {
-                for (int z = cubeZ - 8 / CubeAccess.DIAMETER_IN_SECTIONS; z <= cubeZ + 8 / CubeAccess.DIAMETER_IN_SECTIONS; ++z) {
+        for (int x = cubeX - 8 / CubicConstants.DIAMETER_IN_SECTIONS; x <= cubeX + 8 / CubicConstants.DIAMETER_IN_SECTIONS; ++x) {
+            for (int y = cubeY - 8 / CubicConstants.DIAMETER_IN_SECTIONS; y <= cubeY + 8 / CubicConstants.DIAMETER_IN_SECTIONS; ++y) {
+                for (int z = cubeZ - 8 / CubicConstants.DIAMETER_IN_SECTIONS; z <= cubeZ + 8 / CubicConstants.DIAMETER_IN_SECTIONS; ++z) {
                     long cubePosAsLong = CubePos.asLong(x, y, z);
 
                     for (StructureStart structureStart : world.getCube(CubePos.of(x, y, z)).getAllStarts().values()) {
@@ -528,8 +529,8 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         //Get each individual column from a given cube no matter the size. Where y height is the same per column.
         //Feed the given columnMinPos into the feature decorators.
         int cubeY = cube.getCubePos().getY();
-        for (int columnX = 0; columnX < CubeAccess.DIAMETER_IN_SECTIONS; columnX++) {
-            for (int columnZ = 0; columnZ < CubeAccess.DIAMETER_IN_SECTIONS; columnZ++) {
+        for (int columnX = 0; columnX < CubicConstants.DIAMETER_IN_SECTIONS; columnX++) {
+            for (int columnZ = 0; columnZ < CubicConstants.DIAMETER_IN_SECTIONS; columnZ++) {
                 cube.moveColumns(columnX, columnZ);
                 if (CubicWorldGenUtils.areSectionsEmpty(cubeY, cube.getPos(), cube)) {
                     continue;
@@ -541,7 +542,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
 
                 Holder<Biome> biome = ((ChunkGenerator) (Object) this).getBiomeSource().getNoiseBiome(
                     QuartPos.fromSection(cubeToSection(mainCubeX, columnX)) + BiomeManagerAccess.getChunkCenterQuart(),
-                    QuartPos.fromSection(cubeToSection(mainCubeY, 0)) + BiomeManagerAccess.getChunkCenterQuart() * CubeAccess.DIAMETER_IN_SECTIONS,
+                    QuartPos.fromSection(cubeToSection(mainCubeY, 0)) + BiomeManagerAccess.getChunkCenterQuart() * CubicConstants.DIAMETER_IN_SECTIONS,
                     QuartPos.fromSection(cubeToSection(mainCubeZ, columnZ)) + BiomeManagerAccess.getChunkCenterQuart(),
                     this.climateSampler()
                 );

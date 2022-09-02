@@ -3,7 +3,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.client.level;
 import java.util.function.Supplier;
 
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor.WorldStyle;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
 import io.github.opencubicchunks.cubicchunks.client.multiplayer.CubicClientLevel;

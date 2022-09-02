@@ -11,9 +11,9 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Matrix4f;
 import com.mojang.math.Vector3f;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.client.gui.screens.CubicLevelLoadingScreen;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.client.Camera;
@@ -64,7 +64,7 @@ public class MixinLevelRenderer {
         );
 
         int renderRadius = 5;
-        int chunkRenderRadius = renderRadius * CubeAccess.DIAMETER_IN_SECTIONS;
+        int chunkRenderRadius = renderRadius * CubicConstants.DIAMETER_IN_SECTIONS;
         Long2ObjectLinkedOpenHashMap<ChunkHolder> loadedColumns = getField(ChunkMap.class, overworld.getChunkSource().chunkMap, "updatingChunkMap");
 
         Object[] data = getField(Long2ObjectLinkedOpenHashMap.class, loadedColumns, "value");

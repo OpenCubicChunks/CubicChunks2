@@ -4,6 +4,7 @@ import java.util.Random;
 
 import com.mojang.serialization.Codec;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
@@ -41,9 +42,9 @@ public class LavaLeakFix extends Feature<NoneFeatureConfiguration> {
         ChunkGenerator generator = context.chunkGenerator();
 
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
-        for (int localY = 0; localY < CubeAccess.DIAMETER_IN_BLOCKS; localY++) {
-            for (int localX = 0; localX < CubeAccess.DIAMETER_IN_BLOCKS; localX++) {
-                for (int localZ = 0; localZ < CubeAccess.DIAMETER_IN_BLOCKS; localZ++) {
+        for (int localY = 0; localY < CubicConstants.DIAMETER_IN_BLOCKS; localY++) {
+            for (int localX = 0; localX < CubicConstants.DIAMETER_IN_BLOCKS; localX++) {
+                for (int localZ = 0; localZ < CubicConstants.DIAMETER_IN_BLOCKS; localZ++) {
                     mutable.set(localX, localY, localZ);
                     if (cube.getBlockState(new BlockPos(localX, localY, localZ)).getBlock() != Blocks.LAVA) {
                         continue;

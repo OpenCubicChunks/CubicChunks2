@@ -1,5 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.network;
 
+import static io.github.opencubicchunks.cc_core.api.CubicConstants.DIAMETER_IN_SECTIONS;
 import static io.github.opencubicchunks.cc_core.utils.Coords.cubeToSection;
 
 import java.util.ArrayList;
@@ -13,7 +14,6 @@ import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.utils.MathUtil;
 import io.github.opencubicchunks.cubicchunks.client.multiplayer.ClientCubeCache;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -29,7 +29,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 
 public class PacketCubes {
     // vanilla has max chunk size of 2MB, it works out to be 128kB for a 32^3 cube
-    private static final int MAX_CUBE_SIZE = (CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS) * 128 * 1024;
+    private static final int MAX_CUBE_SIZE = (DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS) * 128 * 1024;
 
     private final CubePos[] cubePositions;
     private final LevelCube[] cubes;
@@ -150,9 +150,9 @@ public class PacketCubes {
                     }
                 );
 
-                for (int dx = 0; dx < CubeAccess.DIAMETER_IN_SECTIONS; dx++) {
-                    for (int dy = 0; dy < CubeAccess.DIAMETER_IN_SECTIONS; dy++) {
-                        for (int dz = 0; dz < CubeAccess.DIAMETER_IN_SECTIONS; dz++) {
+                for (int dx = 0; dx < DIAMETER_IN_SECTIONS; dx++) {
+                    for (int dy = 0; dy < DIAMETER_IN_SECTIONS; dy++) {
+                        for (int dz = 0; dz < DIAMETER_IN_SECTIONS; dz++) {
                             clientLevel.setSectionDirtyWithNeighbors(
                                 cubeToSection(x, dx),
                                 cubeToSection(y, dy),

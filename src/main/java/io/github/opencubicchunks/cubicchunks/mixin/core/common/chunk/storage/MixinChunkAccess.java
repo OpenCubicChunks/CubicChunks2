@@ -1,7 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk.storage;
 
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
@@ -61,7 +61,7 @@ public class MixinChunkAccess implements CubicLevelHeightAccessor {
         if (accessor.getMaxBuildHeight() > 2048) {
             return 16;
         }
-        return Math.min(CubeAccess.SECTION_COUNT * 2, accessor.getSectionsCount()); // TODO: properly handle ProtoChunk
+        return Math.min(CubicConstants.SECTION_COUNT * 2, accessor.getSectionsCount()); // TODO: properly handle ProtoChunk
     }
 
     @Inject(method = "getHeight()I", at = @At("HEAD"), cancellable = true)

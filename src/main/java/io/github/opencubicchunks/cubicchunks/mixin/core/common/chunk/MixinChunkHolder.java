@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 
 import com.mojang.datafixers.util.Either;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkMapAccess;
@@ -82,7 +83,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
 
     private CubePos cubePos; // set from ASM
 
-    private final ShortArraySet[] changedLocalBlocks = new ShortArraySet[CubeAccess.SECTION_COUNT];
+    private final ShortArraySet[] changedLocalBlocks = new ShortArraySet[CubicConstants.SECTION_COUNT];
 
     //@formatter:off SPLITTING THIS LINE BREAKS MIXIN https://github.com/SpongePowered/Mixin/issues/418
     @SuppressWarnings("LineLengthCode") private final AtomicReferenceArray<ArrayList<BiConsumer<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>, Throwable>>> listenerLists = new AtomicReferenceArray<>(ChunkStatus.getStatusList().size());

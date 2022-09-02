@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import javax.annotation.Nullable;
 
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
@@ -63,7 +63,7 @@ public final class CubicAquifer implements Aquifer {
         this.minGridY = gridY(minYInput) - 1;
         this.minGridZ = gridZ(chunkPos.getMinBlockZ()) - 1;
         this.minY = minYInput;
-        this.sizeY = CubeAccess.DIAMETER_IN_BLOCKS;
+        this.sizeY = CubicConstants.DIAMETER_IN_BLOCKS;
 
         typeToBlock = new BlockState[] {
             waterState,

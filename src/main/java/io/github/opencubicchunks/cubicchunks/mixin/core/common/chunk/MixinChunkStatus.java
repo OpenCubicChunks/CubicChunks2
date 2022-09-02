@@ -10,6 +10,7 @@ import java.util.function.Function;
 
 import com.mojang.datafixers.util.Either;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
@@ -166,8 +167,8 @@ public class MixinChunkStatus {
             CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> chainedNoiseFutures = null;
 
 
-            for (int columnX = 0; columnX < CubeAccess.DIAMETER_IN_SECTIONS; columnX++) {
-                for (int columnZ = 0; columnZ < CubeAccess.DIAMETER_IN_SECTIONS; columnZ++) {
+            for (int columnX = 0; columnX < CubicConstants.DIAMETER_IN_SECTIONS; columnX++) {
+                for (int columnZ = 0; columnZ < CubicConstants.DIAMETER_IN_SECTIONS; columnZ++) {
                     cube.moveColumns(columnX, columnZ);
                     CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> eitherCompletableFuture =
                         chunkGenerator.createBiomes(level.registryAccess().registryOrThrow(BIOME_REGISTRY), executor, Blender.empty(),
@@ -224,8 +225,8 @@ public class MixinChunkStatus {
 
             CompletableFuture<ChunkAccess> chainedNoiseFutures = null;
 
-            for (int columnX = 0; columnX < CubeAccess.DIAMETER_IN_SECTIONS; columnX++) {
-                for (int columnZ = 0; columnZ < CubeAccess.DIAMETER_IN_SECTIONS; columnZ++) {
+            for (int columnX = 0; columnX < CubicConstants.DIAMETER_IN_SECTIONS; columnX++) {
+                for (int columnZ = 0; columnZ < CubicConstants.DIAMETER_IN_SECTIONS; columnZ++) {
                     cubeAbove.moveColumns(columnX, columnZ);
                     if (chunk instanceof ProtoCube) {
                         ((ProtoCube) chunk).moveColumns(columnX, columnZ);
@@ -280,14 +281,14 @@ public class MixinChunkStatus {
 
     private static boolean areSectionsEmpty(int cubeY, ChunkPos pos, CubeAccess cube) {
         int emptySections = 0;
-        for (int yScan = 0; yScan < CubeAccess.DIAMETER_IN_SECTIONS; yScan++) {
+        for (int yScan = 0; yScan < CubicConstants.DIAMETER_IN_SECTIONS; yScan++) {
             int sectionY = Coords.cubeToSection(cubeY, yScan);
             int sectionIndex = Coords.sectionToIndex(pos.x, sectionY, pos.z);
             LevelChunkSection cubeSection = cube.getSections()[sectionIndex];
             if (cubeSection.hasOnlyAir()) {
                 emptySections++;
             }
-            if (emptySections == CubeAccess.DIAMETER_IN_SECTIONS) {
+            if (emptySections == CubicConstants.DIAMETER_IN_SECTIONS) {
                 return true;
             }
         }
@@ -468,8 +469,8 @@ public class MixinChunkStatus {
             int cubeY = ((CubeAccess) chunk).getCubePos().getY();
 
             CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(level, unsafeCast(neighbors), status, chunk, -1);
-            for (int columnX = 0; columnX < CubeAccess.DIAMETER_IN_SECTIONS; columnX++) {
-                for (int columnZ = 0; columnZ < CubeAccess.DIAMETER_IN_SECTIONS; columnZ++) {
+            for (int columnX = 0; columnX < CubicConstants.DIAMETER_IN_SECTIONS; columnX++) {
+                for (int columnZ = 0; columnZ < CubicConstants.DIAMETER_IN_SECTIONS; columnZ++) {
                     cubeWorldGenRegion.moveCenterCubeChunkPos(columnX, columnZ);
                     if (CubicWorldGenUtils.areSectionsEmpty(cubeY, chunk.getPos(), (CubeAccess) chunk)) {
                         continue;

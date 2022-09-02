@@ -7,9 +7,9 @@ import java.util.stream.LongStream;
 import java.util.stream.StreamSupport;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import it.unimi.dsi.fastutil.longs.LongAVLTreeSet;
 import it.unimi.dsi.fastutil.longs.LongSortedSet;
 import net.minecraft.core.SectionPos;
@@ -69,9 +69,9 @@ public abstract class MixinEntitySectionStorage<T extends EntityAccess> implemen
 
         LongSortedSet set = new LongAVLTreeSet();
 
-        for (int relX = 0; relX < LevelCube.DIAMETER_IN_SECTIONS; relX++) {
-            for (int relZ = 0; relZ < LevelCube.DIAMETER_IN_SECTIONS; relZ++) {
-                for (int relY = 0; relY < LevelCube.DIAMETER_IN_SECTIONS; relY++) {
+        for (int relX = 0; relX < CubicConstants.DIAMETER_IN_SECTIONS; relX++) {
+            for (int relZ = 0; relZ < CubicConstants.DIAMETER_IN_SECTIONS; relZ++) {
+                for (int relY = 0; relY < CubicConstants.DIAMETER_IN_SECTIONS; relY++) {
 
                     long sectionPos = SectionPos.asLong(sectionX + relX, sectionY + relY, sectionZ + relZ);
                     if (this.sectionIds.contains(sectionPos)) {

@@ -7,8 +7,8 @@ import java.util.stream.Stream;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
@@ -45,10 +45,10 @@ public class CubicLakePlacementModifier extends PlacementModifier {
     public Stream<BlockPos> getPositions(PlacementContext placementContext, Random random, BlockPos blockPos) {
         List<BlockPos> positions = new ArrayList<>();
 
-        for (int i = 0; i < CubeAccess.DIAMETER_IN_SECTIONS; i++) {
+        for (int i = 0; i < CubicConstants.DIAMETER_IN_SECTIONS; i++) {
 
             int x = blockPos.getX() + random.nextInt(16);
-            int y = blockPos.getY() + random.nextInt(CubeAccess.DIAMETER_IN_BLOCKS);
+            int y = blockPos.getY() + random.nextInt(CubicConstants.DIAMETER_IN_BLOCKS);
             int z = blockPos.getZ() + random.nextInt(16);
             int surfaceHeight = placementContext.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z);
 
@@ -56,7 +56,7 @@ public class CubicLakePlacementModifier extends PlacementModifier {
                 continue;
             }
 
-            if (surfaceHeight >= blockPos.getY() + CubeAccess.DIAMETER_IN_BLOCKS) {
+            if (surfaceHeight >= blockPos.getY() + CubicConstants.DIAMETER_IN_BLOCKS) {
                 float probability = this.surfaceProbability.getValue(surfaceHeight);
                 if (random.nextFloat() < probability) {
                     positions.add(new BlockPos(x, surfaceHeight, z));

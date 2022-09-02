@@ -2,6 +2,7 @@ package io.github.opencubicchunks.cubicchunks;
 
 import java.lang.reflect.InvocationTargetException;
 
+import io.github.opencubicchunks.cc_core.CubicChunksBase;
 import io.github.opencubicchunks.cc_core.config.EarlyConfig;
 import io.github.opencubicchunks.cubicchunks.config.CommonConfig;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.StripedBiomeSource;
@@ -19,7 +20,7 @@ import net.minecraft.server.level.ChunkMap;
  * Requires Mixin BootStrap in order to use in forge.
  */
 // The value here should match an entry in the META-INF/mods.toml file
-public class CubicChunks extends io.github.opencubicchunks.cc_core.CubicChunks implements ModInitializer {
+public class CubicChunks extends CubicChunksBase implements ModInitializer {
     protected static final CommonConfig CONFIG = CommonConfig.getConfig();
 
     public CubicChunks() {

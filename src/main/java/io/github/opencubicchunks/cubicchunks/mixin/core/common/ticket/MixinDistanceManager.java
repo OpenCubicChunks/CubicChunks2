@@ -8,6 +8,7 @@ import java.util.concurrent.Executor;
 import com.google.common.collect.ImmutableList;
 import com.mojang.datafixers.util.Either;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.utils.MathUtil;
 import io.github.opencubicchunks.cubicchunks.chunk.VerticalViewDistanceListener;
@@ -21,7 +22,6 @@ import io.github.opencubicchunks.cubicchunks.server.level.CubicDistanceManager;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicPlayerTicketTracker;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType;
 import io.github.opencubicchunks.cubicchunks.server.level.FixedPlayerDistanceCubeTracker;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -61,8 +61,8 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
     private final LongSet cubeTicketsToRelease = new LongOpenHashSet();
 
     private final CubeTicketTracker cubeTicketTracker = new CubeTicketTracker(this);
-    private final FixedPlayerDistanceCubeTracker naturalSpawnCubeCounter = new FixedPlayerDistanceCubeTracker(this, 8 / CubeAccess.DIAMETER_IN_SECTIONS);
-    private final CubicPlayerTicketTracker cubicPlayerTicketManager = new CubicPlayerTicketTracker(this, MathUtil.ceilDiv(33, CubeAccess.DIAMETER_IN_SECTIONS));
+    private final FixedPlayerDistanceCubeTracker naturalSpawnCubeCounter = new FixedPlayerDistanceCubeTracker(this, 8 / CubicConstants.DIAMETER_IN_SECTIONS);
+    private final CubicPlayerTicketTracker cubicPlayerTicketManager = new CubicPlayerTicketTracker(this, MathUtil.ceilDiv(33, CubicConstants.DIAMETER_IN_SECTIONS));
     private CubeTaskPriorityQueueSorter cubeTicketThrottler;
     private ProcessorHandle<CubeTaskPriorityQueueSorter.FunctionEntry<Runnable>> cubeTicketThrottlerInput;
     private ProcessorHandle<CubeTaskPriorityQueueSorter.RunnableEntry> cubeTicketThrottlerReleaser;
@@ -91,8 +91,8 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
 
         // force a ticket on the cube's columns
         CubePos cubePos = CubePos.from(cubePosIn);
-        for (int localX = 0; localX < CubeAccess.DIAMETER_IN_SECTIONS; localX++) {
-            for (int localZ = 0; localZ < CubeAccess.DIAMETER_IN_SECTIONS; localZ++) {
+        for (int localX = 0; localX < CubicConstants.DIAMETER_IN_SECTIONS; localX++) {
+            for (int localZ = 0; localZ < CubicConstants.DIAMETER_IN_SECTIONS; localZ++) {
                 //do not need to handle region tickets due to the additional CCColumn tickets added in cube generation stages
                 addTicket(CubePos.asChunkPosLong(cubePosIn, localX, localZ), TicketAccess.createNew(CubicTicketType.COLUMN, ticketIn.getTicketLevel(), cubePos));
             }
