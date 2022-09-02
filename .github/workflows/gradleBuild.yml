@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'MC_1.17'
+      - 'MC_1.18'
 
 jobs:
   build:
