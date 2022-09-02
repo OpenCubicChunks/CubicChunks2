@@ -72,10 +72,10 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     @Shadow @Final private static List<ChunkStatus> CHUNK_STATUSES;
 
     @Shadow @Final public ChunkMap chunkMap;
-    @Shadow @Final private ServerLevel level;
+    @Shadow @Final ServerLevel level;
+    @Shadow @Final Thread mainThread;
     @Shadow @Final private DistanceManager distanceManager;
     @Shadow @Final private ServerChunkCache.MainThreadExecutor mainThreadProcessor;
-    @Shadow @Final private Thread mainThread;
 
     @Shadow private boolean spawnEnemies;
     @Shadow private boolean spawnFriendlies;
@@ -341,6 +341,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
         return CubicNaturalSpawner.createState(naturalSpawnCountForColumns, entities, this::getFullCube, localMobCapCalculator);
     }
 
+    @SuppressWarnings("InvalidInjectorMethodSignature")
     @Inject(method = "tickChunks", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;getChunks()Ljava/lang/Iterable;"),
         locals = LocalCapture.CAPTURE_FAILHARD)
     private void tickCubes(CallbackInfo ci, long gameTime, long timeSinceUpdate, LevelData levelData, ProfilerFiller profilerFiller, int randomTicking, boolean bl2, int spawnChunkCount,
@@ -413,8 +414,8 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     }
 
     @Nullable
-    @SuppressWarnings("UnresolvedMixinReference")
-    @Inject(method = "method_14118"/*"lambda$onLightUpdate$7(Lnet/minecraft/core/SectionPos;Lnet/minecraft/world/level/LightLayer;)V"*/, at = @At(value = "HEAD"), cancellable = true)
+    @SuppressWarnings("target")
+    @Inject(method = "lambda$onLightUpdate$6(Lnet/minecraft/core/SectionPos;Lnet/minecraft/world/level/LightLayer;)V", at = @At(value = "HEAD"), cancellable = true)
     private void onlyCubes(SectionPos pos, LightLayer type, CallbackInfo ci) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;

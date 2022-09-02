@@ -118,7 +118,7 @@ public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S 
 
 
     //This is here to throw an actual exception as this method will cause incomplete cube loading when called in a cubic context
-    @Inject(method = "getChunk", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "getChunk", at = @At("HEAD"))
     private void crashIfInCubicContext(int chunkX, int chunkZ, CallbackInfoReturnable<BlockGetter> cir) {
         if (this.isCubic) {
             throw new UnsupportedOperationException("Trying to get chunks in a cubic context! Use \"getCubeReader\" instead!");

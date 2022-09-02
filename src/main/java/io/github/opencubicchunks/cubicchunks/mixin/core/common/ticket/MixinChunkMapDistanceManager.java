@@ -5,14 +5,13 @@ import javax.annotation.Nullable;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(ChunkMap.DistanceManager.class)
 public abstract class MixinChunkMapDistanceManager extends MixinDistanceManager {
-
-    // Mixin AP doesn't see the field, we need to provide intermediary name explicitly
-    @SuppressWarnings("target") @Shadow(aliases = "field_17443", remap = false) ChunkMap this$0;
+    @SuppressWarnings("target") @Shadow @Final ChunkMap this$0;
 
     @Override
     public boolean containsCubes(long cubePosIn) {

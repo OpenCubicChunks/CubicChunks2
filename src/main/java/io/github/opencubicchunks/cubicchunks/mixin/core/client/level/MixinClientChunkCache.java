@@ -33,11 +33,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ClientChunkCache.class)
 public abstract class MixinClientChunkCache implements ClientCubeCache {
 
-    @Shadow @Final private static Logger LOGGER;
+    @Shadow @Final static Logger LOGGER;
 
-    @Shadow @Final private ClientLevel level;
+    @Shadow @Final ClientLevel level;
 
-    @Shadow private volatile ClientChunkCache.Storage storage;
+    @Shadow volatile ClientChunkCache.Storage storage;
 
     private volatile ClientCubeCacheStorage cubeArray;
     private EmptyLevelCube emptyLevelCube;

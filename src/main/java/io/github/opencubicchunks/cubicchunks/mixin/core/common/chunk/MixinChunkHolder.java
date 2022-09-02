@@ -104,6 +104,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
     @Shadow protected abstract void broadcastBlockEntityIfNeeded(Level world, BlockPos pos, BlockState state);
 
     @Dynamic
+    @SuppressWarnings("target")
     @Redirect(
         method = "<init>(Lio/github/opencubicchunks/cc_core/api/CubePos;ILnet/minecraft/world/level/LevelHeightAccessor;"
             + "Lnet/minecraft/world/level/lighting/LevelLightEngine;Lnet/minecraft/server/level/ChunkHolder$LevelChangeListener;"

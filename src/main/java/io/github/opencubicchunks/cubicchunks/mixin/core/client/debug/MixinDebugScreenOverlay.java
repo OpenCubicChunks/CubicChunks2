@@ -37,7 +37,7 @@ public abstract class MixinDebugScreenOverlay {
 
     @Nullable @Shadow protected abstract LevelChunk getServerChunk();
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "InvalidInjectorMethodSignature" })
     @Inject(method = "getGameInformation",
         at = @At(value = "INVOKE", target = "Ljava/util/List;add(Ljava/lang/Object;)Z", ordinal = 6),
         locals = LocalCapture.CAPTURE_FAILHARD
@@ -51,6 +51,7 @@ public abstract class MixinDebugScreenOverlay {
         );
     }
 
+    @SuppressWarnings("InvalidInjectorMethodSignature")
     @Inject(method = "getGameInformation",
         at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/multiplayer/ClientLevel;getBrightness(Lnet/minecraft/world/level/LightLayer;Lnet/minecraft/core/BlockPos;)I",
@@ -86,6 +87,7 @@ public abstract class MixinDebugScreenOverlay {
         }
     }
 
+    @SuppressWarnings("InvalidInjectorMethodSignature")
     @Inject(method = "getGameInformation",
             slice = @Slice(
                 from = @At(value = "INVOKE", ordinal = 0, target = "Lnet/minecraft/world/level/Level;getDifficulty()Lnet/minecraft/world/Difficulty;")

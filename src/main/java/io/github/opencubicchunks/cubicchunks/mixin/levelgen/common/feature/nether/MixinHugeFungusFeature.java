@@ -31,6 +31,7 @@ public class MixinHugeFungusFeature {
         return Coords.cubeToMaxBlock(((CubeWorldGenRegion) context.level()).getMaxCubeY());
     }
 
+    @SuppressWarnings("InvalidInjectorMethodSignature")
     @Inject(method = "place", at = @At(value = "FIELD", target = "Lnet/minecraft/world/level/levelgen/feature/HugeFungusConfiguration;planted:Z"), locals = LocalCapture.CAPTURE_FAILHARD,
         cancellable = true)
     private void cancelInLava(FeaturePlaceContext<HugeFungusConfiguration> context, CallbackInfoReturnable<Boolean> cir, WorldGenLevel worldGenLevel, BlockPos blockPos,

@@ -214,6 +214,7 @@ public abstract class MixinNaturalSpawner {
     }
 
     @Dynamic
+    @SuppressWarnings("mapping")
     @Group(name = "cubeSpawnCheck", min = 1, max = 1)
     @Redirect(
         method = "spawnForCube",

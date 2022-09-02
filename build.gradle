@@ -13,7 +13,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'net.fabricmc:fabric-loom:0.12.9'
+        classpath 'net.fabricmc:fabric-loom:1.0-SNAPSHOT'
         classpath 'io.github.opencubicchunks:javaheaders:1.2.4'
         classpath 'com.google.code.gson:gson:2.8.5'
     }
@@ -235,7 +235,9 @@ switch (OperatingSystem.current()) {
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.layered() {
-        officialMojangMappings()
+        officialMojangMappings {
+            nameSyntheticMembers = true
+        }
         parchment("org.parchmentmc.data:parchment-1.18.2:2022.05.22@zip")
     }
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"

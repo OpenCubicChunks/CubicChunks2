@@ -49,7 +49,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = LevelChunk.class, priority = 0) //Priority 0 to always ensure our redirects are on top. Should also prevent fabric api crashes that have occur(ed) here. See removeTileEntity
 public abstract class MixinLevelChunk extends ChunkAccess implements LightHeightmapGetter, ColumnCubeMapGetter, CubicLevelHeightAccessor, ColumnCubeGetter {
-    @Shadow @Final private Level level;
+    @Shadow @Final Level level;
 
     private Heightmap lightHeightmap;
     private ColumnCubeMap columnCubeMap;
@@ -234,6 +234,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
         }
     }
 
+    @SuppressWarnings("MixinAnnotationTarget")
     @ModifyConstant(method = { "getBlockState", "getFluidState(III)Lnet/minecraft/world/level/material/FluidState;" },
         constant = @Constant(expandZeroConditions = Constant.Condition.GREATER_THAN_OR_EQUAL_TO_ZERO))
     private int getMinHeight(int _0) {
