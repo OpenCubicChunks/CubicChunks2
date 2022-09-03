@@ -14,7 +14,7 @@ buildscript {
     }
     dependencies {
         classpath 'net.fabricmc:fabric-loom:1.0-SNAPSHOT'
-        classpath 'io.github.opencubicchunks:javaheaders:1.2.4'
+        classpath 'io.github.opencubicchunks:javaheaders:1.2.5'
         classpath 'com.google.code.gson:gson:2.8.5'
     }
 }
@@ -131,7 +131,7 @@ sourceSets {
     }
 }
 
-repositories{
+repositories {
     mavenCentral()
     maven {
         url "https://oss.sonatype.org/content/repositories/snapshots/"
@@ -281,7 +281,6 @@ dependencies {
 
     testImplementation('org.hamcrest:hamcrest-junit:2.0.0.0')
     testImplementation('org.hamcrest:hamcrest:2.2')
-
 }
 
 // unzipping subproject (CubicChunksCore) tests
