@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.NaturalSpawnerAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -60,8 +61,7 @@ public class CubicNaturalSpawner {
 
     static {
         try {
-            SPAWN_FOR_CUBE =
-                NaturalSpawner.class.getMethod("spawnForCube", ServerLevel.class, CubeAccess.class, NaturalSpawner.SpawnState.class, boolean.class, boolean.class, boolean.class);
+            SPAWN_FOR_CUBE = NaturalSpawner.class.getMethod("spawnForCube", ServerLevel.class, LevelCube.class, NaturalSpawner.SpawnState.class, boolean.class, boolean.class, boolean.class);
 
             CREATE_CUBIC_STATE = NaturalSpawner.class.getMethod("createCubicState", int.class, Iterable.class, CubicNaturalSpawner.CubeGetter.class, LocalMobCapCalculator.class);
             IS_RIGHT_DISTANCE_TO_PLAYER_AND_SPAWN_POINT_FOR_CUBE = NaturalSpawner.class.getMethod("isRightDistanceToPlayerAndSpawnPointForCube", ServerLevel.class, ChunkAccess.class,

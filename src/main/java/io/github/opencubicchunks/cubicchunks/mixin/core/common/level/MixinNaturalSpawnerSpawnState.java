@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(NaturalSpawner.SpawnState.class)
-public class MixinSpawnState implements CubicNaturalSpawner.CubicSpawnState {
+public class MixinNaturalSpawnerSpawnState implements CubicNaturalSpawner.CubicSpawnState {
     @Shadow @Final private LocalMobCapCalculator localMobCapCalculator;
 
     @Override
