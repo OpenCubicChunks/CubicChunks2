@@ -118,6 +118,7 @@ configurations {
         extendsFrom(debugCompile)
     }
     extraTests
+    shade
 }
 
 sourceSets {
@@ -252,10 +253,13 @@ dependencies {
 //    modRuntime ("supercoder79:databreaker:0.2.9") {
 //        exclude module: "fabric-loader"
 //    }
-    include implementation(project(':CubicChunksCore')) {
+
+    // we shade the core classes directly into CC, so it gets remapped
+    shade implementation(project(':CubicChunksCore')) {
         attributes {
             attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
         }
+        transitive = false
     }
 
     debugCompile "org.lwjgl:lwjgl-vulkan:$lwjglVersion"
@@ -281,6 +285,15 @@ dependencies {
 
     testImplementation('org.hamcrest:hamcrest-junit:2.0.0.0')
     testImplementation('org.hamcrest:hamcrest:2.2')
+}
+
+jar {
+    dependsOn(configurations.shade)
+    doFirst {
+        from {
+            project.configurations.shade.collect { it.isDirectory() ? it : zipTree(it) }
+        }
+    }
 }
 
 // unzipping subproject (CubicChunksCore) tests
