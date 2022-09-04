@@ -269,7 +269,7 @@ public class MixinChunkStatus {
             if (areSectionsEmpty(cubeY, pos, ((NoiseAndSurfaceBuilderHelper) chunkAccess).getDelegateByIndex(0))) {
                 return chunkAccess;
             }
-//            generator.buildSurface(cubeWorldGenRegion, structureFeatureManager, chunkAccess);
+            generator.buildSurface(cubeWorldGenRegion, structureFeatureManager, chunkAccess);
             cubeAccessWrapper.setNeedsExtraHeight(false);
 
             // Carvers

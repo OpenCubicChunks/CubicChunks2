@@ -11,6 +11,11 @@
         "conformVisibility": true
     },
     "mixins": [
+        "common.MixinBeardifier",
+        "common.MixinBlendedNoise",
+        "common.MixinChunkGenerator",
+        "common.MixinNoiseChunk",
+        "common.MixinSurfaceSystem",
         "common.biome.MixinBiomeDefaultFeatures",
         "common.biome.MixinBiomeSource",
         "common.carver.MixinWorldCarver",
@@ -28,10 +33,6 @@
         "common.feature.nether.MixinHugeFungusFeature",
         "common.feature.nether.MixinReplaceBlobsFeature",
         "common.feature.nether.MixinTwistyVinesFeature",
-        "common.MixinBeardifier",
-        "common.MixinBlendedNoise",
-        "common.MixinChunkGenerator",
-        "common.MixinNoiseChunk",
         "common.noise.MixinNoiseBasedChunkGenerator",
         "common.noise.MixinNoiseRouterData",
         "common.placement.MixinBiasedToBottomHeight",

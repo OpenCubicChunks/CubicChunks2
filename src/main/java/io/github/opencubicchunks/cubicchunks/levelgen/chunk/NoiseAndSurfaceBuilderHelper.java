@@ -248,7 +248,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
         int maxCubeY = ((CubeAccess) delegates[1]).getCubePos().getY();
 
         if (cubeY < minCubeY) {
-            throw StopGeneratingThrowable.INSTANCE;
+            throw StopGeneratingThrowable.get();
         }
         if (cubeY > maxCubeY) {
             return null;
@@ -284,6 +284,10 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
 
         public StopGeneratingThrowable() {
             super("Stop the surface builder");
+        }
+
+        public static StopGeneratingThrowable get() {
+            return INSTANCE;
         }
     }
 
