@@ -38,7 +38,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     private final Transformer transformer;
 
     public ASMConfigPlugin() {
-        this.transformer = new Transformer(new FabricMappingsProvider(), FabricLoader.getInstance().isDevelopmentEnvironment());
+        this.transformer = new Transformer(new FabricMappingsProvider("intermediary"), FabricLoader.getInstance().isDevelopmentEnvironment());
 
         List<RedirectsParser.RedirectSet> redirectSets;
         List<RedirectsParser.ClassTarget> targetClasses;
@@ -95,7 +95,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
 
         //TODO: untangle the mess of some methods accepting the/class/name, and others accepting the.class.name
         //Ideally the input json would all have the same, and we'd just figure it out here
-        RedirectsParser.ClassTarget target = classTargetByName.get(map.unmapClassName("intermediary", targetClassName).replace(".", "/"));
+        RedirectsParser.ClassTarget target = classTargetByName.get(map.unmapClassName("intermediary", targetClassName));
         if (target != null) {
             this.transformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
         } else {
