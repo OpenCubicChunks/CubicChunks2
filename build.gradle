@@ -95,6 +95,11 @@ mixinGen {
         it.configurationPlugin = 'io.github.opencubicchunks.cubicchunks.mixin.ASMConfigPlugin'
     }
 
+    config("asmfixes") {
+        it.required = true
+        it.injectorsDefaultRequire = 1
+    }
+
     config("optifine") {
         it.required = true
         it.configurationPlugin = 'io.github.opencubicchunks.cubicchunks.mixin.OptiFineMixinConfig'

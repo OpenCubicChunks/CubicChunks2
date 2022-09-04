@@ -146,10 +146,4 @@ public abstract class MixinNaturalSpawner {
         }
         cir.setReturnValue(CubicNaturalSpawner.isRightDistanceToPlayerAndSpawnPoint(level, chunk, pos, squaredDistance));
     }
-
-    @Dynamic @Redirect(method = "isRightDistanceToPlayerAndSpawnPointForCube", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/ChunkAccess;getCubePos()"
-        + "Lio/github/opencubicchunks/cc_core/api/CubePos;"))
-    private static CubePos getCubePosChunkToCube(ChunkAccess cube) {
-        return ((CubeAccess) cube).getCubePos();
-    }
 }
