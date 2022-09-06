@@ -66,8 +66,7 @@
         "typeRedirects": {},
         "fieldRedirects": {},
         "methodRedirects": {
-            "net.minecraft.server.level.ChunkMap | net.minecraft.server.level.ChunkHolder updateChunkScheduling(long, int, net.minecraft.server.level.ChunkHolder, int)": "updateCubeScheduling",
-
+            "net.minecraft.server.level.ChunkMap | net.minecraft.server.level.ChunkHolder updateChunkScheduling(long, int, net.minecraft.server.level.ChunkHolder, int)": "updateCubeScheduling"
         }
     }
 }
