@@ -1,72 +1,73 @@
 {
     "general": {
         "typeRedirects": {
-            "net.minecraft.class_1923": "io.github.opencubicchunks.cc_core.api.CubePos",
-            "net.minecraft.class_2818": "io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube"
+            "net.minecraft.world.level.ChunkPos": "io.github.opencubicchunks.cc_core.api.CubePos",
+            "net.minecraft.world.level.chunk.LevelChunk": "io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube"
         },
         "fieldRedirects": {},
         "methodRedirects": {
-            "net.minecraft.class_2818 | net.minecraft.class_1923 method_12004()": {
+            "net.minecraft.world.level.chunk.LevelChunk | net.minecraft.world.level.ChunkPos getPos()": {
                 "newName": "getCubePos",
-                "mappingsOwner": "net.minecraft.class_2791"
+                "mappingsOwner": "net.minecraft.world.level.chunk.ChunkAccess"
             },
-            "net.minecraft.class_2791 | net.minecraft.class_1923 method_12004()": "getCubePos",
-            "net.minecraft.class_1923 | long method_8324()": "asLong",
-            "net.minecraft.class_1923 | long method_8331(int, int)": "asLong",
-            "net.minecraft.class_1923 | long method_37232(net.minecraft.class_2338)": "asLong"
+            "net.minecraft.world.level.chunk.ChunkAccess | net.minecraft.world.level.ChunkPos getPos()": "getCubePos",
+            "net.minecraft.world.level.ChunkPos | long toLong()": "asLong",
+            "net.minecraft.world.level.ChunkPos | long asLong(int, int)": "asLong",
+            "net.minecraft.world.level.ChunkPos | long asLong(net.minecraft.core.BlockPos)": "asLong"
         }
     },
     "chunkHolderSet": {
         "typeRedirects": {
-            "net.minecraft.class_3193$1": "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder$CubeLoadingError"
+            "net.minecraft.server.level.ChunkHolder$1": "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder$CubeLoadingError"
         },
         "fieldRedirects": {
-            "net.minecraft.class_3898 | int field_18239": "MAX_CUBE_DISTANCE",
-            "net.minecraft.class_3193 | net.minecraft.class_1923 field_13864": "cubePos"
+            "net.minecraft.server.level.ChunkMap | int MAX_CHUNK_DISTANCE": "MAX_CUBE_DISTANCE",
+            "net.minecraft.server.level.ChunkHolder | net.minecraft.world.level.ChunkPos pos": "cubePos"
         },
         "methodRedirects": {
-            "net.minecraft.class_3193 | net.minecraft.class_2806 method_14011(int)": "getCubeStatus",
-            "net.minecraft.class_3898 | java.util.concurrent.CompletableFuture method_31417(net.minecraft.class_3193)": "prepareAccessibleCube",
-            "net.minecraft.class_3898 | java.util.concurrent.CompletableFuture method_17235(net.minecraft.class_3193)": "prepareTickingCube",
-            "net.minecraft.class_3898 | java.util.concurrent.CompletableFuture method_17247(net.minecraft.class_1923)": "prepareEntityTickingCube",
-            "net.minecraft.class_3193$class_3896 | void method_17209(net.minecraft.class_1923, java.util.function.IntSupplier, int, java.util.function.IntConsumer)": "onCubeLevelChange"
+            "net.minecraft.server.level.ChunkHolder | net.minecraft.world.level.chunk.ChunkStatus getStatus(int)": "getCubeStatus",
+            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareAccessibleChunk(net.minecraft.server.level.ChunkHolder)": "prepareAccessibleCube",
+            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareTickingChunk(net.minecraft.server.level.ChunkHolder)": "prepareTickingCube",
+            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareEntityTickingChunk(net.minecraft.world.level.ChunkPos)": "prepareEntityTickingCube",
+            "net.minecraft.server.level.ChunkHolder$LevelChangeListener | void onLevelChange(net.minecraft.world.level.ChunkPos, java.util.function.IntSupplier, int, java.util.function.IntConsumer)": "onCubeLevelChange"
         }
     },
     "chunkMapSet": {
         "typeRedirects": {
-            "net.minecraft.class_3900": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter"
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter"
         },
         "fieldRedirects": {
-            "net.minecraft.class_3898 | it.unimi.dsi.fastutil.longs.LongSet field_17221": "cubesToDrop",
-            "net.minecraft.class_3898 | it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap field_18807": "pendingCubeUnloads",
-            "net.minecraft.class_3898 | net.minecraft.class_3900 field_17223": "cubeQueueSorter",
-            "net.minecraft.class_3898 | it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap field_17213": "updatingCubeMap",
-            "net.minecraft.class_3898 | int field_18239": "MAX_CUBE_DISTANCE",
-            "net.minecraft.class_3898 | it.unimi.dsi.fastutil.longs.Long2ByteMap field_23786": "cubeTypeCache"
+            "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.LongSet toDrop": "cubesToDrop",
+            "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap pendingUnloads": "pendingCubeUnloads",
+            "net.minecraft.server.level.ChunkMap | net.minecraft.server.level.ChunkTaskPriorityQueueSorter queueSorter": "cubeQueueSorter",
+            "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap updatingChunkMap": "updatingCubeMap",
+            "net.minecraft.server.level.ChunkMap | int MAX_CHUNK_DISTANCE": "MAX_CUBE_DISTANCE",
+            "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.Long2ByteMap chunkTypeCache": "cubeTypeCache"
         },
         "methodRedirects": {
-            "net.minecraft.class_3898 | net.minecraft.class_2487 method_17979(net.minecraft.class_1923)": "readCubeNBT",
-            "net.minecraft.class_3898 | void method_27054(net.minecraft.class_1923)": "markCubePositionReplaceable",
-            "net.minecraft.class_3898 | byte method_27053(net.minecraft.class_1923, net.minecraft.class_2806$class_2808)": "markCubePosition"
+            "net.minecraft.server.level.ChunkMap | net.minecraft.nbt.CompoundTag readChunk(net.minecraft.world.level.ChunkPos)": "readCubeNBT",
+            "net.minecraft.server.level.ChunkMap | void markPositionReplaceable(net.minecraft.world.level.ChunkPos)": "markCubePositionReplaceable",
+            "net.minecraft.server.level.ChunkMap | byte markPosition(net.minecraft.world.level.ChunkPos, net.minecraft.world.level.chunk.ChunkStatus$ChunkType)": "markCubePosition"
         }
     },
     "naturalSpawnerSet": {
         "typeRedirects": {
-            "net.minecraft.class_1948$class_5260": "io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner$CubeGetter"
+            "net.minecraft.world.level.NaturalSpawner$ChunkGetter": "io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner$CubeGetter"
         },
-        "fieldRedirects": { },
+        "fieldRedirects": {},
         "methodRedirects": {
-            "net.minecraft.class_1948 | void method_8663(net.minecraft.class_1311, net.minecraft.class_3218, net.minecraft.class_2818, net.minecraft.class_1948$class_5261, net.minecraft.class_1948$class_5259)": "spawnCategoryForCube",
-            "net.minecraft.class_1948 | net.minecraft.class_2338 method_8657(net.minecraft.class_1937, net.minecraft.class_2818)": "getRandomPosWithinCube",
-            "net.minecraft.class_1948$class_5262 | boolean method_27826(net.minecraft.class_1311, net.minecraft.class_1923)": "canSpawnForCategory",
-            "net.minecraft.class_6540 | void method_38087(net.minecraft.class_1923, net.minecraft.class_1311)": "addMob"
+            "net.minecraft.world.level.NaturalSpawner | void spawnCategoryForChunk(net.minecraft.world.entity.MobCategory, net.minecraft.server.level.ServerLevel, net.minecraft.world.level.chunk.LevelChunk, net.minecraft.world.level.NaturalSpawner$SpawnPredicate, net.minecraft.world.level.NaturalSpawner$AfterSpawnCallback)": "spawnCategoryForCube",
+            "net.minecraft.world.level.NaturalSpawner | net.minecraft.core.BlockPos getRandomPosWithin(net.minecraft.world.level.Level, net.minecraft.world.level.chunk.LevelChunk)": "getRandomPosWithinCube",
+            "net.minecraft.world.level.NaturalSpawner$SpawnState | boolean canSpawnForCategory(net.minecraft.world.entity.MobCategory, net.minecraft.world.level.ChunkPos)": "canSpawnForCategory",
+            "net.minecraft.world.level.LocalMobCapCalculator | void addMob(net.minecraft.world.level.ChunkPos, net.minecraft.world.entity.MobCategory)": "addMob"
         }
     },
     "chunkMap$DistanceManagerSet": {
-        "typeRedirects": { },
-        "fieldRedirects" : { },
+        "typeRedirects": {},
+        "fieldRedirects": {},
         "methodRedirects": {
-            "net.minecraft.class_3898 | net.minecraft.class_3193 method_17217(long, int, net.minecraft.class_3193, int)": "updateCubeScheduling"
+            "net.minecraft.server.level.ChunkMap | net.minecraft.server.level.ChunkHolder updateChunkScheduling(long, int, net.minecraft.server.level.ChunkHolder, int)": "updateCubeScheduling",
+
         }
     }
 }

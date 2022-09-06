@@ -17,12 +17,11 @@ import javax.annotation.Nullable;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.FabricMappingsProvider;
+import io.github.opencubicchunks.dasm.MappingsProvider;
 import io.github.opencubicchunks.dasm.RedirectsParseException;
 import io.github.opencubicchunks.dasm.RedirectsParser;
 import io.github.opencubicchunks.dasm.Transformer;
 import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -38,7 +37,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     private final Transformer transformer;
 
     public ASMConfigPlugin() {
-        this.transformer = new Transformer(new FabricMappingsProvider("intermediary"), FabricLoader.getInstance().isDevelopmentEnvironment());
+        this.transformer = new Transformer(MappingsProvider.IDENTITY, FabricLoader.getInstance().isDevelopmentEnvironment());
 
         List<RedirectsParser.RedirectSet> redirectSets;
         List<RedirectsParser.ClassTarget> targetClasses;
@@ -91,33 +90,36 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     }
 
     @Override public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-        MappingResolver map = FabricLoader.getInstance().getMappingResolver();
-
-        //TODO: untangle the mess of some methods accepting the/class/name, and others accepting the.class.name
-        //Ideally the input json would all have the same, and we'd just figure it out here
-        RedirectsParser.ClassTarget target = classTargetByName.get(map.unmapClassName("intermediary", targetClassName));
-        if (target != null) {
-            this.transformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
-        } else {
-            throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
-        }
-
         try {
-            // ugly hack to add class metadata to mixin
-            // based on https://github.com/Chocohead/OptiFabric/blob/54fc2ef7533e43d1982e14bc3302bcf156f590d8/src/main/java/me/modmuss50/optifabric/compat/fabricrendererapi
-            // /RendererMixinPlugin.java#L25:L44
-            Method addMethod = ClassInfo.class.getDeclaredMethod("addMethod", MethodNode.class, boolean.class);
-            addMethod.setAccessible(true);
-
-            ClassInfo ci = ClassInfo.forName(targetClassName);
-            Set<String> existingMethods = ci.getMethods().stream().map(x -> x.getName() + x.getDesc()).collect(Collectors.toSet());
-            for (MethodNode method : targetClass.methods) {
-                if (!existingMethods.contains(method.name + method.desc)) {
-                    addMethod.invoke(ci, method, false);
-                }
+            //TODO: untangle the mess of some methods accepting the/class/name, and others accepting the.class.name
+            //Ideally the input json would all have the same, and we'd just figure it out here
+            RedirectsParser.ClassTarget target = classTargetByName.get(targetClassName);
+            if (target != null) {
+                this.transformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
+            } else {
+                throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
             }
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            throw new IllegalStateException(e);
+
+            try {
+                // ugly hack to add class metadata to mixin
+                // based on https://github.com/Chocohead/OptiFabric/blob/54fc2ef7533e43d1982e14bc3302bcf156f590d8/src/main/java/me/modmuss50/optifabric/compat/fabricrendererapi
+                // /RendererMixinPlugin.java#L25:L44
+                Method addMethod = ClassInfo.class.getDeclaredMethod("addMethod", MethodNode.class, boolean.class);
+                addMethod.setAccessible(true);
+
+                ClassInfo ci = ClassInfo.forName(targetClassName);
+                Set<String> existingMethods = ci.getMethods().stream().map(x -> x.getName() + x.getDesc()).collect(Collectors.toSet());
+                for (MethodNode method : targetClass.methods) {
+                    if (!existingMethods.contains(method.name + method.desc)) {
+                        addMethod.invoke(ci, method, false);
+                    }
+                }
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw new IllegalStateException(e);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+            throw t;
         }
     }
 

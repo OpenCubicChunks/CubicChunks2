@@ -2,7 +2,7 @@
 
 import io.github.opencubicchunks.gradle.GeneratePackageInfo
 import org.gradle.internal.os.OperatingSystem
-import java.util.Date
+import java.util.*
 
 buildscript {
     dependencies {
@@ -10,13 +10,14 @@ buildscript {
     }
 }
 plugins {
-    id("fabric-loom").version("1.0-SNAPSHOT")
+    id("fabric-loom")
     id("maven-publish")
     id("checkstyle")
     id("io.github.juuxel.loom-quiltflower").version("1.7.2")
     id("io.github.opencubicchunks.javaheaders").version("1.2.5")
     id("io.github.opencubicchunks.gradle.mcGitVersion")
     id("io.github.opencubicchunks.gradle.mixingen")
+    id("io.github.opencubicchunks.gradle.dasm")
 }
 
 val minecraft_version: String by project
