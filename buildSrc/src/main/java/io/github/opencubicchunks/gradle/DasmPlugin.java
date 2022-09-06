@@ -25,7 +25,6 @@ import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.file.FileCollection;
 import org.gradle.language.jvm.tasks.ProcessResources;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
@@ -166,20 +165,34 @@ public class DasmPlugin implements Plugin<Project> {
         }
         return output;
     }
+
     private JsonElement processTargets(JsonElement parsed, MemoryMappingTree mappings) throws IOException {
         int intermediary = mappings.getDstNamespaces().indexOf("intermediary");
         int named = mappings.getDstNamespaces().indexOf("named");
 
         JsonObject out = new JsonObject();
-        Set<Map.Entry<String, JsonElement>> jsonEntries = new HashSet<>(parsed.getAsJsonObject().entrySet());
+        JsonObject json = parsed.getAsJsonObject();
 
-        for (Map.Entry<String, JsonElement> jsonEntry : jsonEntries) {
-            String className = jsonEntry.getKey();
+        JsonElement targets = json.get("targets");
+        JsonObject targetsOutput = new JsonObject();
+        Set<Map.Entry<String, JsonElement>> targetEntries = new HashSet<>(targets.getAsJsonObject().entrySet());
+
+        // remap targets object
+        for (Map.Entry<String, JsonElement> targetEntry : targetEntries) {
+            String className = targetEntry.getKey();
             String dstName = remapClassName(mappings, intermediary, named, className);
 
-            JsonObject newClassEntry = remapClassValue(className, mappings, intermediary, named, jsonEntry);
-            out.add(dstName, newClassEntry);
-            int i = 0;
+            JsonObject newClassEntry = remapClassValue(className, mappings, intermediary, named, targetEntry);
+            targetsOutput.add(dstName, newClassEntry);
+        }
+
+        // copy json entries to output
+        for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+            if (entry.getKey().equals("targets")) {
+                out.add("targets", targetsOutput); // use our remapped targets object
+            } else { //otherwise just copy everything else unmodified
+                out.add(entry.getKey(), entry.getValue());
+            }
         }
         return out;
     }
