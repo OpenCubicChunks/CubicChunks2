@@ -5,12 +5,17 @@ import static io.github.opencubicchunks.cc_core.utils.Coords.cubeToSection;
 import static io.github.opencubicchunks.cc_core.utils.Coords.sectionToMinBlock;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.mojang.datafixers.util.Pair;
@@ -30,10 +35,13 @@ import io.github.opencubicchunks.cubicchunks.mixin.access.common.BiomeManagerAcc
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
+import it.unimi.dsi.fastutil.ints.IntArraySet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
+import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -44,6 +52,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.game.DebugPackets;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.StructureFeatureManager;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
@@ -52,10 +61,16 @@ import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.levelgen.FlatLevelSource;
+import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.LegacyRandomSource;
+import net.minecraft.world.level.levelgen.RandomSupport;
 import net.minecraft.world.level.levelgen.WorldgenRandom;
+import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
 import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
 import net.minecraft.world.level.levelgen.feature.StructureFeature;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.StructureCheckResult;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
@@ -64,6 +79,7 @@ import net.minecraft.world.level.levelgen.structure.placement.ConcentricRingsStr
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadStructurePlacement;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -515,47 +531,137 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
 
     @Override
     public void decorate(CubeWorldGenRegion region, StructureFeatureManager structureManager, ProtoCube cube) {
-        int mainCubeX = region.getMainCubeX();
-        int mainCubeY = region.getMainCubeY();
-        int mainCubeZ = region.getMainCubeZ();
-
-        int xStart = cubeToMinBlock(mainCubeX);
-        int yStart = cubeToMinBlock(mainCubeY);
-        int zStart = cubeToMinBlock(mainCubeZ);
-
-        //Y value stays 32
-        CubeWorldGenRandom worldgenRandom = new CubeWorldGenRandom();
-
-        //Get each individual column from a given cube no matter the size. Where y height is the same per column.
-        //Feed the given columnMinPos into the feature decorators.
-        int cubeY = cube.getCubePos().getY();
         for (int columnX = 0; columnX < CubicConstants.DIAMETER_IN_SECTIONS; columnX++) {
             for (int columnZ = 0; columnZ < CubicConstants.DIAMETER_IN_SECTIONS; columnZ++) {
                 cube.moveColumns(columnX, columnZ);
-                if (CubicWorldGenUtils.areSectionsEmpty(cubeY, cube.getPos(), cube)) {
-                    continue;
+                generateForCubeColumn(region, structureManager, cube);
+            }
+        }
+    }
+
+    private void generateForCubeColumn(CubeWorldGenRegion level, StructureFeatureManager structureFeatureManager, ProtoCube cube) {
+
+        CubePos cubePos = cube.getCubePos();
+        ChunkPos chunkPos = cube.getPos();
+        if (CubicWorldGenUtils.areSectionsEmpty(cubePos.getY(), chunkPos, cube)) {
+            return;
+        }
+        if (SharedConstants.debugVoidTerrain(cubePos.asChunkPos())) {
+            return;
+        }
+        BlockPos blockPos = chunkPos.getBlockAt(0, cube.getCubePos().minCubeY(), 0);
+        SectionPos sectionPos = SectionPos.of(chunkPos, cube.getCubePos().asSectionPos().y());
+
+        Registry<ConfiguredStructureFeature<?, ?>> structureFeatureRegistry = level.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
+        Map<Integer, List<ConfiguredStructureFeature<?, ?>>> featuresByStep = structureFeatureRegistry.stream()
+            .collect(Collectors.groupingBy(configuredStructureFeature -> configuredStructureFeature.feature.step().ordinal()));
+
+        List<BiomeSource.StepFeatureData> biomeSourceFeaturesPerStep = this.biomeSource.featuresPerStep();
+        WorldgenRandom rand = new WorldgenRandom(new XoroshiroRandomSource(RandomSupport.seedUniquifier()));
+        long initSeed = rand.setDecorationSeed(level.getSeed(), blockPos.getX(), blockPos.getZ());
+        Set<Biome> set = getPossibleBiomes(level, cube.getCubePos());
+
+        int biomeStepCount = biomeSourceFeaturesPerStep.size();
+
+        try {
+            Registry<PlacedFeature> placedFeatures = level.registryAccess().registryOrThrow(Registry.PLACED_FEATURE_REGISTRY);
+            int stepCount = Math.max(GenerationStep.Decoration.values().length, biomeStepCount);
+
+            for(int stepId = 0; stepId < stepCount; ++stepId) {
+                int m = 0;
+                if (structureFeatureManager.shouldGenerateFeatures()) {
+                    for(ConfiguredStructureFeature<?, ?> configuredStructureFeature : featuresByStep.getOrDefault(stepId, Collections.emptyList())) {
+                        rand.setFeatureSeed(initSeed, m, stepId);
+                        Supplier<String> getGeneratingResourceKeyFunc = () -> structureFeatureRegistry.getResourceKey(configuredStructureFeature)
+                            .map(Object::toString)
+                            .orElseGet(configuredStructureFeature::toString);
+
+                        try {
+                            level.setCurrentlyGenerating(getGeneratingResourceKeyFunc);
+                            structureFeatureManager.startsForFeature(sectionPos, configuredStructureFeature)
+                                .forEach(structureStart ->
+                                    structureStart.placeInChunk(level, structureFeatureManager, (ChunkGenerator) (Object) this, rand, getWritableAreaForCubeColumn(cube), chunkPos));
+                        } catch (Exception var29) {
+                            CrashReport crashReport = CrashReport.forThrowable(var29, "Feature placement");
+                            crashReport.addCategory("Feature").setDetail("Description", getGeneratingResourceKeyFunc::get);
+                            throw new ReportedException(crashReport);
+                        }
+                        ++m;
+                    }
                 }
 
-                BlockPos columnMinPos = new BlockPos(xStart + (sectionToMinBlock(columnX)), yStart, zStart + (sectionToMinBlock(columnZ)));
+                if (stepId < biomeStepCount) {
+                    IntSet intSet = new IntArraySet();
 
-                long seed = worldgenRandom.setDecorationSeed(region.getSeed(), columnMinPos.getX(), columnMinPos.getY(), columnMinPos.getZ());
+                    for(Biome biome : set) {
+                        List<HolderSet<PlacedFeature>> list3 = biome.getGenerationSettings().features();
+                        if (stepId < list3.size()) {
+                            HolderSet<PlacedFeature> holderSet = list3.get(stepId);
+                            BiomeSource.StepFeatureData stepFeatureData = biomeSourceFeaturesPerStep.get(stepId);
+                            holderSet.stream().map(Holder::value).forEach(placedFeaturex -> intSet.add(stepFeatureData.indexMapping().applyAsInt(placedFeaturex)));
+                        }
+                    }
 
-                Holder<Biome> biome = ((ChunkGenerator) (Object) this).getBiomeSource().getNoiseBiome(
-                    QuartPos.fromSection(cubeToSection(mainCubeX, columnX)) + BiomeManagerAccess.getChunkCenterQuart(),
-                    QuartPos.fromSection(cubeToSection(mainCubeY, 0)) + BiomeManagerAccess.getChunkCenterQuart() * CubicConstants.DIAMETER_IN_SECTIONS,
-                    QuartPos.fromSection(cubeToSection(mainCubeZ, columnZ)) + BiomeManagerAccess.getChunkCenterQuart(),
-                    this.climateSampler()
-                );
-                try {
-                    ((BiomeGetter) (Object) biome.value()).generate(structureManager, ((ChunkGenerator) (Object) this), region, seed, worldgenRandom, columnMinPos);
-                } catch (Exception e) {
-                    CrashReport crashReport = CrashReport.forThrowable(e, "Biome decoration");
-                    crashReport.addCategory("Generation").setDetail("CubeX", mainCubeX).setDetail("CubeY", mainCubeY).setDetail("CubeZ", mainCubeZ).setDetail("Seed", seed)
-                        .setDetail("Biome", biome);
-                    throw new ReportedException(crashReport);
+                    int n = intSet.size();
+                    int[] is = intSet.toIntArray();
+                    Arrays.sort(is);
+                    BiomeSource.StepFeatureData stepFeatureData2 = biomeSourceFeaturesPerStep.get(stepId);
+
+                    for(int o = 0; o < n; ++o) {
+                        int p = is[o];
+                        PlacedFeature placedFeature = stepFeatureData2.features().get(p);
+                        Supplier<String> supplier2 = () -> (String)placedFeatures.getResourceKey(placedFeature).map(Object::toString).orElseGet(placedFeature::toString);
+                        rand.setFeatureSeed(initSeed, p, stepId);
+
+                        try {
+                            level.setCurrentlyGenerating(supplier2);
+                            placedFeature.placeWithBiomeCheck(level, (ChunkGenerator) (Object) this, rand, blockPos);
+                        } catch (Exception var30) {
+                            CrashReport crashReport2 = CrashReport.forThrowable(var30, "Feature placement");
+                            crashReport2.addCategory("Feature").setDetail("Description", supplier2::get);
+                            throw new ReportedException(crashReport2);
+                        }
+                    }
+                }
+            }
+
+            level.setCurrentlyGenerating(null);
+        } catch (Exception var31) {
+            CrashReport crashReport3 = CrashReport.forThrowable(var31, "Biome decoration");
+            crashReport3.addCategory("Generation").setDetail("CenterX", chunkPos.x).setDetail("CenterZ", chunkPos.z).setDetail("Seed", initSeed);
+            throw new ReportedException(crashReport3);
+        }
+    }
+
+    @NotNull private Set<Biome> getPossibleBiomes(CubeWorldGenRegion level, CubePos mainPos) {
+        Set<Biome> set = new ObjectArraySet<>();
+        if (((Object) this) instanceof FlatLevelSource) {
+            this.biomeSource.possibleBiomes().stream().map(Holder::value).forEach(set::add);
+            return set;
+        }
+        // TODO: do it per section
+        for (int dx = -1; dx < 1; dx++) {
+            for (int dy = -1; dy < 1; dy++) {
+                for (int dz = -1; dz < 1; dz++) {
+                    CubeAccess cube = level.getCube(mainPos.getX() + dx, mainPos.getY() + dy, mainPos.getZ() + dz);
+
+                    for (LevelChunkSection levelChunkSection : cube.getSections()) {
+                        levelChunkSection.getBiomes().getAll(holder -> set.add(holder.value()));
+                    }
                 }
             }
         }
+        set.retainAll(this.biomeSource.possibleBiomes().stream().map(Holder::value).collect(Collectors.toSet()));
+        return set;
+    }
+
+    private static BoundingBox getWritableAreaForCubeColumn(CubeAccess cube) {
+        ChunkPos chunkPos = cube.getPos();
+        int minX = chunkPos.getMinBlockX();
+        int minZ = chunkPos.getMinBlockZ();
+        int minY = cube.getCubePos().minCubeY();
+        int maxY = cube.getCubePos().maxCubeY();
+        return new BoundingBox(minX, minY, minZ, minX + 15, maxY, minZ + 15);
     }
 
     // replace with non-atomic random for optimized random number generation

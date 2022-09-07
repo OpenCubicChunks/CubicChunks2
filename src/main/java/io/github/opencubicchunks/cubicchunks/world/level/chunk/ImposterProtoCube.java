@@ -45,7 +45,7 @@ public class ImposterProtoCube extends ProtoCube {
             cubeIn.getSections(),
             new ProtoChunkTicks<>(),
             new ProtoChunkTicks<>(),
-            cubeIn.getHeightAccessorForGeneration(),
+            cubeIn.getLevel(),
             cubeIn.getLevel().registryAccess().registryOrThrow(Registry.BIOME_REGISTRY),
             null
         );

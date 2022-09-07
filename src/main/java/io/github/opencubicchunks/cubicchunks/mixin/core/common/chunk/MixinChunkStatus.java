@@ -14,6 +14,7 @@ import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
+import io.github.opencubicchunks.cubicchunks.levelgen.chunk.CubeGenerator;
 import io.github.opencubicchunks.cubicchunks.levelgen.chunk.NoiseAndSurfaceBuilderHelper;
 import io.github.opencubicchunks.cubicchunks.levelgen.util.CubicWorldGenUtils;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkMapAccess;
@@ -306,9 +307,6 @@ public class MixinChunkStatus {
             return;
         }
         ci.cancel();
-        //if (chunk instanceof IBigCube) {
-        //   generator.generateSurface(new CubeWorldGenRegion(world, unsafeCast(neighbors)), chunk);
-        //}
     }
 
     @SuppressWarnings("target")
@@ -322,25 +320,6 @@ public class MixinChunkStatus {
             return;
         }
         ci.cancel();
-//        if (chunk instanceof IBigCube) {
-//            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(world, unsafeCast(neighbors), chunk);
-//
-//            CubePrimer cubeAbove = new CubePrimer(CubePos.of(((IBigCube) chunk).getCubePos().getX(), ((IBigCube) chunk).getCubePos().getY() + 1,
-//                ((IBigCube) chunk).getCubePos().getZ()), UpgradeData.EMPTY, cubeWorldGenRegion);
-//
-//            NoiseAndSurfaceBuilderHelper noiseAndSurfaceBuilderHelper = new NoiseAndSurfaceBuilderHelper((IBigCube) chunk, cubeAbove);
-//
-//            for (int columnX = 0; columnX < IBigCube.DIAMETER_IN_SECTIONS; columnX++) {
-//                for (int columnZ = 0; columnZ < IBigCube.DIAMETER_IN_SECTIONS; columnZ++) {
-//                    cubeAbove.moveColumns(columnX, columnZ);
-//                    if (chunk instanceof CubePrimer) {
-//                        ((CubePrimer) chunk).moveColumns(columnX, columnZ);
-//                    }
-//                    noiseAndSurfaceBuilderHelper.moveColumn(columnX, columnZ);
-//                    noiseAndSurfaceBuilderHelper.applySections();
-//                }
-//            }
-//        }
     }
 
     @SuppressWarnings("target")
@@ -354,26 +333,6 @@ public class MixinChunkStatus {
             return;
         }
         ci.cancel();
-//        if (chunk instanceof IBigCube) {
-//            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(world, unsafeCast(neighbors), chunk);
-//
-//            CubePrimer cubeAbove = new CubePrimer(CubePos.of(((IBigCube) chunk).getCubePos().getX(), ((IBigCube) chunk).getCubePos().getY() + 1,
-//                ((IBigCube) chunk).getCubePos().getZ()), UpgradeData.EMPTY, cubeWorldGenRegion);
-//
-//            NoiseAndSurfaceBuilderHelper noiseAndSurfaceBuilderHelper = new NoiseAndSurfaceBuilderHelper((IBigCube) chunk, cubeAbove);
-//
-//            //TODO: Verify liquid carvers are generating appropriately
-//            for (int columnX = 0; columnX < IBigCube.DIAMETER_IN_SECTIONS; columnX++) {
-//                for (int columnZ = 0; columnZ < IBigCube.DIAMETER_IN_SECTIONS; columnZ++) {
-//                    cubeAbove.moveColumns(columnX, columnZ);
-//                    if (chunk instanceof CubePrimer) {
-//                        ((CubePrimer) chunk).moveColumns(columnX, columnZ);
-//                    }
-//                    noiseAndSurfaceBuilderHelper.moveColumn(columnX, columnZ);
-//                    noiseAndSurfaceBuilderHelper.applySections();
-//                }
-//            }
-//        }
     }
 
     @SuppressWarnings("target")
@@ -416,12 +375,8 @@ public class MixinChunkStatus {
 
             CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(level, unsafeCast(chunks), status, chunk, 1);
             StructureFeatureManager structureFeatureManager = level.structureFeatureManager().forWorldGenRegion(cubeWorldGenRegion);
-//            if (cubePrimer.getCubePos().getY() >= 0)
             protoCube.applyFeatureStates();
-            //TODO: Features
-//            generator.applyBiomeDecoration(cubeWorldGenRegion, chunk, level.structureFeatureManager().forWorldGenRegion(cubeWorldGenRegion));
-
-//            ((CubeGenerator) generator).decorate(cubeWorldGenRegion, structureFeatureManager, (ProtoCube) chunk);
+            ((CubeGenerator) generator).decorate(cubeWorldGenRegion, structureFeatureManager, (ProtoCube) chunk);
             protoCube.updateCubeStatus(status);
         }
         cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
