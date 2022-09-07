@@ -1,12 +1,9 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common;
 
 import static io.github.opencubicchunks.cc_core.utils.Coords.cubeToMinBlock;
-import static io.github.opencubicchunks.cc_core.utils.Coords.cubeToSection;
-import static io.github.opencubicchunks.cc_core.utils.Coords.sectionToMinBlock;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -24,14 +21,11 @@ import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.utils.Utils;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRandom;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
-import io.github.opencubicchunks.cubicchunks.levelgen.biome.BiomeGetter;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.StripedBiomeSource;
 import io.github.opencubicchunks.cubicchunks.levelgen.chunk.CubeGenerator;
 import io.github.opencubicchunks.cubicchunks.levelgen.util.CubicWorldGenUtils;
 import io.github.opencubicchunks.cubicchunks.levelgen.util.NonAtomicWorldgenRandom;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.BiomeManagerAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
@@ -45,14 +39,12 @@ import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
-import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.game.DebugPackets;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.StructureFeatureManager;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
@@ -567,10 +559,10 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
             Registry<PlacedFeature> placedFeatures = level.registryAccess().registryOrThrow(Registry.PLACED_FEATURE_REGISTRY);
             int stepCount = Math.max(GenerationStep.Decoration.values().length, biomeStepCount);
 
-            for(int stepId = 0; stepId < stepCount; ++stepId) {
+            for (int stepId = 0; stepId < stepCount; ++stepId) {
                 int m = 0;
                 if (structureFeatureManager.shouldGenerateFeatures()) {
-                    for(ConfiguredStructureFeature<?, ?> configuredStructureFeature : featuresByStep.getOrDefault(stepId, Collections.emptyList())) {
+                    for (ConfiguredStructureFeature<?, ?> configuredStructureFeature : featuresByStep.getOrDefault(stepId, Collections.emptyList())) {
                         rand.setFeatureSeed(initSeed, m, stepId);
                         Supplier<String> getGeneratingResourceKeyFunc = () -> structureFeatureRegistry.getResourceKey(configuredStructureFeature)
                             .map(Object::toString)
@@ -593,7 +585,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
                 if (stepId < biomeStepCount) {
                     IntSet intSet = new IntArraySet();
 
-                    for(Biome biome : set) {
+                    for (Biome biome : set) {
                         List<HolderSet<PlacedFeature>> list3 = biome.getGenerationSettings().features();
                         if (stepId < list3.size()) {
                             HolderSet<PlacedFeature> holderSet = list3.get(stepId);
@@ -607,10 +599,10 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
                     Arrays.sort(is);
                     BiomeSource.StepFeatureData stepFeatureData2 = biomeSourceFeaturesPerStep.get(stepId);
 
-                    for(int o = 0; o < n; ++o) {
+                    for (int o = 0; o < n; ++o) {
                         int p = is[o];
                         PlacedFeature placedFeature = stepFeatureData2.features().get(p);
-                        Supplier<String> supplier2 = () -> (String)placedFeatures.getResourceKey(placedFeature).map(Object::toString).orElseGet(placedFeature::toString);
+                        Supplier<String> supplier2 = () -> (String) placedFeatures.getResourceKey(placedFeature).map(Object::toString).orElseGet(placedFeature::toString);
                         rand.setFeatureSeed(initSeed, p, stepId);
 
                         try {
@@ -635,6 +627,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
 
     @NotNull private Set<Biome> getPossibleBiomes(CubeWorldGenRegion level, CubePos mainPos) {
         Set<Biome> set = new ObjectArraySet<>();
+        //noinspection ConstantConditions
         if (((Object) this) instanceof FlatLevelSource) {
             this.biomeSource.possibleBiomes().stream().map(Holder::value).forEach(set::add);
             return set;
