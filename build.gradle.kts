@@ -20,12 +20,12 @@ plugins {
     id("io.github.opencubicchunks.gradle.dasm")
 }
 
-val minecraft_version: String by project
-val loader_version: String by project
-val fabric_version: String by project
+val minecraftVersion: String by project
+val loaderVersion: String by project
+val fabricVersion: String by project
 val lwjglVersion: String by project
 val lwjglNatives: String by project
-val modid: String by project
+val modId: String by project
 val debugArtifactTransforms: String by project
 
 javaHeaders {
@@ -36,20 +36,20 @@ javaHeaders {
 
 mcGitVersion {
     isSnapshot = true
-    mcVersion = minecraft_version
+    mcVersion = minecraftVersion
     setCommitVersion("570c0cbf0cdc15b8348a862a519d3399a943af9", "0.0")
 }
 
-val generatePackageInfo by tasks.creating
+val generatePackageInfo: Task by tasks.creating
 generatePackageInfo.apply {
-    setGroup("filegen")
-    doFirst({
+    group = "filegen"
+    doFirst {
         GeneratePackageInfo.generateFiles(project.sourceSets["main"])
-    })
+    }
 }
 
-val genAll by tasks.creating {
-    setGroup("filegen")
+val genAll: Task by tasks.creating {
+    group = "filegen"
     dependsOn(generatePackageInfo, "generateMixinConfigs")
 }
 
@@ -113,12 +113,12 @@ base {
     archivesName.set("CubicChunks")
 }
 
-val debugCompile by configurations.creating
-val debugRuntime by configurations.creating {
+val debugCompile: Configuration by configurations.creating
+val debugRuntime: Configuration by configurations.creating {
     extendsFrom(debugCompile)
 }
-val extraTests by configurations.creating
-val shade by configurations.creating
+val extraTests: Configuration by configurations.creating
+val shade: Configuration by configurations.creating
 
 sourceSets {
     create("debug") {
@@ -234,33 +234,33 @@ when (OperatingSystem.current()) {
 }
 
 dependencies {
-    minecraft("com.mojang:minecraft:${minecraft_version}")
-    mappings(loom.layered({
+    minecraft("com.mojang:minecraft:${minecraftVersion}")
+    mappings(loom.layered {
         officialMojangMappings {
             nameSyntheticMembers = true
         }
         parchment("org.parchmentmc.data:parchment-1.18.2:2022.05.22@zip")
-    }))
-    modImplementation("net.fabricmc:fabric-loader:${loader_version}")
+    })
+    modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
 
     // Add each module as a dependency
     listOf("fabric-api-base", "fabric-command-api-v1", "fabric-networking-v0", "fabric-lifecycle-events-v1", "fabric-resource-loader-v0").forEach {
-        modImplementation(fabricApi.module(it, fabric_version))
+        modImplementation(fabricApi.module(it, fabricVersion))
     }
 
-    // modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    // modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabricVersion}"
 //
 //    modRuntime ("supercoder79:databreaker:0.2.9") {
 //        exclude module: "fabric-loader"
 //    }
 
     // we shade the core classes directly into CC, so it gets remapped
-    shade(implementation(project(":CubicChunksCore"), {
+    shade(implementation(project(":CubicChunksCore")) {
         attributes {
             attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements::class, LibraryElements.JAR))
         }
         isTransitive = false
-    }))
+    })
 
     debugCompile("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
     debugRuntime("org.lwjgl:lwjgl::$lwjglNatives")
@@ -272,9 +272,9 @@ dependencies {
     include(implementation("com.electronwill.night-config:core:3.6.0")!!)
     include(implementation("com.electronwill.night-config:toml:3.6.0")!!)
 
-    extraTests(project(":CubicChunksCore"), {
+    extraTests(project(":CubicChunksCore")) {
         targetConfiguration = "testArchivesOutput"
-    })
+    }
 
     compileOnly("com.google.code.findbugs:jsr305:3.0.1")
     testCompileOnly("com.google.code.findbugs:jsr305:3.0.1")
@@ -292,7 +292,7 @@ jar.apply {
     dependsOn(configurations["shade"])
     doFirst {
         from({
-            project.configurations["shade"].map { if (it.isDirectory()) it else zipTree(it) }.toList()
+            project.configurations["shade"].map { if (it.isDirectory) it else zipTree(it) }.toList()
         })
     }
 }
@@ -304,11 +304,11 @@ val unzipTests by tasks.creating(Copy::class) {
     }
     dependsOn(configurations["extraTests"])
     from(configurations["extraTests"])
-    doFirst({
+    doFirst {
         val testsFile = configurations["extraTests"].resolve().iterator().next()
         from(zipTree(testsFile))
         exclude(testsFile.name)
-    })
+    }
     into(sourceSets.test.get().output.classesDirs.asPath)
 }
 
@@ -358,7 +358,7 @@ jar.apply {
     from("LICENSE")
     manifest {
         attributes(
-                "Specification-Title" to modid,
+                "Specification-Title" to modId,
                 "Specification-Vendor" to "cubicchunks",
                 "Specification-Version" to "1", // We are version 1 of ourselves
                 "Implementation-Title" to project.name,
