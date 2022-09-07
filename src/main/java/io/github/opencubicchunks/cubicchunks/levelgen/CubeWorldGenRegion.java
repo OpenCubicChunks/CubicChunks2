@@ -210,8 +210,8 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
                 throw Util.pauseInIde(new RuntimeException(String.format("Section is not of correct status. Expecting %s, got %s "
                     + "| %s %s %s", requiredStatus, icube.getStatus(), x, y, z)));
             } else {
-                throw Util.pauseInIde(new RuntimeException(String.format("We are asking a region for a section out of bound | "
-                    + "%s %s %s", x, y, z) + "\n" + String.format("Bound | " + "%s %s %s", this.minCubeX, this.minCubeY, this.minCubeZ)));
+                throw Util.pauseInIde(new RuntimeException(String.format("We are asking a region for a section out of bound | " + "%s %s %s", x, y, z) + "\n" +
+                    String.format("Bound | " + "(%s %s %s), (%s %s %s)", this.minCubeX, this.minCubeY, this.minCubeZ, this.maxCubeX, this.maxCubeY, this.maxCubeZ)));
             }
         }
     }
