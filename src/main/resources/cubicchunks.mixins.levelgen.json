@@ -43,8 +43,7 @@
         "common.placement.verticalanchor.MixinVerticalAnchorAboveBottom",
         "common.placement.verticalanchor.MixinVerticalAnchorBelowTop",
         "common.structure.MixinStructureFeature",
-        "common.structure.MixinStructurePiece",
-        "common.placement.MixinHeightRangePlacement"
+        "common.structure.MixinStructurePiece"
     ],
     "client": [],
     "server": []

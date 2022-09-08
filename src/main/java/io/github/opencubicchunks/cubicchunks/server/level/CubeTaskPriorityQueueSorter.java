@@ -39,26 +39,26 @@ public class CubeTaskPriorityQueueSorter implements AutoCloseable, ChunkHolder.L
     }
 
     // func_219069_a, message
-    public static CubeTaskPriorityQueueSorter.FunctionEntry<Runnable> createMsg(Runnable runnable, long pos, IntSupplier p_219069_3_) {
-        return new CubeTaskPriorityQueueSorter.FunctionEntry<>((p_219072_1_) -> () -> {
+    public static Message<Runnable> createMsg(Runnable runnable, long pos, IntSupplier p_219069_3_) {
+        return new Message<>((p_219072_1_) -> () -> {
             runnable.run();
             p_219072_1_.tell(Unit.INSTANCE);
         }, pos, p_219069_3_);
     }
 
     // func_219081_a, message
-    public static CubeTaskPriorityQueueSorter.FunctionEntry<Runnable> createMsg(ChunkHolder holder, Runnable p_219081_1_) {
+    public static Message<Runnable> createMsg(ChunkHolder holder, Runnable p_219081_1_) {
         return createMsg(p_219081_1_, ((CubeHolder) holder).getCubePos().asLong(), holder::getQueueLevel);
     }
 
     // func_219073_a, release
-    public static CubeTaskPriorityQueueSorter.RunnableEntry createSorterMsg(Runnable p_219073_0_, long p_219073_1_, boolean p_219073_3_) {
-        return new CubeTaskPriorityQueueSorter.RunnableEntry(p_219073_0_, p_219073_1_, p_219073_3_);
+    public static Release createSorterMsg(Runnable p_219073_0_, long p_219073_1_, boolean p_219073_3_) {
+        return new Release(p_219073_0_, p_219073_1_, p_219073_3_);
     }
 
     // func_219087_a, getProcessor
-    public <T> ProcessorHandle<CubeTaskPriorityQueueSorter.FunctionEntry<T>> createExecutor(ProcessorHandle<T> iTaskExecutor, boolean p_219087_2_) {
-        return this.sorter.<ProcessorHandle<CubeTaskPriorityQueueSorter.FunctionEntry<T>>>ask((p_219086_3_) -> new StrictQueue.IntRunnable(0, () -> {
+    public <T> ProcessorHandle<Message<T>> createExecutor(ProcessorHandle<T> iTaskExecutor, boolean p_219087_2_) {
+        return this.sorter.<ProcessorHandle<Message<T>>>ask((p_219086_3_) -> new StrictQueue.IntRunnable(0, () -> {
             this.getQueue(iTaskExecutor);
             p_219086_3_.tell(ProcessorHandle.of("chunk priority sorter around " + iTaskExecutor.name(),
                 (p_219071_3_) -> this.execute(iTaskExecutor, p_219071_3_.task, p_219071_3_.cubePos, p_219071_3_.level, p_219087_2_)));
@@ -66,8 +66,8 @@ public class CubeTaskPriorityQueueSorter implements AutoCloseable, ChunkHolder.L
     }
 
     // func_219091_a, getReleaseProcessor
-    public ProcessorHandle<CubeTaskPriorityQueueSorter.RunnableEntry> createSorterExecutor(ProcessorHandle<Runnable> p_219091_1_) {
-        return this.sorter.<ProcessorHandle<CubeTaskPriorityQueueSorter.RunnableEntry>>ask((p_219080_2_) -> new StrictQueue.IntRunnable(0, () -> p_219080_2_.tell(ProcessorHandle
+    public ProcessorHandle<Release> createSorterExecutor(ProcessorHandle<Runnable> p_219091_1_) {
+        return this.sorter.<ProcessorHandle<Release>>ask((p_219080_2_) -> new StrictQueue.IntRunnable(0, () -> p_219080_2_.tell(ProcessorHandle
             .of("chunk priority sorter around " + p_219091_1_.name(), (p_219075_2_) -> this.sort(p_219091_1_, p_219075_2_.pos, p_219075_2_.runnable, p_219075_2_.clearQueue))))).join();
     }
 
@@ -149,24 +149,24 @@ public class CubeTaskPriorityQueueSorter implements AutoCloseable, ChunkHolder.L
         throw new AbstractMethodError("This function should never be called! EVER");
     }
 
-    public static final class FunctionEntry<T> {
+    public static final class Message<T> {
         private final Function<ProcessorHandle<Unit>, T> task;
         private final long cubePos;
         private final IntSupplier level;
 
-        private FunctionEntry(Function<ProcessorHandle<Unit>, T> p_i50028_1_, long p_i50028_2_, IntSupplier p_i50028_4_) {
+        private Message(Function<ProcessorHandle<Unit>, T> p_i50028_1_, long p_i50028_2_, IntSupplier p_i50028_4_) {
             this.task = p_i50028_1_;
             this.cubePos = p_i50028_2_;
             this.level = p_i50028_4_;
         }
     }
 
-    public static final class RunnableEntry {
+    public static final class Release {
         private final Runnable runnable;
         private final long pos;
         private final boolean clearQueue;
 
-        private RunnableEntry(Runnable runnable, long pos, boolean p_i50026_4_) {
+        private Release(Runnable runnable, long pos, boolean p_i50026_4_) {
             this.runnable = runnable;
             this.pos = pos;
             this.clearQueue = p_i50026_4_;

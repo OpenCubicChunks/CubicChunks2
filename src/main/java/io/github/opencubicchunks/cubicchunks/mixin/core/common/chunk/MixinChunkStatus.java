@@ -367,7 +367,8 @@ public class MixinChunkStatus {
             return;
         }
         protoCube.setLightEngine(lightEngine);
-        if (!protoCube.getStatus().isOrAfter(status)) {
+        ChunkStatus oldStatus = protoCube.getStatus();
+        if (!oldStatus.isOrAfter(status)) {
             // TODO: reimplement heightmaps
             //Heightmap.updateChunkHeightmaps(chunk, EnumSet
             //        .of(Heightmap.Type.MOTION_BLOCKING, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, Heightmap.Type.OCEAN_FLOOR,

@@ -94,7 +94,7 @@ public class CubicPlayerTicketTracker extends FixedPlayerDistanceCubeTracker {
     }
 
 
-    public void processAllUpdates() {
+    public void runAllUpdates() {
         horizontalGraphGroup.processAllUpdates();
         verticalGraphGroup.processAllUpdates();
         if (!this.positionsAffected.isEmpty()) {
@@ -145,7 +145,7 @@ public class CubicPlayerTicketTracker extends FixedPlayerDistanceCubeTracker {
      * @param level the cube's level
      * @param isDecreasing whether the change is decreasing
      */
-    public void updateSourceLevel(long pos, int level, boolean isDecreasing) {
+    public void update(long pos, int level, boolean isDecreasing) {
         horizontalGraphGroup.updateActualSourceLevel(pos, level, isDecreasing);
         verticalGraphGroup.updateActualSourceLevel(pos, level, isDecreasing);
     }

@@ -36,7 +36,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ThreadedLevelLightEngine.class)
 public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngine implements CubicThreadedLevelLightEngine {
 
-    private ProcessorHandle<CubeTaskPriorityQueueSorter.FunctionEntry<Runnable>> cubeSorterMailbox;
+    private ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeSorterMailbox;
 
     @Shadow @Final private ChunkMap chunkMap;
 
@@ -49,7 +49,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
     protected abstract void addTask(int x, int z, ThreadedLevelLightEngine.TaskType stage, Runnable task);
 
     @Override public void postConstructorSetup(CubeTaskPriorityQueueSorter sorter,
-                                               ProcessorHandle<CubeTaskPriorityQueueSorter.FunctionEntry<Runnable>> taskExecutor) {
+                                               ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> taskExecutor) {
         this.cubeSorterMailbox = taskExecutor;
     }
 

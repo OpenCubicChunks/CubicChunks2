@@ -42,7 +42,7 @@ public class HorizontalGraphGroup extends CubeTracker {
     }
 
     @Override
-    protected int getSourceLevel(long pos) {
+    protected int getLevelFromSource(long pos) {
         return this.vertical.cubesInRange.containsKey(pos) ? 0 : Integer.MAX_VALUE;
     }
 
@@ -52,7 +52,7 @@ public class HorizontalGraphGroup extends CubeTracker {
     }
 
     public void updateActualSourceLevel(long pos, int level, boolean isDecreasing) {
-        vertical.updateSourceLevel(pos, level, isDecreasing);
+        vertical.update(pos, level, isDecreasing);
     }
 
     private class Vertical extends CubeTracker {
@@ -90,11 +90,11 @@ public class HorizontalGraphGroup extends CubeTracker {
         protected void chunkLevelChanged(long pos, int oldLevel, int newLevel) {
             boolean contained = this.cubesInRange.containsKey(pos);
             int actualNewLevel = contained ? 0 : Integer.MAX_VALUE;
-            superior.updateSourceLevel(pos, actualNewLevel, contained);
+            superior.update(pos, actualNewLevel, contained);
         }
 
         @Override
-        protected int getSourceLevel(long pos) {
+        protected int getLevelFromSource(long pos) {
             return this.hasPlayerInChunk(pos) ? 0 : Integer.MAX_VALUE;
         }
 

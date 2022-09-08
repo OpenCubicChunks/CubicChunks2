@@ -58,7 +58,6 @@
         "common.network.MixinFriendlyByteBuf",
         "common.progress.MixinLoggerChunkProgressListener",
         "common.server.MixinPlayerList",
-        "common.ticket.MixinChunkMapDistanceManager",
         "common.ticket.MixinDistanceManager"
     ],
     "client": [

@@ -9,7 +9,7 @@ import net.minecraft.util.thread.ProcessorHandle;
 
 public interface CubicThreadedLevelLightEngine {
     void postConstructorSetup(CubeTaskPriorityQueueSorter sorter,
-                              ProcessorHandle<CubeTaskPriorityQueueSorter.FunctionEntry<Runnable>> taskExecutor);
+                              ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> taskExecutor);
 
     void setCubeStatusEmpty(CubePos cubePos);
 

@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(NaturalSpawner.class)
-public class MixinNaturalSpawner {
+public class NaturalSpawnerFixes {
     @Dynamic @Redirect(method = "isRightDistanceToPlayerAndSpawnPointForCube", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/ChunkAccess;getCubePos()"
         + "Lio/github/opencubicchunks/cc_core/api/CubePos;"))
     private static CubePos getCubePosChunkToCube(ChunkAccess cube) {

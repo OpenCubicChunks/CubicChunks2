@@ -8,7 +8,8 @@
         "defaultRequire": 1
     },
     "mixins": [
-        "common.level.MixinNaturalSpawner"
+        "common.level.NaturalSpawnerFixes",
+        "common.ticket.DistanceManagerFixes"
     ],
     "client": [],
     "server": []

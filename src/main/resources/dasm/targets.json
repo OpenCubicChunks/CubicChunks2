@@ -6,12 +6,16 @@
                 "net.minecraft.server.level.ChunkHolder updateChunkScheduling(long, int, net.minecraft.server.level.ChunkHolder, int)": {
                     "newName": "updateCubeScheduling",
                     "mappingsOwner": "net.minecraft.server.level.DistanceManager"
+                },
+                "boolean isChunkToRemove(long)": {
+                    "newName": "isCubeToRemove",
+                    "mappingsOwner": "net.minecraft.server.level.DistanceManager"
+                },
+                "net.minecraft.server.level.ChunkHolder getChunk(long)": {
+                    "newName": "getCube",
+                    "mappingsOwner": "net.minecraft.server.level.DistanceManager"
                 }
-            },
-            "useSets": [
-                "general",
-                "chunkMap$DistanceManagerSet"
-            ]
+            }
         },
         "net.minecraft.server.level.ChunkMap": {
             "targetMethods": {
@@ -40,13 +44,34 @@
         },
         "net.minecraft.server.level.ChunkHolder": {
             "targetMethods": {
-                "void \u003cinit\u003e(net.minecraft.world.level.ChunkPos, int, net.minecraft.world.level.LevelHeightAccessor, net.minecraft.world.level.lighting.LevelLightEngine, net.minecraft.server.level.ChunkHolder$LevelChangeListener, net.minecraft.server.level.ChunkHolder$PlayerProvider)": "\u003cinit\u003e",
+                "void <init>(net.minecraft.world.level.ChunkPos, int, net.minecraft.world.level.LevelHeightAccessor, net.minecraft.world.level.lighting.LevelLightEngine, net.minecraft.server.level.ChunkHolder$LevelChangeListener, net.minecraft.server.level.ChunkHolder$PlayerProvider)": "\u003cinit\u003e",
                 "void updateFutures(net.minecraft.server.level.ChunkMap, java.util.concurrent.Executor)": "updateCubeFutures"
             },
             "useSets": [
                 "general",
                 "chunkHolderSet"
             ]
+        },
+        "net.minecraft.server.level.DistanceManager": {
+            "targetMethods": {
+                "void purgeStaleTickets()": "purgeStaleCubeTickets",
+                "boolean runAllUpdates(net.minecraft.server.level.ChunkMap)": "runAllUpdatesCubic",
+                "void addTicket(long, net.minecraft.server.level.Ticket)": "addCubeTicket",
+                "void removeTicket(long, net.minecraft.server.level.Ticket)": "removeCubeTicket",
+                "void addTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "addCubeTicket",
+                "void removeTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "removeCubeTicket",
+                "void addRegionTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "addCubeRegionTicket",
+                "void removeRegionTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "removeCubeRegionTicket",
+                "net.minecraft.util.SortedArraySet getTickets(long)": "getCubeTickets",
+                "void updateChunkForced(net.minecraft.world.level.ChunkPos, boolean)": "updateCubeForced",
+                "void addPlayer(net.minecraft.core.SectionPos, net.minecraft.server.level.ServerPlayer)": "addCubePlayer",
+                "void removePlayer(net.minecraft.core.SectionPos, net.minecraft.server.level.ServerPlayer)": "removeCubePlayer",
+                "boolean inEntityTickingRange(long)": "isEntityTickingRangeCube",
+                "boolean inBlockTickingRange(long)": "inBlockTickingRangeCube",
+                "int getNaturalSpawnChunkCount()": "getNaturalSpawnCubeCount",
+                "boolean hasPlayersNearby(long)": "hasPlayersNearbyCube",
+                "void removeTicketsOnClosing()": "removeCubeTicketsOnClosing"
+            }
         }
     }
 }
