@@ -4,6 +4,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
@@ -143,6 +144,18 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
     }, at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;PLAYER:Lnet/minecraft/server/level/TicketType;"))
     private TicketType<?> getPlayerCubicTicketType() {
         return CubicTicketType.PLAYER;
+    }
+
+    // COLUMN tickets shouldn't be removed, as they are removed only on cube unload
+    @Redirect(method = "removeTicketsOnClosing", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/ImmutableSet;of(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableSet;"))
+    private ImmutableSet<?> modifyTicketTypesToIgnore(Object t1, Object t2, Object t3) {
+        return ImmutableSet.of(t1, t2, t3, CubicTicketType.COLUMN);
+    }
+
+    @Dynamic @Redirect(method = "removeCubeTicketsOnClosing()V",
+        at = @At(value = "INVOKE", target = "Lcom/google/common/collect/ImmutableSet;of(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableSet;"))
+    private ImmutableSet<?> modifyTicketTypesToIgnoreCC(Object t1, Object t2, Object t3) {
+        return ImmutableSet.of(CubicTicketType.LIGHT, CubicTicketType.UNKNOWN, t1, t2, t3);
     }
 
     @Inject(method = "removeTicketsOnClosing", at = @At("HEAD"))
