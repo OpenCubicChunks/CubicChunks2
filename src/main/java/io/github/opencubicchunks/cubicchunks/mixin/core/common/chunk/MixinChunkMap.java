@@ -169,13 +169,14 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Shadow @Final ServerLevel level;
     @Shadow int viewDistance;
 
+    final LongSet cubesToDrop = new LongOpenHashSet();
+
     private CubeTaskPriorityQueueSorter cubeQueueSorter;
 
     private final Long2ObjectLinkedOpenHashMap<ChunkHolder> updatingCubeMap = new Long2ObjectLinkedOpenHashMap<>();
     private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleCubeMap = this.updatingCubeMap.clone();
 
     // NOTE: used from ASM, don't rename
-    final LongSet cubesToDrop = new LongOpenHashSet();
     private final LongSet cubeEntitiesInLevel = new LongOpenHashSet();
     private final Long2ObjectLinkedOpenHashMap<ChunkHolder> pendingCubeUnloads = new Long2ObjectLinkedOpenHashMap<>();
 

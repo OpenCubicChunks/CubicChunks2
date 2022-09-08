@@ -34,7 +34,7 @@
     <suppress checks="StaticVariableName" files=".*Mixin.*\.java"/>
     <!-- Mixins may have an underscore to separate target from functionality -->
     <suppress checks="TypeName" files=".*Mixin.*\.java"/>
-    <suppress checks="DeclarationOrder" files="MixinNaturalSpawner.java|Int3HashSet.java"/>
+    <suppress checks="DeclarationOrder" files="MixinNaturalSpawner.java|Int3HashSet.java|MixinDistanceManager.java|CubicDistanceManager.java"/>
     <suppress checks="HiddenField" files="Int3HashSet.java"/>
     <suppress checks="NoFinalizer" files="Int3HashSet.java"/>
     <suppress checks="EmptyForIteratorPad" files="Int3HashSet.java|Int3HashSetTest.java"/>

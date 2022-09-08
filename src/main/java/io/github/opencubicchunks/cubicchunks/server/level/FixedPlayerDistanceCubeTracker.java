@@ -6,10 +6,9 @@ import it.unimi.dsi.fastutil.objects.ObjectSet;
 import net.minecraft.server.level.ServerPlayer;
 
 public class FixedPlayerDistanceCubeTracker extends CubeTracker {
-    private final CubicDistanceManager cubicDistanceManager; // this$0
     public final Long2ByteMap cubes = new Long2ByteOpenHashMap();
     protected final int range;
-
+    private final CubicDistanceManager cubicDistanceManager; // this$0
 
     public FixedPlayerDistanceCubeTracker(CubicDistanceManager cubicDistanceManager, int i) {
         super(i + 2, 16, 256);

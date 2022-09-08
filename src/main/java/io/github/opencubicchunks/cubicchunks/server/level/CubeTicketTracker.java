@@ -9,7 +9,6 @@ import net.minecraft.util.SortedArraySet;
 public class CubeTicketTracker extends CubeTracker {
     private final CubicDistanceManager cubicDistanceManager;
 
-
     public CubeTicketTracker(CubicDistanceManager cubicDistanceManager) {
         //TODO: change the arguments passed into super to CCCubeManager or CCColumnManager
         super(CubeMap.MAX_CUBE_DISTANCE + 2, 16, 256);
@@ -17,11 +16,11 @@ public class CubeTicketTracker extends CubeTracker {
     }
 
     @Override protected int getLevelFromSource(long pos) {
-        SortedArraySet<Ticket<?>> sortedArraySet =  cubicDistanceManager.getCubeTickets().get(pos);
+        SortedArraySet<Ticket<?>> sortedArraySet = cubicDistanceManager.getCubeTickets().get(pos);
         if (sortedArraySet == null) {
             return Integer.MAX_VALUE;
         } else {
-            return sortedArraySet.isEmpty() ? Integer.MAX_VALUE : ((Ticket)sortedArraySet.first()).getTicketLevel();
+            return sortedArraySet.isEmpty() ? Integer.MAX_VALUE : sortedArraySet.first().getTicketLevel();
         }
     }
 

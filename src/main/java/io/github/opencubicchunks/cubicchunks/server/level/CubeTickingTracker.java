@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.server.level;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import com.mojang.datafixers.util.Pair;
@@ -23,7 +22,7 @@ public class CubeTickingTracker extends CubeTracker {
 
     public CubeTickingTracker() {
         super(34, 16, 256);
-        this.chunks.defaultReturnValue((byte)33);
+        this.chunks.defaultReturnValue((byte) 33);
     }
 
     private SortedArraySet<Ticket<?>> getTickets(long l) {
@@ -41,7 +40,10 @@ public class CubeTickingTracker extends CubeTracker {
         if (ticket.getTicketLevel() < i) {
             this.update(l, ticket.getTicketLevel(), true);
         }
+    }
 
+    public <T> void addTicket(TicketType<T> ticketType, CubePos chunkPos, int i, T object) {
+        this.addTicket(chunkPos.asLong(), TicketAccess.createNew(ticketType, i, object));
     }
 
     public void removeTicket(long l, Ticket<?> ticket) {
@@ -54,10 +56,6 @@ public class CubeTickingTracker extends CubeTracker {
         this.update(l, this.getTicketLevelAt(sortedArraySet), false);
     }
 
-    public <T> void addTicket(TicketType<T> ticketType, CubePos chunkPos, int i, T object) {
-        this.addTicket(chunkPos.asLong(), TicketAccess.createNew(ticketType, i, object));
-    }
-
     public <T> void removeTicket(TicketType<T> ticketType, CubePos chunkPos, int i, T object) {
         Ticket<T> ticket = TicketAccess.createNew(ticketType, i, object);
         this.removeTicket(chunkPos.asLong(), ticket);
@@ -68,7 +66,7 @@ public class CubeTickingTracker extends CubeTracker {
         ObjectIterator<Long2ObjectMap.Entry<SortedArraySet<Ticket<?>>>> var3 = this.tickets.long2ObjectEntrySet().iterator();
 
         Ticket<CubePos> ticket;
-        while(var3.hasNext()) {
+        while (var3.hasNext()) {
             Long2ObjectMap.Entry<SortedArraySet<Ticket<?>>> entry = var3.next();
 
             for (Ticket<?> value : entry.getValue()) {
@@ -80,10 +78,10 @@ public class CubeTickingTracker extends CubeTracker {
         }
 
         for (Pair<Ticket<CubePos>, Long> ticketLongPair : list) {
-            Long long_ = ticketLongPair.getSecond();
+            Long pos = ticketLongPair.getSecond();
             ticket = ticketLongPair.getFirst();
-            this.removeTicket(long_, ticket);
-            CubePos chunkPos = new CubePos(long_);
+            this.removeTicket(pos, ticket);
+            CubePos chunkPos = new CubePos(pos);
             TicketType<CubePos> ticketType = ticket.getType();
             this.addTicket(ticketType, chunkPos, i, chunkPos);
         }
@@ -106,7 +104,7 @@ public class CubeTickingTracker extends CubeTracker {
         if (level > 33) {
             this.chunks.remove(sectionPos);
         } else {
-            this.chunks.put(sectionPos, (byte)level);
+            this.chunks.put(sectionPos, (byte) level);
         }
     }
 
