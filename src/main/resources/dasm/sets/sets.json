@@ -14,7 +14,7 @@
 
             "net.minecraft.server.level.DistanceManager | it.unimi.dsi.fastutil.longs.Long2ObjectMap playersPerChunk": "playersPerCube",
             "net.minecraft.server.level.DistanceManager | it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap tickets": "cubeTickets",
-            "net.minecraft.server.level.DistanceManager | net.minecraft.server.level.DistanceManager.ChunkTicketTracker ticketTracker": "cubeTicketTracker",
+            "net.minecraft.server.level.DistanceManager | net.minecraft.server.level.DistanceManager$ChunkTicketTracker ticketTracker": "cubeTicketTracker",
             "net.minecraft.server.level.DistanceManager | net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker naturalSpawnChunkCounter": "naturalSpawnCubeCounter",
             "net.minecraft.server.level.DistanceManager | net.minecraft.server.level.TickingTracker tickingTicketsTracker": "tickingCubeTicketsTracker",
             "net.minecraft.server.level.DistanceManager | net.minecraft.server.level.DistanceManager$PlayerTicketTracker playerTicketManager": "cubicPlayerTicketManager",
@@ -58,7 +58,37 @@
             "net.minecraft.server.level.DistanceManager | boolean hasPlayersNearby(long)": "hasPlayersNearbyCube",
             "net.minecraft.server.level.DistanceManager | void removeTicketsOnClosing()": "removeCubeTicketsOnClosing",
 
-            "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker | void runAllUpdates()": "runAllUpdates"
+            "net.minecraft.server.level.DistanceManager$ChunkTicketTracker | int runDistanceUpdates(int)": "runDistanceUpdates",
+
+            "net.minecraft.server.level.DistanceManager$ChunkTicketTracker | void update(long, int, boolean)": {
+                "newName": "update",
+                "mappingsOwner": "net.minecraft.server.level.ChunkTracker"
+            },
+
+            "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker | void runAllUpdates()": "runAllUpdates",
+            "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker | void update(long, int, boolean)": {
+                "newName": "update",
+                "mappingsOwner": "net.minecraft.server.level.ChunkTracker"
+            },
+
+            "net.minecraft.server.level.DistanceManager$PlayerTicketTracker | void runAllUpdates()": {
+                "newName": "runAllUpdates",
+                "mappingsOwner": "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker"
+            },
+            "net.minecraft.server.level.DistanceManager$PlayerTicketTracker | void update(long, int, boolean)": {
+                "newName": "update",
+                "mappingsOwner": "net.minecraft.server.level.ChunkTracker"
+            },
+
+            "net.minecraft.server.level.TickingTracker | net.minecraft.util.SortedArraySet getTickets(long)": "getTickets",
+            "net.minecraft.server.level.TickingTracker | void addTicket(long, net.minecraft.server.level.Ticket)": "addTicket",
+            "net.minecraft.server.level.TickingTracker | void addTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "addTicket",
+            "net.minecraft.server.level.TickingTracker | void removeTicket(long, net.minecraft.server.level.Ticket)": "removeTicket",
+            "net.minecraft.server.level.TickingTracker | void removeTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "removeTicket",
+            "net.minecraft.server.level.TickingTracker | void replacePlayerTicketsLevel(int)": "replacePlayerTicketsLevel",
+            "net.minecraft.server.level.TickingTracker | int getLevel(net.minecraft.world.level.ChunkPos)": "getLevel",
+            "net.minecraft.server.level.TickingTracker | void runAllUpdates()": "runAllUpdates",
+            "net.minecraft.server.level.TickingTracker | java.lang.String getTicketDebugString(long)": "getTicketDebugString"
 
         }
     },

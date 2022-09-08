@@ -47,6 +47,7 @@ public class CubeTicketTracker extends CubeTracker {
         }
     }
 
+    // Used from ASM
     public int runDistanceUpdates(int distance) {
         return this.runUpdates(distance);
     }
