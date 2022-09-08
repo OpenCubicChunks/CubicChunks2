@@ -66,10 +66,6 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
 
     private long cubeTicketTickCounter;
 
-    @Shadow private static int getTicketLevelAt(SortedArraySet<Ticket<?>> tickets) {
-        throw new Error("Mixin did not apply correctly");
-    }
-
     @Shadow abstract void addTicket(long position, Ticket<?> ticket);
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -147,7 +143,8 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
     }
 
     // COLUMN tickets shouldn't be removed, as they are removed only on cube unload
-    @Redirect(method = "removeTicketsOnClosing", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/ImmutableSet;of(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableSet;"))
+    @Redirect(method = "removeTicketsOnClosing", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/ImmutableSet;of(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)"
+        + "Lcom/google/common/collect/ImmutableSet;"))
     private ImmutableSet<?> modifyTicketTypesToIgnore(Object t1, Object t2, Object t3) {
         return ImmutableSet.of(t1, t2, t3, CubicTicketType.COLUMN);
     }
