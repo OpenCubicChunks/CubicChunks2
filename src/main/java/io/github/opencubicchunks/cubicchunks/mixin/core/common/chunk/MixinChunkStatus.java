@@ -156,13 +156,13 @@ public class MixinChunkStatus {
         at = @At("HEAD"), cancellable = true
     )
     private static void cubicChunksBiome(ChunkStatus chunkStatus, Executor executor, ServerLevel level, ChunkGenerator chunkGenerator, StructureManager structureManager,
-                                         ThreadedLevelLightEngine threadedLevelLightEngine, Function function, List list, ChunkAccess chunkAccess, boolean bl,
+                                         ThreadedLevelLightEngine threadedLevelLightEngine, Function function, List<CubeAccess> cubes, ChunkAccess chunkAccess, boolean bl,
                                          CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
         if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
             return;
         }
         if (chunkAccess instanceof ProtoCube cube) {
-            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(level, unsafeCast(list), chunkStatus, chunkAccess, -1);
+            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(level, cubes, chunkStatus, chunkAccess, -1);
 
             cube.setHeightToCubeBounds(true);
             CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> chainedNoiseFutures = null;

@@ -21,6 +21,7 @@ import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.nbt.CompoundTag;
@@ -385,11 +386,13 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
         return this.biomeManager;
     }
 
-    //TODO: Cube Biome Storage
     @Override
     public Holder<Biome> getNoiseBiome(int x, int y, int z) {
-        CubeAccess cube = this.getCube(Coords.blockToCube(x), Coords.blockToCube(y), Coords.blockToCube(z), ChunkStatus.BIOMES, false);
-        return cube != null ? cube.getNoiseBiome(x, y, z) : this.getUncachedNoiseBiome(x, y, z);
+        CubeAccess cube = this.getCube(Coords.blockToCube(QuartPos.toBlock(x)), Coords.blockToCube(QuartPos.toBlock(y)), Coords.blockToCube(QuartPos.toBlock(z)), ChunkStatus.BIOMES, false);
+        if (cube != null) {
+            return cube.getNoiseBiome(x, y, z);
+        }
+        return this.getUncachedNoiseBiome(x, y, z);
     }
 
     @Override public boolean isClientSide() {
