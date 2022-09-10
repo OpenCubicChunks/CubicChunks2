@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
@@ -85,6 +86,10 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
             assert delegateCube != null;
             getSections()[relativeSectionY] = delegateCube.getSections()[Coords.sectionToIndex(newColumnX, sectionY, newColumnZ)];
         }
+    }
+
+    @Override public void setStatus(ChunkStatus status) {
+        ((ProtoCube) delegates[0]).setStatus(status);
     }
 
     public void applySections() {

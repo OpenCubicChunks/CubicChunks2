@@ -134,7 +134,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     }
 
     @Override
-    public synchronized void fillBiomesFromNoise(BiomeResolver biomeResolver, Climate.Sampler sampler) {
+    public void fillBiomesFromNoise(BiomeResolver biomeResolver, Climate.Sampler sampler) {
         for (int sectionX = 0; sectionX < DIAMETER_IN_SECTIONS; sectionX++) {
             for (int sectionY = 0; sectionY < DIAMETER_IN_SECTIONS; sectionY++) {
                 for (int sectionZ = 0; sectionZ < DIAMETER_IN_SECTIONS; sectionZ++) {
