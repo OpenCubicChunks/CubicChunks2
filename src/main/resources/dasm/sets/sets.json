@@ -6,11 +6,14 @@
             "net.minecraft.server.level.DistanceManager$ChunkTicketTracker": "io.github.opencubicchunks.cubicchunks.server.level.CubeTicketTracker",
             "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker": "io.github.opencubicchunks.cubicchunks.server.level.FixedPlayerDistanceCubeTracker",
             "net.minecraft.server.level.DistanceManager$PlayerTicketTracker": "io.github.opencubicchunks.cubicchunks.server.level.CubicPlayerTicketTracker",
+            "net.minecraft.server.level.ChunkTaskPriorityQueue": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueue",
             "net.minecraft.server.level.ChunkTaskPriorityQueueSorter": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter",
-            "net.minecraft.server.level.TickingTracker": "io.github.opencubicchunks.cubicchunks.server.level.CubeTickingTracker"
+            "net.minecraft.server.level.TickingTracker": "io.github.opencubicchunks.cubicchunks.server.level.CubeTickingTracker",
+            "net.minecraft.server.level.ChunkHolder$1": "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder$CubeLoadingError"
         },
         "fieldRedirects": {
             "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.LongSet toDrop": "cubesToDrop",
+            "net.minecraft.server.level.ChunkMap | int MAX_CHUNK_DISTANCE": "MAX_CUBE_DISTANCE",
 
             "net.minecraft.server.level.DistanceManager | it.unimi.dsi.fastutil.longs.Long2ObjectMap playersPerChunk": "playersPerCube",
             "net.minecraft.server.level.DistanceManager | it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap tickets": "cubeTickets",
@@ -25,7 +28,12 @@
             "net.minecraft.server.level.DistanceManager | it.unimi.dsi.fastutil.longs.LongSet ticketsToRelease": "cubeTicketsToRelease",
             "net.minecraft.server.level.DistanceManager | long ticketTickCounter": "cubeTicketTickCounter",
 
-            "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker | it.unimi.dsi.fastutil.longs.Long2ByteMap chunks": "cubes"
+            "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker | it.unimi.dsi.fastutil.longs.Long2ByteMap chunks": "cubes",
+
+            "net.minecraft.server.level.ChunkTaskPriorityQueue | int PRIORITY_LEVEL_COUNT": "LEVEL_COUNT",
+
+            "net.minecraft.server.level.ChunkHolder | net.minecraft.world.level.ChunkPos pos": "cubePos"
+
         },
         "methodRedirects": {
             "net.minecraft.world.level.chunk.LevelChunk | net.minecraft.world.level.ChunkPos getPos()": {
@@ -39,6 +47,9 @@
             "net.minecraft.core.SectionPos | net.minecraft.world.level.ChunkPos chunk()": "cube__ReplaceWithMixin",
             "net.minecraft.server.level.ChunkMap | net.minecraft.server.level.ChunkHolder updateChunkScheduling(long, int, net.minecraft.server.level.ChunkHolder, int)": "updateCubeScheduling",
             "net.minecraft.server.level.ChunkMap | net.minecraft.server.level.ChunkHolder getUpdatingChunkIfPresent(long)": "getUpdatingCubeIfPresent",
+            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareAccessibleChunk(net.minecraft.server.level.ChunkHolder)": "prepareAccessibleCube",
+            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareTickingChunk(net.minecraft.server.level.ChunkHolder)": "prepareTickingCube",
+            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareEntityTickingChunk(net.minecraft.world.level.ChunkPos)": "prepareEntityTickingCube",
 
             "net.minecraft.server.level.DistanceManager | void purgeStaleTickets()": "purgeStaleCubeTickets",
             "net.minecraft.server.level.DistanceManager | boolean runAllUpdates(net.minecraft.server.level.ChunkMap)": "runAllUpdatesCubic",
@@ -88,23 +99,17 @@
             "net.minecraft.server.level.TickingTracker | void replacePlayerTicketsLevel(int)": "replacePlayerTicketsLevel",
             "net.minecraft.server.level.TickingTracker | int getLevel(net.minecraft.world.level.ChunkPos)": "getLevel",
             "net.minecraft.server.level.TickingTracker | void runAllUpdates()": "runAllUpdates",
-            "net.minecraft.server.level.TickingTracker | java.lang.String getTicketDebugString(long)": "getTicketDebugString"
+            "net.minecraft.server.level.TickingTracker | java.lang.String getTicketDebugString(long)": "getTicketDebugString",
 
-        }
-    },
-    "chunkHolderSet": {
-        "typeRedirects": {
-            "net.minecraft.server.level.ChunkHolder$1": "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder$CubeLoadingError"
-        },
-        "fieldRedirects": {
-            "net.minecraft.server.level.ChunkMap | int MAX_CHUNK_DISTANCE": "MAX_CUBE_DISTANCE",
-            "net.minecraft.server.level.ChunkHolder | net.minecraft.world.level.ChunkPos pos": "cubePos"
-        },
-        "methodRedirects": {
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message message(java.lang.Runnable, long, java.util.function.IntSupplier)": "message",
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message message(net.minecraft.server.level.ChunkHolder, java.lang.Runnable)": "message",
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Release release(java.lang.Runnable, long, boolean)": "release",
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | net.minecraft.util.thread.ProcessorHandle getProcessor(net.minecraft.util.thread.ProcessorHandle, boolean)": "getProcessor",
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | net.minecraft.util.thread.ProcessorHandle getReleaseProcessor(net.minecraft.util.thread.ProcessorHandle)": "getReleaseProcessor",
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | void onLevelChange(net.minecraft.world.level.ChunkPos, java.util.function.IntSupplier, int, java.util.function.IntConsumer)": "onCubeLevelChange",
+
             "net.minecraft.server.level.ChunkHolder | net.minecraft.world.level.chunk.ChunkStatus getStatus(int)": "getCubeStatus",
-            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareAccessibleChunk(net.minecraft.server.level.ChunkHolder)": "prepareAccessibleCube",
-            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareTickingChunk(net.minecraft.server.level.ChunkHolder)": "prepareTickingCube",
-            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareEntityTickingChunk(net.minecraft.world.level.ChunkPos)": "prepareEntityTickingCube",
+            "net.minecraft.server.level.ChunkHolder | net.minecraft.world.level.ChunkPos getPos()": "getCubePos",
             "net.minecraft.server.level.ChunkHolder$LevelChangeListener | void onLevelChange(net.minecraft.world.level.ChunkPos, java.util.function.IntSupplier, int, java.util.function.IntConsumer)": "onCubeLevelChange"
         }
     },

@@ -8,6 +8,7 @@ import io.github.opencubicchunks.cubicchunks.config.CommonConfig;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.StripedBiomeSource;
 import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicLakePlacementModifier;
+import io.github.opencubicchunks.cubicchunks.mixin.ClassDuplicator;
 import io.github.opencubicchunks.cubicchunks.network.PacketDispatcher;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import net.fabricmc.api.ModInitializer;
@@ -28,7 +29,7 @@ public class CubicChunks extends CubicChunksBase implements ModInitializer {
             throw new IllegalStateException("Mixin not applied!");
         }
         EarlyConfig.getDiameterInSections();
-
+        ClassDuplicator.init();
         if (System.getProperty("cubicchunks.debug", "false").equalsIgnoreCase("true")) {
             try {
                 Class.forName("io.github.opencubicchunks.cubicchunks.debug.DebugVisualization").getMethod("enable").invoke(null);

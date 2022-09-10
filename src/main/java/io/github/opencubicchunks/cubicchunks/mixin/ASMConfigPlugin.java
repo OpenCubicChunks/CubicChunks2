@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -29,6 +30,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import org.spongepowered.asm.mixin.transformer.ClassInfo;
 
 public class ASMConfigPlugin implements IMixinConfigPlugin {
+    private static final ConcurrentHashMap<String, ClassNode> DUPLICATE_CLASSES = new ConcurrentHashMap<>();
     private final Map<String, RedirectsParser.ClassTarget> classTargetByName = new HashMap<>();
     private final Map<RedirectsParser.ClassTarget, List<RedirectsParser.RedirectSet>> redirectSetsByClassTarget = new HashMap<>();
 
@@ -66,6 +68,9 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         }
     }
 
+    public static ClassNode popDuplicatedClass(String name) {
+        return DUPLICATE_CLASSES.remove(name);
+    }
     @Override public void onLoad(String mixinPackage) {
         if (this.constructException != null) {
             throw new Error(this.constructException); // throw error because Mixin catches Exception for onLoad
@@ -91,15 +96,25 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
 
     @Override public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
         try {
+            if (DUPLICATE_CLASSES.containsKey(targetClassName)) {
+                replaceClassContent(targetClass, DUPLICATE_CLASSES.get(targetClassName));
+                return;
+            }
             //TODO: untangle the mess of some methods accepting the/class/name, and others accepting the.class.name
             //Ideally the input json would all have the same, and we'd just figure it out here
             RedirectsParser.ClassTarget target = classTargetByName.get(targetClassName);
-            if (target != null) {
-                this.transformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
-            } else {
+            if (target == null) {
                 throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
             }
+            if (target.isWholeClass()) {
+                ClassNode duplicate = new ClassNode();
+                targetClass.accept(duplicate);
+                this.transformer.transformClass(duplicate, target, redirectSetsByClassTarget.get(target));
+                DUPLICATE_CLASSES.put(duplicate.name.replace('/', '.'), duplicate);
+                return;
+            }
 
+            this.transformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
             try {
                 // ugly hack to add class metadata to mixin
                 // based on https://github.com/Chocohead/OptiFabric/blob/54fc2ef7533e43d1982e14bc3302bcf156f590d8/src/main/java/me/modmuss50/optifabric/compat/fabricrendererapi
@@ -121,6 +136,34 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             t.printStackTrace();
             throw t;
         }
+    }
+
+    private void replaceClassContent(ClassNode node, ClassNode replaceWith) {
+        node.access = 0;
+        node.name = null;
+        node.signature = null;
+        node.superName = null;
+        node.interfaces.clear();
+        node.sourceFile = null;
+        node.sourceDebug = null;
+        node.module = null;
+        node.outerClass = null;
+        node.outerMethod = null;
+        node.outerMethodDesc = null;
+        node.visibleAnnotations = null;
+        node.invisibleAnnotations = null;
+        node.visibleTypeAnnotations = null;
+        node.invisibleTypeAnnotations = null;
+        node.attrs = null;
+        node.innerClasses.clear();
+        node.nestHostClass = null;
+        node.nestMembers = null;
+        node.permittedSubclasses = null;
+        node.recordComponents = null;
+        node.fields.clear();
+        node.methods.clear();
+
+        replaceWith.accept(node);
     }
 
     @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {

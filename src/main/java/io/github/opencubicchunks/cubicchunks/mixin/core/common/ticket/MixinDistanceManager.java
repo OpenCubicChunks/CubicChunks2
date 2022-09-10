@@ -27,6 +27,7 @@ import it.unimi.dsi.fastutil.objects.ObjectSet;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
 import net.minecraft.server.level.DistanceManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.Ticket;
@@ -60,8 +61,8 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
     private final CubicPlayerTicketTracker cubicPlayerTicketManager = new CubicPlayerTicketTracker(this, MathUtil.ceilDiv(33, CubicConstants.DIAMETER_IN_SECTIONS));
     final Set<ChunkHolder> cubesToUpdateFutures = Sets.newHashSet();
     CubeTaskPriorityQueueSorter cubeTicketThrottler;
-    ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeTicketThrottlerInput;
-    ProcessorHandle<CubeTaskPriorityQueueSorter.Release> cubeTicketThrottlerReleaser;
+    ProcessorHandle<ChunkTaskPriorityQueueSorter.Message<Runnable>> cubeTicketThrottlerInput;
+    ProcessorHandle<ChunkTaskPriorityQueueSorter.Release> cubeTicketThrottlerReleaser;
     final LongSet cubeTicketsToRelease = new LongOpenHashSet();
 
     private long cubeTicketTickCounter;
@@ -73,8 +74,8 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
         ProcessorHandle<Runnable> mainThreadHandle = ProcessorHandle.of("player ticket throttler", mainThreadExecutor_::execute);
         CubeTaskPriorityQueueSorter throttler = new CubeTaskPriorityQueueSorter(ImmutableList.of(mainThreadHandle), backgroundExecutor, 4);
         this.cubeTicketThrottler = throttler;
-        this.cubeTicketThrottlerInput = throttler.createExecutor(mainThreadHandle, true);
-        this.cubeTicketThrottlerReleaser = throttler.createSorterExecutor(mainThreadHandle);
+        this.cubeTicketThrottlerInput = throttler.getProcessor(mainThreadHandle, true);
+        this.cubeTicketThrottlerReleaser = throttler.getReleaseProcessor(mainThreadHandle);
     }
 
     @Inject(method = "purgeStaleTickets", at = @At("RETURN"))
@@ -169,12 +170,12 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
     }
 
     @Override
-    public ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> getCubeTicketThrottlerInput() {
+    public ProcessorHandle<ChunkTaskPriorityQueueSorter.Message<Runnable>> getCubeTicketThrottlerInput() {
         return cubeTicketThrottlerInput;
     }
 
     @Override
-    public ProcessorHandle<CubeTaskPriorityQueueSorter.Release> getCubeTicketThrottlerReleaser() {
+    public ProcessorHandle<ChunkTaskPriorityQueueSorter.Release> getCubeTicketThrottlerReleaser() {
         return cubeTicketThrottlerReleaser;
     }
 

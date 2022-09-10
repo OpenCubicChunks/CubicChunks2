@@ -14,6 +14,7 @@ import it.unimi.dsi.fastutil.objects.ObjectSet;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.Ticket;
 import net.minecraft.server.level.TicketType;
@@ -81,9 +82,9 @@ public interface CubicDistanceManager {
 
     Long2ObjectMap<ObjectSet<ServerPlayer>> getPlayersPerCube();
 
-    ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> getCubeTicketThrottlerInput();
+    ProcessorHandle<ChunkTaskPriorityQueueSorter.Message<Runnable>> getCubeTicketThrottlerInput();
 
-    ProcessorHandle<CubeTaskPriorityQueueSorter.Release> getCubeTicketThrottlerReleaser();
+    ProcessorHandle<ChunkTaskPriorityQueueSorter.Release> getCubeTicketThrottlerReleaser();
 
     LongSet getCubeTicketsToRelease();
 

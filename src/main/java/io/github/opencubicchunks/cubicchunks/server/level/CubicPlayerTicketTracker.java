@@ -73,19 +73,19 @@ public class CubicPlayerTicketTracker extends FixedPlayerDistanceCubeTracker {
         if (oldWithinViewDistance != withinViewDistance) {
             Ticket<?> ticket = TicketAccess.createNew(CubicTicketType.PLAYER, CubicDistanceManager.PLAYER_CUBE_TICKET_LEVEL, CubePos.from(pos));
             if (withinViewDistance) {
-                cubicDistanceManager.getCubeTicketThrottlerInput().tell(CubeTaskPriorityQueueSorter.createMsg(() ->
+                cubicDistanceManager.getCubeTicketThrottlerInput().tell(CubeTaskPriorityQueueSorter.message(() ->
                     cubicDistanceManager.getMainThreadExecutor().execute(() -> {
                         if (this.isWithinViewDistance(horizontalGraphGroup.getLevel(pos), verticalGraphGroup.getLevel(pos))) {
                             cubicDistanceManager.addCubeTicket(pos, ticket);
                             cubicDistanceManager.getCubeTicketsToRelease().add(pos);
                         } else {
-                            cubicDistanceManager.getCubeTicketThrottlerReleaser().tell(CubeTaskPriorityQueueSorter.createSorterMsg(() -> {
+                            cubicDistanceManager.getCubeTicketThrottlerReleaser().tell(CubeTaskPriorityQueueSorter.release(() -> {
                             }, pos, false));
                         }
 
                     }), pos, () -> distance));
             } else {
-                cubicDistanceManager.getCubeTicketThrottlerReleaser().tell(CubeTaskPriorityQueueSorter.createSorterMsg(() ->
+                cubicDistanceManager.getCubeTicketThrottlerReleaser().tell(CubeTaskPriorityQueueSorter.release(() ->
                         cubicDistanceManager.getMainThreadExecutor().execute(() ->
                             cubicDistanceManager.removeCubeTicket(pos, ticket)),
                     pos, true));

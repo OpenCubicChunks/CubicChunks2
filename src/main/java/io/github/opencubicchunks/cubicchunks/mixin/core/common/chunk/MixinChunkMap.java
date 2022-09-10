@@ -97,6 +97,7 @@ import net.minecraft.network.protocol.game.ClientboundSetEntityLinkPacket;
 import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
 import net.minecraft.server.level.PlayerMap;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
@@ -181,9 +182,9 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     private final Long2ObjectLinkedOpenHashMap<ChunkHolder> pendingCubeUnloads = new Long2ObjectLinkedOpenHashMap<>();
 
     // worldgenMailbox
-    private ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeWorldgenMailbox;
+    private ProcessorHandle<ChunkTaskPriorityQueueSorter.Message<Runnable>> cubeWorldgenMailbox;
     // mainThreadMailbox
-    private ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeMainThreadMailbox;
+    private ProcessorHandle<ChunkTaskPriorityQueueSorter.Message<Runnable>> cubeMainThreadMailbox;
 
     private final AtomicInteger tickingGeneratedCubes = new AtomicInteger();
 
@@ -265,11 +266,11 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         }
 
         this.cubeQueueSorter = new CubeTaskPriorityQueueSorter(ImmutableList.of(worldgenMailbox, mainThreadProcessorHandle, lightMailbox), executor, Integer.MAX_VALUE);
-        this.cubeWorldgenMailbox = this.cubeQueueSorter.createExecutor(worldgenMailbox, false);
-        this.cubeMainThreadMailbox = this.cubeQueueSorter.createExecutor(mainThreadProcessorHandle, false);
+        this.cubeWorldgenMailbox = this.cubeQueueSorter.getProcessor(worldgenMailbox, false);
+        this.cubeMainThreadMailbox = this.cubeQueueSorter.getProcessor(mainThreadProcessorHandle, false);
 
         ((CubicThreadedLevelLightEngine) this.lightEngine).postConstructorSetup(this.cubeQueueSorter,
-            this.cubeQueueSorter.createExecutor(lightMailbox, false));
+            this.cubeQueueSorter.getProcessor(lightMailbox, false));
 
         try {
             regionCubeIO = new RegionCubeIO(path.toFile(), "chunk", "cube");
@@ -713,7 +714,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             this.getCubeRangeFuture(cubePos, CubeStatus.getCubeTaskRange(chunkStatusIn), (count) -> this.getCubeDependencyStatus(chunkStatusIn, count));
         this.level.getProfiler().incrementCounter(() -> "cubeGenerate " + chunkStatusIn.getName());
 
-        Executor executor = (runnable) -> this.cubeWorldgenMailbox.tell(CubeTaskPriorityQueueSorter.createMsg(cubeHolder, runnable));
+        Executor executor = (runnable) -> this.cubeWorldgenMailbox.tell(CubeTaskPriorityQueueSorter.message(cubeHolder, runnable));
 
         return future.thenComposeAsync((sectionOrError) -> {
             return sectionOrError.map((neighborSections) -> {
@@ -886,7 +887,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                 return cube;
             });
         }, (runnable) -> {
-            this.cubeMainThreadMailbox.tell(CubeTaskPriorityQueueSorter.createMsg(
+            this.cubeMainThreadMailbox.tell(CubeTaskPriorityQueueSorter.message(
                 runnable, ((CubeHolder) holder).getCubePos().asLong(), holder::getTicketLevel));
         });
     }
@@ -896,7 +897,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         return ((CubeHolder) chunkHolder).getOrScheduleCubeFuture(ChunkStatus.FULL, (ChunkMap) (Object) this).thenApplyAsync((o) -> {
             return o.mapLeft((cubeAccess) -> (LevelCube) cubeAccess);
         }, (runnable) -> {
-            this.cubeMainThreadMailbox.tell(CubeTaskPriorityQueueSorter.createMsg(chunkHolder, runnable));
+            this.cubeMainThreadMailbox.tell(CubeTaskPriorityQueueSorter.message(chunkHolder, runnable));
         });
     }
 
@@ -915,7 +916,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     return Either.left(cube);
                 });
             }, (runnable) -> {
-                this.cubeMainThreadMailbox.tell(CubeTaskPriorityQueueSorter.createMsg(chunkHolder, runnable));
+                this.cubeMainThreadMailbox.tell(CubeTaskPriorityQueueSorter.message(chunkHolder, runnable));
             });
         postProcessedFuture.thenAcceptAsync((cubeLoadingErrorEither) -> {
             cubeLoadingErrorEither.mapLeft((cube) -> {
@@ -935,7 +936,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                 return Either.left(cube);
             });
         }, (runnable) -> {
-            this.cubeMainThreadMailbox.tell(CubeTaskPriorityQueueSorter.createMsg(chunkHolder, runnable));
+            this.cubeMainThreadMailbox.tell(CubeTaskPriorityQueueSorter.message(chunkHolder, runnable));
         });
         return postProcessedFuture;
     }

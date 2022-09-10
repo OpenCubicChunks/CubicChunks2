@@ -1,6 +1,10 @@
 {
     "defaultSets": [ "general" ],
     "targets": {
+        "net.minecraft.server.level.ChunkTaskPriorityQueue": {
+        },
+        "net.minecraft.server.level.ChunkTaskPriorityQueueSorter": {
+        },
         "net.minecraft.server.level.ChunkMap$DistanceManager": {
             "targetMethods": {
                 "net.minecraft.server.level.ChunkHolder updateChunkScheduling(long, int, net.minecraft.server.level.ChunkHolder, int)": {
@@ -48,8 +52,7 @@
                 "void updateFutures(net.minecraft.server.level.ChunkMap, java.util.concurrent.Executor)": "updateCubeFutures"
             },
             "useSets": [
-                "general",
-                "chunkHolderSet"
+                "general"
             ]
         },
         "net.minecraft.server.level.DistanceManager": {

@@ -20,6 +20,7 @@ import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
 import net.minecraft.server.level.ThreadedLevelLightEngine;
 import net.minecraft.util.thread.ProcessorHandle;
 import net.minecraft.world.level.ChunkPos;
@@ -36,7 +37,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ThreadedLevelLightEngine.class)
 public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngine implements CubicThreadedLevelLightEngine {
 
-    private ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeSorterMailbox;
+    private ProcessorHandle<ChunkTaskPriorityQueueSorter.Message<Runnable>> cubeSorterMailbox;
 
     @Shadow @Final private ChunkMap chunkMap;
 
@@ -49,7 +50,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
     protected abstract void addTask(int x, int z, ThreadedLevelLightEngine.TaskType stage, Runnable task);
 
     @Override public void postConstructorSetup(CubeTaskPriorityQueueSorter sorter,
-                                               ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> taskExecutor) {
+                                               ProcessorHandle<ChunkTaskPriorityQueueSorter.Message<Runnable>> taskExecutor) {
         this.cubeSorterMailbox = taskExecutor;
     }
 
@@ -84,7 +85,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
     // addTask
     private void addTask(int cubePosX, int cubePosY, int cubePosZ, IntSupplier getCompletedLevel, ThreadedLevelLightEngine.TaskType phase,
                          Runnable runnable) {
-        this.cubeSorterMailbox.tell(CubeTaskPriorityQueueSorter.createMsg(() -> {
+        this.cubeSorterMailbox.tell(CubeTaskPriorityQueueSorter.message(() -> {
             this.lightTasks.add(Pair.of(phase, runnable));
             if (this.lightTasks.size() >= this.taskPerBatch) {
                 this.runUpdate();
