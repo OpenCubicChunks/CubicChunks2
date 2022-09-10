@@ -3,6 +3,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import io.github.opencubicchunks.cubicchunks.levelgen.chunk.NoiseAndSurfaceBuilderHelper;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Aquifer;
@@ -34,7 +35,7 @@ public abstract class MixinNoiseChunk {
     @Redirect(method = "forChunk", at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(II)I"))
     private static int forceCubeMaxBounds(int a, int b, ChunkAccess chunkAccess, NoiseRouter noiseRouter, Supplier<DensityFunctions.BeardifierOrMarker> supplier,
                                         NoiseGeneratorSettings noiseGeneratorSettings, Aquifer.FluidPicker fluidPicker, Blender blender) {
-        if (chunkAccess instanceof ProtoCube) {
+        if (chunkAccess instanceof ProtoCube || chunkAccess instanceof NoiseAndSurfaceBuilderHelper) {
             return b;
         }
        return Math.max(a, b);
@@ -43,7 +44,7 @@ public abstract class MixinNoiseChunk {
     @Redirect(method = "forChunk", at = @At(value = "INVOKE", target = "Ljava/lang/Math;min(II)I"))
     private static int forceCubeMinBounds(int a, int b, ChunkAccess chunkAccess, NoiseRouter noiseRouter, Supplier<DensityFunctions.BeardifierOrMarker> supplier,
                                         NoiseGeneratorSettings noiseGeneratorSettings, Aquifer.FluidPicker fluidPicker, Blender blender) {
-        if (chunkAccess instanceof ProtoCube) {
+        if (chunkAccess instanceof ProtoCube || chunkAccess instanceof NoiseAndSurfaceBuilderHelper) {
             return b;
         } else {
             return Math.min(a, b);
@@ -53,7 +54,7 @@ public abstract class MixinNoiseChunk {
     @Redirect(method = "forChunk", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;intFloorDiv(II)I", ordinal = 1))
     private static int useCubeCellSize(int a, int b, ChunkAccess chunkAccess, NoiseRouter noiseRouter, Supplier<DensityFunctions.BeardifierOrMarker> supplier,
                                           NoiseGeneratorSettings noiseGeneratorSettings, Aquifer.FluidPicker fluidPicker, Blender blender) {
-        if (chunkAccess instanceof ProtoCube) {
+        if (chunkAccess instanceof ProtoCube || chunkAccess instanceof NoiseAndSurfaceBuilderHelper) {
             return b;
         } else {
             return chunkAccess.getHeight() / noiseGeneratorSettings.noiseSettings().getCellHeight();
