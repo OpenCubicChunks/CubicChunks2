@@ -2,12 +2,13 @@ package io.github.opencubicchunks.cubicchunks.server.level;
 
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import net.minecraft.server.level.ChunkHolder;
-import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
+import net.minecraft.util.Unit;
 import net.minecraft.util.thread.ProcessorHandle;
 
 public class CubeTaskPriorityQueueSorter implements AutoCloseable, CubeHolderLevelChangeListener {
@@ -16,24 +17,24 @@ public class CubeTaskPriorityQueueSorter implements AutoCloseable, CubeHolderLev
         throw new Error("ASM didn't apply");
     }
 
-    public static ChunkTaskPriorityQueueSorter.Message<Runnable> message(Runnable runnable, long pos, IntSupplier intSupplier) {
+    public static Message<Runnable> message(Runnable runnable, long pos, IntSupplier intSupplier) {
         throw new Error("ASM didn't apply");
     }
 
-    public static ChunkTaskPriorityQueueSorter.Message<Runnable> message(ChunkHolder holder, Runnable runnable) {
+    public static Message<Runnable> message(ChunkHolder holder, Runnable runnable) {
         throw new Error("ASM didn't apply");
     }
 
-    public static ChunkTaskPriorityQueueSorter.Release release(Runnable runnable, long pos, boolean flag) {
+    public static Release release(Runnable runnable, long pos, boolean flag) {
         throw new Error("ASM didn't apply");
     }
 
-    public <T> ProcessorHandle<ChunkTaskPriorityQueueSorter.Message<T>> getProcessor(ProcessorHandle<T> processorHandle, boolean flag) {
+    public <T> ProcessorHandle<Message<T>> getProcessor(ProcessorHandle<T> processorHandle, boolean flag) {
         throw new Error("ASM didn't apply");
     }
 
     // func_219091_a, getReleaseProcessor
-    public ProcessorHandle<ChunkTaskPriorityQueueSorter.Release> getReleaseProcessor(ProcessorHandle<Runnable> processorHandle) {
+    public ProcessorHandle<Release> getReleaseProcessor(ProcessorHandle<Runnable> processorHandle) {
         throw new Error("ASM didn't apply");
     }
 
@@ -45,5 +46,29 @@ public class CubeTaskPriorityQueueSorter implements AutoCloseable, CubeHolderLev
 
     @Override public void close() {
         throw new Error("ASM didn't apply");
+    }
+
+    public static final class Message<T> {
+        final Function<ProcessorHandle<Unit>, T> task;
+        final long pos;
+        final IntSupplier level;
+
+        Message(Function<ProcessorHandle<Unit>, T> function, long l, IntSupplier intSupplier) {
+            this.task = function;
+            this.pos = l;
+            this.level = intSupplier;
+        }
+    }
+
+    public static final class Release {
+        final Runnable task;
+        final long pos;
+        final boolean clearQueue;
+
+        Release(Runnable runnable, long l, boolean bl) {
+            this.task = runnable;
+            this.pos = l;
+            this.clearQueue = bl;
+        }
     }
 }

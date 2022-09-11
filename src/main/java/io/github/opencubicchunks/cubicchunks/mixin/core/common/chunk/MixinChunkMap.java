@@ -97,7 +97,6 @@ import net.minecraft.network.protocol.game.ClientboundSetEntityLinkPacket;
 import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
-import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
 import net.minecraft.server.level.PlayerMap;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
@@ -182,9 +181,9 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     private final Long2ObjectLinkedOpenHashMap<ChunkHolder> pendingCubeUnloads = new Long2ObjectLinkedOpenHashMap<>();
 
     // worldgenMailbox
-    private ProcessorHandle<ChunkTaskPriorityQueueSorter.Message<Runnable>> cubeWorldgenMailbox;
+    private ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeWorldgenMailbox;
     // mainThreadMailbox
-    private ProcessorHandle<ChunkTaskPriorityQueueSorter.Message<Runnable>> cubeMainThreadMailbox;
+    private ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeMainThreadMailbox;
 
     private final AtomicInteger tickingGeneratedCubes = new AtomicInteger();
 

@@ -8,6 +8,8 @@
             "net.minecraft.server.level.DistanceManager$PlayerTicketTracker": "io.github.opencubicchunks.cubicchunks.server.level.CubicPlayerTicketTracker",
             "net.minecraft.server.level.ChunkTaskPriorityQueue": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueue",
             "net.minecraft.server.level.ChunkTaskPriorityQueueSorter": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter",
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter$Message",
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Release": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter$Release",
             "net.minecraft.server.level.TickingTracker": "io.github.opencubicchunks.cubicchunks.server.level.CubeTickingTracker",
             "net.minecraft.server.level.ChunkHolder$1": "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder$CubeLoadingError"
         },
@@ -31,6 +33,14 @@
             "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker | it.unimi.dsi.fastutil.longs.Long2ByteMap chunks": "cubes",
 
             "net.minecraft.server.level.ChunkTaskPriorityQueue | int PRIORITY_LEVEL_COUNT": "LEVEL_COUNT",
+
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message | java.util.function.Function task": "task",
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message | long pos": "pos",
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message | java.util.function.IntSupplier level": "level",
+
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Release | java.lang.Runnable task": "task",
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Release | long pos": "pos",
+            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Release | boolean clearQueue": "clearQueue",
 
             "net.minecraft.server.level.ChunkHolder | net.minecraft.world.level.ChunkPos pos": "cubePos"
 
