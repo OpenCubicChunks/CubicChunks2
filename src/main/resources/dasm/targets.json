@@ -73,7 +73,8 @@
                 "boolean inBlockTickingRange(long)": "inBlockTickingRangeCube",
                 "int getNaturalSpawnChunkCount()": "getNaturalSpawnCubeCount",
                 "boolean hasPlayersNearby(long)": "hasPlayersNearbyCube",
-                "void removeTicketsOnClosing()": "removeCubeTicketsOnClosing"
+                "void removeTicketsOnClosing()": "removeCubeTicketsOnClosing",
+                "int getTicketLevelAt(net.minecraft.util.SortedArraySet)": "getCubeTicketLevelAt"
             }
         }
     }

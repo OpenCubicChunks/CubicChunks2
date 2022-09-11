@@ -68,6 +68,7 @@
             "net.minecraft.server.level.DistanceManager | int getNaturalSpawnChunkCount()": "getNaturalSpawnCubeCount",
             "net.minecraft.server.level.DistanceManager | boolean hasPlayersNearby(long)": "hasPlayersNearbyCube",
             "net.minecraft.server.level.DistanceManager | void removeTicketsOnClosing()": "removeCubeTicketsOnClosing",
+            "net.minecraft.server.level.DistanceManager | int getTicketLevelAt(net.minecraft.util.SortedArraySet)": "getCubeTicketLevelAt",
 
             "net.minecraft.server.level.DistanceManager$ChunkTicketTracker | int runDistanceUpdates(int)": "runDistanceUpdates",
 
@@ -120,7 +121,6 @@
             "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap pendingUnloads": "pendingCubeUnloads",
             "net.minecraft.server.level.ChunkMap | net.minecraft.server.level.ChunkTaskPriorityQueueSorter queueSorter": "cubeQueueSorter",
             "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap updatingChunkMap": "updatingCubeMap",
-            "net.minecraft.server.level.ChunkMap | int MAX_CHUNK_DISTANCE": "MAX_CUBE_DISTANCE",
             "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.Long2ByteMap chunkTypeCache": "cubeTypeCache"
         },
         "methodRedirects": {
