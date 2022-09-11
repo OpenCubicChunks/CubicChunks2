@@ -872,7 +872,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     cube = ((ImposterProtoCube) prevCube).getWrapped();
                 } else {
                     cube = new LevelCube(this.level, (ProtoCube) prevCube, (bigCube) -> {
-                        postLoadProtoChunk(this.level, ((ProtoCube) prevCube).getCubeEntities());
+                        postLoadProtoChunk(this.level, ((ProtoCube) prevCube).getEntities());
                     });
                     ((CubeHolder) holder).replaceProtoCube(new ImposterProtoCube(cube, false));
                 }

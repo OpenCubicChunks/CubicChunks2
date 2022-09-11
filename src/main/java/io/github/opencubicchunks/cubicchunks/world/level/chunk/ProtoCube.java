@@ -386,7 +386,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         this.entities.add(entityCompound);
     }
 
-    public List<CompoundTag> getCubeEntities() {
+    public List<CompoundTag> getEntities() {
         return this.entities;
     }
 

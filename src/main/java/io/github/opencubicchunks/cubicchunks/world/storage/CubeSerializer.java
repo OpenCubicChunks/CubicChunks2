@@ -423,7 +423,7 @@ public class CubeSerializer {
         if (cube.getStatus().getChunkType() == ChunkStatus.ChunkType.PROTOCHUNK) {
             ProtoCube protoCube = (ProtoCube) cube;
             ListTag listTag3 = new ListTag();
-            listTag3.addAll(protoCube.getCubeEntities());
+            listTag3.addAll(protoCube.getEntities());
             root.put("entities", listTag3);
 //            level.put("Lights", packOffsets(cubePrimer.getPackedLights()));
 
