@@ -679,7 +679,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     } else {
                         if (chunkStatusIn == ChunkStatus.LIGHT) {
                             ((CubicDistanceManager) this.distanceManager).addCubeTicket(CubicTicketType.LIGHT, cubePos,
-                                33 + CubeStatus.getDistance(ChunkStatus.FEATURES), cubePos);
+                                33 + CubeStatus.getDistance(ChunkStatus.LIGHT), cubePos);
                         }
 
                         CubeAccess cube = optional.get();
@@ -853,7 +853,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     public void releaseCubeLightTicket(CubePos cubePos) {
         this.mainThreadExecutor.tell(Util.name(() -> {
             ((CubicDistanceManager) this.distanceManager).removeCubeTicket(CubicTicketType.LIGHT,
-                cubePos, 33 + CubeStatus.getDistance(ChunkStatus.FEATURES), cubePos);
+                cubePos, 33 + CubeStatus.getDistance(ChunkStatus.LIGHT), cubePos);
         }, () -> {
             return "release light ticket " + cubePos;
         }));
