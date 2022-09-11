@@ -352,10 +352,8 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
         }
 
         ((CubeMap) this.chunkMap).getCubes().forEach((cubeHolder) -> {
-            Optional<LevelCube> optional =
-                ((CubeHolder) cubeHolder).getCubeEntityTickingFuture().getNow(CubeHolder.UNLOADED_CUBE).left();
-            if (optional.isPresent()) {
-                LevelCube cube = optional.get();
+            LevelCube cube = ((CubeHolder) cubeHolder).getTickingCube();
+            if (cube != null) {
                 this.level.getProfiler().push("broadcast");
                 ((CubeHolder) cubeHolder).broadcastChanges(cube);
                 this.level.getProfiler().pop();
