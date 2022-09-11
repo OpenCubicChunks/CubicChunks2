@@ -1,6 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common;
 
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
@@ -35,5 +36,11 @@ public abstract class MixinSurfaceSystem {
             return Blocks.STONE.defaultBlockState();
         }
         return instance.getBlock(yPos);
+    }
+
+    //TODO: fix frozenOceanExtension instead of cancelling it
+    @Redirect(method = "buildSurface", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/levelgen/SurfaceSystem;frozenOceanExtension(ILnet/minecraft/world/level/biome/Biome;Lnet/minecraft/world/level/chunk/BlockColumn;Lnet/minecraft/core/BlockPos$MutableBlockPos;III)V"))
+    private void cancelExtension(SurfaceSystem instance, int i, Biome biome, BlockColumn blockColumn, BlockPos.MutableBlockPos mutableBlockPos, int j, int k, int l) {
+
     }
 }
