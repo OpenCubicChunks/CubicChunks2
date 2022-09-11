@@ -30,9 +30,10 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import org.spongepowered.asm.mixin.transformer.ClassInfo;
 
 public class ASMConfigPlugin implements IMixinConfigPlugin {
-    private static final ConcurrentHashMap<String, ClassNode> DUPLICATE_CLASSES = new ConcurrentHashMap<>();
     private final Map<String, RedirectsParser.ClassTarget> classTargetByName = new HashMap<>();
     private final Map<RedirectsParser.ClassTarget, List<RedirectsParser.RedirectSet>> redirectSetsByClassTarget = new HashMap<>();
+    private final ConcurrentHashMap<String, ClassNode> classesToDuplicateSrc = new ConcurrentHashMap<>();
+    private final Map<String, String> classDuplicationDummyTargets = new HashMap<>();
 
     private final Throwable constructException;
 
@@ -65,12 +66,24 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
                 sets.add(redirectSetByName.get(set));
             }
             redirectSetsByClassTarget.put(target, sets);
+            if (target.isWholeClass()) {
+                classDuplicationDummyTargets.put(findWholeClassTypeRedirectFor(target, redirectSetByName), target.getClassName());
+            }
         }
     }
 
-    public static ClassNode popDuplicatedClass(String name) {
-        return DUPLICATE_CLASSES.remove(name);
+    private String findWholeClassTypeRedirectFor(RedirectsParser.ClassTarget target, Map<String, RedirectsParser.RedirectSet> redirects) {
+        List<String> sets = target.getSets();
+        for (String set : sets) {
+            for (RedirectsParser.RedirectSet.TypeRedirect typeRedirect : redirects.get(set).getTypeRedirects()) {
+                if (typeRedirect.srcClassName().equals(target.getClassName())) {
+                    return typeRedirect.dstClassName();
+                }
+            }
+        }
+        throw new IllegalStateException("No type redirect for whole class redirect " + target.getClassName());
     }
+
     @Override public void onLoad(String mixinPackage) {
         if (this.constructException != null) {
             throw new Error(this.constructException); // throw error because Mixin catches Exception for onLoad
@@ -96,10 +109,14 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
 
     @Override public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
         try {
-            if (DUPLICATE_CLASSES.containsKey(targetClassName)) {
-                replaceClassContent(targetClass, DUPLICATE_CLASSES.get(targetClassName));
+            if (classDuplicationDummyTargets.containsKey(targetClassName)) {
+                if (!classesToDuplicateSrc.containsKey(targetClassName)) {
+                    throw new IllegalStateException("Class " + targetClassName + " has been loaded before " + classDuplicationDummyTargets.get(targetClassName));
+                }
+                replaceClassContent(targetClass, classesToDuplicateSrc.get(targetClassName));
                 return;
             }
+
             //TODO: untangle the mess of some methods accepting the/class/name, and others accepting the.class.name
             //Ideally the input json would all have the same, and we'd just figure it out here
             RedirectsParser.ClassTarget target = classTargetByName.get(targetClassName);
@@ -110,7 +127,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
                 ClassNode duplicate = new ClassNode();
                 targetClass.accept(duplicate);
                 this.transformer.transformClass(duplicate, target, redirectSetsByClassTarget.get(target));
-                DUPLICATE_CLASSES.put(duplicate.name.replace('/', '.'), duplicate);
+                classesToDuplicateSrc.put(duplicate.name.replace('/', '.'), duplicate);
                 return;
             }
 
