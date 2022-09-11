@@ -204,6 +204,11 @@ public class MixinChunkStatus {
 
         ci.cancel();
         if (chunk instanceof CubeAccess) {
+            if (chunk.getStatus().isOrAfter(status)) {
+                ci.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
+                return;
+            }
+
             CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(level, unsafeCast(neighbors), status, chunk, 0);
 
             CubePos cubePos = ((CubeAccess) chunk).getCubePos();
