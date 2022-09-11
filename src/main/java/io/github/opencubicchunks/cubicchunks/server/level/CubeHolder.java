@@ -21,15 +21,14 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 
 public interface CubeHolder {
     // TODO: all of their usages should be replaced with ASM
-    // TODO: rename to match mojang names
     @Deprecated
-    Either<CubeAccess, ChunkHolder.ChunkLoadingFailure> MISSING_CUBE = unsafeCast(ChunkHolder.UNLOADED_CHUNK);
+    Either<CubeAccess, ChunkHolder.ChunkLoadingFailure> UNLOADED_CUBE = unsafeCast(ChunkHolder.UNLOADED_CHUNK);
     @Deprecated
-    Either<LevelCube, ChunkHolder.ChunkLoadingFailure> UNLOADED_CUBE = unsafeCast(ChunkHolder.UNLOADED_LEVEL_CHUNK);
+    CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> UNLOADED_CUBE_FUTURE = unsafeCast(ChunkHolder.UNLOADED_CHUNK_FUTURE);
     @Deprecated
-    CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> UNLOADED_CUBE_FUTURE = unsafeCast(ChunkHolderAccess.getUnloadedChunkFuture());
+    Either<LevelCube, ChunkHolder.ChunkLoadingFailure> UNLOADED_LEVEL_CUBE = unsafeCast(ChunkHolder.UNLOADED_LEVEL_CHUNK);
     @Deprecated
-    CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> MISSING_CUBE_FUTURE = unsafeCast(ChunkHolder.UNLOADED_CHUNK_FUTURE);
+    CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> UNLOADED_LEVEL_CUBE_FUTURE = unsafeCast(ChunkHolderAccess.getUnloadedLevelChunkFuture());
 
     static ChunkStatus getCubeStatusFromLevel(int cubeLevel) {
         return cubeLevel < 33 ? ChunkStatus.FULL : CubeStatus.getStatus(cubeLevel - 33);

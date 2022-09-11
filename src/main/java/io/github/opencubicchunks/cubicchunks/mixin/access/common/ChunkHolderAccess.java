@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(ChunkHolder.class)
 public interface ChunkHolderAccess {
-    @Accessor("UNLOADED_CHUNK_FUTURE") static CompletableFuture<Either<LevelChunk, ChunkHolder.ChunkLoadingFailure>> getUnloadedChunkFuture() {
+    @Accessor("UNLOADED_LEVEL_CHUNK_FUTURE") static CompletableFuture<Either<LevelChunk, ChunkHolder.ChunkLoadingFailure>> getUnloadedLevelChunkFuture() {
         throw new Error("Mixin failed to apply");
     }
 

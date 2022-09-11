@@ -1,5 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk;
 
+import static io.github.opencubicchunks.cc_core.utils.Utils.unsafeCast;
 import static io.github.opencubicchunks.cubicchunks.CubicChunks.LOGGER;
 
 import java.io.IOException;
@@ -37,7 +38,6 @@ import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.ChunkIoMainThreadTaskUtils;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.utils.ExecutorUtils;
-import io.github.opencubicchunks.cc_core.utils.Utils;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
@@ -648,50 +648,46 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     @Override
-    public CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> scheduleCube(ChunkHolder cubeHolder, ChunkStatus chunkStatusIn) {
+    public CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> scheduleCube(ChunkHolder cubeHolder, ChunkStatus chunkStatus) {
         CubePos cubePos = ((CubeHolder) cubeHolder).getCubePos();
-        if (chunkStatusIn == ChunkStatus.EMPTY) {
-            CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> cubeFuture = this.scheduleCubeLoad(cubePos);
-            return cubeFuture.thenCompose(maybeCube -> {
-                Optional<CubeAccess> left = maybeCube.left();
-                ChunkStatus target = left.map(ChunkAccess::getStatus).orElse(chunkStatusIn);
-                return scheduleAndWaitForColumns(target, cubePos).thenApplyAsync(columns -> {
-                    maybeCube.left().ifPresent(cube -> {
+        if (chunkStatus == ChunkStatus.EMPTY) {
+            return this.scheduleCubeLoad(cubePos).thenCompose(cubeEither -> {
+                Optional<CubeAccess> cubeOptional = cubeEither.left();
+                ChunkStatus target = cubeOptional.map(ChunkAccess::getStatus).orElse(chunkStatus);
+                return scheduleColumnFutures(target, cubePos).thenApplyAsync(columns -> {
+                    cubeEither.left().ifPresent(cube -> {
                         if (!(cube instanceof ImposterProtoCube) && cube instanceof ProtoCube primer && primer.getStatus().isOrAfter(ChunkStatus.FEATURES)) {
                             primer.onEnteringFeaturesStatus();
                         }
                     });
-                    return maybeCube;
+                    return cubeEither;
                 }, mainThreadExecutor);
             });
         } else {
-            CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> columnFutures = scheduleAndWaitForColumns(chunkStatusIn, cubePos);
+            if (chunkStatus == ChunkStatus.LIGHT) {
+                ((CubicDistanceManager) this.distanceManager).addCubeTicket(CubicTicketType.LIGHT, cubePos, 33 + CubeStatus.getDistance(ChunkStatus.LIGHT), cubePos);
+            }
 
-            CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> parentCubeFuture = Utils.unsafeCast(
-                ((CubeHolder) cubeHolder).getOrScheduleCubeFuture(chunkStatusIn.getParent(), (ChunkMap) (Object) this)
-            );
-            return columnFutures.thenComposeAsync(columns -> parentCubeFuture).thenComposeAsync(
-                (Either<CubeAccess, ChunkHolder.ChunkLoadingFailure> inputSection) -> {
-                    Optional<CubeAccess> optional = inputSection.left();
-                    if (!optional.isPresent()) {
-                        return CompletableFuture.completedFuture(inputSection);
-                    } else {
-                        if (chunkStatusIn == ChunkStatus.LIGHT) {
-                            ((CubicDistanceManager) this.distanceManager).addCubeTicket(CubicTicketType.LIGHT, cubePos,
-                                33 + CubeStatus.getDistance(ChunkStatus.LIGHT), cubePos);
-                        }
+            CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> columnsFuture = scheduleColumnFutures(chunkStatus, cubePos);
+            Optional<CubeAccess> cubeOptional = ((CubeHolder) cubeHolder).getOrScheduleCubeFuture(chunkStatus.getParent(), (ChunkMap) (Object) this)
+                .getNow(CubeHolder.UNLOADED_CUBE).left();
 
-                        CubeAccess cube = optional.get();
-                        if (cube.getStatus().isOrAfter(chunkStatusIn)) {
-                            CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> completablefuture1 = Utils
-                                .unsafeCast(chunkStatusIn.load(this.level, this.structureManager, this.lightEngine, (chunk) -> Utils.unsafeCast(this.protoCubeToFullCube(cubeHolder)), cube));
-                            ((CubeProgressListener) this.progressListener).onCubeStatusChange(cubePos, chunkStatusIn);
-                            return completablefuture1;
+            return columnsFuture.thenComposeAsync(columns -> CompletableFuture.completedFuture(cubeOptional))
+                .thenComposeAsync(optional -> {
+                        if (optional.isPresent() && optional.get().getStatus().isOrAfter(chunkStatus)) {
+                            CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> completableFuture =
+                                unsafeCast(chunkStatus.load(this.level, this.structureManager, this.lightEngine, (cube) ->
+                                        unsafeCast(this.protoCubeToFullCube(cubeHolder)),
+                                    optional.get()
+                                ));
+
+                            ((CubeProgressListener) this.progressListener).onCubeStatusChange(cubePos, chunkStatus);
+                            return completableFuture;
                         } else {
-                            return this.scheduleCubeGeneration(cubeHolder, chunkStatusIn);
+                            return this.scheduleCubeGeneration(cubeHolder, chunkStatus);
                         }
-                    }
-                }, this.mainThreadExecutor);
+                    }, this.mainThreadExecutor
+                );
         }
     }
 
@@ -718,14 +714,14 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         return future.thenComposeAsync((sectionOrError) -> {
             return sectionOrError.map((neighborSections) -> {
                 try {
-                    CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> finalFuture = Utils.unsafeCast(chunkStatusIn.generate(
+                    CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> finalFuture = unsafeCast(chunkStatusIn.generate(
                         executor,
                         this.level,
                         this.generator,
                         this.structureManager,
                         this.lightEngine,
-                        (chunk) -> Utils.unsafeCast(this.protoCubeToFullCube(cubeHolder)),
-                        Utils.unsafeCast(neighborSections),
+                        (chunk) -> unsafeCast(this.protoCubeToFullCube(cubeHolder)),
+                        unsafeCast(neighborSections),
                         false
                     ));
                     ((CubeProgressListener) this.progressListener).onCubeStatusChange(cubePos, chunkStatusIn);
@@ -745,7 +741,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         }, executor);
     }
 
-    private CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> scheduleAndWaitForColumns(ChunkStatus targetStatus, CubePos cubePos) {
+    private CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> scheduleColumnFutures(ChunkStatus targetStatus, CubePos cubePos) {
 
         CompletableFuture<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> nestedChainedFuture = CompletableFuture.supplyAsync(() -> {
             CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> chainedFutures = null;
@@ -808,10 +804,10 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     if (CubicChunks.OPTIMIZED_CUBELOAD) {
                         chunkholder.addCubeStageListener(parentStatus, (either, error) -> {
                             collectorFuture.add(idx2, either, error);
-                        }, Utils.unsafeCast(this));
+                        }, unsafeCast(this));
                     } else {
                         CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> future =
-                            chunkholder.getOrScheduleCubeFuture(parentStatus, Utils.unsafeCast(this));
+                            chunkholder.getOrScheduleCubeFuture(parentStatus, unsafeCast(this));
                         future.whenComplete((either, error) -> collectorFuture.add(idx2, either, error));
                     }
                     ++cubeIdx;
@@ -864,7 +860,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             ((CubeHolder) holder).getCubeFutureIfPresentUnchecked(ChunkStatus.FULL.getParent());
         return fullFuture.thenApplyAsync((sectionOrError) -> {
             ChunkStatus chunkstatus = CubeHolder.getCubeStatusFromLevel(holder.getTicketLevel());
-            return !chunkstatus.isOrAfter(ChunkStatus.FULL) ? CubeHolder.MISSING_CUBE : sectionOrError.mapLeft((prevCube) -> {
+            return !chunkstatus.isOrAfter(ChunkStatus.FULL) ? CubeHolder.UNLOADED_CUBE : sectionOrError.mapLeft((prevCube) -> {
                 CubePos cubePos = ((CubeHolder) holder).getCubePos();
                 LevelCube cube;
                 if (prevCube instanceof ImposterProtoCube) {

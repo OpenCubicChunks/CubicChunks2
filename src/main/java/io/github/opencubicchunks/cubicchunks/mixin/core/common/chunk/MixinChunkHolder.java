@@ -316,7 +316,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
     @Override public CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> getCubeFutureIfPresent(ChunkStatus chunkStatus) {
         return CubeHolder.getCubeStatusFromLevel(this.ticketLevel).isOrAfter(chunkStatus) ?
             unsafeCast(this.getFutureIfPresentUnchecked(chunkStatus)) : // getFutureIfPresentUnchecked = getFutureByCubeStatus
-            MISSING_CUBE_FUTURE;
+            UNLOADED_CUBE_FUTURE;
     }
 
     @Redirect(method = "getOrScheduleFuture", at = @At(
@@ -564,7 +564,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
         for (int i = 0; i < this.futures.length(); ++i) {
             CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> future = this.futures.get(i);
             if (future != null) {
-                Optional<CubeAccess> optional = future.getNow(MISSING_CUBE).left();
+                Optional<CubeAccess> optional = future.getNow(UNLOADED_CUBE).left();
                 if (optional.isPresent() && optional.get() instanceof ProtoCube) {
                     this.futures.set(i, CompletableFuture.completedFuture(Either.left(primer)));
                 }
