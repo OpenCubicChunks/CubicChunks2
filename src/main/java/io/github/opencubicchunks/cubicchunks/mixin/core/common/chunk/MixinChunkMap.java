@@ -6,6 +6,7 @@ import static io.github.opencubicchunks.cubicchunks.CubicChunks.LOGGER;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
@@ -138,6 +139,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
+import oshi.util.tuples.Pair;
 
 @Mixin(ChunkMap.class)
 public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, VerticalViewDistanceListener, CubeHolderPlayerProvider {
@@ -243,6 +245,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     @Shadow protected abstract boolean playerIsCloseEnoughForSpawning(ServerPlayer serverPlayer, ChunkPos chunkPos);
+
+    @Shadow protected abstract CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> scheduleChunkLoad(ChunkPos chunkPos);
 
     @SuppressWarnings({ "UnresolvedMixinReference", "MixinAnnotationTarget", "InvalidInjectorMethodSignature" })
     @Redirect(method = "<init>", at = @At(value = "NEW", target = "(Lnet/minecraft/server/level/ChunkMap;Ljava/util/concurrent/Executor;Ljava/util/concurrent/Executor;)"
@@ -651,29 +655,28 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     public CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> scheduleCube(ChunkHolder cubeHolder, ChunkStatus chunkStatus) {
         CubePos cubePos = ((CubeHolder) cubeHolder).getCubePos();
         if (chunkStatus == ChunkStatus.EMPTY) {
-            return this.scheduleCubeLoad(cubePos).thenCompose(cubeEither -> {
-                Optional<CubeAccess> cubeOptional = cubeEither.left();
-                ChunkStatus target = cubeOptional.map(ChunkAccess::getStatus).orElse(chunkStatus);
-                return scheduleColumnFutures(target, cubePos).thenApplyAsync(columns -> {
-                    cubeEither.left().ifPresent(cube -> {
-                        if (!(cube instanceof ImposterProtoCube) && cube instanceof ProtoCube primer && primer.getStatus().isOrAfter(ChunkStatus.FEATURES)) {
-                            primer.onEnteringFeaturesStatus();
-                        }
-                    });
-                    return cubeEither;
-                }, mainThreadExecutor);
-            });
+            CompletableFuture<List<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> columnsFuture = scheduleColumnFutures(ChunkStatus.EMPTY, cubePos);
+            return columnsFuture.thenComposeAsync(col -> this.scheduleCubeLoad(cubePos).thenApply(cubeEither -> {
+                cubeEither.left().ifPresent(cube -> {
+                    cube.setColumns(col);
+                    if (!(cube instanceof ImposterProtoCube) && cube instanceof ProtoCube primer && primer.getStatus().isOrAfter(ChunkStatus.FEATURES)) {
+                        primer.onEnteringFeaturesStatus();
+                    }
+                });
+                return cubeEither;
+            }));
         } else {
             if (chunkStatus == ChunkStatus.LIGHT) {
                 ((CubicDistanceManager) this.distanceManager).addCubeTicket(CubicTicketType.LIGHT, cubePos, 33 + CubeStatus.getDistance(ChunkStatus.LIGHT), cubePos);
             }
 
-            CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> columnsFuture = scheduleColumnFutures(chunkStatus, cubePos);
+            CompletableFuture<List<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> columnsFuture = scheduleColumnFutures(chunkStatus, cubePos);
             Optional<CubeAccess> cubeOptional = ((CubeHolder) cubeHolder).getOrScheduleCubeFuture(chunkStatus.getParent(), (ChunkMap) (Object) this)
                 .getNow(CubeHolder.UNLOADED_CUBE).left();
 
-            return columnsFuture.thenComposeAsync(columns -> CompletableFuture.completedFuture(cubeOptional))
-                .thenComposeAsync(optional -> {
+            return columnsFuture.thenComposeAsync(columns -> CompletableFuture.completedFuture(new Pair<>(cubeOptional, columns)))
+                .thenApplyAsync(cubeColumnsPair -> {
+                        Optional<CubeAccess> optional = cubeColumnsPair.getA();
                         if (optional.isPresent() && optional.get().getStatus().isOrAfter(chunkStatus)) {
                             CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> completableFuture =
                                 unsafeCast(chunkStatus.load(this.level, this.structureManager, this.lightEngine, (cube) ->
@@ -682,12 +685,20 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                                 ));
 
                             ((CubeProgressListener) this.progressListener).onCubeStatusChange(cubePos, chunkStatus);
-                            return completableFuture;
+                            return new Pair<>(completableFuture, cubeColumnsPair.getB());
                         } else {
-                            return this.scheduleCubeGeneration(cubeHolder, chunkStatus);
+                            return new Pair<>(this.scheduleCubeGeneration(cubeHolder, chunkStatus), cubeColumnsPair.getB());
                         }
                     }, this.mainThreadExecutor
-                );
+                ).thenComposeAsync(cubeFutureColumnsPair -> {
+                    CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> cubeFuture = cubeFutureColumnsPair.getA();
+                    return cubeFuture.thenComposeAsync(cubeEither -> {
+                        cubeEither.ifLeft(cube -> {
+                            cube.setColumns(cubeFutureColumnsPair.getB());
+                        });
+                        return cubeFuture;
+                    }, this.mainThreadExecutor);
+                }, this.mainThreadExecutor);
         }
     }
 
@@ -741,23 +752,16 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         }, executor);
     }
 
-    private CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> scheduleColumnFutures(ChunkStatus targetStatus, CubePos cubePos) {
-
-        CompletableFuture<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> nestedChainedFuture = CompletableFuture.supplyAsync(() -> {
-            CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> chainedFutures = null;
+    private CompletableFuture<List<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> scheduleColumnFutures(ChunkStatus targetStatus, CubePos cubePos) {
+        CompletableFuture<CompletableFuture<List<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>>> nestedChainedFuture = CompletableFuture.supplyAsync(() -> {
+            List<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> columnFutures = new ArrayList<>();
             for (int localX = 0; localX < CubicConstants.DIAMETER_IN_SECTIONS; localX++) {
                 for (int localZ = 0; localZ < CubicConstants.DIAMETER_IN_SECTIONS; localZ++) {
                     ChunkPos chunkPos = cubePos.asChunkPos(localX, localZ);
-                    CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> columnFutureForCube =
-                        ((ServerCubeCache) serverChunkCache).getColumnFutureForCube(cubePos, chunkPos.x, chunkPos.z, targetStatus, true);
-                    if (chainedFutures == null) {
-                        chainedFutures = columnFutureForCube;
-                    } else {
-                        chainedFutures = chainedFutures.thenCompose((existingFuture) -> columnFutureForCube);
-                    }
+                    columnFutures.add(((ServerCubeCache) serverChunkCache).getColumnFutureForCube(cubePos, chunkPos.x, chunkPos.z, targetStatus, true));
                 }
             }
-            return chainedFutures;
+            return Util.sequence(columnFutures);
         }, mainThreadExecutor);
         return nestedChainedFuture.thenComposeAsync((future) -> future, COLUMN_LOADING_EXECUTOR);
     }

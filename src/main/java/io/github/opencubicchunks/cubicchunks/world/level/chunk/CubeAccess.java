@@ -3,11 +3,13 @@ package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 import static io.github.opencubicchunks.cc_core.api.CubicConstants.DIAMETER_IN_BLOCKS;
 import static io.github.opencubicchunks.cc_core.api.CubicConstants.DIAMETER_IN_SECTIONS;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
 import com.google.common.collect.Maps;
+import com.mojang.datafixers.util.Either;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapSource;
@@ -19,6 +21,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
+import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelHeightAccessor;
@@ -37,6 +40,8 @@ import net.minecraft.world.level.levelgen.blending.BlendingData;
 //now they must be done by all three
 public abstract class CubeAccess extends ChunkAccess implements BlockGetter, FeatureAccess, HeightmapSource {
     protected final CubePos cubePos;
+
+    protected ChunkAccess[] columns = new ChunkAccess[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS];
 
     //TODO: Figure out what to do with carverBiome and noiseChunk
     protected final Map<Heightmap.Types, SurfaceTrackerLeaf[]> cubeHeightmaps; //TODO: ChunkAccess now has it's own heightmaps but they are of class Heightmap
@@ -144,6 +149,17 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
                     LevelChunkSection section = this.sections[Coords.sectionToIndex(sectionX, sectionY, sectionZ)];
                     section.fillBiomesFromNoise(biomeResolver, sampler, minXQuart, minZQuart);
                 }
+            }
+        }
+    }
+
+    public void setColumns(List<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> columns) {
+        assert columns.size() == this.columns.length;
+
+        for (int i = 0; i < columns.size(); i++) {
+            Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure> chunkEither = columns.get(i);
+            if (chunkEither.left().isPresent()) {
+                this.columns[i] = chunkEither.left().get();
             }
         }
     }

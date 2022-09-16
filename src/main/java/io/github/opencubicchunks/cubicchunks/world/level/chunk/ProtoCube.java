@@ -197,7 +197,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
 
                 // get the chunk for this section
                 ChunkPos chunkPos = this.cubePos.asChunkPos(dx, dz);
-                ChunkAccess chunk = chunkSource.getChunk(chunkPos.x, chunkPos.z, ChunkStatus.EMPTY, false);
+                ChunkAccess chunk = this.columns[dx + dz * DIAMETER_IN_SECTIONS];
 
                 if (!(chunk != null && chunk.getStatus().isOrAfter(ChunkStatus.FEATURES))) {
                     int j = 0;
