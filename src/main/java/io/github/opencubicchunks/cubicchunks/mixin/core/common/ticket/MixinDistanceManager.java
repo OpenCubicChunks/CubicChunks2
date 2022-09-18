@@ -71,7 +71,7 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
     @Inject(method = "<init>", at = @At("RETURN"))
     public void init(Executor backgroundExecutor, Executor mainThreadExecutor_, CallbackInfo ci) {
         ProcessorHandle<Runnable> mainThreadHandle = ProcessorHandle.of("player ticket throttler", mainThreadExecutor_::execute);
-        CubeTaskPriorityQueueSorter throttler = new CubeTaskPriorityQueueSorter(ImmutableList.of(mainThreadHandle), backgroundExecutor, 4);
+        CubeTaskPriorityQueueSorter throttler = new CubeTaskPriorityQueueSorter(ImmutableList.of(mainThreadHandle), backgroundExecutor, 16);
         this.cubeTicketThrottler = throttler;
         this.cubeTicketThrottlerInput = throttler.getProcessor(mainThreadHandle, true);
         this.cubeTicketThrottlerReleaser = throttler.getReleaseProcessor(mainThreadHandle);
