@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
+import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.utils.MathUtil;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
@@ -187,7 +188,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         SectionPos cubeMinSection = this.cubePos.asSectionPos();
         for (int localZ = 0; localZ < DIAMETER_IN_SECTIONS; localZ++) {
             for (int localX = 0; localX < DIAMETER_IN_SECTIONS; localX++) {
-                int i = localX + localZ * DIAMETER_IN_SECTIONS;
+                int i = Coords.columnToColumnIndex(localX, localZ);
 
                 this.lightHeightmaps[i] = protoCubeLightHeightmaps[i];
                 if (this.lightHeightmaps[i] == null) {
@@ -213,7 +214,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
     }
 
     @Override public void sectionLoaded(@Nonnull SurfaceTrackerLeaf surfaceTrackerLeaf, int localSectionX, int localSectionZ) {
-        int idx = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
+        int idx = Coords.columnToColumnIndex(localSectionX, localSectionZ);
 
         if (surfaceTrackerLeaf.getRawType() == -1) { //light
             this.lightHeightmaps[idx] = surfaceTrackerLeaf;
@@ -230,7 +231,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         for (SurfaceTrackerLeaf[] heightmapLeaves : this.getCubeHeightmaps().values()) {
             for (int localSectionZ = 0; localSectionZ < DIAMETER_IN_SECTIONS; localSectionZ++) {
                 for (int localSectionX = 0; localSectionX < DIAMETER_IN_SECTIONS; localSectionX++) {
-                    int i = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
+                    int i = Coords.columnToColumnIndex(localSectionX, localSectionZ);
                     if (heightmapLeaves[i] != null) {
                         heightmapLeaves[i].sourceUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                         heightmapLeaves[i] = null;
@@ -241,7 +242,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         SurfaceTrackerLeaf[] lightHeightmapLeaves = this.lightHeightmaps;
         for (int localSectionZ = 0; localSectionZ < DIAMETER_IN_SECTIONS; localSectionZ++) {
             for (int localSectionX = 0; localSectionX < DIAMETER_IN_SECTIONS; localSectionX++) {
-                int i = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
+                int i = Coords.columnToColumnIndex(localSectionX, localSectionZ);
                 if (lightHeightmapLeaves[i] != null) {
                     lightHeightmapLeaves[i].sourceUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                     lightHeightmapLeaves[i] = null;
@@ -272,7 +273,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         int xSection = blockToCubeLocalSection(x);
         int zSection = blockToCubeLocalSection(z);
 
-        int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
+        int idx = Coords.columnToColumnIndex(xSection, zSection);
         SurfaceTrackerLeaf sectionAbove = this.lightHeightmaps[idx].getSectionAbove();
 
         int dy = DIAMETER_IN_BLOCKS - 1;
@@ -365,7 +366,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
             int xSection = blockToCubeLocalSection(pos.getX());
             int zSection = blockToCubeLocalSection(pos.getZ());
 
-            int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
+            int idx = Coords.columnToColumnIndex(xSection, zSection);
 
             IntPredicate isOpaquePredicate = SurfaceTrackerWrapper.opaquePredicateForState(newState);
 

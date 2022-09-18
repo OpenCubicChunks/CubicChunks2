@@ -79,7 +79,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
         int xSection = Coords.blockToCubeLocalSection(x);
         int zSection = Coords.blockToCubeLocalSection(z);
 
-        int index = xSection + zSection * DIAMETER_IN_SECTIONS;
+        int index = Coords.columnToColumnIndex(xSection, zSection);
 
         SurfaceTrackerLeaf leaf = leaves[index];
 

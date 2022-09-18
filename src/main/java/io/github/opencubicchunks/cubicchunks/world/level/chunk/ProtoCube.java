@@ -234,7 +234,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
 
     @Override
     public void sectionLoaded(@Nonnull SurfaceTrackerLeaf surfaceTrackerLeaf, int localSectionX, int localSectionZ) {
-        int idx = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
+        int idx = Coords.columnToColumnIndex(localSectionX, localSectionZ);
 
         if (surfaceTrackerLeaf.getRawType() == -1) { //light
             this.lightHeightmaps[idx] = surfaceTrackerLeaf;
@@ -251,7 +251,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         for (SurfaceTrackerLeaf[] heightmapLeaves : this.cubeHeightmaps.values()) {
             for (int localSectionZ = 0; localSectionZ < DIAMETER_IN_SECTIONS; localSectionZ++) {
                 for (int localSectionX = 0; localSectionX < DIAMETER_IN_SECTIONS; localSectionX++) {
-                    int i = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
+                    int i = Coords.columnToColumnIndex(localSectionX, localSectionZ);
                     if (heightmapLeaves[i] != null) {
                         heightmapLeaves[i].sourceUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                         heightmapLeaves[i] = null;
@@ -262,7 +262,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         SurfaceTrackerLeaf[] lightHeightmapLeaves = this.lightHeightmaps;
         for (int localSectionZ = 0; localSectionZ < DIAMETER_IN_SECTIONS; localSectionZ++) {
             for (int localSectionX = 0; localSectionX < DIAMETER_IN_SECTIONS; localSectionX++) {
-                int i = localSectionX + localSectionZ * DIAMETER_IN_SECTIONS;
+                int i = Coords.columnToColumnIndex(localSectionX, localSectionZ);
                 if (lightHeightmapLeaves[i] != null) {
                     lightHeightmapLeaves[i].sourceUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
                     lightHeightmapLeaves[i] = null;
@@ -333,7 +333,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
 
         int xChunk = blockToCubeLocalSection(pos.getX());
         int zChunk = blockToCubeLocalSection(pos.getZ());
-        int chunkIdx = xChunk + zChunk * DIAMETER_IN_SECTIONS;
+        int chunkIdx = Coords.columnToColumnIndex(xChunk, zChunk);
 
         IntPredicate isOpaquePredicate = SurfaceTrackerWrapper.opaquePredicateForState(state);
         for (Heightmap.Types types : heightMapsAfter) {
@@ -354,7 +354,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
             SurfaceTrackerLeaf[] surfaceTrackerLeaves = new SurfaceTrackerLeaf[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS];
             for (int dx = 0; dx < DIAMETER_IN_SECTIONS; dx++) {
                 for (int dz = 0; dz < DIAMETER_IN_SECTIONS; dz++) {
-                    int idx = dx + dz * DIAMETER_IN_SECTIONS;
+                    int idx = Coords.columnToColumnIndex(dx, dz);
                     SurfaceTrackerLeaf leaf = new SurfaceTrackerLeaf(cubePos.getY(), null, (byte) type.ordinal());
                     leaf.loadSource(cubeMinSection.x() + dx, cubeMinSection.z() + dz,
                         ((CubicServerLevel) ((ServerLevelAccessor) this.accessor2D).getLevel()).getHeightmapStorage(), this);
@@ -433,7 +433,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         int xSection = blockToCubeLocalSection(x);
         int zSection = blockToCubeLocalSection(z);
 
-        int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
+        int idx = Coords.columnToColumnIndex(xSection, zSection);
         SurfaceTrackerLeaf sectionAbove = this.lightHeightmaps[idx].getSectionAbove();
 
         int dy = DIAMETER_IN_BLOCKS - 1;
@@ -484,7 +484,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
         int xSection = blockToCubeLocalSection(x);
         int zSection = blockToCubeLocalSection(z);
 
-        int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
+        int idx = Coords.columnToColumnIndex(xSection, zSection);
 
         SurfaceTrackerLeaf leaf = leaves[idx];
         return leaf.getHeight(Coords.blockToLocal(x), Coords.blockToLocal(z));
