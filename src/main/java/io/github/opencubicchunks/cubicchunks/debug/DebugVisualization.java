@@ -91,7 +91,6 @@ import com.mojang.math.Matrix4f;
 import com.mojang.math.Vector3f;
 import com.mojang.math.Vector4f;
 import io.github.opencubicchunks.cc_core.api.CubePos;
-import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.client.gui.screens.CubicLevelLoadingScreen;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.UserFunction;
@@ -928,7 +927,7 @@ public class DebugVisualization {
             COLORS[255] = 0xFFFF00FF;
         }
 
-        private final Long2ByteMap map = new Long2ByteLinkedOpenHashMap();
+        private final Long2ByteMap cubeMap = new Long2ByteLinkedOpenHashMap();
         private final Long2ByteMap columnMap = new Long2ByteLinkedOpenHashMap();
 
         private final Type type;
@@ -942,26 +941,26 @@ public class DebugVisualization {
         }
 
         @Override public Long2ByteMap buildStateMap(Level level) {
-            map.clear();
+            cubeMap.clear();
 
             if (!(level instanceof ServerLevel)) {
-                return map;
+                return cubeMap;
             }
             ChunkMap chunkManager = ((ServerChunkCache) level.getChunkSource()).chunkMap;
             Long2ObjectLinkedOpenHashMap<ChunkHolder> loadedCubes = getField(ChunkMap.class, chunkManager, "visibleCubeMap");
 
             Object[] data = getField(Long2ObjectLinkedOpenHashMap.class, loadedCubes, "value");
             long[] keys = getField(Long2ObjectLinkedOpenHashMap.class, loadedCubes, "key");
-            Long2ByteLinkedOpenHashMap cubeMap = new Long2ByteLinkedOpenHashMap(100000);
+            Long2ByteLinkedOpenHashMap map = new Long2ByteLinkedOpenHashMap(100000);
             for (int i = 0, keysLength = keys.length; i < keysLength; i++) {
                 long pos = keys[i];
                 if (pos == 0) {
                     continue;
                 }
                 ChunkHolder holder = (ChunkHolder) data[i];
-                cubeMap.put(pos, (byte) type.getIndex(holder));
+                map.put(pos, (byte) type.getIndex(holder));
             }
-            return cubeMap;
+            return map;
         }
 
         @Override public Long2ByteMap buildColumnStateMap(Level level) {
@@ -975,16 +974,16 @@ public class DebugVisualization {
 
             Object[] data = getField(Long2ObjectLinkedOpenHashMap.class, loadedChunks, "value");
             long[] keys = getField(Long2ObjectLinkedOpenHashMap.class, loadedChunks, "key");
-            Long2ByteLinkedOpenHashMap columnMap = new Long2ByteLinkedOpenHashMap(10000);
+            Long2ByteLinkedOpenHashMap map = new Long2ByteLinkedOpenHashMap(10000);
             for (int i = 0, keysLength = keys.length; i < keysLength; i++) {
                 long pos = keys[i];
                 if (pos == 0) {
                     continue;
                 }
                 ChunkHolder holder = (ChunkHolder) data[i];
-                columnMap.put(pos, (byte) type.getIndex(holder));
+                map.put(pos, (byte) type.getIndex(holder));
             }
-            return columnMap;
+            return map;
         }
 
         @Override public int[] getColorMap() {
