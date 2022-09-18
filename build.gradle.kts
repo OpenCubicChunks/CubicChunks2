@@ -163,6 +163,7 @@ loom {
 
     val args = listOf(
             "-XX:+UnlockExperimentalVMOptions",
+            "-XX:+AllowEnhancedClassRedefinition",
             "-XX:-OmitStackTraceInFastThrow",
             "-XX:+UseG1GC",
             "-XX:G1NewSizePercent=20",
