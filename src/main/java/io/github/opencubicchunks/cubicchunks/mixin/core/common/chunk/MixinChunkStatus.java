@@ -115,12 +115,17 @@ public class MixinChunkStatus {
         }
 
         cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
-        if (!(chunk instanceof CubeAccess)) {
-            //vanilla
-            return;
-        }
-        //cc
+
         if (!chunk.getStatus().isOrAfter(status)) {
+            if (!(chunk instanceof CubeAccess)) {
+                // vanilla chunk
+                if (chunk instanceof ProtoChunk protoChunk) {
+                    protoChunk.setStatus(status);
+                }
+                return;
+            }
+
+            //cc
             if (level.getServer().getWorldData().worldGenSettings().generateFeatures()) { // check if structures are enabled
                 // structureFeatureManager ==  getStructureManager?
                 generator.createStructures(level.registryAccess(), level.structureFeatureManager(), chunk, structureManager, level.getSeed());
@@ -161,7 +166,7 @@ public class MixinChunkStatus {
         if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
             return;
         }
-        if (!bl && chunkAccess.getStatus().isOrAfter(chunkStatus)) {
+        if (/*!bl && */chunkAccess.getStatus().isOrAfter(chunkStatus)) { // bl is probably for terrain blending
             cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunkAccess)));
             return;
         }
@@ -175,7 +180,8 @@ public class MixinChunkStatus {
             cir.setReturnValue(eitherCompletableFuture);
             return;
         }
-        if (chunkAccess instanceof ProtoChunk) {
+        if (chunkAccess instanceof ProtoChunk chunk) {
+            chunk.setStatus(chunkStatus);
             cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunkAccess)));
         }
     }
@@ -202,50 +208,51 @@ public class MixinChunkStatus {
             return;
         }
 
-        ci.cancel();
-        if (chunk instanceof CubeAccess) {
-            if (chunk.getStatus().isOrAfter(status)) {
-                ci.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
-                return;
-            }
+        if (/*!bl && */chunk.getStatus().isOrAfter(status)){ // bl is probably for terrain blending
+            ci.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
+            return;
+        }
+        if (!(chunk instanceof CubeAccess cube)) {
+            ((ProtoChunk) chunk).setStatus(status);
+            ci.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
+            return;
+        }
 
-            CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(level, unsafeCast(neighbors), status, chunk, 0);
+        CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(level, neighbors, status, chunk, 0);
 
-            CubePos cubePos = ((CubeAccess) chunk).getCubePos();
-            int cubeY = cubePos.getY();
+        CubePos cubePos = cube.getCubePos();
+        int cubeY = cubePos.getY();
 
-            Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(BIOME_REGISTRY);
-            ProtoCube cubeAbove = new ProtoCube(CubePos.of(cubePos.getX(), cubeY + 1, cubePos.getZ()), UpgradeData.EMPTY, cubeWorldGenRegion,
-                biomeRegistry, null);
+        Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(BIOME_REGISTRY);
+        ProtoCube cubeAbove = new ProtoCube(CubePos.of(cubePos.getX(), cubeY + 1, cubePos.getZ()), UpgradeData.EMPTY, cubeWorldGenRegion,
+            biomeRegistry, null);
 
-            CompletableFuture<ChunkAccess> chainedNoiseFutures = null;
+        CompletableFuture<ChunkAccess> chainedNoiseFutures = null;
 
-            for (int columnX = 0; columnX < CubicConstants.DIAMETER_IN_SECTIONS; columnX++) {
-                for (int columnZ = 0; columnZ < CubicConstants.DIAMETER_IN_SECTIONS; columnZ++) {
-                    cubeAbove.moveColumns(columnX, columnZ);
-                    if (chunk instanceof ProtoCube) {
-                        ((ProtoCube) chunk).moveColumns(columnX, columnZ);
-                    }
+        for (int columnX = 0; columnX < CubicConstants.DIAMETER_IN_SECTIONS; columnX++) {
+            for (int columnZ = 0; columnZ < CubicConstants.DIAMETER_IN_SECTIONS; columnZ++) {
+                cubeAbove.moveColumns(columnX, columnZ);
+                if (cube instanceof ProtoCube) {
+                    ((ProtoCube) cube).moveColumns(columnX, columnZ);
+                }
 
-                    ChunkPos pos = chunk.getPos();
+                ChunkPos pos = cube.getPos();
 
-                    NoiseAndSurfaceBuilderHelper cubeAccessWrapper = new NoiseAndSurfaceBuilderHelper((CubeAccess) chunk, cubeAbove, biomeRegistry);
-                    cubeAccessWrapper.moveColumn(columnX, columnZ);
+                NoiseAndSurfaceBuilderHelper cubeAccessWrapper = new NoiseAndSurfaceBuilderHelper(cube, cubeAbove, biomeRegistry);
+                cubeAccessWrapper.moveColumn(columnX, columnZ);
 
-                    if (chainedNoiseFutures == null) {
-                        chainedNoiseFutures = getNoiseSurfaceCarverFuture(executor, level, chunkGenerator, cubeWorldGenRegion, cubeY, pos, cubeAccessWrapper);
-                    } else {
-                        // Wait for first completion stage to complete before getting the next future, as it calls supplyAsync internally
-                        chainedNoiseFutures =
-                            chainedNoiseFutures.thenCompose(futureIn -> getNoiseSurfaceCarverFuture(executor, level, chunkGenerator, cubeWorldGenRegion, cubeY, pos, cubeAccessWrapper));
-                    }
+                if (chainedNoiseFutures == null) {
+                    chainedNoiseFutures = getNoiseSurfaceCarverFuture(executor, level, chunkGenerator, cubeWorldGenRegion, cubeY, pos, cubeAccessWrapper);
+                } else {
+                    // Wait for first completion stage to complete before getting the next future, as it calls supplyAsync internally
+                    chainedNoiseFutures =
+                        chainedNoiseFutures.thenCompose(futureIn -> getNoiseSurfaceCarverFuture(executor, level, chunkGenerator, cubeWorldGenRegion, cubeY, pos, cubeAccessWrapper));
                 }
             }
-            assert chainedNoiseFutures != null;
-            ci.setReturnValue(chainedNoiseFutures.thenApply(helper -> Either.left(chunk)));
-        } else {
-            ci.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
         }
+        assert chainedNoiseFutures != null;
+        ci.setReturnValue(chainedNoiseFutures.thenApply(helper -> Either.left(chunk)));
+
     }
 
     private static CompletableFuture<ChunkAccess> getNoiseSurfaceCarverFuture(Executor executor, ServerLevel level, ChunkGenerator generator, CubeWorldGenRegion cubeWorldGenRegion,
