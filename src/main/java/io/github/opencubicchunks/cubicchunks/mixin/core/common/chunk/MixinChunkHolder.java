@@ -319,7 +319,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
             UNLOADED_CUBE_FUTURE;
     }
 
-    @Redirect(method = "getOrScheduleFuture", at = @At(
+    @Redirect(method = "*", at = @At(
         value = "INVOKE",
         target = "Lnet/minecraft/server/level/ChunkHolder;getStatus(I)Lnet/minecraft/world/level/chunk/ChunkStatus;"
     ))
@@ -332,7 +332,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
         if (cubePos == null) {
             return getStatus(level);
         } else {
-            return getStatus(level);
+            return CubeHolder.getCubeStatusFromLevel(level);
         }
     }
 
