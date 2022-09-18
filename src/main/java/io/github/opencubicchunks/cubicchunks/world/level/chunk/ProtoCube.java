@@ -190,6 +190,7 @@ public class ProtoCube extends CubeAccess implements CubicLevelHeightAccessor {
     }
 
     public void onEnteringFeaturesStatus() {
+        assert !(this instanceof ImposterProtoCube) : "Trying to set features status on ImposterProtoCube";
         ChunkSource chunkSource = getChunkSource();
 
         for (int dx = 0; dx < DIAMETER_IN_SECTIONS; dx++) {
