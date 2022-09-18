@@ -99,17 +99,15 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
             this.toRemove.clear();
             this.hasToRemove = false;
 
-            for (Long2ObjectMap.Entry<DataLayer> entry : this.queuedSections.long2ObjectEntrySet()) {
-                long entryPos = entry.getLongKey();
+            this.queuedSections.forEach((entryPos, dataLayer) -> {
                 if (this.storingLightForSection(entryPos)) {
-                    DataLayer nibblearray2 = entry.getValue();
-                    if (this.updatingSectionData.getLayer(entryPos) != nibblearray2) {
+                    if (this.updatingSectionData.getLayer(entryPos) != dataLayer) {
                         this.clearQueuedSectionBlocks(engine, entryPos);
-                        this.updatingSectionData.setLayer(entryPos, nibblearray2);
+                        this.updatingSectionData.setLayer(entryPos, dataLayer);
                         this.changedSections.add(entryPos);
                     }
                 }
-            }
+            });
 
             this.updatingSectionData.clearCache();
             if (!updateBlockLight) {
