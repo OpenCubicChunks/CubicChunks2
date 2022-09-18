@@ -91,6 +91,7 @@ import com.mojang.math.Matrix4f;
 import com.mojang.math.Vector3f;
 import com.mojang.math.Vector4f;
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.client.gui.screens.CubicLevelLoadingScreen;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.UserFunction;
@@ -114,6 +115,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.Ticket;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.util.SortedArraySet;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -447,9 +449,10 @@ public class DebugVisualization {
         int playerY = player == null ? 0 : Coords.getCubeYForEntity(player);
         int playerZ = player == null ? 0 : Coords.getCubeZForEntity(player);
 
+        Long2ByteMap columnMap = mode.buildColumnStateMap(world);
         Long2ByteMap cubeMap = mode.buildStateMap(world);
         timer().buildStatusMap = System.nanoTime();
-        buildQuads(builder, playerX, playerY, playerZ, cubeMap);
+        buildQuads(builder, playerX, playerY, playerZ, columnMap, cubeMap);
         timer().buildQuads = System.nanoTime();
     }
 
@@ -463,12 +466,23 @@ public class DebugVisualization {
         }
     }
 
-    private static void buildQuads(BufferBuilder builder, int playerX, int playerY, int playerZ, Long2ByteMap cubeMap) {
+    private static void buildQuads(BufferBuilder builder, int playerX, int playerY, int playerZ, Long2ByteMap columnMap, Long2ByteMap cubeMap) {
         int[] colorsArray = mode.getColorMap();
 
         Direction[] directions = Direction.values();
 
         Map<Integer, List<Vertex>> verts = new HashMap<>();
+        for (Long2ByteMap.Entry e : columnMap.long2ByteEntrySet()) {
+            long posLong = e.getLongKey();
+            int posX = Coords.sectionToCube(ChunkPos.getX(posLong));
+            int posZ = Coords.sectionToCube(ChunkPos.getZ(posLong));
+            int status = e.getByteValue() & 0xFF;
+            int c = colorsArray[status];
+
+            List<Vertex> buffer = verts.computeIfAbsent(status, x -> new ArrayList<>());
+            drawCube(buffer, posX - playerX, -30, posZ - playerZ, 7f, c, EnumSet.of(Direction.UP));
+        }
+
         for (Long2ByteMap.Entry e : cubeMap.long2ByteEntrySet()) {
             long posLong = e.getLongKey();
             int posX = CubePos.extractX(posLong);
@@ -880,6 +894,7 @@ public class DebugVisualization {
         };
 
         Long2ByteMap buildStateMap(Level level);
+        Long2ByteMap buildColumnStateMap(Level level);
 
         int[] getColorMap();
     }
@@ -914,6 +929,7 @@ public class DebugVisualization {
         }
 
         private final Long2ByteMap map = new Long2ByteLinkedOpenHashMap();
+        private final Long2ByteMap columnMap = new Long2ByteLinkedOpenHashMap();
 
         private final Type type;
 
@@ -948,12 +964,41 @@ public class DebugVisualization {
             return cubeMap;
         }
 
+        @Override public Long2ByteMap buildColumnStateMap(Level level) {
+            columnMap.clear();
+
+            if (!(level instanceof ServerLevel)) {
+                return columnMap;
+            }
+            ChunkMap chunkManager = ((ServerChunkCache) level.getChunkSource()).chunkMap;
+            Long2ObjectLinkedOpenHashMap<ChunkHolder> loadedChunks = getField(ChunkMap.class, chunkManager, "visibleChunkMap");
+
+            Object[] data = getField(Long2ObjectLinkedOpenHashMap.class, loadedChunks, "value");
+            long[] keys = getField(Long2ObjectLinkedOpenHashMap.class, loadedChunks, "key");
+            Long2ByteLinkedOpenHashMap columnMap = new Long2ByteLinkedOpenHashMap(10000);
+            for (int i = 0, keysLength = keys.length; i < keysLength; i++) {
+                long pos = keys[i];
+                if (pos == 0) {
+                    continue;
+                }
+                ChunkHolder holder = (ChunkHolder) data[i];
+                columnMap.put(pos, (byte) type.getIndex(holder));
+            }
+            return columnMap;
+        }
+
         @Override public int[] getColorMap() {
             return COLORS;
         }
 
         enum Type {
-            TICKET_LEVEL(chunkHolder -> CubeHolder.getCubeStatusFromLevel(chunkHolder.getTicketLevel()).getIndex()),
+            TICKET_LEVEL(chunkHolder -> {
+                if (((CubeHolder) chunkHolder).getCubePos() == null) {
+                    return ChunkHolder.getStatus(chunkHolder.getTicketLevel()).getIndex();
+                } else {
+                    return CubeHolder.getCubeStatusFromLevel(chunkHolder.getTicketLevel()).getIndex();
+                }
+            }),
             TICKET_LEVEL_FULL_CHUNK_STATUS(holder -> ChunkHolder.getFullChunkStatus(holder.getTicketLevel()).ordinal() + 128),
             TO_SAVE_LEVEL(holder -> {
                 ChunkAccess cube = holder.getChunkToSave().getNow(null);
@@ -1002,10 +1047,12 @@ public class DebugVisualization {
             COLORS[3] = 0x90FFFF00;
             COLORS[4] = 0x90FF00FF;
             COLORS[5] = 0x9000FFFF;
+            COLORS[6] = 0x90101000;
             COLORS[255] = 0x90FF00FF;
         }
 
         private final Long2ByteLinkedOpenHashMap cubeMap = new Long2ByteLinkedOpenHashMap();
+        private final Long2ByteLinkedOpenHashMap columnMap = new Long2ByteLinkedOpenHashMap();
 
         @Override public Long2ByteMap buildStateMap(Level level) {
             try {
@@ -1038,7 +1085,7 @@ public class DebugVisualization {
                         } else if (type == TicketType.FORCED || type == CubicTicketType.FORCED) {
                             cubeMap.put(posLong, (byte) 4);
                         } else {
-                            cubeMap.put(posLong, (byte) 5);
+                            cubeMap.put(posLong, (byte) 6);
                         }
                     }
                 });
@@ -1047,6 +1094,49 @@ public class DebugVisualization {
                 e.printStackTrace();
             }
             return cubeMap;
+        }
+
+        @Override public Long2ByteMap buildColumnStateMap(Level level) {
+            try {
+                this.columnMap.clear();
+                if (!(level instanceof ServerLevel)) {
+                    return columnMap;
+                }
+                ChunkMap chunkMap = ((ServerChunkCache) level.getChunkSource()).chunkMap;
+                Field distManF = ChunkMap.class.getDeclaredField("distanceManager");
+                distManF.setAccessible(true);
+                ChunkMap.DistanceManager distMan = (ChunkMap.DistanceManager) distManF.get(chunkMap);
+                Field ticketsF = DistanceManager.class.getDeclaredField("tickets");
+                ticketsF.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                Long2ObjectOpenHashMap<SortedArraySet<Ticket<?>>> tickets = (Long2ObjectOpenHashMap<SortedArraySet<Ticket<?>>>) ticketsF.get(distMan);
+
+                tickets.long2ObjectEntrySet().fastForEach(entry -> {
+                    long posLong = entry.getLongKey();
+                    for (Ticket<?> ticket : entry.getValue()) {
+                        TicketType<?> type = ticket.getType();
+                        if (type == TicketType.PLAYER) {
+                            columnMap.put(posLong, (byte) 0);
+                        } else if (type == TicketType.START) {
+                            columnMap.put(posLong, (byte) 1);
+                        } else if (type == TicketType.UNKNOWN) {
+                            columnMap.put(posLong, (byte) 2);
+                        } else if (type == TicketType.LIGHT) {
+                            columnMap.put(posLong, (byte) 3);
+                        } else if (type == TicketType.FORCED) {
+                            columnMap.put(posLong, (byte) 4);
+                        } else if (type == CubicTicketType.COLUMN) {
+                            columnMap.put(posLong, (byte) 5);
+                        } else {
+                            columnMap.put(posLong, (byte) 6);
+                        }
+                    }
+                });
+
+            } catch (ReflectiveOperationException e) {
+                e.printStackTrace();
+            }
+            return columnMap;
         }
 
         @Override public int[] getColorMap() {
