@@ -208,7 +208,7 @@ public class MixinChunkStatus {
             return;
         }
 
-        if (/*!bl && */chunk.getStatus().isOrAfter(status)){ // bl is probably for terrain blending
+        if (/*!bl && */chunk.getStatus().isOrAfter(status)) { // bl is probably for terrain blending
             ci.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
             return;
         }
