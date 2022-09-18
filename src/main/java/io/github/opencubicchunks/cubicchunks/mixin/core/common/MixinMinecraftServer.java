@@ -24,6 +24,7 @@ import io.github.opencubicchunks.cubicchunks.world.ForcedCubesSaveData;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import net.minecraft.Util;
+import net.minecraft.commands.CommandSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -31,6 +32,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.TickTask;
 import net.minecraft.server.WorldStem;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
@@ -41,6 +43,7 @@ import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.players.GameProfileCache;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.util.Unit;
+import net.minecraft.util.thread.ReentrantBlockableEventLoop;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ForcedChunksSavedData;
 import net.minecraft.world.level.Level;
@@ -54,10 +57,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MinecraftServer.class)
-public abstract class MixinMinecraftServer implements CubicMinecraftServer {
+public abstract class MixinMinecraftServer extends ReentrantBlockableEventLoop<TickTask> implements CommandSource, AutoCloseable, CubicMinecraftServer {
     @Shadow @Final private static Logger LOGGER;
 
     @Shadow private long nextTickTime;
@@ -65,11 +69,17 @@ public abstract class MixinMinecraftServer implements CubicMinecraftServer {
 
     @Nullable private ServerConfig cubicChunksServerConfig;
 
+    public MixinMinecraftServer(String string) {
+        super(string);
+    }
+
     @Shadow protected abstract void waitUntilNextTick();
     @Shadow public abstract ServerLevel overworld();
     @Shadow public abstract boolean isRunning();
 
     @Shadow public abstract RegistryAccess.Frozen registryAccess();
+
+    @Shadow protected abstract boolean haveTime();
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void injectFeatures(Thread thread, LevelStorageSource.LevelStorageAccess levelStorageAccess, PackRepository packRepository, WorldStem worldStem, Proxy proxy, DataFixer dataFixer,
@@ -165,6 +175,13 @@ public abstract class MixinMinecraftServer implements CubicMinecraftServer {
         this.waitUntilNextTick();
         statusListener.stop();
         serverChunkCache.getLightEngine().setTaskPerBatch(5);
+    }
+
+    // Actually wait for all tasks when running pending tasks when stopping server, even if there is no tick time left. Makes quitting the world slightly faster
+    @Redirect(method = "stopServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;waitUntilNextTick()V"))
+    private void runAllPendingTasksOnSave(MinecraftServer instance) {
+        this.runAllTasks();
+        this.managedBlock(() -> !haveTime() && getPendingTasksCount() == 0);
     }
 
     @Override
