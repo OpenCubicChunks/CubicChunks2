@@ -93,7 +93,6 @@ import com.mojang.math.Vector4f;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.client.gui.screens.CubicLevelLoadingScreen;
-import io.github.opencubicchunks.cubicchunks.levelgen.placement.UserFunction;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.Matrix4fAccess;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeHolder;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType;
@@ -105,6 +104,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
@@ -444,9 +444,9 @@ public class DebugVisualization {
 
     private static void drawWorld(BufferBuilder builder, Level world) {
         AbstractClientPlayer player = Minecraft.getInstance().player;
-        int playerX = player == null ? 0 : Coords.getCubeXForEntity(player);
-        int playerY = player == null ? 0 : Coords.getCubeYForEntity(player);
-        int playerZ = player == null ? 0 : Coords.getCubeZForEntity(player);
+        int playerX = player == null ? 0 : player.getBlockX();
+        int playerY = player == null ? 0 : player.getBlockY();
+        int playerZ = player == null ? 0 : player.getBlockZ();
 
         Long2ByteMap columnMap = mode.buildColumnStateMap(world);
         Long2ByteMap cubeMap = mode.buildStateMap(world);
@@ -470,17 +470,24 @@ public class DebugVisualization {
 
         Direction[] directions = Direction.values();
 
+        int playerSectionX = SectionPos.blockToSectionCoord(playerX);
+        int playerSectionZ = SectionPos.blockToSectionCoord(playerZ);
+
         Map<Integer, List<Vertex>> verts = new HashMap<>();
         for (Long2ByteMap.Entry e : columnMap.long2ByteEntrySet()) {
             long posLong = e.getLongKey();
-            int posX = Coords.sectionToCube(ChunkPos.getX(posLong));
-            int posZ = Coords.sectionToCube(ChunkPos.getZ(posLong));
+            int posX = ChunkPos.getX(posLong);
+            int posZ = ChunkPos.getZ(posLong);
             int status = e.getByteValue() & 0xFF;
-            int c = colorsArray[status];
+            int c = colorsArray[status] | 0x000000FF; // 255 alpha for all statuses
 
             List<Vertex> buffer = verts.computeIfAbsent(status, x -> new ArrayList<>());
-            drawCube(buffer, posX - playerX, -30, posZ - playerZ, 7f, c, EnumSet.of(Direction.UP));
+            drawCube(buffer, posX - playerSectionX, -30, posZ - playerSectionZ, 7f / 2, c, EnumSet.of(Direction.UP));
         }
+
+        int playerCubeX = Coords.blockToCube(playerX);
+        int playerCubeY = Coords.blockToCube(playerY);
+        int playerCubeZ = Coords.blockToCube(playerZ);
 
         for (Long2ByteMap.Entry e : cubeMap.long2ByteEntrySet()) {
             long posLong = e.getLongKey();
@@ -493,7 +500,7 @@ public class DebugVisualization {
             EnumSet<Direction> renderFaces = findRenderFaces(cubeMap, directions, posX, posY, posZ, status);
 
             List<Vertex> buffer = verts.computeIfAbsent(status, x -> new ArrayList<>());
-            drawCube(buffer, posX - playerX, posY - playerY, posZ - playerZ, 7, c, renderFaces);
+            drawCube(buffer, posX - playerCubeX, posY - playerCubeY, posZ - playerCubeZ, 7, c, renderFaces);
         }
         buildVertices(builder, verts);
     }
@@ -903,17 +910,9 @@ public class DebugVisualization {
         private static final int[] COLORS = new int[256];
 
         static {
-            UserFunction alphaFunc =
-                UserFunction.builder().point(0, 0.1f)
-                    .point(ChunkStatus.STRUCTURE_STARTS.getIndex(), 0.15f)
-                    .point(ChunkStatus.STRUCTURE_REFERENCES.getIndex(), 0.28f)
-                    .point(ChunkStatus.CARVERS.getIndex(), 0.7f)
-                    .point(ChunkStatus.LIQUID_CARVERS.getIndex(), 0.2f)
-                    .point(ChunkStatus.FULL.getIndex(), 1).build();
-
-            for (Object2IntMap.Entry<ChunkStatus> entry : CubicLevelLoadingScreen.getStatusColorMap().object2IntEntrySet()) {
+            for (Object2IntMap.Entry<ChunkStatus> entry : CubicLevelLoadingScreen.STATUS_COLORS.object2IntEntrySet()) {
                 int idx = entry.getKey().getIndex();
-                int alpha = (int) (255 * alphaFunc.getValue(idx));
+                int alpha = (int) (255 * CubicLevelLoadingScreen.STATUS_ALPHAS.getValue(idx));
                 COLORS[idx] = entry.getIntValue() | alpha << 24;
             }
             // INACCESSIBLE
@@ -1140,6 +1139,10 @@ public class DebugVisualization {
 
         @Override public int[] getColorMap() {
             return COLORS;
+        }
+
+        @Override public String toString() {
+            return "TICKET_VISUALIZATION";
         }
     }
 }

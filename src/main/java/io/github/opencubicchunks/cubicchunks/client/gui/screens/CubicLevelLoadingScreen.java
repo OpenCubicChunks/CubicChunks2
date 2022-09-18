@@ -36,10 +36,10 @@ import net.minecraft.server.level.progress.StoringChunkProgressListener;
 import net.minecraft.world.level.chunk.ChunkStatus;
 
 public class CubicLevelLoadingScreen {
-    private static final Object2IntArrayMap<ChunkStatus> STATUS_COLORS = getStatusColors();
+    public static final Object2IntMap<ChunkStatus> STATUS_COLORS = Object2IntMaps.unmodifiable(getStatusColors());
 
-    private static final UserFunction STATUS_ALPHAS =
-        UserFunction.builder().point(0, 1f)
+    public static final UserFunction STATUS_ALPHAS =
+        UserFunction.builder().point(0, 0f)
             .point(ChunkStatus.STRUCTURE_STARTS.getIndex(), 0.15f)
             .point(ChunkStatus.BIOMES.getIndex(), 0.28f)
             .point(ChunkStatus.CARVERS.getIndex(), 0.7f)
@@ -68,7 +68,7 @@ public class CubicLevelLoadingScreen {
         //@formatter:on
     }
 
-    private static Object2IntArrayMap<ChunkStatus> getStatusColors() {
+    public static Object2IntArrayMap<ChunkStatus> getStatusColors() {
         Object2IntArrayMap<ChunkStatus> map = new Object2IntArrayMap<>();
         List<ChunkStatus> statusList = ChunkStatus.getStatusList();
 
