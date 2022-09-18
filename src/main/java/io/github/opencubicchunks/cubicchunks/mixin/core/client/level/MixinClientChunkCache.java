@@ -96,6 +96,13 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
         return load ? this.emptyLevelCube : null;
     }
 
+    @Nullable
+    @Override
+    public LevelCube getCubeNow(int cubeX, int cubeY, int cubeZ) {
+        //if(true) throw new RuntimeException();
+        return getCube(cubeX, cubeY, cubeZ, ChunkStatus.FULL, false);
+    }
+
     @Override
     public LevelCube replaceWithPacketData(int cubeX, int cubeY, int cubeZ,
                                            FriendlyByteBuf readBuffer, CompoundTag tag,

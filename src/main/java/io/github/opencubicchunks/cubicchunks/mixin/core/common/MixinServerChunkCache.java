@@ -143,6 +143,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     }
 
     @Nullable
+    @Override
     public LevelCube getCubeNow(int cubeX, int cubeY, int cubeZ) {
         if (Thread.currentThread() != this.mainThread) {
             return null;

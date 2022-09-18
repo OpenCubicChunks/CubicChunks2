@@ -220,10 +220,17 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
     @Override
     public CubeAccess getCube(int y) {
         try {
-            return ((CubeSource) level.getChunkSource()).getCube(
+            CubeAccess cube = ((CubeSource) level.getChunkSource()).getCubeNow(
                 Coords.sectionToCube(chunkPos.x),
                 Coords.sectionToCube(y),
-                Coords.sectionToCube(chunkPos.z), getStatus(), true);
+                Coords.sectionToCube(chunkPos.z));
+            if (cube == null) {
+                cube = ((CubeSource) level.getChunkSource()).getCube(
+                    Coords.sectionToCube(chunkPos.x),
+                    Coords.sectionToCube(y),
+                    Coords.sectionToCube(chunkPos.z), getStatus(), true);
+            }
+            return cube;
         } catch (CompletionException ex) {
             // CompletionException here breaks vanilla crash report handler
             // because CompletionException stacktrace doesn't have any part in common
