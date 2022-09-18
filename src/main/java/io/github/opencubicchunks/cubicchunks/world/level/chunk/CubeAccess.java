@@ -159,7 +159,9 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
         for (int i = 0; i < columns.size(); i++) {
             Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure> chunkEither = columns.get(i);
             if (chunkEither.left().isPresent()) {
-                this.columns[i] = chunkEither.left().get();
+                ChunkAccess column = chunkEither.left().get();
+                assert column.getStatus().isOrAfter(this.getStatus()) : "Load order broken!";
+                this.columns[i] = column;
             }
         }
     }

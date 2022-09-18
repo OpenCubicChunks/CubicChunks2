@@ -9,6 +9,7 @@ import static io.github.opencubicchunks.cc_core.utils.Coords.indexToX;
 import static io.github.opencubicchunks.cc_core.utils.Coords.indexToY;
 import static io.github.opencubicchunks.cc_core.utils.Coords.indexToZ;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -159,6 +160,8 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
 //            cubePrimer.getFluidsToBeTicked(), cubePrimer.getInhabitedTime(), cubePrimer.getSections(), (Consumer<BigCube>)null);
         this(level, protoCube.getCubePos(), null, protoCube.unpackBlockTicks(),
             protoCube.unpackFluidTicks(), protoCube.getInhabitedTime(), protoCube.getSections(), protoCube.getBlendingData(), postLoad);
+
+        assert !Arrays.stream(protoCube.columns).allMatch(column -> column.getStatus().isOrAfter(ChunkStatus.FULL)) : "Load order broken!";
 
         for (BlockEntity blockEntity : protoCube.getBlockEntities().values()) {
             this.setBlockEntity(blockEntity);
