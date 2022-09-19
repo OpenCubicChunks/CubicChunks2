@@ -20,7 +20,6 @@
     "client": [
         "client.MixinClientLevel",
         "client.MixinDebugRenderer",
-        "client.MixinGameRenderer",
         "client.MixinHeightMapRenderer",
         "client.MixinLevelRenderer",
         "client.MixinMinecraft",
