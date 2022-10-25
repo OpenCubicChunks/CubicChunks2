@@ -331,9 +331,9 @@ public class RegionCubeIO {
 
         SaveSection2D section2d = new SaveSection2D(
             new SharedCachedRegionProvider<>(
-                new SimpleRegionProvider<>(new EntryLocation2D.Provider(), directory, (keyProv, r) ->
+                new SimpleRegionProvider<>(new EntryLocation2D.Provider(), part2d, (keyProv, r) ->
                     new Region.Builder<EntryLocation2D>()
-                        .setDirectory(directory)
+                        .setDirectory(part2d)
                         .setRegionKey(r)
                         .setKeyProvider(keyProv)
                         .setSectorSize(512)
@@ -343,16 +343,16 @@ public class RegionCubeIO {
                 )
             ),
             new SharedCachedRegionProvider<>(
-                new SimpleRegionProvider<>(new EntryLocation2D.Provider(), directory,
-                    (keyProvider, regionKey) -> new ExtRegion<>(directory, Collections.emptyList(), keyProvider, regionKey),
+                new SimpleRegionProvider<>(new EntryLocation2D.Provider(), part2d,
+                    (keyProvider, regionKey) -> new ExtRegion<>(part2d, Collections.emptyList(), keyProvider, regionKey),
                     (dir, key) -> Files.exists(dir.resolve(key.getRegionKey().getName() + ".ext"))
                 )
             ));
         SaveSection3D section3d = new SaveSection3D(
             new SharedCachedRegionProvider<>(
-                new SimpleRegionProvider<>(new EntryLocation3D.Provider(), directory, (keyProv, r) ->
+                new SimpleRegionProvider<>(new EntryLocation3D.Provider(), part3d, (keyProv, r) ->
                     new Region.Builder<EntryLocation3D>()
-                        .setDirectory(directory)
+                        .setDirectory(part3d)
                         .setRegionKey(r)
                         .setKeyProvider(keyProv)
                         .setSectorSize(512)
@@ -362,8 +362,8 @@ public class RegionCubeIO {
                 )
             ),
             new SharedCachedRegionProvider<>(
-                new SimpleRegionProvider<>(new EntryLocation3D.Provider(), directory,
-                    (keyProvider, regionKey) -> new ExtRegion<>(directory, Collections.emptyList(), keyProvider, regionKey),
+                new SimpleRegionProvider<>(new EntryLocation3D.Provider(), part3d,
+                    (keyProvider, regionKey) -> new ExtRegion<>(part3d, Collections.emptyList(), keyProvider, regionKey),
                     (dir, key) -> Files.exists(dir.resolve(key.getRegionKey().getName() + ".ext"))
                 )
             ));
