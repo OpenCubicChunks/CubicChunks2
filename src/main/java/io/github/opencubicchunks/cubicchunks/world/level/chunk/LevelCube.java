@@ -162,7 +162,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         this(level, protoCube.getCubePos(), null, protoCube.unpackBlockTicks(),
             protoCube.unpackFluidTicks(), protoCube.getInhabitedTime(), protoCube.getSections(), protoCube.getBlendingData(), postLoad);
 
-        assert Arrays.stream(protoCube.columns).allMatch(column -> column.getStatus().isOrAfter(ChunkStatus.FULL)) : "Load order broken!";
+        assert Arrays.stream(protoCube.columns).allMatch(column -> column.getStatus().isOrAfter(ChunkStatus.FULL.getParent())) : "Load order broken!";
 
         for (BlockEntity blockEntity : protoCube.getBlockEntities().values()) {
             this.setBlockEntity(blockEntity);
