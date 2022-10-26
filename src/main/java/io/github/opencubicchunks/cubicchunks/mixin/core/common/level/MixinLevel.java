@@ -1,20 +1,27 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
+import io.github.opencubicchunks.cubicchunks.world.BigChunk;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelBigChunkAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.storage.WritableLevelData;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -24,12 +31,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Level.class)
-public abstract class MixinLevel implements CubicLevelAccessor, LevelReader {
+public abstract class MixinLevel implements CubicLevelAccessor, CubicLevelBigChunkAccessor, LevelReader {
 
     @Final @Shadow public Random random;
     protected boolean isCubic;
     protected boolean generates2DChunks;
     protected CubicLevelHeightAccessor.WorldStyle worldStyle;
+
+    // TODO should this be on ServerLevel instead? - can just move it to CubicServerLevel then too
+    protected ConcurrentHashMap<CubePos, BigChunk> bigChunks;
 
     @Shadow public abstract ResourceKey<Level> dimension();
 
@@ -40,6 +50,24 @@ public abstract class MixinLevel implements CubicLevelAccessor, LevelReader {
             return LevelReader.super.getHeight();
         }
         return 40000000;
+    }
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void onInit(WritableLevelData writableLevelData, ResourceKey resourceKey, Holder holder, Supplier supplier, boolean bl, boolean bl2, long l, CallbackInfo ci) {
+        bigChunks = new ConcurrentHashMap<>();
+    }
+
+    @Override /*@Nullable*/ public BigChunk getBigChunk(int bigChunkX, int bigChunkZ) {
+        var pos = CubePos.of(bigChunkX, 0, bigChunkZ);
+        return bigChunks.computeIfAbsent(pos, p -> new BigChunk((Level) (Object) this, bigChunkX, bigChunkZ));
+    }
+
+    @Override public ConcurrentHashMap<CubePos, BigChunk> getBigChunkMap() {
+        return bigChunks;
+    }
+
+    @Override public void removeBigChunk(int bigChunkX, int bigChunkZ) {
+        bigChunks.remove(CubePos.of(bigChunkX, 0, bigChunkZ));
     }
 
     /**

@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 
 import static io.github.opencubicchunks.cc_core.api.CubicConstants.DIAMETER_IN_BLOCKS;
 import static io.github.opencubicchunks.cc_core.api.CubicConstants.DIAMETER_IN_SECTIONS;
-import static io.github.opencubicchunks.cc_core.utils.Coords.blockToCubeLocalSection;
 import static io.github.opencubicchunks.cc_core.utils.Coords.blockToIndex;
 import static io.github.opencubicchunks.cc_core.utils.Coords.blockToLocal;
 import static io.github.opencubicchunks.cc_core.utils.Coords.indexToX;
@@ -28,7 +27,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
-import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.utils.MathUtil;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
@@ -36,8 +34,10 @@ import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerNode;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelBigChunkAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelTicks;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.BigSurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.HeightmapOffsetWrapper;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import it.unimi.dsi.fastutil.shorts.ShortList;
 import net.minecraft.CrashReport;
@@ -108,7 +108,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
     private final ClassInstanceMultiMap<Entity>[] entityLists;
     private final Level level;
 
-    private final SurfaceTrackerLeaf[] lightHeightmaps = new SurfaceTrackerLeaf[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS];
+    private SurfaceTrackerLeaf lightHeightmap;
 
     private boolean loaded = false;
 
@@ -184,19 +184,11 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
             }
         }));
 
-        SurfaceTrackerLeaf[] protoCubeLightHeightmaps = protoCube.getLightHeightmaps();
-        SectionPos cubeMinSection = this.cubePos.asSectionPos();
-        for (int localZ = 0; localZ < DIAMETER_IN_SECTIONS; localZ++) {
-            for (int localX = 0; localX < DIAMETER_IN_SECTIONS; localX++) {
-                int i = Coords.columnToColumnIndex(localX, localZ);
-
-                this.lightHeightmaps[i] = protoCubeLightHeightmaps[i];
-                if (this.lightHeightmaps[i] == null) {
-                    System.out.println("Got a null light heightmap while upgrading from CubePrimer at " + this.cubePos);
-                } else {
-                    this.lightHeightmaps[i].loadSource(cubeMinSection.x() + localX, cubeMinSection.z() + localZ, ((CubicServerLevel) this.level).getHeightmapStorage(), this);
-                }
-            }
+        this.lightHeightmap = protoCube.getLightHeightmap();
+        if (this.lightHeightmap == null) {
+            System.out.println("Got a null light heightmap while upgrading from CubePrimer at " + this.cubePos);
+        } else {
+            this.lightHeightmap.loadSource(cubePos.getX(), cubePos.getZ(), ((CubicServerLevel) this.level).getHeightmapStorage(), this);
         }
         this.setLightCorrect(protoCube.isLightCorrect());
 
@@ -213,41 +205,25 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         ((CubicLevelTicks<Fluid>) serverLevel.getFluidTicks()).removeContainer(this.cubePos);
     }
 
-    @Override public void sectionLoaded(@Nonnull SurfaceTrackerLeaf surfaceTrackerLeaf, int localSectionX, int localSectionZ) {
-        int idx = Coords.columnToColumnIndex(localSectionX, localSectionZ);
-
+    @Override public void leafLoaded(@Nonnull SurfaceTrackerLeaf surfaceTrackerLeaf) {
         if (surfaceTrackerLeaf.getRawType() == -1) { //light
-            this.lightHeightmaps[idx] = surfaceTrackerLeaf;
+            this.lightHeightmap = surfaceTrackerLeaf;
         } else { // normal heightmap
-            this.getCubeHeightmaps().computeIfAbsent(Heightmap.Types.values()[surfaceTrackerLeaf.getRawType()],
-                type -> new SurfaceTrackerLeaf[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS]
-            )[idx] = surfaceTrackerLeaf;
+            this.getCubeHeightmaps().put(Heightmap.Types.values()[surfaceTrackerLeaf.getRawType()], surfaceTrackerLeaf);
         }
     }
 
     @Override
     public void unloadSource(@Nonnull HeightmapStorage storage) {
-        SectionPos cubeMinSection = this.cubePos.asSectionPos();
-        for (SurfaceTrackerLeaf[] heightmapLeaves : this.getCubeHeightmaps().values()) {
-            for (int localSectionZ = 0; localSectionZ < DIAMETER_IN_SECTIONS; localSectionZ++) {
-                for (int localSectionX = 0; localSectionX < DIAMETER_IN_SECTIONS; localSectionX++) {
-                    int i = Coords.columnToColumnIndex(localSectionX, localSectionZ);
-                    if (heightmapLeaves[i] != null) {
-                        heightmapLeaves[i].sourceUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
-                        heightmapLeaves[i] = null;
-                    }
-                }
+        for (SurfaceTrackerLeaf heightmapLeaf : this.getCubeHeightmaps().values()) {
+            if (heightmapLeaf != null) {
+                heightmapLeaf.sourceUnloaded(this.cubePos.getX(), this.cubePos.getZ(), storage);
             }
         }
-        SurfaceTrackerLeaf[] lightHeightmapLeaves = this.lightHeightmaps;
-        for (int localSectionZ = 0; localSectionZ < DIAMETER_IN_SECTIONS; localSectionZ++) {
-            for (int localSectionX = 0; localSectionX < DIAMETER_IN_SECTIONS; localSectionX++) {
-                int i = Coords.columnToColumnIndex(localSectionX, localSectionZ);
-                if (lightHeightmapLeaves[i] != null) {
-                    lightHeightmapLeaves[i].sourceUnloaded(cubeMinSection.x() + localSectionX, cubeMinSection.z() + localSectionZ, storage);
-                    lightHeightmapLeaves[i] = null;
-                }
-            }
+        this.getCubeHeightmaps().clear();
+        if (this.lightHeightmap != null) {
+            this.lightHeightmap.sourceUnloaded(this.cubePos.getX(), this.cubePos.getZ(), storage);
+            this.lightHeightmap = null;
         }
     }
 
@@ -257,7 +233,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         } else { //normal heightmaps
             int maxY = Integer.MIN_VALUE;
             for (int dy = DIAMETER_IN_BLOCKS - 1; dy >= 0; dy--) {
-                if (SurfaceTrackerWrapper.HEIGHTMAP_TYPES[heightmapType].isOpaque().test(this.getBlockState(new BlockPos(x, dy, z)))) {
+                if (HeightmapOffsetWrapper.HEIGHTMAP_TYPES[heightmapType].isOpaque().test(this.getBlockState(new BlockPos(x, dy, z)))) {
                     int minY = this.cubePos.getY() * DIAMETER_IN_BLOCKS;
                     maxY = minY + dy;
                     break;
@@ -270,11 +246,7 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
     public int getHighestLight(int x, int z) {
         int maxY = Integer.MIN_VALUE;
 
-        int xSection = blockToCubeLocalSection(x);
-        int zSection = blockToCubeLocalSection(z);
-
-        int idx = Coords.columnToColumnIndex(xSection, zSection);
-        SurfaceTrackerLeaf sectionAbove = this.lightHeightmaps[idx].getSectionAbove();
+        SurfaceTrackerLeaf sectionAbove = this.lightHeightmap.getSectionAbove();
 
         int dy = DIAMETER_IN_BLOCKS - 1;
 
@@ -363,19 +335,14 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
         int localZ = blockToLocal(pos.getZ());
 
         if (!this.getCubeHeightmaps().isEmpty()) {
-            int xSection = blockToCubeLocalSection(pos.getX());
-            int zSection = blockToCubeLocalSection(pos.getZ());
+            IntPredicate isOpaquePredicate = BigSurfaceTrackerWrapper.opaquePredicateForState(newState);
 
-            int idx = Coords.columnToColumnIndex(xSection, zSection);
+            this.getCubeHeightmaps().get(Heightmap.Types.MOTION_BLOCKING).onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
+            this.getCubeHeightmaps().get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES).onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
+            this.getCubeHeightmaps().get(Heightmap.Types.OCEAN_FLOOR).onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
+            this.getCubeHeightmaps().get(Heightmap.Types.WORLD_SURFACE).onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
 
-            IntPredicate isOpaquePredicate = SurfaceTrackerWrapper.opaquePredicateForState(newState);
-
-            this.getCubeHeightmaps().get(Heightmap.Types.MOTION_BLOCKING)[idx].onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
-            this.getCubeHeightmaps().get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES)[idx].onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
-            this.getCubeHeightmaps().get(Heightmap.Types.OCEAN_FLOOR)[idx].onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
-            this.getCubeHeightmaps().get(Heightmap.Types.WORLD_SURFACE)[idx].onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
-
-            this.lightHeightmaps[idx].onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
+            this.lightHeightmap.onSetBlock(localX, pos.getY(), localZ, isOpaquePredicate);
         }
 
         boolean hadBlockEntity = oldState.hasBlockEntity();
@@ -747,30 +714,20 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
     }
 
     @Override public int getCubeLocalHeight(Heightmap.Types type, int x, int z) {
-        SurfaceTrackerLeaf[] surfaceTrackerSections = this.getCubeHeightmaps().get(type);
-        if (surfaceTrackerSections == null) {
+        SurfaceTrackerLeaf surfaceTrackerSection = this.getCubeHeightmaps().get(type);
+        if (surfaceTrackerSection == null) {
             throw new IllegalStateException("Trying to access heightmap of type " + type + " for cube " + cubePos + " before it's loaded!");
         }
-        int xSection = blockToCubeLocalSection(x);
-        int zSection = blockToCubeLocalSection(z);
 
-        int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
-
-        SurfaceTrackerLeaf surfaceTrackerSection = surfaceTrackerSections[idx];
         return surfaceTrackerSection.getHeight(blockToLocal(x), blockToLocal(z));
     }
 
-    @Override public int getHeight(Heightmap.Types type, int x, int z) { //TODO: Use heightmap sections from column instead.
-        SurfaceTrackerLeaf[] surfaceTrackerSections = this.getCubeHeightmaps().get(type);
-        if (surfaceTrackerSections == null) {
+    @Override public int getHeight(Heightmap.Types type, int x, int z) {
+        // TODO once we have BigChunk reference on LevelCube, just get the root heightmap from there instead
+        SurfaceTrackerNode surfaceTrackerSection = this.getCubeHeightmaps().get(type);
+        if (surfaceTrackerSection == null) {
             throw new IllegalStateException("Trying to access heightmap of type " + type + " for cube " + cubePos + " before it's loaded!");
         }
-        int xSection = blockToCubeLocalSection(x);
-        int zSection = blockToCubeLocalSection(z);
-
-        int idx = xSection + zSection * DIAMETER_IN_SECTIONS;
-
-        SurfaceTrackerNode surfaceTrackerSection = surfaceTrackerSections[idx];
 
         while (surfaceTrackerSection.getParent() != null) {
             surfaceTrackerSection = surfaceTrackerSection.getParent();
@@ -847,16 +804,16 @@ public class LevelCube extends CubeAccess implements CubicLevelHeightAccessor {
                 // This force-loads the column, but it shouldn't matter if column-cube load order is working properly.
                 LevelChunk chunk = this.level.getChunk(pos.x + x, pos.z + z);
                 ((ColumnCubeMapGetter) chunk).getCubeMap().markLoaded(this.cubePos.getY());
-                for (Map.Entry<Heightmap.Types, Heightmap> entry : chunk.getHeightmaps()) {
-                    Heightmap heightmap = entry.getValue();
-                    SurfaceTrackerWrapper tracker = (SurfaceTrackerWrapper) heightmap;
-                    tracker.loadCube(storage, this);
-                }
-
-                // TODO probably don't want to do this if the cube was already loaded as a CubePrimer
-                ((LightHeightmapGetter) chunk).getServerLightHeightmap().loadCube(storage, this);
             }
         }
+        var bigChunk = ((CubicLevelBigChunkAccessor) level).getBigChunk(cubePos.getX(), cubePos.getZ());
+        for (Map.Entry<Heightmap.Types, BigSurfaceTrackerWrapper> entry : bigChunk.getHeightmaps().entrySet()) {
+            BigSurfaceTrackerWrapper heightmap = entry.getValue();
+            heightmap.loadCube(storage, this);
+        }
+
+        // TODO probably don't want to do this if the cube was already loaded as a CubePrimer
+        bigChunk.getServerLightHeightmap().loadCube(storage, this);
     }
 
     public void invalidateAllBlockEntities() {

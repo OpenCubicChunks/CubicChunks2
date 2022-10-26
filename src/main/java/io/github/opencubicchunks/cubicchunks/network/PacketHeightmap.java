@@ -4,7 +4,7 @@ import java.util.Map;
 
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientLightSurfaceTracker;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.HeightmapOffsetWrapper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -36,7 +36,7 @@ public class PacketHeightmap {
                 heightmaps.put(entry.getKey().getSerializationKey(), new LongArrayTag(entry.getValue().getRawData()));
             }
         }
-        LightSurfaceTrackerWrapper lightHeightmap = ((LightHeightmapGetter) chunk).getServerLightHeightmap();
+        HeightmapOffsetWrapper lightHeightmap = ((LightHeightmapGetter) chunk).getServerLightHeightmap();
         heightmaps.put("light", new LongArrayTag(lightHeightmap.getRawData()));
         return new PacketHeightmap(chunk.getPos(), heightmaps);
     }

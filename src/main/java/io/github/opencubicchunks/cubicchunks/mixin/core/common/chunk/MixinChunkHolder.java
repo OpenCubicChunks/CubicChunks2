@@ -417,6 +417,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
                     changedLocalBlocks[sectionIdx].add(SectionPos.sectionRelativePos(blockPos));
                 }
             }
+            // TODO client-side light heightmap updates seem to be broken as of 1.18
             int topY = ((LightHeightmapGetter) chunk).getLightHeightmap().getFirstAvailable(localX, localZ) - 1;
             // if the block being changed is new top block - heightmap probably was updated
             // if block being changed is above new top block - heightmap was probably decreased

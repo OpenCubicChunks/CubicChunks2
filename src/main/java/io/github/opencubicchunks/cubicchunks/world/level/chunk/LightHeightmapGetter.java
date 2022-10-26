@@ -3,7 +3,7 @@ package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientLightSurfaceTracker;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.HeightmapOffsetWrapper;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 public interface LightHeightmapGetter {
@@ -27,11 +27,11 @@ public interface LightHeightmapGetter {
      * Can return null for a protochunk before features stage
      */
     @Nullable
-    default LightSurfaceTrackerWrapper getServerLightHeightmap() {
+    default HeightmapOffsetWrapper getServerLightHeightmap() {
         Heightmap lightHeightmap = this.getLightHeightmap();
-        if (lightHeightmap != null && !(lightHeightmap instanceof LightSurfaceTrackerWrapper)) {
+        if (lightHeightmap != null && !(lightHeightmap instanceof HeightmapOffsetWrapper)) {
             throw new IllegalStateException("Attempted to get server light heightmap on client");
         }
-        return (LightSurfaceTrackerWrapper) lightHeightmap;
+        return (HeightmapOffsetWrapper) lightHeightmap;
     }
 }

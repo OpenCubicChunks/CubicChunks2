@@ -9,6 +9,7 @@ import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMap;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelBigChunkAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
@@ -17,10 +18,8 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientLightSurfaceTracker;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientSurfaceTracker;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.HeightmapOffsetWrapper;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
-import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -97,7 +96,12 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
         if (levelIn.isClientSide) {
             lightHeightmap = new ClientLightSurfaceTracker(this);
         } else {
-            lightHeightmap = new LightSurfaceTrackerWrapper(this, ((CubicServerLevel) this.level).getHeightmapStorage());
+            var pos = CubePos.from(chunkPos, 0);
+            var bigChunk = ((CubicLevelBigChunkAccessor) this.level).getBigChunk(pos.getX(), pos.getZ());
+            // FIXME temporary hack for testing, INCREDIBLY thread unsafe (probably)
+            bigChunk.loadChunk(this);
+            // Dummy type used for light heightmap
+            lightHeightmap = new HeightmapOffsetWrapper(this, Heightmap.Types.WORLD_SURFACE, bigChunk.getServerLightHeightmap());
         }
         // TODO might want 4 columns that share the same BigCubes to have a reference to the same CubeMap?
         columnCubeMap = new ColumnCubeMap();
@@ -130,7 +134,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
         } else {
             int relX = pos.getX() & 15;
             int relZ = pos.getZ() & 15;
-            LightSurfaceTrackerWrapper serverLightHeightmap = this.getServerLightHeightmap();
+            HeightmapOffsetWrapper serverLightHeightmap = this.getServerLightHeightmap();
             int oldHeight = serverLightHeightmap.getFirstAvailable(relX, relZ);
             // Light heightmap update needs to occur before the light engine update.
             // LevelChunk.setBlockState is called before the light engine is updated, so this works fine currently, but if this update call is ever moved, that must still be the case.
@@ -155,7 +159,8 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
         if (this.level.isClientSide()) {
             return new ClientSurfaceTracker(chunkAccess, type);
         } else {
-            return new SurfaceTrackerWrapper(chunkAccess, type, ((CubicServerLevel) this.level).getHeightmapStorage());
+            var pos = CubePos.from(chunkPos, 0);
+            return new HeightmapOffsetWrapper(chunkAccess, type, ((CubicLevelBigChunkAccessor) this.level).getBigChunk(pos.getX(), pos.getZ()).getServerHeightmap(type));
         }
     }
 

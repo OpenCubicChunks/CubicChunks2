@@ -2,7 +2,7 @@ package io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.sur
 
 import static io.github.opencubicchunks.cc_core.utils.Coords.blockToCube;
 import static io.github.opencubicchunks.cc_core.utils.Coords.blockToSection;
-import static io.github.opencubicchunks.cc_core.utils.Coords.sectionToMinBlock;
+import static io.github.opencubicchunks.cc_core.utils.Coords.cubeToMinBlock;
 import static io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerNode.MAX_SCALE;
 
 import java.util.function.IntPredicate;
@@ -14,15 +14,15 @@ import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerBranch;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerNode;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.HeightmapAccess;
-import net.minecraft.util.BitStorage;
+import io.github.opencubicchunks.cubicchunks.world.BigChunk;
+import net.minecraft.util.Mth;
 import net.minecraft.util.SimpleBitStorage;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Heightmap;
 import org.apache.commons.lang3.NotImplementedException;
 
-public class SurfaceTrackerWrapper extends Heightmap {
+// TODO some things in this class can be cleaned up now that we don't extend Heightmap
+public class BigSurfaceTrackerWrapper {
     public static final Heightmap.Types[] HEIGHTMAP_TYPES = Heightmap.Types.values();
 
     protected final SurfaceTrackerBranch surfaceTracker;
@@ -31,22 +31,20 @@ public class SurfaceTrackerWrapper extends Heightmap {
     /** global z of min block in column */
     protected final int dz;
 
-    public SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types, HeightmapStorage storage) {
-        super(chunkAccess, types);
-        //noinspection ConstantConditions
-        ((HeightmapAccess) this).setIsOpaque(null);
-        this.surfaceTracker = loadOrCreateRoot(chunkAccess.getPos().x, chunkAccess.getPos().z, (byte) types.ordinal(), storage);
-        this.dx = sectionToMinBlock(chunkAccess.getPos().x);
-        this.dz = sectionToMinBlock(chunkAccess.getPos().z);
+    protected final BigChunk bigChunk;
+
+    public BigSurfaceTrackerWrapper(BigChunk bigChunk, Heightmap.Types types, HeightmapStorage storage) {
+        this.bigChunk = bigChunk;
+        this.surfaceTracker = loadOrCreateRoot(bigChunk.getPos().getX(), bigChunk.getPos().getZ(), (byte) types.ordinal(), storage);
+        this.dx = cubeToMinBlock(bigChunk.getPos().getX());
+        this.dz = cubeToMinBlock(bigChunk.getPos().getZ());
     }
 
-    protected SurfaceTrackerWrapper(ChunkAccess chunkAccess, Types types, SurfaceTrackerBranch root) {
-        super(chunkAccess, types);
-        //noinspection ConstantConditions
-        ((HeightmapAccess) this).setIsOpaque(null);
+    protected BigSurfaceTrackerWrapper(BigChunk bigChunk, SurfaceTrackerBranch root) {
+        this.bigChunk = bigChunk;
         this.surfaceTracker = root;
-        this.dx = sectionToMinBlock(chunkAccess.getPos().x);
-        this.dz = sectionToMinBlock(chunkAccess.getPos().z);
+        this.dx = cubeToMinBlock(bigChunk.getPos().getX());
+        this.dz = cubeToMinBlock(bigChunk.getPos().getZ());
     }
 
     /**
@@ -57,27 +55,20 @@ public class SurfaceTrackerWrapper extends Heightmap {
      * @param blockState unused.
      * @return currently unused; always false
      */
-    @Override
     public boolean update(int columnLocalX, int globalY, int columnLocalZ, BlockState blockState) {
         surfaceTracker.getLeaf(blockToCube(globalY)).onSetBlock(dx + columnLocalX, globalY, dz + columnLocalZ, opaquePredicateForState(blockState));
         // We always return false, because the result is never used anywhere anyway (by either vanilla or us)
         return false;
     }
 
-    @Override
     public int getFirstAvailable(int columnLocalX, int columnLocalZ) {
         return surfaceTracker.getHeight(columnLocalX + dx, columnLocalZ + dz) + 1;
     }
 
-    @Override
-    public void setRawData(ChunkAccess clv, Types a, long[] ls) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long[] getRawData() {
-        BitStorage data = ((HeightmapAccess) this).getData();
-        surfaceTracker.writeDataForClient(dx, dz, (SimpleBitStorage) data, ((HeightmapAccess) this).getChunk().getMinBuildHeight());
+    long[] getRawData(int columnDx, int columnDz) {
+        var heightBits = Mth.ceillog2(bigChunk.getHeightAccessor().getHeight() + 1);
+        var data = new SimpleBitStorage(heightBits, 256);
+        surfaceTracker.writeDataForClient(dx+columnDx, dz+columnDz, data, bigChunk.getHeightAccessor().getMinBuildHeight());
         return data.getRaw();
     }
 

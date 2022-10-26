@@ -6,13 +6,12 @@ import static io.github.opencubicchunks.cc_core.utils.Coords.blockToLocal;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
+import io.github.opencubicchunks.cubicchunks.world.BigChunk;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.ChunkAccess;
 
-public class LightSurfaceTrackerWrapper extends SurfaceTrackerWrapper {
-    public LightSurfaceTrackerWrapper(ChunkAccess chunkAccess, HeightmapStorage storage) {
-        // type shouldn't matter
-        super(chunkAccess, Types.WORLD_SURFACE, loadOrCreateRoot(chunkAccess.getPos().x, chunkAccess.getPos().z, (byte) -1, storage));
+public class BigLightSurfaceTrackerWrapper extends BigSurfaceTrackerWrapper {
+    public BigLightSurfaceTrackerWrapper(BigChunk bigChunk, HeightmapStorage storage) {
+        super(bigChunk, loadOrCreateRoot(bigChunk.getPos().getX(), bigChunk.getPos().getZ(), (byte) -1, storage));
     }
 
     @Override

@@ -1,11 +1,13 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk;
 
+import static io.github.opencubicchunks.cc_core.utils.Coords.sectionToCube;
+
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMap;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelBigChunkAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
-import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.HeightmapOffsetWrapper;
 import net.minecraft.core.Registry;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
@@ -66,7 +68,11 @@ public abstract class MixinProtoChunk extends ChunkAccess implements LightHeight
         }
         if (lightHeightmap == null && this.getStatus().isOrAfter(ChunkStatus.FEATURES)) {
             // Lighting only starts happening after FEATURES, so we init here to avoid creating unnecessary heightmaps
-            lightHeightmap = new LightSurfaceTrackerWrapper((ChunkAccess) this, ((CubicServerLevel) this.levelHeightAccessor).getHeightmapStorage());
+            var bigChunk = ((CubicLevelBigChunkAccessor) this.levelHeightAccessor).getBigChunk(sectionToCube(this.chunkPos.x), sectionToCube(this.chunkPos.z));
+            // FIXME temporary hack for testing, INCREDIBLY thread unsafe (probably)
+            bigChunk.loadChunk(this);
+            // dummy type for light heightmap
+            lightHeightmap = new HeightmapOffsetWrapper(this, Heightmap.Types.WORLD_SURFACE, bigChunk.getServerLightHeightmap());
         }
     }
 }

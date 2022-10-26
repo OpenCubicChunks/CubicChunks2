@@ -12,8 +12,7 @@ import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.Surf
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerNode;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkMapAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.HeightmapOffsetWrapper;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -50,7 +49,8 @@ public class MixinServerLevel {
 
         this.ticksPassed++;
 
-        if (this.ticksPassed == DEBUG_HEIGHTMAP_VERIFICATION_FREQ) {
+        // FIXME reimplement for 32x heightmaps
+        /*if (this.ticksPassed == DEBUG_HEIGHTMAP_VERIFICATION_FREQ) {
             ticksPassed = 0;
 
             Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleChunkMap = ((ChunkMapAccess) this.chunkSource.chunkMap).getVisibleChunkMap();
@@ -61,7 +61,7 @@ public class MixinServerLevel {
                 //ProtoChunks only contain a global light heightmap
                 if (chunk instanceof ProtoChunk protoChunk && !(chunk instanceof ImposterProtoChunk)) {
                     ColumnCubeMap cubeMap = ((ColumnCubeMapGetter) protoChunk).getCubeMap();
-                    LightSurfaceTrackerWrapper heightmap = ((LightHeightmapGetter) protoChunk).getServerLightHeightmap();
+                    HeightmapOffsetWrapper heightmap = ((LightHeightmapGetter) protoChunk).getServerLightHeightmap();
                     if (heightmap != null) {
                         SurfaceTrackerBranch root = heightmap.getSurfaceTrackerSection();
                         verifyHeightmapTree(root, cubeMap);
@@ -69,13 +69,13 @@ public class MixinServerLevel {
                 }
                 if (chunk instanceof LevelChunk levelChunk) {
                     for (Map.Entry<Heightmap.Types, Heightmap> heightmap : levelChunk.getHeightmaps()) {
-                        verifyHeightmapTree(((SurfaceTrackerWrapper) heightmap.getValue()).getSurfaceTrackerSection(), ((ColumnCubeMapGetter) levelChunk).getCubeMap());
+                        verifyHeightmapTree(((HeightmapOffsetWrapper) heightmap.getValue()).getSurfaceTrackerSection(), ((ColumnCubeMapGetter) levelChunk).getCubeMap());
                     }
 
                     verifyHeightmapTree(((LightHeightmapGetter) levelChunk).getServerLightHeightmap().getSurfaceTrackerSection(), ((ColumnCubeMapGetter) levelChunk).getCubeMap());
                 }
             });
-        }
+        }*/
     }
 
     /**

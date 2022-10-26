@@ -44,7 +44,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     protected ChunkAccess[] columns = new ChunkAccess[DIAMETER_IN_SECTIONS * DIAMETER_IN_SECTIONS];
 
     //TODO: Figure out what to do with carverBiome and noiseChunk
-    protected final Map<Heightmap.Types, SurfaceTrackerLeaf[]> cubeHeightmaps; //TODO: ChunkAccess now has it's own heightmaps but they are of class Heightmap
+    protected final Map<Heightmap.Types, SurfaceTrackerLeaf> cubeHeightmaps; //TODO: ChunkAccess now has it's own heightmaps but they are of class Heightmap
 
     public CubeAccess(CubePos pos, UpgradeData upgradeData, LevelHeightAccessor heightAccessor, Registry<Biome> biomeRegistry, long inhabitedTime,
                       @Nullable LevelChunkSection[] sections, @Nullable BlendingData blendingData) {
@@ -71,22 +71,15 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
     }
 
     public int getCubeLocalHeight(Heightmap.Types type, int x, int z) {
-        SurfaceTrackerLeaf[] leaves = this.cubeHeightmaps.get(type);
-        if (leaves == null) {
+        SurfaceTrackerLeaf leaf = this.cubeHeightmaps.get(type);
+        if (leaf == null) {
             throw new IllegalStateException("Trying to access heightmap of type " + type + " for cube " + this.cubePos + " before it's loaded!");
         }
-
-        int xSection = Coords.blockToCubeLocalSection(x);
-        int zSection = Coords.blockToCubeLocalSection(z);
-
-        int index = Coords.columnToColumnIndex(xSection, zSection);
-
-        SurfaceTrackerLeaf leaf = leaves[index];
 
         return leaf.getHeight(Coords.blockToLocal(x), Coords.blockToLocal(z));
     }
 
-    public Map<Heightmap.Types, SurfaceTrackerLeaf[]> getCubeHeightmaps() {
+    public Map<Heightmap.Types, SurfaceTrackerLeaf> getCubeHeightmaps() {
         return cubeHeightmaps;
     }
 

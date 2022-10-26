@@ -18,6 +18,7 @@ public class PacketHeightmapChanges {
     private final short[] positionsAndTypes;
     private final int[] heights;
 
+    // TODO it seems like we never actually use this?
     public PacketHeightmapChanges(ChunkAccess chunk, ShortArrayList changed) {
         this.pos = chunk.getPos();
         this.positionsAndTypes = changed.toShortArray();
