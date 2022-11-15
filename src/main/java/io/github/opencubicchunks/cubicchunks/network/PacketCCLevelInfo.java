@@ -2,7 +2,7 @@ package io.github.opencubicchunks.cubicchunks.network;
 
 import javax.annotation.Nullable;
 
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
 
@@ -26,7 +26,7 @@ public class PacketCCLevelInfo {
 
     @Nullable
     public static CubicLevelHeightAccessor.WorldStyle getQueuedWorldStyle() {
-        var style = queuedWorldStyle;
+        CubicLevelHeightAccessor.WorldStyle style = queuedWorldStyle;
         // Clear the queued style afterwards to prevent possible issues with stale data
         queuedWorldStyle = null;
         return style;

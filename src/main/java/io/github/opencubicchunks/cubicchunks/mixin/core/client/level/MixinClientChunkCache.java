@@ -1,27 +1,27 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.level;
 
+import java.util.function.BiConsumer;
+
 import javax.annotation.Nullable;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.client.multiplayer.ClientCubeCache;
 import io.github.opencubicchunks.cubicchunks.client.multiplayer.ClientCubeCacheStorage;
 import io.github.opencubicchunks.cubicchunks.client.multiplayer.CubicClientLevel;
 import io.github.opencubicchunks.cubicchunks.mixin.access.client.ClientChunkCacheStorageAccess;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.EmptyLevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLevelLightEngine;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.world.level.chunk.ChunkBiomeContainer;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
 import net.minecraft.world.level.chunk.ChunkStatus;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.lighting.LevelLightEngine;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -33,11 +33,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ClientChunkCache.class)
 public abstract class MixinClientChunkCache implements ClientCubeCache {
 
-    @Shadow @Final private static Logger LOGGER;
+    @Shadow @Final static Logger LOGGER;
 
-    @Shadow @Final private ClientLevel level;
+    @Shadow @Final ClientLevel level;
 
-    @Shadow private volatile ClientChunkCache.Storage storage;
+    @Shadow volatile ClientChunkCache.Storage storage;
 
     private volatile ClientCubeCacheStorage cubeArray;
     private EmptyLevelCube emptyLevelCube;
@@ -96,9 +96,17 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
         return load ? this.emptyLevelCube : null;
     }
 
+    @Nullable
+    @Override
+    public LevelCube getCubeNow(int cubeX, int cubeY, int cubeZ) {
+        //if(true) throw new RuntimeException();
+        return getCube(cubeX, cubeY, cubeZ, ChunkStatus.FULL, false);
+    }
+
     @Override
     public LevelCube replaceWithPacketData(int cubeX, int cubeY, int cubeZ,
-                                           @Nullable ChunkBiomeContainer biomes, FriendlyByteBuf readBuffer, CompoundTag tag, boolean cubeExists) {
+                                           FriendlyByteBuf readBuffer, CompoundTag tag,
+                                           BiConsumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput, CubePos> blockEntityTagOutputConsumer) {
 
         if (!this.cubeArray.inRange(cubeX, cubeY, cubeZ)) {
             LOGGER.warn("Ignoring cube since it's not in the view range: {}, {}, {}", cubeX, cubeY, cubeZ);
@@ -107,25 +115,11 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
         int index = this.cubeArray.getIndex(cubeX, cubeY, cubeZ);
         LevelCube cube = this.cubeArray.cubes.get(index);
         if (!isCubeValid(cube, cubeX, cubeY, cubeZ)) {
-            if (biomes == null) {
-                LOGGER.warn("Ignoring cube since we don't have complete data: {}, {}, {}", cubeX, cubeY, cubeZ);
-                return null;
-            }
-
-            cube = new LevelCube(this.level, CubePos.of(cubeX, cubeY, cubeZ), biomes);
-            cube.read(biomes, readBuffer, tag, cubeExists);
+            cube = new LevelCube(this.level, CubePos.of(cubeX, cubeY, cubeZ));
+            cube.read(readBuffer, tag, blockEntityTagOutputConsumer);
             this.cubeArray.replace(index, cube);
         } else {
-            cube.read(biomes, readBuffer, tag, cubeExists);
-        }
-
-        LevelLightEngine worldlightmanager = this.getLightEngine();
-        ((CubicLevelLightEngine) worldlightmanager).enableLightSources(CubePos.of(cubeX, cubeY, cubeZ), true);
-
-        LevelChunkSection[] cubeSections = cube.getCubeSections();
-        for (int i = 0; i < cubeSections.length; ++i) {
-            LevelChunkSection chunksection = cubeSections[i];
-            worldlightmanager.updateSectionStatus(Coords.sectionPosByIndex(cube.getCubePos(), i), LevelChunkSection.isEmpty(chunksection));
+            cube.read(readBuffer, tag, blockEntityTagOutputConsumer);
         }
 
         ((CubicClientLevel) this.level).onCubeLoaded(cubeX, cubeY, cubeZ);

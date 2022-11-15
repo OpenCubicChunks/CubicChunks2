@@ -6,16 +6,20 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.utils.MathUtil;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.utils.MathUtil;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.SectionPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.DataLayer;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 
 public class PacketUpdateLight {
@@ -32,7 +36,7 @@ public class PacketUpdateLight {
         this.lightFlag = buf.readBoolean();
         this.cubePos = CubePos.of(buf.readInt(), buf.readInt(), buf.readInt());
 
-        int dataByteCount = MathUtil.ceilDiv(CubeAccess.SECTION_COUNT * 2, 8);
+        int dataByteCount = MathUtil.ceilDiv(CubicConstants.SECTION_COUNT * 2, 8);
         this.dataExists = BitSet.valueOf(buf.readByteArray(dataByteCount));
 
         this.skyLightData = new ArrayList<>();
@@ -54,9 +58,9 @@ public class PacketUpdateLight {
         this.skyLightData = Lists.newArrayList();
         this.blockLightData = Lists.newArrayList();
 
-        this.dataExists = new BitSet(CubeAccess.SECTION_COUNT * 2);
+        this.dataExists = new BitSet(CubicConstants.SECTION_COUNT * 2);
 
-        for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
+        for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
             DataLayer skyLayer = lightEngine.getLayerListener(LightLayer.SKY).getDataLayerData(Coords.sectionPosByIndex(pos, i));
             DataLayer blockLayer = lightEngine.getLayerListener(LightLayer.BLOCK).getDataLayerData(Coords.sectionPosByIndex(pos, i));
             if (skyLayer != null) {
@@ -81,7 +85,7 @@ public class PacketUpdateLight {
         buf.writeInt(this.cubePos.getY());
         buf.writeInt(this.cubePos.getZ());
 
-        byte[] byteArray = new byte[MathUtil.ceilDiv(CubeAccess.SECTION_COUNT * 2, 8)];
+        byte[] byteArray = new byte[MathUtil.ceilDiv(CubicConstants.SECTION_COUNT * 2, 8)];
         byte[] byteArray2 = dataExists.toByteArray();
 
         System.arraycopy(byteArray2, 0, byteArray, 0, Math.min(byteArray.length, byteArray2.length));
@@ -108,7 +112,7 @@ public class PacketUpdateLight {
             Iterator<byte[]> skyIterator = packet.skyLightData.iterator();
             Iterator<byte[]> blockIterator = packet.blockLightData.iterator();
 
-            for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
+            for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
                 SectionPos sectionPos = Coords.sectionPosByIndex(packet.cubePos, i);
 
                 if (packet.dataExists.get(i * 2)) {
@@ -117,6 +121,22 @@ public class PacketUpdateLight {
                 }
                 if (packet.dataExists.get(i * 2 + 1)) {
                     lightEngine.queueSectionData(LightLayer.BLOCK, sectionPos, new DataLayer(blockIterator.next()), packet.lightFlag);
+                    clientLevel.setSectionDirtyWithNeighbors(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ());
+                }
+            }
+
+            LevelCube cube = (LevelCube) ((CubeSource) level.getChunkSource()).getCube(packet.cubePos.getX(), packet.cubePos.getY(), packet.cubePos.getZ(), ChunkStatus.FULL, false);
+
+            if (cube != null) {
+                LevelLightEngine engine = level.getChunkSource().getLightEngine();
+                LevelChunkSection[] sections = cube.getSections();
+
+                //enableLightSources?
+
+                for (int i = 0; i < sections.length; i++) {
+                    LevelChunkSection section = sections[i];
+                    SectionPos sectionPos = Coords.sectionPosByIndex(packet.cubePos, i);
+                    engine.updateSectionStatus(sectionPos, section.hasOnlyAir());
                     clientLevel.setSectionDirtyWithNeighbors(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ());
                 }
             }

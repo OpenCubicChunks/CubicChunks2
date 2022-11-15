@@ -1,9 +1,9 @@
 package io.github.opencubicchunks.cubicchunks.server.level;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.TicketAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import it.unimi.dsi.fastutil.longs.Long2ByteMap;
 import it.unimi.dsi.fastutil.longs.Long2IntMap;
 import it.unimi.dsi.fastutil.longs.Long2IntMaps;
@@ -26,9 +26,9 @@ public class CubicPlayerTicketTracker extends FixedPlayerDistanceCubeTracker {
 
     public CubicPlayerTicketTracker(CubicDistanceManager cubicDistanceManager, int i) {
         //possibly make this a constant - there is only ever one playercubeticketracker at a time, so this should be fine.
-        super(cubicDistanceManager, (32 / CubeAccess.DIAMETER_IN_SECTIONS) + 1);
-        horizontalGraphGroup = new HorizontalGraphGroup(cubicDistanceManager, (32 / CubeAccess.DIAMETER_IN_SECTIONS) + 1, this);
-        verticalGraphGroup = new VerticalGraphGroup(cubicDistanceManager, (32 / CubeAccess.DIAMETER_IN_SECTIONS) + 1, this);
+        super(cubicDistanceManager, (32 / CubicConstants.DIAMETER_IN_SECTIONS) + 1);
+        horizontalGraphGroup = new HorizontalGraphGroup(cubicDistanceManager, (32 / CubicConstants.DIAMETER_IN_SECTIONS) + 1, this);
+        verticalGraphGroup = new VerticalGraphGroup(cubicDistanceManager, (32 / CubicConstants.DIAMETER_IN_SECTIONS) + 1, this);
         this.cubicDistanceManager = cubicDistanceManager;
         this.horizontalViewDistance = 0;
         this.verticalViewDistance = 0;
@@ -73,19 +73,19 @@ public class CubicPlayerTicketTracker extends FixedPlayerDistanceCubeTracker {
         if (oldWithinViewDistance != withinViewDistance) {
             Ticket<?> ticket = TicketAccess.createNew(CubicTicketType.PLAYER, CubicDistanceManager.PLAYER_CUBE_TICKET_LEVEL, CubePos.from(pos));
             if (withinViewDistance) {
-                cubicDistanceManager.getCubeTicketThrottlerInput().tell(CubeTaskPriorityQueueSorter.createMsg(() ->
+                cubicDistanceManager.getCubeTicketThrottlerInput().tell(CubeTaskPriorityQueueSorter.message(() ->
                     cubicDistanceManager.getMainThreadExecutor().execute(() -> {
                         if (this.isWithinViewDistance(horizontalGraphGroup.getLevel(pos), verticalGraphGroup.getLevel(pos))) {
                             cubicDistanceManager.addCubeTicket(pos, ticket);
                             cubicDistanceManager.getCubeTicketsToRelease().add(pos);
                         } else {
-                            cubicDistanceManager.getCubeTicketThrottlerReleaser().tell(CubeTaskPriorityQueueSorter.createSorterMsg(() -> {
+                            cubicDistanceManager.getCubeTicketThrottlerReleaser().tell(CubeTaskPriorityQueueSorter.release(() -> {
                             }, pos, false));
                         }
 
                     }), pos, () -> distance));
             } else {
-                cubicDistanceManager.getCubeTicketThrottlerReleaser().tell(CubeTaskPriorityQueueSorter.createSorterMsg(() ->
+                cubicDistanceManager.getCubeTicketThrottlerReleaser().tell(CubeTaskPriorityQueueSorter.release(() ->
                         cubicDistanceManager.getMainThreadExecutor().execute(() ->
                             cubicDistanceManager.removeCubeTicket(pos, ticket)),
                     pos, true));
@@ -94,7 +94,7 @@ public class CubicPlayerTicketTracker extends FixedPlayerDistanceCubeTracker {
     }
 
 
-    public void processAllUpdates() {
+    public void runAllUpdates() {
         horizontalGraphGroup.processAllUpdates();
         verticalGraphGroup.processAllUpdates();
         if (!this.positionsAffected.isEmpty()) {
@@ -145,7 +145,7 @@ public class CubicPlayerTicketTracker extends FixedPlayerDistanceCubeTracker {
      * @param level the cube's level
      * @param isDecreasing whether the change is decreasing
      */
-    public void updateSourceLevel(long pos, int level, boolean isDecreasing) {
+    public void update(long pos, int level, boolean isDecreasing) {
         horizontalGraphGroup.updateActualSourceLevel(pos, level, isDecreasing);
         verticalGraphGroup.updateActualSourceLevel(pos, level, isDecreasing);
     }

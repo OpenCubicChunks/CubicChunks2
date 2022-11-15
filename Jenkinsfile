@@ -31,7 +31,7 @@ pipeline {
     agent any
     tools {
         git "Default"
-        jdk "jdk16"
+        jdk "jdk17"
     }
     options {
         buildDiscarder(logRotator(artifactNumToKeepStr: '5'))

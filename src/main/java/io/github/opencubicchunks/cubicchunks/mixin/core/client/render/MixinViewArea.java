@@ -1,7 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.render;
 
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.ViewArea;
@@ -76,7 +76,11 @@ public abstract class MixinViewArea {
                     int yTemp = viewY - 8 - yBase / 2;
                     int posY = yTemp + Math.floorMod(yIndex * 16 - yTemp, yBase);
                     ChunkRenderDispatcher.RenderChunk renderChunk = this.chunks[this.getChunkIndex(xIndex, yIndex, zIndex)];
-                    renderChunk.setOrigin(posX, posY, posZ);
+                    BlockPos currOrigin = renderChunk.getOrigin();
+
+                    if (posX != currOrigin.getX() || posY != currOrigin.getY() || posZ != currOrigin.getZ()) {
+                        renderChunk.setOrigin(posX, posY, posZ);
+                    }
                 }
             }
         }

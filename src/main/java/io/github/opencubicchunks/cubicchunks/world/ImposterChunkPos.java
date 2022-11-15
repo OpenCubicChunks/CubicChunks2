@@ -2,7 +2,7 @@ package io.github.opencubicchunks.cubicchunks.world;
 
 import java.util.Objects;
 
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubePos;
 import net.minecraft.world.level.ChunkPos;
 
 /**

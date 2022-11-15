@@ -1,26 +1,30 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.function.LongPredicate;
+import java.util.function.Supplier;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.utils.Utils;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
+import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.InterleavedHeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
-import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventHandler;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventSource;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubicNoiseBasedChunkGenerator;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.CubicChunksSavedData;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicFastServerTickList;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelTicks;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -31,10 +35,7 @@ import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.CustomSpawner;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.ServerTickList;
-import net.minecraft.world.level.TickNextTickData;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -48,6 +49,7 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.ServerLevelData;
+import net.minecraft.world.ticks.LevelTicks;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -59,26 +61,45 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(ServerLevel.class)
 public abstract class MixinServerLevel extends MixinLevel implements CubicServerLevel {
+
+    private HeightmapStorage heightmapStorage;
+
     @Shadow @Final private PersistentEntitySectionManager<Entity> entityManager;
 
-    @Shadow @Final private ServerTickList<Fluid> liquidTicks;
+    @Shadow @Final private LevelTicks<Fluid> fluidTicks;
 
-    @Shadow @Final private ServerTickList<Block> blockTicks;
+    @Shadow @Final private LevelTicks<Block> blockTicks;
 
     @Shadow public abstract ServerChunkCache getChunkSource();
 
-    @Inject(method = "<init>", at = @At(value = "INVOKE", shift = At.Shift.AFTER,
-            target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;" +
-                    "Lnet/minecraft/world/level/dimension/DimensionType;Ljava/util/function/Supplier;ZZJ)V"))
+    @Inject(
+        method = "<init>",
+        at = @At(
+            value = "INVOKE",
+            shift = At.Shift.AFTER,
+            target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/core/Holder;"
+                + "Ljava/util/function/Supplier;ZZJ)V"
+        )
+    )
     private void initSetCubic(MinecraftServer minecraftServer, Executor executor, LevelStorageSource.LevelStorageAccess levelStorageAccess, ServerLevelData serverLevelData,
-                          ResourceKey<Level> dimension, DimensionType dimensionType, ChunkProgressListener chunkProgressListener, ChunkGenerator chunkGenerator, boolean bl, long l,
-                          List<CustomSpawner> list, boolean bl2, CallbackInfo ci) {
+                              ResourceKey<Level> levelKey, Holder<DimensionType> dimensionHolder, ChunkProgressListener chunkProgressListener, ChunkGenerator chunkGenerator, boolean bl,
+                              long l,
+                              List list,
+                              boolean bl2,
+                              CallbackInfo ci) {
         var dataFixer = minecraftServer.getFixerUpper();
-        File dimensionFolder = levelStorageAccess.getDimensionPath(dimension);
+
+        DimensionType dimension = dimensionHolder.value();
+        ResourceLocation dimensionKey = minecraftServer.registryAccess().registryOrThrow(Registry.DIMENSION_TYPE_REGISTRY).getKey(dimension);
+
+        Path dimensionFolderPath = levelStorageAccess.getDimensionPath(levelKey);
+        File dimensionFolder = dimensionFolderPath.toFile();
         var config = ((CubicMinecraftServer) minecraftServer).getServerConfig();
 
+        this.heightmapStorage = new InterleavedHeightmapStorage(new File(dimensionFolder, "tempHeightmap"));
+
         if (config == null) {
-            CubicChunks.LOGGER.info("No cubic chunks config found; disabling CC for dimension " + dimension.location());
+            CubicChunks.LOGGER.info("No cubic chunks config found; disabling CC for dimension " + dimensionKey);
             worldStyle = WorldStyle.CHUNK;
         } else {
             File file2 = new File(dimensionFolder, "data");
@@ -87,11 +108,11 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
             var tempDataStorage = new DimensionDataStorage(file2, dataFixer);
             var cubicChunksSavedData = tempDataStorage.get(CubicChunksSavedData::load, CubicChunksSavedData.FILE_ID);
             if (cubicChunksSavedData != null) {
-                CubicChunks.LOGGER.info("Loaded CC world style " + cubicChunksSavedData.worldStyle.name() + " for dimension " + dimension.location());
+                CubicChunks.LOGGER.info("Loaded CC world style " + cubicChunksSavedData.worldStyle.name() + " for dimension " + dimensionKey);
             } else {
-                CubicChunks.LOGGER.info("CC data for dimension " + dimension.location() + " is null, generating it");
+                CubicChunks.LOGGER.info("CC data for dimension " + dimensionKey + " is null, generating it");
                 cubicChunksSavedData = tempDataStorage.computeIfAbsent(CubicChunksSavedData::load,
-                        () -> new CubicChunksSavedData(config.getWorldStyle(dimension)), CubicChunksSavedData.FILE_ID);
+                        () -> new CubicChunksSavedData(config.getWorldStyle(levelKey)), CubicChunksSavedData.FILE_ID);
                 CubicChunks.LOGGER.info("Generated CC data. World style: " + cubicChunksSavedData.worldStyle.name());
                 cubicChunksSavedData.setDirty();
             }
@@ -107,30 +128,29 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         }
     }
 
-    @Redirect(method = "<init>", at = @At(value = "NEW", target = "net/minecraft/world/level/ServerTickList"))
-    private <T> ServerTickList<T> constructTickList(ServerLevel serverLevel, Predicate<T> predicate, Function<T, ResourceLocation> function,
-                                                    Consumer<TickNextTickData<T>> consumer) {
-        if (!((CubicLevelHeightAccessor) serverLevel).isCubic()) {
-            return new ServerTickList<>(serverLevel, predicate, function, consumer);
+    @Redirect(method = "<init>", at = @At(value = "NEW", target = "net/minecraft/world/ticks/LevelTicks"))
+    private <T> LevelTicks<T> constructTickList(LongPredicate longPredicate, Supplier<ProfilerFiller> supplier) {
+        if (!((CubicLevelHeightAccessor) this).isCubic()) {
+            return new LevelTicks<>(longPredicate, supplier);
         }
-        return new CubicFastServerTickList<>(serverLevel, predicate, function, consumer);
+        return new CubicLevelTicks<>(longPredicate, supplier);
     }
 
     @Inject(method = "<init>", at = @At(value = "RETURN"))
     private void markCubic(MinecraftServer minecraftServer, Executor executor, LevelStorageSource.LevelStorageAccess levelStorageAccess, ServerLevelData serverLevelData,
-                           ResourceKey<Level> resourceKey, DimensionType dimensionType, ChunkProgressListener chunkProgressListener, ChunkGenerator chunkGenerator, boolean bl, long l,
-                           List<CustomSpawner> list, boolean bl2, CallbackInfo ci) {
+                           ResourceKey resourceKey, Holder holder, ChunkProgressListener chunkProgressListener, ChunkGenerator chunkGenerator, boolean bl, long l,
+                           List list, boolean bl2, CallbackInfo ci) {
         ((IsCubicEntityContext) this.entityManager).setIsCubic(((CubicLevelHeightAccessor) this).isCubic());
-        if (this.liquidTicks instanceof CubicFastServerTickList) {
-            ((ChunkEntityStateEventSource) this.entityManager).registerChunkEntityStateEventHandler((ChunkEntityStateEventHandler) this.liquidTicks);
+        if (this.fluidTicks instanceof CubicLevelTicks ticks) {
+            ((ChunkEntityStateEventSource) this.entityManager).registerChunkEntityStateEventHandler(ticks);
         }
-        if (this.blockTicks instanceof CubicFastServerTickList) {
-            ((ChunkEntityStateEventSource) this.entityManager).registerChunkEntityStateEventHandler((ChunkEntityStateEventHandler) this.blockTicks);
+        if (this.blockTicks instanceof CubicLevelTicks ticks) {
+            ((ChunkEntityStateEventSource) this.entityManager).registerChunkEntityStateEventHandler(ticks);
         }
     }
 
     private boolean isPositionTicking(BlockPos pos) {
-        return this.entityManager.isPositionTicking(pos);
+        return this.entityManager.canPositionTick(pos);
     }
 
     @Redirect(method = "tickChunk", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerLevel;isRainingAt(Lnet/minecraft/core/BlockPos;)Z"))
@@ -141,7 +161,7 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
 
     // Prevent snow/ice if the blocks aren't loaded
     @Inject(method = "tickChunk", locals = LocalCapture.CAPTURE_FAILHARD, cancellable = true, at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/server/level/ServerLevel;getBiome(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/biome/Biome;"))
+            target = "Lnet/minecraft/server/level/ServerLevel;getBiome(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/core/Holder;"))
     private void onSnowAndIce(LevelChunk levelChunk, int i, CallbackInfo ci, ChunkPos chunkPos, boolean bl, int j, int k, ProfilerFiller profilerFiller, BlockPos blockPos2,
                                 BlockPos blockPos3) {
         if (!this.isCubic) {
@@ -157,14 +177,30 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         profilerFiller.pop();
     }
 
+    //TODO(Salamander): The argument of this method is now a chunk pos (as a long). It should be good but I'm not sure, we'll see
+    /*@Inject(method = "close", at = @At("TAIL"))
+    private void onLevelClose(CallbackInfo ci) {
+        try {
+            this.heightmapStorage.close();
+        } catch (IOException e) {
+            LOGGER.error("Error when closing heightmap storage", e);
+        }
+    }
+
     @Redirect(method = "isPositionTickingWithEntitiesLoaded", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/ChunkPos;asLong(Lnet/minecraft/core/BlockPos;)J"))
     private long useCubePosInCubicWorld(BlockPos blockPos) {
         return ((CubicLevelHeightAccessor) this).isCubic() ? CubePos.asLong(blockPos) : ChunkPos.asLong(blockPos);
-    }
+    }*/
 
     @Override
     public void onCubeUnloading(LevelCube cube) {
         cube.invalidateAllBlockEntities();
+        cube.unregisterTicks(Utils.unsafeCast(this));
+    }
+
+    @Override
+    public HeightmapStorage getHeightmapStorage() {
+        return heightmapStorage;
     }
 
     @Override
@@ -174,11 +210,11 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         // TODO this method should probably use ASM and exclude lightning/snow rather than copying randomTicks
         profilerFiller.push("tickBlocks");
         if (randomTicks > 0) {
-            LevelChunkSection[] sections = cube.getCubeSections();
+            LevelChunkSection[] sections = cube.getSections();
             CubePos cubePos = cube.getCubePos();
             for (int i = 0; i < sections.length; i++) {
                 LevelChunkSection chunkSection = sections[i];
-                if (chunkSection != LevelChunk.EMPTY_SECTION && chunkSection.isRandomlyTicking()) {
+                if (chunkSection.isRandomlyTicking()) {
                     SectionPos columnPos = Coords.sectionPosByIndex(cubePos, i);
                     int minX = columnPos.minBlockX();
                     int minY = columnPos.minBlockY();

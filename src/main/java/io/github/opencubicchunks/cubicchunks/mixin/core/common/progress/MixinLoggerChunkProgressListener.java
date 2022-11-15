@@ -2,9 +2,9 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.progress;
 
 import javax.annotation.Nullable;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.CubeProgressListener;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.server.level.progress.LoggerChunkProgressListener;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
@@ -22,8 +22,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MixinLoggerChunkProgressListener implements CubeProgressListener {
     private int loadedCubes;
     private int totalCubes;
-    // We don't reuse the vanilla field for this as a different number of chunks are loaded when CC is active
-    private int totalChunks;
 
     private boolean isCubic;
 
@@ -37,12 +35,9 @@ public abstract class MixinLoggerChunkProgressListener implements CubeProgressLi
         // Except we subtract one before the ceil and readd it after, for... some reason
         // Multiply by two to convert cube radius -> diameter,
         // And then add one for the center cube
-        int ccCubeRadius = 1 + (int) Math.ceil((vanillaSpawnRadius - 1) / ((float) CubeAccess.DIAMETER_IN_SECTIONS));
+        int ccCubeRadius = 1 + (int) Math.ceil((vanillaSpawnRadius - 1) / ((float) CubicConstants.DIAMETER_IN_SECTIONS));
         int ccCubeDiameter = ccCubeRadius * 2 + 1;
         totalCubes = ccCubeDiameter * ccCubeDiameter * ccCubeDiameter;
-
-        int ccChunkDiameter = ccCubeDiameter * CubeAccess.DIAMETER_IN_SECTIONS;
-        totalChunks = ccChunkDiameter * ccChunkDiameter;
     }
 
     @Override public void startCubes(CubePos center) {
@@ -71,8 +66,6 @@ public abstract class MixinLoggerChunkProgressListener implements CubeProgressLi
         if (!isCubic) {
             return;
         }
-        int loaded = count + loadedCubes;
-        int total = totalChunks + totalCubes;
-        cir.setReturnValue(Mth.floor(loaded * 100.0F / total));
+        cir.setReturnValue(Mth.floor(loadedCubes * 100.0F / totalCubes));
     }
 }

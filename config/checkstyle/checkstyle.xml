@@ -166,8 +166,9 @@
             <property name="tokens" value="LITERAL_WHILE , LITERAL_DO , LITERAL_FOR , LITERAL_IF , LITERAL_SWITCH , LITERAL_CASE , LITERAL_CATCH , QUESTION"/>
         </module>
         <!-- <module name="JavaNCSS"/> TODO fix and enable -->
-
-        <module name="NPathComplexity"/>
+        <module name="NPathComplexity">
+            <property name="max" value="512"/>
+        </module>
 
         <!-- Misc -->
 

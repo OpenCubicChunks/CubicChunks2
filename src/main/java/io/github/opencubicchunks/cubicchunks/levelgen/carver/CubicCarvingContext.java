@@ -1,15 +1,17 @@
 package io.github.opencubicchunks.cubicchunks.levelgen.carver;
 
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
+import net.minecraft.world.level.levelgen.NoiseChunk;
 import net.minecraft.world.level.levelgen.carver.CarvingContext;
 
 public class CubicCarvingContext extends CarvingContext {
 
     private final ChunkAccess chunk;
 
-    public CubicCarvingContext(ChunkGenerator generator, ChunkAccess chunk) {
-        super(generator, chunk);
+    public CubicCarvingContext(NoiseBasedChunkGenerator generator, RegistryAccess registryAccess, ChunkAccess chunk, NoiseChunk noiseChunk) {
+        super(generator, registryAccess, chunk, noiseChunk);
         this.chunk = chunk;
     }
 

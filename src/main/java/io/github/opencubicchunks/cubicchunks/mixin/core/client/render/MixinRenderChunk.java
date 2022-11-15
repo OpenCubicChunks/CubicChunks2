@@ -1,9 +1,9 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.render;
 
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.mixin.access.client.ChunkRenderDispatcherAccess;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
@@ -19,11 +19,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkRenderDispatcher.RenderChunk.class)
 public abstract class MixinRenderChunk {
-
+    @SuppressWarnings("target") @Shadow @Final ChunkRenderDispatcher this$0;
 
     @Shadow @Final private BlockPos.MutableBlockPos[] relativeOrigins;
-
-    @SuppressWarnings("target") @Shadow(aliases = "field_20833", remap = false) @Final private ChunkRenderDispatcher this$0;
 
     @Shadow protected abstract double getDistToPlayerSqr();
 

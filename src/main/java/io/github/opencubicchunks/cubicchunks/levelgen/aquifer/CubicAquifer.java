@@ -2,14 +2,16 @@ package io.github.opencubicchunks.cubicchunks.levelgen.aquifer;
 
 import java.util.Arrays;
 
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import javax.annotation.Nullable;
+
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Aquifer;
-import net.minecraft.world.level.levelgen.BaseStoneSource;
+import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.synth.NormalNoise;
 
 /**
@@ -61,7 +63,7 @@ public final class CubicAquifer implements Aquifer {
         this.minGridY = gridY(minYInput) - 1;
         this.minGridZ = gridZ(chunkPos.getMinBlockZ()) - 1;
         this.minY = minYInput;
-        this.sizeY = CubeAccess.DIAMETER_IN_BLOCKS;
+        this.sizeY = CubicConstants.DIAMETER_IN_BLOCKS;
 
         typeToBlock = new BlockState[] {
             waterState,
@@ -104,14 +106,19 @@ public final class CubicAquifer implements Aquifer {
     }
 
     @Override
-    public BlockState computeState(BaseStoneSource stoneSource, int x, int y, int z, double density) {
+    @Nullable
+    public BlockState computeSubstance(DensityFunction.FunctionContext context, double density) {
+        int x = context.blockX();
+        int y = context.blockY();
+        int z = context.blockZ();
+
         if (y >= (this.minY + this.sizeY + 1)) {
-            return stoneSource.getBaseBlock(x, y, z);
+            return null;
         }
 
         // we never subtract anything from the world so we can't do anything if it is already solid here
         if (density > 0.0) {
-            return this.stone(stoneSource, x, y, z);
+            return this.stone(x, y, z);
         }
 
         if (this.sourceSampler.isLavaLevel(y)) {
@@ -165,14 +172,15 @@ public final class CubicAquifer implements Aquifer {
         double firstToSecond = similarity(firstDistance2, secondDistance2);
 
         double barrierDensity = this.computeBarrierDensity(x, y, z, firstDistance2, secondDistance2, thirdDistance2, secondSource, thirdSource, firstAquifer, firstToSecond);
-        return getBlockState(stoneSource, x, y, z, density, firstAquifer, firstToSecond, barrierDensity);
+        return getBlockState(x, y, z, density, firstAquifer, firstToSecond, barrierDensity);
     }
 
     private BlockState stateOf(int status) {
         return this.typeToBlock[AquiferSample.typeOf(status)];
     }
 
-    private BlockState getBlockState(BaseStoneSource stoneSource, int x, int y, int z, double density, int firstAquifer, double firstToSecond, double barrierDensity) {
+    @Nullable
+    private BlockState getBlockState(int x, int y, int z, double density, int firstAquifer, double firstToSecond, double barrierDensity) {
         if (density + barrierDensity <= 0.0) {
             this.shouldScheduleFluidUpdate = firstToSecond > 0.0;
             if (y >= AquiferSample.levelOf(firstAquifer)) {
@@ -180,7 +188,7 @@ public final class CubicAquifer implements Aquifer {
             }
             return this.stateOf(firstAquifer);
         } else {
-            return this.stone(stoneSource, x, y, z);
+            return this.stone(x, y, z);
         }
     }
 
@@ -239,9 +247,10 @@ public final class CubicAquifer implements Aquifer {
         }
     }
 
-    private BlockState stone(BaseStoneSource stoneSource, int x, int y, int z) {
+    @Nullable
+    private BlockState stone(int x, int y, int z) {
         this.shouldScheduleFluidUpdate = false;
-        return stoneSource.getBaseBlock(x, y, z);
+        return null;
     }
 
     private long getAquiferSourceIn(int x, int y, int z) {

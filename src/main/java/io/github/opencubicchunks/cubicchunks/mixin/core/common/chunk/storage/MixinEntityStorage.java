@@ -1,7 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk.storage;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -9,10 +9,10 @@ import java.util.concurrent.Executor;
 
 import com.google.common.collect.ImmutableList;
 import com.mojang.datafixers.DataFixer;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicEntityStorage;
 import io.github.opencubicchunks.cubicchunks.world.storage.RegionCubeIO;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -47,9 +47,9 @@ public abstract class MixinEntityStorage implements CubicEntityStorage {
     @Shadow protected abstract CompoundTag upgradeChunkTag(CompoundTag chunkTag);
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void setupCubeIO(ServerLevel serverLevel, File file, DataFixer dataFixer, boolean bl, Executor executor, CallbackInfo ci) throws IOException {
+    private void setupCubeIO(ServerLevel serverLevel, Path path, DataFixer dataFixer, boolean bl, Executor executor, CallbackInfo ci) throws IOException {
         if (((CubicLevelHeightAccessor) serverLevel).isCubic()) {
-            cubeWorker = new RegionCubeIO(file, file.getName(), file.getName());
+            cubeWorker = new RegionCubeIO(path.toFile(), path.toFile().getName(), path.toFile().getName());
         }
     }
 

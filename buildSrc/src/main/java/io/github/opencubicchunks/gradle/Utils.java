@@ -1,9 +1,9 @@
 package io.github.opencubicchunks.gradle;
 
+import javax.annotation.Nonnull;
+
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPluginConvention;
-
-import javax.annotation.Nonnull;
 
 public class Utils {
 

@@ -6,12 +6,13 @@ import java.util.function.IntSupplier;
 import javax.annotation.Nullable;
 
 import com.mojang.datafixers.util.Pair;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicThreadedLevelLightEngine;
 import it.unimi.dsi.fastutil.objects.ObjectList;
@@ -35,7 +36,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ThreadedLevelLightEngine.class)
 public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngine implements CubicThreadedLevelLightEngine {
 
-    private ProcessorHandle<CubeTaskPriorityQueueSorter.FunctionEntry<Runnable>> cubeSorterMailbox;
+    private ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeSorterMailbox;
 
     @Shadow @Final private ChunkMap chunkMap;
 
@@ -48,7 +49,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
     protected abstract void addTask(int x, int z, ThreadedLevelLightEngine.TaskType stage, Runnable task);
 
     @Override public void postConstructorSetup(CubeTaskPriorityQueueSorter sorter,
-                                               ProcessorHandle<CubeTaskPriorityQueueSorter.FunctionEntry<Runnable>> taskExecutor) {
+                                               ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> taskExecutor) {
         this.cubeSorterMailbox = taskExecutor;
     }
 
@@ -83,7 +84,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
     // addTask
     private void addTask(int cubePosX, int cubePosY, int cubePosZ, IntSupplier getCompletedLevel, ThreadedLevelLightEngine.TaskType phase,
                          Runnable runnable) {
-        this.cubeSorterMailbox.tell(CubeTaskPriorityQueueSorter.createMsg(() -> {
+        this.cubeSorterMailbox.tell(CubeTaskPriorityQueueSorter.message(() -> {
             this.lightTasks.add(Pair.of(phase, runnable));
             if (this.lightTasks.size() >= this.taskPerBatch) {
                 this.runUpdate();
@@ -100,11 +101,11 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
             super.retainData(cubePos, false);
             super.enableLightSources(cubePos, false);
 
-            for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
+            for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
                 super.queueSectionData(LightLayer.BLOCK, Coords.sectionPosByIndex(cubePos, i), (DataLayer) null, true);
                 super.queueSectionData(LightLayer.SKY, Coords.sectionPosByIndex(cubePos, i), (DataLayer) null, true);
             }
-            for (int j = 0; j < CubeAccess.SECTION_COUNT; ++j) {
+            for (int j = 0; j < CubicConstants.SECTION_COUNT; ++j) {
                 super.updateSectionStatus(Coords.sectionPosByIndex(cubePos, j), true);
             }
         }, () -> "setCubeStatusEmpty " + cubePos + " " + true));
@@ -114,18 +115,18 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
     @Override
     public CompletableFuture<CubeAccess> lightCube(CubeAccess cube, boolean flagIn) {
         CubePos cubePos = cube.getCubePos();
-        cube.setCubeLight(false);
+        cube.setLightCorrect(false);
         this.addTask(cubePos.getX(), cubePos.getY(), cubePos.getZ(), ThreadedLevelLightEngine.TaskType.PRE_UPDATE, Util.name(() -> {
-            for (int i = 0; i < CubeAccess.SECTION_COUNT; ++i) {
-                LevelChunkSection chunksection = cube.getCubeSections()[i];
-                if (!LevelChunkSection.isEmpty(chunksection)) {
+            for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
+                LevelChunkSection chunksection = cube.getSections()[i];
+                if (!chunksection.hasOnlyAir()) {
                     super.updateSectionStatus(Coords.sectionPosByIndex(cubePos, i), false);
                 }
             }
 
             super.enableLightSources(cubePos, true);
             if (!flagIn) {
-                cube.getCubeLights().forEach((blockPos) -> {
+                cube.getLights().forEach((blockPos) -> {
                     assert blockPos != null;
                     super.onBlockEmissionIncrease(blockPos, cube.getLightEmission(blockPos));
                 });
@@ -135,7 +136,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
 
         }, () -> "lightCube " + cubePos + " " + flagIn));
         return CompletableFuture.supplyAsync(() -> {
-            cube.setCubeLight(true);
+            cube.setLightCorrect(true);
             super.retainData(cubePos, false);
             ((CubeMap) this.chunkMap).releaseCubeLightTicket(cubePos);
             return cube;

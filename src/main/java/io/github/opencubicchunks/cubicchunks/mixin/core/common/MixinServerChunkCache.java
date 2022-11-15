@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common;
 
-import static io.github.opencubicchunks.cubicchunks.utils.Utils.*;
+import static io.github.opencubicchunks.cc_core.utils.Utils.unsafeCast;
 
 import java.util.Arrays;
 import java.util.List;
@@ -15,6 +15,10 @@ import javax.annotation.Nullable;
 
 import com.mojang.datafixers.DataFixer;
 import com.mojang.datafixers.util.Either;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.chunk.VerticalViewDistanceListener;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkMapAccess;
@@ -23,10 +27,7 @@ import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicDistanceManager;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType;
 import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeStatus;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
@@ -46,14 +47,15 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.LocalMobCapCalculator;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
-import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import org.spongepowered.asm.mixin.Final;
@@ -71,10 +73,10 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     @Shadow @Final private static List<ChunkStatus> CHUNK_STATUSES;
 
     @Shadow @Final public ChunkMap chunkMap;
-    @Shadow @Final private ServerLevel level;
+    @Shadow @Final ServerLevel level;
+    @Shadow @Final Thread mainThread;
     @Shadow @Final private DistanceManager distanceManager;
     @Shadow @Final private ServerChunkCache.MainThreadExecutor mainThreadProcessor;
-    @Shadow @Final private Thread mainThread;
 
     @Shadow private boolean spawnEnemies;
     @Shadow private boolean spawnFriendlies;
@@ -141,6 +143,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     }
 
     @Nullable
+    @Override
     public LevelCube getCubeNow(int cubeX, int cubeY, int cubeZ) {
         if (Thread.currentThread() != this.mainThread) {
             return null;
@@ -227,7 +230,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
             }
         }
 
-        return this.chunkAbsent(chunkholder, j) ? CubeHolder.MISSING_CUBE_FUTURE : ((CubeHolder) chunkholder).getOrScheduleCubeFuture(requiredStatus,
+        return this.chunkAbsent(chunkholder, j) ? CubeHolder.UNLOADED_CUBE_FUTURE : ((CubeHolder) chunkholder).getOrScheduleCubeFuture(requiredStatus,
             this.chunkMap);
     }
 
@@ -291,7 +294,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
 
             while (true) {
                 ChunkStatus chunkstatus = CHUNK_STATUSES.get(j);
-                Optional<CubeAccess> optional = ((CubeHolder) chunkholder).getCubeFutureIfPresentUnchecked(chunkstatus).getNow(CubeHolder.MISSING_CUBE).left();
+                Optional<CubeAccess> optional = ((CubeHolder) chunkholder).getCubeFutureIfPresentUnchecked(chunkstatus).getNow(CubeHolder.UNLOADED_CUBE).left();
                 if (optional.isPresent()) {
                     return optional.get();
                 }
@@ -305,8 +308,8 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
 
     @Inject(method = "<init>", at = @At(value = "RETURN"))
     private void initChunkMapForCC(ServerLevel serverLevel, LevelStorageSource.LevelStorageAccess levelStorageAccess, DataFixer dataFixer, StructureManager structureManager,
-                                   Executor executor, ChunkGenerator chunkGenerator, int i, boolean bl, ChunkProgressListener chunkProgressListener,
-                                   ChunkStatusUpdateListener chunkStatusUpdateListener, Supplier<DimensionDataStorage> supplier, CallbackInfo ci) {
+                                   Executor executor, ChunkGenerator chunkGenerator, int i, int j, boolean bl, ChunkProgressListener chunkProgressListener,
+                                   ChunkStatusUpdateListener chunkStatusUpdateListener, Supplier supplier, CallbackInfo ci) {
         ((CubeMap) this.chunkMap).setServerChunkCache((ServerChunkCache) (Object) this);
     }
 
@@ -327,55 +330,56 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     }
 
     @Redirect(method = "tickChunks", at = @At(value = "INVOKE",
-        target = "Lnet/minecraft/world/level/NaturalSpawner;createState(ILjava/lang/Iterable;Lnet/minecraft/world/level/NaturalSpawner$ChunkGetter;)"
-            + "Lnet/minecraft/world/level/NaturalSpawner$SpawnState;"))
-    private NaturalSpawner.SpawnState cubicChunksSpawnState(int spawningChunkCount, Iterable<Entity> entities, NaturalSpawner.ChunkGetter chunkGetter) {
+        target = "Lnet/minecraft/world/level/NaturalSpawner;createState(ILjava/lang/Iterable;Lnet/minecraft/world/level/NaturalSpawner$ChunkGetter;"
+            + "Lnet/minecraft/world/level/LocalMobCapCalculator;)Lnet/minecraft/world/level/NaturalSpawner$SpawnState;"))
+    private NaturalSpawner.SpawnState cubicChunksSpawnState(int spawnableChunkCount, Iterable<Entity> entities, NaturalSpawner.ChunkGetter chunkGetter,
+                                                            LocalMobCapCalculator localMobCapCalculator) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
-            return NaturalSpawner.createState(spawningChunkCount, entities, chunkGetter);
+            return NaturalSpawner.createState(spawnableChunkCount, entities, chunkGetter, localMobCapCalculator);
         }
         int naturalSpawnCountForColumns = ((CubicDistanceManager) this.distanceManager).getNaturalSpawnCubeCount()
-            * CubeAccess.DIAMETER_IN_SECTIONS * CubeAccess.DIAMETER_IN_SECTIONS / (CubicNaturalSpawner.SPAWN_RADIUS * 2 / CubeAccess.DIAMETER_IN_BLOCKS + 1);
+            * CubicConstants.DIAMETER_IN_SECTIONS * CubicConstants.DIAMETER_IN_SECTIONS / (CubicNaturalSpawner.SPAWN_RADIUS * 2 / CubicConstants.DIAMETER_IN_BLOCKS + 1);
 
-        return CubicNaturalSpawner.createState(naturalSpawnCountForColumns, entities, this::getFullCube);
+        return CubicNaturalSpawner.createState(naturalSpawnCountForColumns, entities, this::getFullCube, localMobCapCalculator);
     }
 
+    @SuppressWarnings("InvalidInjectorMethodSignature")
     @Inject(method = "tickChunks", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;getChunks()Ljava/lang/Iterable;"),
         locals = LocalCapture.CAPTURE_FAILHARD)
-    private void tickCubes(CallbackInfo ci, long l, long timePassed, LevelData levelData, boolean bl, boolean doMobSpawning, int randomTicks, boolean bl3, int j,
-                           NaturalSpawner.SpawnState cubeSpawnState) {
+    private void tickCubes(CallbackInfo ci, long gameTime, long timeSinceUpdate, LevelData levelData, ProfilerFiller profilerFiller, int randomTicking, boolean bl2, int spawnChunkCount,
+                           NaturalSpawner.SpawnState spawnState, List list) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;
         }
 
         ((CubeMap) this.chunkMap).getCubes().forEach((cubeHolder) -> {
-            Optional<LevelCube> optional =
-                ((CubeHolder) cubeHolder).getCubeEntityTickingFuture().getNow(CubeHolder.UNLOADED_CUBE).left();
-            if (optional.isPresent()) {
-                LevelCube cube = optional.get();
+            LevelCube cube = ((CubeHolder) cubeHolder).getTickingCube();
+            if (cube != null) {
                 this.level.getProfiler().push("broadcast");
                 ((CubeHolder) cubeHolder).broadcastChanges(cube);
                 this.level.getProfiler().pop();
 
                 if (!((CubeMap) this.chunkMap).noPlayersCloseForSpawning(cube.getCubePos())) {
                     // TODO probably want to make sure column-based inhabited time works too
-                    cube.setCubeInhabitedTime(cube.getCubeInhabitedTime() + timePassed);
+                    cube.setInhabitedTime(cube.getInhabitedTime() + timeSinceUpdate);
 
-                    if (this.level.random.nextInt(((CubicNaturalSpawner.SPAWN_RADIUS / CubeAccess.DIAMETER_IN_BLOCKS) * 2) + 1) == 0) {
-                        if (doMobSpawning && (this.spawnEnemies || this.spawnFriendlies) && this.level.getWorldBorder().isWithinBounds(cube.getCubePos().asChunkPos())) {
-                            CubicNaturalSpawner.spawnForCube(this.level, cube, cubeSpawnState, this.spawnFriendlies, this.spawnEnemies, bl3);
+                    if (this.level.random.nextInt(((CubicNaturalSpawner.SPAWN_RADIUS / CubicConstants.DIAMETER_IN_BLOCKS) * 2) + 1) == 0) {
+                        if (this.level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING) && (this.spawnEnemies || this.spawnFriendlies) &&
+                                this.level.getWorldBorder().isWithinBounds(cube.getCubePos().asChunkPos())) {
+                            CubicNaturalSpawner.spawnForCube(this.level, cube, spawnState, this.spawnFriendlies, this.spawnEnemies, bl2);
                         }
                     }
-                    ((CubicServerLevel) this.level).tickCube(cube, randomTicks);
+                    ((CubicServerLevel) this.level).tickCube(cube, randomTicking);
                 }
             }
         });
     }
 
-    private void getFullCube(long pos, Consumer<ChunkAccess> chunkConsumer) {
+    private void getFullCube(long pos, Consumer<CubeAccess> chunkConsumer) {
         ChunkHolder chunkHolder = this.getVisibleCubeIfPresent(pos);
         if (chunkHolder != null) {
             CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> o = unsafeCast((chunkHolder.getFullChunkFuture()));
-            o.getNow(CubeHolder.UNLOADED_CUBE).left().ifPresent(chunkConsumer);
+            o.getNow(CubeHolder.UNLOADED_LEVEL_CUBE).left().ifPresent(chunkConsumer);
         }
 
     }
@@ -410,8 +414,8 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     }
 
     @Nullable
-    @SuppressWarnings("UnresolvedMixinReference")
-    @Inject(method = "lambda$onLightUpdate$7(Lnet/minecraft/core/SectionPos;Lnet/minecraft/world/level/LightLayer;)V", at = @At(value = "HEAD"), cancellable = true)
+    @SuppressWarnings("target")
+    @Inject(method = "lambda$onLightUpdate$6(Lnet/minecraft/core/SectionPos;Lnet/minecraft/world/level/LightLayer;)V", at = @At(value = "HEAD"), cancellable = true)
     private void onlyCubes(SectionPos pos, LightLayer type, CallbackInfo ci) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;

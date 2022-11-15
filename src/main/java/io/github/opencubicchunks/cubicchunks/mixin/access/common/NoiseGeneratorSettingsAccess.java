@@ -12,10 +12,4 @@ public interface NoiseGeneratorSettingsAccess {
 
     @Accessor("aquifersEnabled")
     boolean isAquifersEnabled();
-
-    @Accessor("noiseCavesEnabled")
-    boolean isNoiseCavesEnabled();
-
-    @Accessor("deepslateEnabled")
-    boolean isDeepSlateEnabled();
 }

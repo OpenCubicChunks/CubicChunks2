@@ -20,10 +20,10 @@ import com.mojang.math.Quaternion;
 import com.mojang.math.Transformation;
 import com.mojang.math.Vector3f;
 import com.mojang.math.Vector4f;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
+import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.UserFunction;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.StoringCubeProgressListener;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
@@ -36,12 +36,12 @@ import net.minecraft.server.level.progress.StoringChunkProgressListener;
 import net.minecraft.world.level.chunk.ChunkStatus;
 
 public class CubicLevelLoadingScreen {
-    private static final Object2IntArrayMap<ChunkStatus> STATUS_COLORS = getStatusColors();
+    public static final Object2IntMap<ChunkStatus> STATUS_COLORS = Object2IntMaps.unmodifiable(getStatusColors());
 
-    private static final UserFunction STATUS_ALPHAS =
-        UserFunction.builder().point(0, 1f)
+    public static final UserFunction STATUS_ALPHAS =
+        UserFunction.builder().point(0, 0f)
             .point(ChunkStatus.STRUCTURE_STARTS.getIndex(), 0.15f)
-            .point(ChunkStatus.STRUCTURE_REFERENCES.getIndex(), 0.28f)
+            .point(ChunkStatus.BIOMES.getIndex(), 0.28f)
             .point(ChunkStatus.CARVERS.getIndex(), 0.7f)
             .point(ChunkStatus.LIQUID_CARVERS.getIndex(), 0.2f)
             .point(ChunkStatus.FULL.getIndex(), 1).build();
@@ -68,7 +68,7 @@ public class CubicLevelLoadingScreen {
         //@formatter:on
     }
 
-    private static Object2IntArrayMap<ChunkStatus> getStatusColors() {
+    public static Object2IntArrayMap<ChunkStatus> getStatusColors() {
         Object2IntArrayMap<ChunkStatus> map = new Object2IntArrayMap<>();
         List<ChunkStatus> statusList = ChunkStatus.getStatusList();
 
@@ -187,21 +187,26 @@ public class CubicLevelLoadingScreen {
                                  Object2IntMap<ChunkStatus> colors) {
         float aspectRatio = Minecraft.getInstance().screen.width / (float) Minecraft.getInstance().screen.height;
 
-        float scaleWithCineSize = scale * CubeAccess.DIAMETER_IN_SECTIONS / 2.0f;
+        float scaleWithCineSize = scale * CubicConstants.DIAMETER_IN_SECTIONS / 2.0f;
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.disableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
+        Matrix4f previousP = RenderSystem.getProjectionMatrix();
         RenderSystem.setProjectionMatrix(Matrix4f.perspective(60, aspectRatio, 0.01f, -10));
 
         Matrix4f modelViewMatrix = RenderSystem.getModelViewMatrix();
+        Matrix4f previousMV = modelViewMatrix.copy();
         modelViewMatrix.setIdentity();
         modelViewMatrix.translate(new Vector3f(0, 0, -20));
         modelViewMatrix.multiply(new Quaternion(30, (float) ((System.currentTimeMillis() * 0.04) % 360), 0, true));
 
         render3dDrawCubes(trackerParam, xBase, yBase, scaleWithCineSize, spacing, colors);
+
+        RenderSystem.setProjectionMatrix(previousP);
+        modelViewMatrix.load(previousMV);
 
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
@@ -226,7 +231,7 @@ public class CubicLevelLoadingScreen {
                 int alpha = 0xB0;
                 int c = colors.getOrDefault(columnStatus, 0xFFFF00FF) | (alpha << 24);
                 drawCube(buffer, cdx - sectionRenderRadius / 2, -30, cdz - sectionRenderRadius / 2,
-                    0.12f * scale / CubeAccess.DIAMETER_IN_SECTIONS, c, EnumSet.of(Direction.UP));
+                    0.12f * scale / CubicConstants.DIAMETER_IN_SECTIONS, c, EnumSet.of(Direction.UP));
             }
         }
 
@@ -236,7 +241,7 @@ public class CubicLevelLoadingScreen {
         for (int dx = -1; dx <= renderRadius + 1; dx++) {
             for (int dz = -1; dz <= renderRadius + 1; dz++) {
                 for (int dy = -1; dy <= renderRadius + 1; dy++) {
-                    ChunkStatus status = tracker.getCubeStatus(dx, dy, dz);
+                    ChunkStatus status = tracker.getStatus(dx, dy, dz);
                     if (status == null) {
                         continue;
                     }
@@ -245,7 +250,7 @@ public class CubicLevelLoadingScreen {
                     int alpha = (int) (0x20 + ratio * (0xFF - 0x20));
                     int c = colors.getOrDefault(status, 0xFFFF00FF) | (alpha << 24);
                     for (Direction value : Direction.values()) {
-                        ChunkStatus cubeStatus = tracker.getCubeStatus(dx + value.getStepX(), dy + value.getStepY(), dz + value.getStepZ());
+                        ChunkStatus cubeStatus = tracker.getStatus(dx + value.getStepX(), dy + value.getStepY(), dz + value.getStepZ());
                         if (cubeStatus == null || !cubeStatus.isOrAfter(status)) {
                             renderFaces.add(value);
                         }
@@ -374,7 +379,7 @@ public class CubicLevelLoadingScreen {
             for (int dz = 0; dz < totalDiameter; ++dz) {
                 Map<ChunkStatus, Integer> statusCounts = new HashMap<>();
                 for (int dy = 0; dy < totalDiameter; dy++) {
-                    ChunkStatus chunkstatus = ((StoringCubeProgressListener) trackerParam).getCubeStatus(dx, dy, dz);
+                    ChunkStatus chunkstatus = ((StoringCubeProgressListener) trackerParam).getStatus(dx, dy, dz);
                     statusCounts.putIfAbsent(chunkstatus, 0);
                     //noinspection ConstantConditions
                     statusCounts.compute(chunkstatus, (status, count) -> count + 1);

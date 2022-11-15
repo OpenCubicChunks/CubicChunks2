@@ -4,8 +4,8 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import net.fabricmc.api.EnvType;
@@ -14,12 +14,19 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
-import org.spongepowered.asm.mixin.Final;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.chunk.UpgradeData;
+import net.minecraft.world.level.levelgen.blending.BlendingData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,16 +35,20 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 // TODO: Maybe Resolve redirect conflict with fabric-lifecycle-events-v1.mixins.json:server .WorldChunkMixin->@Redirect::onRemoveBlockEntity(Fabric API). We implement their events
 @Environment(EnvType.CLIENT)
 @Mixin(value = LevelChunk.class, priority = 0) // Priority 0 to always ensure our redirects are on top. Should also prevent fabric api crashes that have occur(ed) here. See removeTileEntity
-public abstract class MixinLevelChunk {
-
-    @Shadow @Final private Map<BlockPos, BlockEntity> blockEntities;
-
-    @Shadow @Final private Map<BlockPos, CompoundTag> pendingBlockEntities;
+public abstract class MixinLevelChunk extends ChunkAccess {
+    public MixinLevelChunk(ChunkPos chunkPos, UpgradeData upgradeData,
+                           LevelHeightAccessor levelHeightAccessor,
+                           Registry<Biome> registry, long l,
+                           LevelChunkSection[] levelChunkSections,
+                           BlendingData blendingData) {
+        super(chunkPos, upgradeData, levelHeightAccessor, registry, l, levelChunkSections, blendingData);
+        throw new RuntimeException("MixinLevelChunk constructor should never be called");
+    }
 
     @Shadow public abstract Level getLevel();
 
     // TODO: don't target all Map.get()
-    @SuppressWarnings({ "rawtypes", "UnresolvedMixinReference" })
+    @SuppressWarnings("rawtypes")
     @Redirect(method = "*",
         at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
     private Object getBlockEntity(Map map, Object key) {
@@ -57,7 +68,8 @@ public abstract class MixinLevelChunk {
         return map.get(key);
     }
 
-    @SuppressWarnings({ "rawtypes", "UnresolvedMixinReference" }) @Nullable
+    @SuppressWarnings("rawtypes")
+    @Nullable
     @Redirect(
         method = "*",
         at = @At(value = "INVOKE", target = "Ljava/util/Map;remove(Ljava/lang/Object;)Ljava/lang/Object;"))
@@ -98,7 +110,8 @@ public abstract class MixinLevelChunk {
         return map.remove(key);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked", "UnresolvedMixinReference" }) @Nullable
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Nullable
     @Redirect(method = "*",
         at = @At(value = "INVOKE", target = "Ljava/util/Map;put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"))
     private Object putBlockEntity(Map map, Object key, Object value) {

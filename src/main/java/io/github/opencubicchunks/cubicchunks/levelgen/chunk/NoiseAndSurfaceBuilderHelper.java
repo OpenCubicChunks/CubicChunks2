@@ -5,22 +5,24 @@ import java.util.Collections;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.DummyHeightmap;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
-import io.github.opencubicchunks.cubicchunks.world.storage.CubeProtoTickList;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
@@ -28,6 +30,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.ticks.ProtoChunkTicks;
 import org.jetbrains.annotations.Nullable;
 
 public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLevelHeightAccessor {
@@ -40,12 +43,23 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
     private final WorldStyle worldStyle;
 
     private final BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+    private final Registry<Biome> biomeRegistry;
 
     private boolean needsExtraHeight;
 
-    public NoiseAndSurfaceBuilderHelper(CubeAccess delegate, CubeAccess delegateAbove) {
-        super(delegate.getCubePos().asChunkPos(), UpgradeData.EMPTY, null, ((CubeProtoTickList<Block>) delegate.getBlockTicks()), ((CubeProtoTickList<Fluid>) delegate.getLiquidTicks()),
-            new HeightAccessor(delegate));
+    public NoiseAndSurfaceBuilderHelper(CubeAccess delegate, CubeAccess delegateAbove, Registry<Biome> biomeRegistry) {
+        /*super(delegate.getCubePos().asChunkPos(), UpgradeData.EMPTY, null, ((CubeProtoTickList<Block>) delegate.getBlockTicks()), ((CubeProtoTickList<Fluid>) delegate.getLiquidTicks()),
+            new HeightAccessor(delegate));*/
+        super(
+            delegate.getCubePos().asChunkPos(),
+            UpgradeData.EMPTY,
+            delegate.getSections(),
+            (ProtoChunkTicks<Block>) delegate.getBlockTicks(),
+            (ProtoChunkTicks<Fluid>) delegate.getFluidTicks(),
+            new ProtoCube.FakeSectionCount(delegate.getCubePos().getY(), delegate, CubicConstants.SECTION_COUNT),
+            biomeRegistry,
+            null
+        );
         this.delegates = new ChunkAccess[2];
         this.delegates[0] = delegate;
         this.delegates[1] = delegateAbove;
@@ -54,6 +68,8 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
         generates2DChunks = ((CubicLevelHeightAccessor) delegate).generates2DChunks();
         worldStyle = ((CubicLevelHeightAccessor) delegate).worldStyle();
         this.needsExtraHeight = true;
+
+        this.biomeRegistry = biomeRegistry;
     }
 
     public void setNeedsExtraHeight(boolean needsExtraHeight) {
@@ -64,29 +80,33 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
         this.columnX = newColumnX;
         this.columnZ = newColumnZ;
 
-        for (int relativeSectionY = 0; relativeSectionY < CubeAccess.DIAMETER_IN_SECTIONS * 2; relativeSectionY++) {
+        for (int relativeSectionY = 0; relativeSectionY < CubicConstants.DIAMETER_IN_SECTIONS * 2; relativeSectionY++) {
             int sectionY = relativeSectionY + ((CubeAccess) delegates[0]).getCubePos().asSectionPos().getY();
             CubeAccess delegateCube = (CubeAccess) getDelegateFromSectionY(sectionY);
             assert delegateCube != null;
-            getSections()[relativeSectionY] = delegateCube.getCubeSections()[Coords.sectionToIndex(newColumnX, sectionY, newColumnZ)];
+            getSections()[relativeSectionY] = delegateCube.getSections()[Coords.sectionToIndex(newColumnX, sectionY, newColumnZ)];
         }
     }
 
+    @Override public void setStatus(ChunkStatus status) {
+        ((ProtoCube) delegates[0]).setStatus(status);
+    }
+
     public void applySections() {
-        for (int relativeSectionY = 0; relativeSectionY < CubeAccess.DIAMETER_IN_SECTIONS * 2; relativeSectionY++) {
+        for (int relativeSectionY = 0; relativeSectionY < CubicConstants.DIAMETER_IN_SECTIONS * 2; relativeSectionY++) {
             int sectionY = relativeSectionY + ((CubeAccess) delegates[0]).getCubePos().asSectionPos().getY();
             int idx = getSectionIndex(Coords.sectionToMinBlock(sectionY));
             CubeAccess delegateCube = (CubeAccess) getDelegateFromSectionY(sectionY);
             assert delegateCube != null;
             int cubeSectionIndex = Coords.sectionToIndex(columnX, sectionY, columnZ);
-            LevelChunkSection cubeSection = delegateCube.getCubeSections()[cubeSectionIndex];
+            LevelChunkSection cubeSection = delegateCube.getSections()[cubeSectionIndex];
 
             if (cubeSection == null) {
-                delegateCube.getCubeSections()[cubeSectionIndex] = getSections()[idx];
+                delegateCube.getSections()[cubeSectionIndex] = getSections()[idx];
             }
             LevelChunkSection section = getSections()[idx];
             if (section == null) {
-                getSections()[idx] = new LevelChunkSection(sectionY);
+                getSections()[idx] = new LevelChunkSection(sectionY, biomeRegistry);
             }
         }
     }
@@ -110,21 +130,12 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
         return localHeight < cube1.getCubePos().minCubeY() ? ((CubeAccess) delegates[0]).getCubeLocalHeight(type, blockX, blockZ) : localHeight;
     }
 
-    @Override public LevelChunkSection getOrCreateSection(int sectionIndex) {
-        LevelChunkSection[] cubeSections = this.getSections();
-
-        if (cubeSections[sectionIndex] == LevelChunk.EMPTY_SECTION) {
-            cubeSections[sectionIndex] = new LevelChunkSection(this.getSectionYFromSectionIndex(sectionIndex));
-        }
-        return cubeSections[sectionIndex];
-    }
-
     @Override public Collection<Map.Entry<Heightmap.Types, Heightmap>> getHeightmaps() {
         return Collections.unmodifiableSet(this.heightmaps.entrySet());
     }
 
     @Override public int getSectionIndex(int y) {
-        return Coords.blockToCubeLocalSection(y) + CubeAccess.DIAMETER_IN_SECTIONS * getDelegateIndex(Coords.blockToCube(y));
+        return Coords.blockToCubeLocalSection(y) + CubicConstants.DIAMETER_IN_SECTIONS * getDelegateIndex(Coords.blockToCube(y));
     }
 
     @Override public int getMinBuildHeight() {
@@ -132,13 +143,13 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
     }
 
     @Override public int getSectionYFromSectionIndex(int sectionIndex) {
-        int delegateIDX = sectionIndex / CubeAccess.DIAMETER_IN_SECTIONS;
-        int cubeSectionIDX = sectionIndex % CubeAccess.DIAMETER_IN_SECTIONS;
+        int delegateIDX = sectionIndex / CubicConstants.DIAMETER_IN_SECTIONS;
+        int cubeSectionIDX = sectionIndex % CubicConstants.DIAMETER_IN_SECTIONS;
         return getDelegateByIndex(delegateIDX).getCubePos().asSectionPos().getY() + cubeSectionIDX;
     }
 
     @Override public int getHeight() {
-        return this.needsExtraHeight ? CubeAccess.DIAMETER_IN_BLOCKS + 8 : CubeAccess.DIAMETER_IN_BLOCKS;
+        return this.needsExtraHeight ? CubicConstants.DIAMETER_IN_BLOCKS + 8 : CubicConstants.DIAMETER_IN_BLOCKS;
     }
 
     @Override public WorldStyle worldStyle() {
@@ -242,7 +253,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
         int maxCubeY = ((CubeAccess) delegates[1]).getCubePos().getY();
 
         if (cubeY < minCubeY) {
-            throw StopGeneratingThrowable.INSTANCE;
+            throw StopGeneratingThrowable.get();
         }
         if (cubeY > maxCubeY) {
             return null;
@@ -269,7 +280,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
         return getDelegateCube(Coords.sectionToCube(sectionIDX));
     }
 
-    @SuppressWarnings("unchecked") public <T extends ChunkAccess & CubeAccess> T getDelegateByIndex(int idx) {
+    @SuppressWarnings("unchecked") public <T extends CubeAccess> T getDelegateByIndex(int idx) {
         return (T) delegates[idx];
     }
 
@@ -278,6 +289,10 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
 
         public StopGeneratingThrowable() {
             super("Stop the surface builder");
+        }
+
+        public static StopGeneratingThrowable get() {
+            return INSTANCE;
         }
     }
 
@@ -290,7 +305,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
 
         private HeightAccessor(ChunkAccess cube) {
             this.minBuildHeight = ((CubeAccess) cube).getCubePos().minCubeY();
-            this.height = CubeAccess.DIAMETER_IN_BLOCKS * 2;
+            this.height = CubicConstants.DIAMETER_IN_BLOCKS * 2;
             isCubic = ((CubicLevelHeightAccessor) cube).isCubic();
             generates2DChunks = ((CubicLevelHeightAccessor) cube).generates2DChunks();
             worldStyle = ((CubicLevelHeightAccessor) cube).worldStyle();

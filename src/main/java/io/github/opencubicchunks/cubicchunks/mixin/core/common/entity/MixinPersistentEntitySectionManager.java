@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventHandler;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventSource;
 import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicPersistentEntitySectionManager;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicEntityStorage;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -36,11 +36,10 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(PersistentEntitySectionManager.class)
 public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess> implements IsCubicEntityContext, ChunkEntityStateEventSource, CubicPersistentEntitySectionManager {
-
+    @Shadow @Final EntitySectionStorage<T> sectionStorage;
     @Shadow @Final private Long2ObjectMap<Object> chunkLoadStatuses;
     @Shadow @Final private EntityPersistentStorage<T> permanentStorage;
     @Shadow @Final private Queue<ChunkEntities<T>> loadingInbox;
-    @Shadow @Final private EntitySectionStorage<T> sectionStorage;
     @Shadow @Final private Long2ObjectMap<Visibility> chunkVisibility;
 
     // Tracks which chunks are ticking in a CC world (where `chunkVisibility` is instead used for Cubes)
@@ -51,7 +50,9 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
 
     @Shadow public abstract void updateChunkStatus(ChunkPos chunkPos, Visibility visibility);
 
-    @Shadow public abstract boolean isPositionTicking(ChunkPos chunkPos);
+    //@Shadow public abstract boolean isPositionTicking(ChunkPos chunkPos);
+
+    @Shadow public abstract boolean canPositionTick(ChunkPos chunkPos);
 
     @Override public boolean isCubic() {
         return this.isCubic;
@@ -115,7 +116,7 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
         }
     }
 
-    @Inject(method = "isPositionTicking(Lnet/minecraft/world/level/ChunkPos;)Z", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "canPositionTick(Lnet/minecraft/world/level/ChunkPos;)Z", at = @At("HEAD"), cancellable = true)
     private void isColumnPositionTicking(ChunkPos chunkPos, CallbackInfoReturnable<Boolean> cir) {
         if (chunkPos instanceof ImposterChunkPos) {
             // TODO throw on ImposterChunkPos in non-cc?
@@ -126,7 +127,7 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
         }
     }
 
-    @Inject(method = "isPositionTicking(Lnet/minecraft/core/BlockPos;)Z", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "canPositionTick(Lnet/minecraft/core/BlockPos;)Z", at = @At("HEAD"), cancellable = true)
     private void isCubePositionTicking(BlockPos blockPos, CallbackInfoReturnable<Boolean> cir) {
         if (!isCubic) {
             return;
@@ -137,7 +138,7 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
     // "event handlers" for CubicFastServerTickList
 
     @Inject(method = "processPendingLoads",
-        at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lit/unimi/dsi/fastutil/longs/Long2ObjectMap;put(JLjava/lang/Object;)Ljava/lang/Object;"),
+        at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lit/unimi/dsi/fastutil/longs/Long2ObjectMap;put(JLjava/lang/Object;)Ljava/lang/Object;", remap = false),
         locals = LocalCapture.CAPTURE_FAILHARD)
     private void onLoad(CallbackInfo ci, ChunkEntities<T> entities) {
         if (!isCubic) {
@@ -150,7 +151,7 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
     }
 
     @Inject(method = "processChunkUnload",
-        at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lit/unimi/dsi/fastutil/longs/Long2ObjectMap;remove(J)Ljava/lang/Object;"))
+        at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lit/unimi/dsi/fastutil/longs/Long2ObjectMap;remove(J)Ljava/lang/Object;", remap = false))
     private void onUnload(long posLong, CallbackInfoReturnable<Boolean> cir) {
         if (!isCubic) {
             return;
@@ -174,7 +175,7 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
     public boolean isChunkTicking(ChunkPos pos) {
         // TODO throw on ImposterChunkPos?
         if (!isCubic) {
-            return isPositionTicking(pos);
+            return canPositionTick(pos);
         }
         return ccTickingChunks.contains(pos.toLong());
     }

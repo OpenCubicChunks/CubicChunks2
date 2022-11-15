@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.Shadow;
 public class MixinTransientEntitySectionManager<T extends EntityAccess> implements IsCubicEntityContext {
 
 
-    @Shadow @Final private EntitySectionStorage<T> sectionStorage;
+    @Shadow @Final EntitySectionStorage<T> sectionStorage;
 
     private boolean isCubic;
 

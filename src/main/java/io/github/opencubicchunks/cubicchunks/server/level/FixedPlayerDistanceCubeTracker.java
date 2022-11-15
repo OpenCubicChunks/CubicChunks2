@@ -6,28 +6,27 @@ import it.unimi.dsi.fastutil.objects.ObjectSet;
 import net.minecraft.server.level.ServerPlayer;
 
 public class FixedPlayerDistanceCubeTracker extends CubeTracker {
-    public final Long2ByteMap cubesInRange = new Long2ByteOpenHashMap();
+    public final Long2ByteMap cubes = new Long2ByteOpenHashMap();
     protected final int range;
-
-    private final CubicDistanceManager cubicDistanceManager;
+    private final CubicDistanceManager cubicDistanceManager; // this$0
 
     public FixedPlayerDistanceCubeTracker(CubicDistanceManager cubicDistanceManager, int i) {
         super(i + 2, 16, 256);
         this.range = i;
-        this.cubesInRange.defaultReturnValue((byte) (i + 2));
+        this.cubes.defaultReturnValue((byte) (i + 2));
         this.cubicDistanceManager = cubicDistanceManager;
     }
 
     protected int getLevel(long cubePosIn) {
-        return this.cubesInRange.get(cubePosIn);
+        return this.cubes.get(cubePosIn);
     }
 
     protected void setLevel(long cubePosIn, int level) {
         byte b0;
         if (level > this.range) {
-            b0 = this.cubesInRange.remove(cubePosIn);
+            b0 = this.cubes.remove(cubePosIn);
         } else {
-            b0 = this.cubesInRange.put(cubePosIn, (byte) level);
+            b0 = this.cubes.put(cubePosIn, (byte) level);
         }
         this.chunkLevelChanged(cubePosIn, b0, level);
     }
@@ -35,7 +34,7 @@ public class FixedPlayerDistanceCubeTracker extends CubeTracker {
     protected void chunkLevelChanged(long cubePosIn, int oldLevel, int newLevel) {
     }
 
-    protected int getSourceLevel(long pos) {
+    protected int getLevelFromSource(long pos) {
         return this.hasPlayerInChunk(pos) ? 0 : Integer.MAX_VALUE;
     }
 
@@ -44,7 +43,8 @@ public class FixedPlayerDistanceCubeTracker extends CubeTracker {
         return cubePlayers != null && !cubePlayers.isEmpty();
     }
 
-    public void processAllUpdates() {
+    // used from ASM
+    public void runAllUpdates() {
         this.runUpdates(Integer.MAX_VALUE);
     }
 }

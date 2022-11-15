@@ -1,13 +1,5 @@
 package io.github.opencubicchunks.gradle;
 
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.errors.RepositoryNotFoundException;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -16,6 +8,14 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.errors.RepositoryNotFoundException;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
 
 public class McGitVersion implements Plugin<Project> {
 

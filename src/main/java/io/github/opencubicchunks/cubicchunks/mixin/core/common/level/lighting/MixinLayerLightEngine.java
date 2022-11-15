@@ -2,11 +2,11 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level.lighting;
 
 import javax.annotation.Nullable;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LayerLightSectionStorageAccess;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightSectionStorage;
@@ -58,8 +58,8 @@ public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S 
     public void enableLightSources(CubePos cubePos, boolean enable) {
         ChunkPos chunkPos = cubePos.asChunkPos();
         //TODO: implement invokeEnableLightSources for CubePos in SkyLightStorage
-        for (int x = 0; x < CubeAccess.DIAMETER_IN_SECTIONS; x++) {
-            for (int z = 0; z < CubeAccess.DIAMETER_IN_SECTIONS; z++) {
+        for (int x = 0; x < CubicConstants.DIAMETER_IN_SECTIONS; x++) {
+            for (int z = 0; z < CubicConstants.DIAMETER_IN_SECTIONS; z++) {
                 ((LayerLightSectionStorageAccess) this.storage).invokeSetColumnEnabled(ChunkPos.asLong(chunkPos.x + x, chunkPos.z + z), enable);
             }
         }
@@ -67,6 +67,12 @@ public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S 
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void setCubic(LightChunkGetter lightChunkGetter, LightLayer lightLayer, S layerLightSectionStorage, CallbackInfo ci) {
+        if (this.chunkSource.getLevel() == null) {
+            // Special case for dummy light engine used in MixinChunkMap for serialization
+            this.isCubic = true;
+            return;
+        }
+
         this.isCubic = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).isCubic();
 //        this.generates2DChunks = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).generates2DChunks();
 //        this.worldStyle = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).worldStyle();
@@ -112,7 +118,7 @@ public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S 
 
 
     //This is here to throw an actual exception as this method will cause incomplete cube loading when called in a cubic context
-    @Inject(method = "getChunk", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "getChunk", at = @At("HEAD"))
     private void crashIfInCubicContext(int chunkX, int chunkZ, CallbackInfoReturnable<BlockGetter> cir) {
         if (this.isCubic) {
             throw new UnsupportedOperationException("Trying to get chunks in a cubic context! Use \"getCubeReader\" instead!");

@@ -1,11 +1,12 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level.lighting;
 
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.ColumnCubeMap;
+import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LayerLightSectionStorageAccess;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMap;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
@@ -61,8 +62,8 @@ public abstract class MixinSkyLightEngine extends MixinLayerLightEngine<SkyLight
             //      (int y = oldHeight-1; y >= newHeight; y--)
             for (int cubeY : columnCubeMap.getLoaded()) {
                 if (oldHeightCube <= cubeY && cubeY <= newHeightCube) {
-                    for (int dy = CubeAccess.DIAMETER_IN_BLOCKS - 1; dy >= 0; dy--) {
-                        int y = cubeY * CubeAccess.DIAMETER_IN_BLOCKS + dy;
+                    for (int dy = CubicConstants.DIAMETER_IN_BLOCKS - 1; dy >= 0; dy--) {
+                        int y = cubeY * CubicConstants.DIAMETER_IN_BLOCKS + dy;
 
                         if (y >= oldHeight) {
                             continue;
@@ -83,8 +84,8 @@ public abstract class MixinSkyLightEngine extends MixinLayerLightEngine<SkyLight
             //      (int y = oldHeight; y < newHeight; y++)
             for (int cubeY : columnCubeMap.getLoaded()) {
                 if (oldHeightCube <= cubeY && cubeY <= newHeightCube) {
-                    for (int dy = 0; dy < CubeAccess.DIAMETER_IN_BLOCKS; dy++) {
-                        int y = cubeY * CubeAccess.DIAMETER_IN_BLOCKS + dy;
+                    for (int dy = 0; dy < CubicConstants.DIAMETER_IN_BLOCKS; dy++) {
+                        int y = cubeY * CubicConstants.DIAMETER_IN_BLOCKS + dy;
 
                         if (y < oldHeight) {
                             continue;
@@ -150,8 +151,8 @@ public abstract class MixinSkyLightEngine extends MixinLayerLightEngine<SkyLight
         ChunkPos chunkPos = cubePos.asChunkPos();
         int minY = cubePos.minCubeY();
         int maxY = cubePos.maxCubeY();
-        for (int sectionX = 0; sectionX < CubeAccess.DIAMETER_IN_SECTIONS; sectionX++) {
-            for (int sectionZ = 0; sectionZ < CubeAccess.DIAMETER_IN_SECTIONS; sectionZ++) {
+        for (int sectionX = 0; sectionX < CubicConstants.DIAMETER_IN_SECTIONS; sectionX++) {
+            for (int sectionZ = 0; sectionZ < CubicConstants.DIAMETER_IN_SECTIONS; sectionZ++) {
 
                 BlockGetter chunk = this.chunkSource.getChunkForLighting(chunkPos.x + sectionX, chunkPos.z + sectionZ);
 

@@ -1,9 +1,9 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerChunkCache;
@@ -26,8 +26,9 @@ public class MixinPortalForcer {
 
     @Shadow @Final private ServerLevel level;
 
-    @SuppressWarnings("UnresolvedMixinReference")
-    @Redirect(method = "lambda$findPortalAround$5(Lnet/minecraft/world/entity/ai/village/poi/PoiRecord;)Lnet/minecraft/BlockUtil$FoundRectangle;", at = @At(value = "INVOKE",
+    @SuppressWarnings("target")
+    @Redirect(method = "lambda$findPortalAround$6(Lnet/minecraft/world/entity/ai/village/poi/PoiRecord;)Lnet/minecraft/BlockUtil$FoundRectangle;", at = @At(value =
+        "INVOKE",
         target = "Lnet/minecraft/server/level/ServerChunkCache;addRegionTicket(Lnet/minecraft/server/level/TicketType;Lnet/minecraft/world/level/ChunkPos;ILjava/lang/Object;)V"))
     private <T> void addCubeRegionTicket(ServerChunkCache serverChunkCache, TicketType<T> ticketType, ChunkPos chunkPos, int radius, T argument, PoiRecord poiRecord) {
         if (!((CubicLevelHeightAccessor) serverChunkCache.getLevel()).isCubic()) {

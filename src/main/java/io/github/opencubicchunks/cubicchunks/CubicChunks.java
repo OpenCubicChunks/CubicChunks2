@@ -2,11 +2,13 @@ package io.github.opencubicchunks.cubicchunks;
 
 import java.lang.reflect.InvocationTargetException;
 
+import io.github.opencubicchunks.cc_core.CubicChunksBase;
+import io.github.opencubicchunks.cc_core.config.EarlyConfig;
 import io.github.opencubicchunks.cubicchunks.config.CommonConfig;
-import io.github.opencubicchunks.cubicchunks.config.EarlyConfig;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.StripedBiomeSource;
 import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
-import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicFeatureDecorators;
+import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicLakePlacementModifier;
+import io.github.opencubicchunks.cubicchunks.mixin.ClassDuplicator;
 import io.github.opencubicchunks.cubicchunks.network.PacketDispatcher;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import net.fabricmc.api.ModInitializer;
@@ -14,37 +16,20 @@ import net.minecraft.SharedConstants;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ChunkMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Requires Mixin BootStrap in order to use in forge.
  */
 // The value here should match an entry in the META-INF/mods.toml file
-public class CubicChunks implements ModInitializer {
-
-    // TODO: debug and fix optimized cubeload
-    public static final boolean OPTIMIZED_CUBELOAD = false;
-
-    public static final long SECTIONPOS_SENTINEL = -1;
-
-    public static final int MAX_SUPPORTED_HEIGHT = Integer.MAX_VALUE / 2;
-    public static final int MIN_SUPPORTED_HEIGHT = -MAX_SUPPORTED_HEIGHT;
-    public static final int SEA_LEVEL = 64;
-
-    public static final String MODID = "cubicchunks";
-    public static final Logger LOGGER = LogManager.getLogger();
-
-    public static final String PROTOCOL_VERSION = "0";
-
-    private static final CommonConfig CONFIG = CommonConfig.getConfig();
+public class CubicChunks extends CubicChunksBase implements ModInitializer {
+    protected static final CommonConfig CONFIG = CommonConfig.getConfig();
 
     public CubicChunks() {
         if (!(CubeMap.class.isAssignableFrom(ChunkMap.class))) {
             throw new IllegalStateException("Mixin not applied!");
         }
         EarlyConfig.getDiameterInSections();
-
+        ClassDuplicator.init();
         if (System.getProperty("cubicchunks.debug", "false").equalsIgnoreCase("true")) {
             try {
                 Class.forName("io.github.opencubicchunks.cubicchunks.debug.DebugVisualization").getMethod("enable").invoke(null);
@@ -53,21 +38,27 @@ public class CubicChunks implements ModInitializer {
                 LOGGER.catching(e);
             }
         }
-
-        //Custom CC Features
-        CubicFeatureDecorators.init();
-        CubicFeatures.init();
-    }
-
-    public static CommonConfig config() {
-        return CONFIG;
     }
 
     @Override
     public void onInitialize() {
         PacketDispatcher.register();
 
-        Registry.register(Registry.BIOME_SOURCE, new ResourceLocation(MODID, "stripes"), StripedBiomeSource.CODEC);
 //        Registry.register(Registry.CHUNK_GENERATOR, new ResourceLocation(MODID, "generator"), CCNoiseBasedChunkGenerator.CODEC);
+
+        //Custom CC Features
+        CubicFeatures.init();
+    }
+
+    public static void registerBiomeSources() {
+        Registry.register(Registry.BIOME_SOURCE, new ResourceLocation(MODID, "stripes"), StripedBiomeSource.CODEC);
+    }
+
+    public static void registerPlacementModifiers() {
+        CubicLakePlacementModifier.init();
+    }
+
+    public static CommonConfig config() {
+        return CONFIG;
     }
 }

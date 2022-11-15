@@ -1,8 +1,13 @@
 package io.github.opencubicchunks.cubicchunks.mixin.asm.common;
 
 import net.minecraft.core.SectionPos;
+import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueue;
+import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ChunkTaskPriorityQueue;
+import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
+import net.minecraft.server.level.DistanceManager;
 import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.lighting.BlockLightEngine;
 import net.minecraft.world.level.lighting.BlockLightSectionStorage;
@@ -17,11 +22,18 @@ import org.spongepowered.asm.mixin.Mixin;
     ChunkMap.DistanceManager.class,
     ChunkMap.class,
     ChunkHolder.class,
-    DynamicGraphMinFixedPoint.class,
     NaturalSpawner.class,
 
+    DistanceManager.class,
+    ChunkTaskPriorityQueue.class,
+    CubeTaskPriorityQueue.class,
+    ChunkTaskPriorityQueueSorter.class,
+    CubeTaskPriorityQueueSorter.class,
+
     //Long Pos Transforms
+    DynamicGraphMinFixedPoint.class,
     BlockLightEngine.class,
+    BlockLightSectionStorage.class,
     SkyLightEngine.class,
     LayerLightEngine.class,
     SectionPos.class,

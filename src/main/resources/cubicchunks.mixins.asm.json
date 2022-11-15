@@ -3,7 +3,7 @@
     "package": "io.github.opencubicchunks.cubicchunks.mixin.asm",
     "refmap": "CubicChunks-refmap.json",
     "plugin": "io.github.opencubicchunks.cubicchunks.mixin.ASMConfigPlugin",
-    "compatibilityLevel": "JAVA_16",
+    "compatibilityLevel": "JAVA_17",
     "minVersion": "0.8",
     "mixins": [
         "common.MixinAsmTarget"

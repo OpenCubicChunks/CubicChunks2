@@ -1,0 +1,13 @@
+{
+    "implementations": {
+        "net.minecraft.util.SimpleBitStorage": [ "io.github.opencubicchunks.cc_core.minecraft.MCBitStorage" ],
+        "net.minecraft.world.level.BlockGetter": [ "io.github.opencubicchunks.cc_core.minecraft.MCBlockGetter" ],
+        "net.minecraft.core.BlockPos": [ "io.github.opencubicchunks.cc_core.minecraft.MCBlockPos" ],
+        "net.minecraft.world.level.block.state.BlockState": [ "io.github.opencubicchunks.cc_core.minecraft.MCBlockState" ],
+        "net.minecraft.world.level.ChunkPos": [ "io.github.opencubicchunks.cc_core.minecraft.MCChunkPos" ],
+        "net.minecraft.world.entity.Entity": [ "io.github.opencubicchunks.cc_core.minecraft.MCEntity" ],
+        "net.minecraft.world.level.LevelHeightAccessor": [ "io.github.opencubicchunks.cc_core.minecraft.MCLevelHeightAccessor" ],
+        "net.minecraft.core.SectionPos": [ "io.github.opencubicchunks.cc_core.minecraft.MCSectionPos" ],
+        "net.minecraft.core.Vec3i": [ "io.github.opencubicchunks.cc_core.minecraft.MCVec3i" ]
+    }
+}

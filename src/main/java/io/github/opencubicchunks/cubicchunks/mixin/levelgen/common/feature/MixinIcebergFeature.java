@@ -1,7 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.feature;
 
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
+import io.github.opencubicchunks.cc_core.api.CubicConstants;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.IcebergFeature;
 import net.minecraft.world.level.levelgen.feature.configurations.BlockStateConfiguration;
@@ -19,7 +19,7 @@ public class MixinIcebergFeature {
             return;
         }
         if (featurePlaceContext.origin().getY() > featurePlaceContext.chunkGenerator().getSeaLevel()
-            || featurePlaceContext.origin().getY() + CubeAccess.DIAMETER_IN_BLOCKS <= featurePlaceContext.chunkGenerator().getSeaLevel()) {
+            || featurePlaceContext.origin().getY() + CubicConstants.DIAMETER_IN_BLOCKS <= featurePlaceContext.chunkGenerator().getSeaLevel()) {
             cir.setReturnValue(true);
         }
     }

@@ -12,11 +12,6 @@ import net.fabricmc.loader.launch.common.MappingConfiguration;
 public class Utils {
     private static MappingResolver mappingResolver;
 
-    @SuppressWarnings("unchecked")
-    public static <I, O> O unsafeCast(I obj) {
-        return (O) obj;
-    }
-
     /**
      * This method is useful for when running unit tests
      *

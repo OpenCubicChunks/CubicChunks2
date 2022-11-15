@@ -3,8 +3,8 @@ package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import io.github.opencubicchunks.cubicchunks.config.EarlyConfig;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
+import io.github.opencubicchunks.cc_core.config.EarlyConfig;
+import io.github.opencubicchunks.cc_core.utils.Coords;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
@@ -25,6 +25,7 @@ public class CubeStatus {
         ChunkStatus.FULL,
         ChunkStatus.FEATURES,
         ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS,
@@ -39,6 +40,7 @@ public class CubeStatus {
         ChunkStatus.FULL,
         ChunkStatus.FEATURES,
         ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS,
@@ -49,6 +51,7 @@ public class CubeStatus {
         ChunkStatus.FULL,
         ChunkStatus.FEATURES,
         ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS
     );
@@ -57,6 +60,7 @@ public class CubeStatus {
         ChunkStatus.FULL,
         ChunkStatus.FEATURES,
         ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS
     );
 

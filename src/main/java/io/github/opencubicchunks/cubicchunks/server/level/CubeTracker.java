@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.server.level;
 
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubePos;
 import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
 
 public abstract class CubeTracker extends DynamicGraphMinFixedPoint {
@@ -81,12 +81,12 @@ public abstract class CubeTracker extends DynamicGraphMinFixedPoint {
      * Returns level propagated from start position with specified level to the neighboring end position.
      */
     @Override protected int computeLevelFromNeighbor(long startPos, long endPos, int startLevel) {
-        return startPos == Long.MAX_VALUE ? this.getSourceLevel(endPos) : startLevel + 1;
+        return startPos == Long.MAX_VALUE ? this.getLevelFromSource(endPos) : startLevel + 1;
     }
 
-    protected abstract int getSourceLevel(long pos);
+    protected abstract int getLevelFromSource(long pos);
 
-    public void updateSourceLevel(long pos, int level, boolean isDecreasing) {
+    public void update(long pos, int level, boolean isDecreasing) {
         this.checkEdge(Long.MAX_VALUE, pos, level, isDecreasing);
     }
 

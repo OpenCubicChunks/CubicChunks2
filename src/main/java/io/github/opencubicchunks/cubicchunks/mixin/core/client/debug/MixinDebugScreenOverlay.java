@@ -4,17 +4,18 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
+import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeSource;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
-import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.LightSurfaceTrackerWrapper;
+import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -25,6 +26,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
@@ -35,13 +37,13 @@ public abstract class MixinDebugScreenOverlay {
 
     @Nullable @Shadow protected abstract LevelChunk getServerChunk();
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "InvalidInjectorMethodSignature" })
     @Inject(method = "getGameInformation",
         at = @At(value = "INVOKE", target = "Ljava/util/List;add(Ljava/lang/Object;)Z", ordinal = 6),
-        locals = LocalCapture.CAPTURE_FAILSOFT
+        locals = LocalCapture.CAPTURE_FAILHARD
     )
     private void onAddChunkInfo(CallbackInfoReturnable<List> cir, /*IntegratedServer integratedserver, Connection networkmanager, float f, float f1,*/
-                                String s, BlockPos blockpos, Entity entity, Direction direction, String s1, /*ChunkPos chunkpos,*/ Level world, LongSet longset,
+                                String s, BlockPos blockpos, Entity entity, Direction direction, String s1, ChunkPos chunkpos, Level world, LongSet longset,
                                 List<String> debugScreenList/*, String s2*/) {
         debugScreenList.add(String.format("Cube:  %d %d %d in %d %d %d",
             Coords.blockToLocal(blockpos.getX()), Coords.blockToLocal(blockpos.getY()), Coords.blockToLocal(blockpos.getZ()),
@@ -49,13 +51,15 @@ public abstract class MixinDebugScreenOverlay {
         );
     }
 
+    @SuppressWarnings("InvalidInjectorMethodSignature")
     @Inject(method = "getGameInformation",
         at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/multiplayer/ClientLevel;getBrightness(Lnet/minecraft/world/level/LightLayer;Lnet/minecraft/core/BlockPos;)I",
             ordinal = 0),
         locals = LocalCapture.CAPTURE_FAILHARD)
-    private void onAddLightInfo(CallbackInfoReturnable<List<String>> cir, String string2, BlockPos pos, Entity entity, Direction direction,
-                                      String string7, Level level, LongSet longSet, List<String> list, LevelChunk clientChunk, int i) {
+    private void onAddLightInfo(CallbackInfoReturnable<List<String>> cir, String string, BlockPos pos,
+                                Entity entity, Direction direction, String string2, ChunkPos chunkPos, Level level, LongSet longSet, List list, LevelChunk clientChunk,
+                                int i) {
         LevelChunk serverChunk = this.getServerChunk();
         if (((CubicLevelHeightAccessor) level).isCubic()) {
             if (this.minecraft.getSingleplayerServer() != null) {
@@ -83,17 +87,22 @@ public abstract class MixinDebugScreenOverlay {
         }
     }
 
+    @SuppressWarnings("InvalidInjectorMethodSignature")
     @Inject(method = "getGameInformation",
-            at = @At(value = "INVOKE", ordinal = 0, target = "Lnet/minecraft/world/level/Level;getDifficulty()Lnet/minecraft/world/Difficulty;"),
+            slice = @Slice(
+                from = @At(value = "INVOKE", ordinal = 0, target = "Lnet/minecraft/world/level/Level;getDifficulty()Lnet/minecraft/world/Difficulty;")
+            ),
+            at = @At(value = "INVOKE", ordinal = 0, target = "Ljava/util/List;add(Ljava/lang/Object;)Z", shift = At.Shift.BEFORE),
             locals = LocalCapture.CAPTURE_FAILHARD)
-    private void onAddLocalDifficultyInfo(CallbackInfoReturnable<List<String>> cir, String string2, BlockPos blockPos, Entity entity, Direction direction, String string7, Level level,
-                                          LongSet longSet, List<String> list, LevelChunk clientChunk, int i, int j, int k, LevelChunk serverChunk) {
+    private void onAddLocalDifficultyInfo(CallbackInfoReturnable<List<String>> cir, String string, BlockPos blockPos,
+                                          Entity entity, Direction direction, String string2, ChunkPos chunkPos, Level level, LongSet longSet, List list, LevelChunk serverChunk,
+                                          int i) {
         if (this.minecraft.getSingleplayerServer() != null) {
             list.add("Chunk inhabited time: " + (serverChunk == null ? "???" : "" + serverChunk.getInhabitedTime()));
             if (((CubicLevelHeightAccessor) level).isCubic()) {
                 var cube = ((CubeSource) level.getChunkSource())
                         .getCube(Coords.blockToCube(blockPos.getX()), Coords.blockToCube(blockPos.getY()), Coords.blockToCube(blockPos.getZ()), ChunkStatus.FULL, false);
-                list.add("Cube inhabited time: " + (cube == null ? "???" : "" + cube.getCubeInhabitedTime()));
+                list.add("Cube inhabited time: " + (cube == null ? "???" : "" + cube.getInhabitedTime()));
             }
         }
     }

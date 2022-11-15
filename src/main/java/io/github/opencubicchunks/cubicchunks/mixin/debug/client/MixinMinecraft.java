@@ -2,8 +2,8 @@ package io.github.opencubicchunks.cubicchunks.mixin.debug.client;
 
 import javax.annotation.Nullable;
 
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.debug.DebugVisualization;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;

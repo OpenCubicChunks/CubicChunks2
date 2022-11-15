@@ -13,3 +13,14 @@ accessible class net/minecraft/world/level/levelgen/VerticalAnchor$Absolute
 accessible class net/minecraft/world/level/lighting/SkyLightSectionStorage$SkyDataLayerStorageMap
 extendable class net/minecraft/server/level/Ticket
 accessible method net/minecraft/server/level/ChunkMap$DistanceManager <init> (Lnet/minecraft/server/level/ChunkMap;Ljava/util/concurrent/Executor;Ljava/util/concurrent/Executor;)V
+
+accessible field net/minecraft/world/level/chunk/LevelChunk NULL_TICKER Lnet/minecraft/world/level/block/entity/TickingBlockEntity;
+
+extendable method net/minecraft/world/ticks/LevelTicks updateContainerScheduling (Lnet/minecraft/world/ticks/ScheduledTick;)V
+extendable method net/minecraft/world/ticks/LevelTicks forContainersInArea (Lnet/minecraft/world/level/levelgen/structure/BoundingBox;Lnet/minecraft/world/ticks/LevelTicks$PosAndContainerConsumer;)V
+accessible class net/minecraft/world/ticks/LevelTicks$PosAndContainerConsumer
+
+accessible class net/minecraft/client/renderer/chunk/RenderChunk
+
+accessible class net/minecraft/world/level/LocalMobCapCalculator$MobCounts
+accessible method net/minecraft/world/level/LocalMobCapCalculator$MobCounts <init> ()V

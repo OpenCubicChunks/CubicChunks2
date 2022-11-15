@@ -23,6 +23,7 @@
     "mixins": [
         "cubicchunks.mixins.access.json",
         "cubicchunks.mixins.asm.json",
+        "cubicchunks.mixins.asmfixes.json",
         "cubicchunks.mixins.core.json",
         "cubicchunks.mixins.levelgen.json",
         "cubicchunks.mixins.optifine.json",

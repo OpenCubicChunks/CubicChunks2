@@ -1,8 +1,8 @@
 package io.github.opencubicchunks.cubicchunks.mixin.optifine.client.vanilla;
 
+import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.mixin.access.client.ViewAreaAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelHeightAccessor;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -43,7 +43,7 @@ public abstract class MixinWorldRenderer_Vanilla {
      * @reason Make sure we load the renderers again if the vertical view distance changed but not if the normal render distance changed because then they'll be loaded again anyways.
      */
     @Inject(method = "setupRender", at = @At("HEAD"))
-    private void setupVerticalViewDistance(Camera camera, Frustum frustum, boolean hasForcedFrustum, int frame, boolean spectator, CallbackInfo ci) {
+    private void setupVerticalViewDistance(Camera camera, Frustum frustrum, boolean hasCapturedFrustrum, boolean isSpectator, CallbackInfo ci) {
         if (this.minecraft.options.renderDistance != this.lastViewDistance) return;
         if (this.lastVerticalViewDistance != CubicChunks.config().getVerticalViewDistance()) {
             this.allChanged();

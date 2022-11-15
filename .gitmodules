@@ -1,0 +1,3 @@
+[submodule "CubicChunksCore"]
+	path = CubicChunksCore
+	url = https://github.com/OpenCubicChunks/CubicChunksCore

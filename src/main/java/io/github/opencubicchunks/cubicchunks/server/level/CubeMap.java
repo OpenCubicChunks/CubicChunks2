@@ -9,8 +9,8 @@ import java.util.function.IntSupplier;
 import javax.annotation.Nullable;
 
 import com.mojang.datafixers.util.Either;
-import io.github.opencubicchunks.cubicchunks.utils.Coords;
-import io.github.opencubicchunks.cubicchunks.world.level.CubePos;
+import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeStatus;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
@@ -75,8 +75,6 @@ public interface CubeMap {
     // getChunkRangeFuture
     CompletableFuture<Either<List<CubeAccess>, ChunkHolder.ChunkLoadingFailure>> getCubeRangeFuture(CubePos pos, int radius,
                                                                                                     IntFunction<ChunkStatus> getParentStatus);
-    // packTicks
-    CompletableFuture<Void> packCubeTicks(LevelCube cubeIn);
 
     // prepareEntityTickingChunk
     CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareEntityTickingCube(CubePos pos);
@@ -153,6 +151,8 @@ public interface CubeMap {
 
     // noPlayersCloseForSpawning
     boolean noPlayersCloseForSpawning(CubePos cubePos);
+
+    List<ServerPlayer> getPlayersCloseForSpawning(CubePos cubePos);
 
     Long2ObjectLinkedOpenHashMap<ChunkHolder> getUpdatingCubeMap();
 }

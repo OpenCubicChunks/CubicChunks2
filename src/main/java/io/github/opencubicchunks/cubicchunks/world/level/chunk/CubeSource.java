@@ -9,4 +9,6 @@ public interface CubeSource {
     @Nullable
     CubeAccess getCube(int cubeX, int cubeY, int cubeZ, ChunkStatus requiredStatus, boolean load);
 
+    CubeAccess getCubeNow(int cubeX, int cubeY, int cubeZ);
+
 }
