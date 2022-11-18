@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.HierarchyTree;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Handle;
@@ -160,14 +161,26 @@ public class TransformSubtype {
      * @param type A type
      * @return The potential subtype of the type. If unknown, returns NONE
      */
-    public static SubType getSubType(Type type) {
-        while (true) {
-            if (REGULAR_TYPES.contains(type)) {
-                return SubType.NONE;
-            } else if (CONSUMER_TYPES.contains(type)) {
-                return SubType.CONSUMER;
-            } else if (PREDICATE_TYPES.contains(type)) {
-                return SubType.PREDICATE;
+    public static SubType getSubType(Type type, HierarchyTree hierarchy) {
+        while (type != null) {
+            if (type.getSort() == Type.OBJECT) {
+                for (var t: hierarchy.ancestry(type)) {
+                    if (REGULAR_TYPES.contains(t)) {
+                        return SubType.NONE;
+                    } else if (CONSUMER_TYPES.contains(t)) {
+                        return SubType.CONSUMER;
+                    } else if (PREDICATE_TYPES.contains(t)) {
+                        return SubType.PREDICATE;
+                    }
+                }
+            } else {
+                if (REGULAR_TYPES.contains(type)) {
+                    return SubType.NONE;
+                } else if (CONSUMER_TYPES.contains(type)) {
+                    return SubType.CONSUMER;
+                } else if (PREDICATE_TYPES.contains(type)) {
+                    return SubType.PREDICATE;
+                }
             }
 
             if (type.getSort() != Type.ARRAY) {

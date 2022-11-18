@@ -19,7 +19,7 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.byt
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
-import io.github.opencubicchunks.cubicchunks.utils.Utils;
+import io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils;
 import net.fabricmc.loader.api.MappingResolver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -694,6 +694,6 @@ public class ConfigLoader {
     }
 
     private static MappingResolver getMapper() {
-        return Utils.getMappingResolver();
+        return TestMappingUtils.getMappingResolver();
     }
 }

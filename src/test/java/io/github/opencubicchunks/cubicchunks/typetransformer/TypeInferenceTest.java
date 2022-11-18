@@ -208,10 +208,6 @@ public class TypeInferenceTest {
     private Map<MethodID, AnalysisResults> getAnalysisResults(Class<?> clazz) {
         ClassNode classNode = ASMUtil.loadClassNode(clazz);
 
-        if (clazz.equals(LayerLightSectionStorage.class)) {
-            MainTransformer.fixLayerLightSectionStorage(classNode);
-        }
-
         TypeTransformer typeTransformer = new TypeTransformer(CONFIG, classNode, false);
         typeTransformer.analyzeAllMethods();
 

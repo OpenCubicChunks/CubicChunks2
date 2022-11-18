@@ -46,7 +46,7 @@ public class TransformTrackingValue implements Value {
         this.transform = TransformSubtype.createDefault();
 
         this.transform.getTransformTypePtr().addTrackingValue(this);
-        this.transform.setSubType(TransformSubtype.getSubType(type));
+        this.transform.setSubType(TransformSubtype.getSubType(type, fieldPseudoValues.getHierarchy()));
     }
 
     public TransformTrackingValue(@Nullable Type type, int localVar, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
@@ -58,7 +58,7 @@ public class TransformTrackingValue implements Value {
         this.transform = TransformSubtype.createDefault();
 
         this.transform.getTransformTypePtr().addTrackingValue(this);
-        this.transform.setSubType(TransformSubtype.getSubType(type));
+        this.transform.setSubType(TransformSubtype.getSubType(type, fieldPseudoValues.getHierarchy()));
     }
 
     public TransformTrackingValue(@Nullable Type type, AbstractInsnNode source, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues) {
@@ -76,7 +76,7 @@ public class TransformTrackingValue implements Value {
         this.pseudoValues = fieldPseudoValues;
 
         this.transform.getTransformTypePtr().addTrackingValue(this);
-        this.transform.setSubType(TransformSubtype.getSubType(type));
+        this.transform.setSubType(TransformSubtype.getSubType(type, fieldPseudoValues.getHierarchy()));
     }
 
     public TransformTrackingValue(@Nullable Type type, Set<AbstractInsnNode> source, Set<Integer> localVars, TransformSubtype transform,
@@ -88,7 +88,7 @@ public class TransformTrackingValue implements Value {
         this.pseudoValues = fieldPseudoValues;
 
         this.transform.getTransformTypePtr().addTrackingValue(this);
-        this.transform.setSubType(TransformSubtype.getSubType(type));
+        this.transform.setSubType(TransformSubtype.getSubType(type, fieldPseudoValues.getHierarchy()));
     }
 
     public TransformTrackingValue merge(TransformTrackingValue other) {

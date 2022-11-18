@@ -241,7 +241,7 @@ public class DasmPlugin implements Plugin<Project> {
         return newClassEntry;
     }
 
-    private static String remapMethodName(MemoryMappingTree mappings, int intermediary, int named, String methodOwner, Method asmMethod) {
+    public static String remapMethodName(MemoryMappingTree mappings, int intermediary, int named, String methodOwner, Method asmMethod) {
         MappingTree.ClassMapping mapEntry = mappings.getClass(methodOwner.replace('.', '/'), TO_NAMED ? intermediary : named);
         if (mapEntry == null) {
             return asmMethod.getName();
@@ -253,7 +253,7 @@ public class DasmPlugin implements Plugin<Project> {
         return method.getDstName(TO_NAMED ? named : intermediary);
     }
 
-    private static String remapFieldName(MemoryMappingTree mappings, int intermediary, int named, String fieldOwner, Type type, String name) {
+    public static String remapFieldName(MemoryMappingTree mappings, int intermediary, int named, String fieldOwner, Type type, String name) {
         MappingTree.ClassMapping mapEntry = mappings.getClass(fieldOwner.replace('.', '/'), TO_NAMED ? intermediary : named);
         MappingTree.FieldMapping method = mapEntry.getField(name, type.getDescriptor(), TO_NAMED ? intermediary : named);
         if (method == null) {
@@ -262,7 +262,7 @@ public class DasmPlugin implements Plugin<Project> {
         return method.getDstName(TO_NAMED ? named : intermediary);
     }
 
-    private static String remapClassName(MemoryMappingTree mappings, int intermediary, int named, String className) {
+    public static String remapClassName(MemoryMappingTree mappings, int intermediary, int named, String className) {
         MappingTree.ClassMapping mapEntry = mappings.getClass(className.replace('.', '/'), TO_NAMED ? intermediary : named);
         String dstName = mapEntry == null ? className : mapEntry.getDstName(TO_NAMED ? named : intermediary).replace('/', '.');
         return dstName;

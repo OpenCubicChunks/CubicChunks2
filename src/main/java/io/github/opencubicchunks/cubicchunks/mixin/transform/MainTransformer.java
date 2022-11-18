@@ -9,32 +9,20 @@ import static org.objectweb.asm.commons.Method.getMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
-import com.google.common.collect.Sets;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
-import io.github.opencubicchunks.cubicchunks.utils.Utils;
+import io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils;
 import net.fabricmc.loader.api.MappingResolver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import org.objectweb.asm.Handle;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
-import org.objectweb.asm.commons.MethodRemapper;
-import org.objectweb.asm.commons.Remapper;
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
@@ -42,7 +30,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 public class MainTransformer {
     public static final Config TRANSFORM_CONFIG;
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final boolean IS_DEV = Utils.isDev();
+    private static final boolean IS_DEV = TestMappingUtils.isDev();
 
     public static void transformDynamicGraphMinFixedPoint(ClassNode targetClass) {
         TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
@@ -126,7 +114,7 @@ public class MainTransformer {
     }
 
     private static ClassField remapField(ClassField clField) {
-        MappingResolver mappingResolver = Utils.getMappingResolver();
+        MappingResolver mappingResolver = TestMappingUtils.getMappingResolver();
 
         Type mappedType = remapType(clField.owner);
         String mappedName = mappingResolver.mapFieldName("intermediary",
@@ -139,7 +127,7 @@ public class MainTransformer {
     }
 
     @NotNull private static ClassMethod remapMethod(ClassMethod clMethod) {
-        MappingResolver mappingResolver = Utils.getMappingResolver();
+        MappingResolver mappingResolver = TestMappingUtils.getMappingResolver();
         Type[] params = Type.getArgumentTypes(clMethod.method.getDescriptor());
         Type returnType = Type.getReturnType(clMethod.method.getDescriptor());
 
@@ -169,7 +157,7 @@ public class MainTransformer {
         if (t.getSort() != OBJECT) {
             return t;
         }
-        MappingResolver mappingResolver = Utils.getMappingResolver();
+        MappingResolver mappingResolver = TestMappingUtils.getMappingResolver();
         String unmapped = t.getClassName();
         if (unmapped.endsWith(";")) {
             unmapped = unmapped.substring(1, unmapped.length() - 1);
@@ -183,7 +171,7 @@ public class MainTransformer {
     }
 
     private static Type remapType(Type t) {
-        MappingResolver mappingResolver = Utils.getMappingResolver();
+        MappingResolver mappingResolver = TestMappingUtils.getMappingResolver();
         String unmapped = t.getClassName();
         String mapped = mappingResolver.mapClassName("intermediary", unmapped);
         if (unmapped.contains("class") && IS_DEV && mapped.equals(unmapped)) {

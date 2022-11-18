@@ -37,7 +37,7 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
-import io.github.opencubicchunks.cubicchunks.utils.Utils;
+import io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.jetbrains.annotations.NotNull;
@@ -84,12 +84,12 @@ public class TypeTransformer {
     //When safety is enabled, if a long-pos method is called for a 3-int object a warning will be created. This keeps track of all warnings.
     private static final Set<String> WARNINGS = new HashSet<>();
     //Path to file where errors should be logged
-    private static final Path ERROR_LOG = Utils.getGameDir().resolve("errors.log");
+    private static final Path ERROR_LOG = TestMappingUtils.getGameDir().resolve("errors.log");
 
     private static final Map<String, Int2ObjectMap<String>> CC_SYNTHETIC_LOOKUP = new HashMap<>();
 
     //Directory where the transformed classes will be written to for debugging purposes
-    private static final Path OUT_DIR = Utils.getGameDir().resolve("transformed");
+    private static final Path OUT_DIR = TestMappingUtils.getGameDir().resolve("transformed");
     //The global configuration loaded by ConfigLoader
     private final Config config;
     //The original class node

@@ -19,7 +19,7 @@ import io.github.opencubicchunks.cubicchunks.mixin.ASMConfigPlugin;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
-import io.github.opencubicchunks.cubicchunks.utils.Utils;
+import io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import net.fabricmc.loader.api.MappingResolver;
@@ -43,7 +43,7 @@ import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 public class TypeTransformerMethods {
     private static final boolean LOAD_FROM_MIXIN_OUT = false;
 
-    private static final Path ASSUMED_MIXIN_OUT = Utils.getGameDir().resolve(".mixin.out/class");
+    private static final Path ASSUMED_MIXIN_OUT = TestMappingUtils.getGameDir().resolve(".mixin.out/class");
     private static final Map<String, ClassNode> CACHED_CLASSES = new HashMap<>();
     private static IMixinTransformer transformer;
     private ASMConfigPlugin plugin = new ASMConfigPlugin();
@@ -52,7 +52,7 @@ public class TypeTransformerMethods {
     public void transformAndTest() {
         System.out.println("Config: " + MainTransformer.TRANSFORM_CONFIG); //Load MainTransformer
 
-        MappingResolver map = Utils.getMappingResolver();
+        MappingResolver map = TestMappingUtils.getMappingResolver();
 
         final Set<String> classNamesToTransform = Stream.of(
             "net.minecraft.class_3554", //DynamicGraphMixFixedPoint

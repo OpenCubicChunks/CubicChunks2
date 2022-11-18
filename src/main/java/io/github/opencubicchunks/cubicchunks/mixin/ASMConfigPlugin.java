@@ -20,13 +20,13 @@ import javax.annotation.Nullable;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils;
 import io.github.opencubicchunks.dasm.MappingsProvider;
 import io.github.opencubicchunks.dasm.RedirectsParseException;
 import io.github.opencubicchunks.dasm.RedirectsParser;
 import io.github.opencubicchunks.dasm.Transformer;
 import net.fabricmc.loader.api.FabricLoader;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
-import io.github.opencubicchunks.cubicchunks.utils.Utils;
 import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -190,7 +190,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     }
 
     @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-        MappingResolver map = Utils.getMappingResolver();
+        MappingResolver map = TestMappingUtils.getMappingResolver();
         String dynamicGraphMinFixedPoint = map.mapClassName("intermediary", "net.minecraft.class_3554");
         String layerLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3558");
         String layerLightSectionStorage = map.mapClassName("intermediary", "net.minecraft.class_3560");
@@ -222,7 +222,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         }
 
         //Save it without computing extra stuff (like maxs) which means that if the frames are wrong and mixin fails to save it, it will be saved elsewhere
-        Path savePath = Utils.getGameDir().resolve("longpos-out").resolve(targetClassName.replace('.', '/') + ".class");
+        Path savePath = TestMappingUtils.getGameDir().resolve("longpos-out").resolve(targetClassName.replace('.', '/') + ".class");
         try {
             Files.createDirectories(savePath.getParent());
 

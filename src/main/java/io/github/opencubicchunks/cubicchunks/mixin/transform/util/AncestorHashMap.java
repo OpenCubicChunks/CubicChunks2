@@ -115,4 +115,8 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
     public Set<Entry<U, T>> entrySet() {
         return map.entrySet();
     }
+
+    public HierarchyTree getHierarchy() {
+        return hierarchy;
+    }
 }

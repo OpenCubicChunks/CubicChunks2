@@ -136,8 +136,8 @@
 
         <module name="AvoidStarImport">
             <property name="excludes" value="io.github.opencubicchunks.cubicchunks.utils.Coords,
-            io.github.opencubicchunks.cubicchunks.utils.Utils,
-            io.github.opencubicchunks.cubicchunks.utils.Utils,
+            io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils,
+            io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils,
             io.github.opencubicchunks.cubicchunks.utils.Bits,
             io.github.opencubicchunks.cubicchunks.utils.AddressTools,
             io.github.opencubicchunks.cubicchunks.utils.MathUtil,

@@ -1,6 +1,7 @@
 @file:Suppress("INACCESSIBLE_TYPE", "UnstableApiUsage")
 
 import io.github.opencubicchunks.gradle.GeneratePackageInfo
+import io.github.opencubicchunks.gradle.TypeTransformConfigGen
 import org.gradle.internal.os.OperatingSystem
 import java.util.*
 
@@ -332,10 +333,23 @@ test.apply {
 
 val processResources: ProcessResources by tasks
 processResources.apply {
+    outputs.upToDateWhen {
+        false
+    }
+
     inputs.property("version", project.version)
 
     filesMatching("fabric.mod.json") {
         expand("version" to project.version)
+    }
+
+    doLast {
+        fileTree(outputs.files.asPath).matching{
+            include("**/type-transform.json")
+        }.forEach {
+            val content = it.readText()
+            it.writeText(TypeTransformConfigGen.apply(project, content))
+        }
     }
 }
 

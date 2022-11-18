@@ -37,7 +37,7 @@ public class Config {
         this.classes = classes;
         this.invokers = invokers;
 
-        TransformSubtype.init(this);
+        TransformSubtype.init(this); //TODO: Don't do this - this is a terrible idea
     }
 
     public void print(PrintStream out) {

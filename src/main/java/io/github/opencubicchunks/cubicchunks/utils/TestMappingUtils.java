@@ -7,9 +7,9 @@ import java.util.function.Supplier;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
-import net.fabricmc.loader.launch.common.MappingConfiguration;
+import net.fabricmc.loader.impl.launch.MappingConfiguration;
 
-public class Utils {
+public class TestMappingUtils {
     private static MappingResolver mappingResolver;
 
     /**
@@ -40,12 +40,16 @@ public class Utils {
     }
 
     public static Path getGameDir() {
-        Path dir = FabricLoader.getInstance().getGameDir();
+        Path dir = null;
+        Path def = Path.of("run").toAbsolutePath();
+        try {
+            dir = FabricLoader.getInstance().getGameDir();
+        } catch (IllegalStateException e) {
+            System.err.println("Fabric not initialized, using assumed game dir: " + def);
+        }
 
         if (dir == null) {
-            Path assumed = Path.of("run").toAbsolutePath();
-            System.err.println("Fabric is not running properly. Returning assumed game directory: " + assumed);
-            dir = assumed;
+            dir = def;
         }
 
         return dir;
@@ -58,10 +62,11 @@ public class Utils {
             System.err.println("Fabric is not running properly. Creating a mapping resolver.");
             //FabricMappingResolver's constructor is package-private so we call it with reflection
             try {
-                Class<?> mappingResolverClass = Class.forName("net.fabricmc.loader.FabricMappingResolver");
+                MappingConfiguration config = new MappingConfiguration();
+                Class<?> mappingResolverClass = Class.forName("net.fabricmc.loader.impl.MappingResolverImpl");
                 Constructor<?> constructor = mappingResolverClass.getDeclaredConstructor(Supplier.class, String.class);
                 constructor.setAccessible(true);
-                return (MappingResolver) constructor.newInstance((Supplier) new MappingConfiguration()::getMappings, "named");
+                return (MappingResolver) constructor.newInstance((Supplier) config::getMappings, "named");
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e1) {
                 throw new RuntimeException(e1);
             }
