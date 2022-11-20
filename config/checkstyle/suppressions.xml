@@ -38,7 +38,8 @@
     <suppress checks="HiddenField" files="Int3HashSet.java|LinkedInt3HashSet.java|Int3UByteLinkedHashMap.java|Int3List.java"/>
     <suppress checks="NoFinalizer" files="Int3HashSet.java|LinkedInt3HashSet.java|Int3UByteLinkedHashMap.java|Int3List.java"/>
     <suppress checks="EmptyForIteratorPad" files="Int3HashSet.java|Int3HashSetTest.java"/>
-    <suppress checks="ModifiedControlVariable" files="Int3HashSetTest.java"/>
+    <suppress checks="ModifiedControlVariable" files="Int3HashSetTest.java|Int3UByteLinkedHashMapTest.java"/>
+    <suppress checks="EmptyBlock" files="Int3UByteLinkedHashMapTest.java"/>
     <suppress checks="StaticVariableName" files="CubeTaskPriorityQueue.java"/>
     <!-- TODO These need refactoring -->
     <suppress checks="CyclomaticComplexity" files="Int3UByteLinkedHashMap.java"/>

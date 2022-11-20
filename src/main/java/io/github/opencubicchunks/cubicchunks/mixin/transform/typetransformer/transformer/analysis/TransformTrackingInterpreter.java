@@ -11,7 +11,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.HierarchyTree;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodParameterInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
@@ -49,7 +48,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     private Map<MethodID, AnalysisResults> resultLookup = new HashMap<>();
     private Map<MethodID, List<FutureMethodBinding>> futureMethodBindings;
     private ClassNode currentClass;
-    private AncestorHashMap<FieldID, TransformTrackingValue> fieldBindings = new AncestorHashMap<>(new HierarchyTree());
+    private AncestorHashMap<FieldID, TransformTrackingValue> fieldBindings;
 
     /**
      * Constructs a new {@link Interpreter}.
@@ -59,6 +58,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     public TransformTrackingInterpreter(int api, Config config) {
         super(api);
         this.config = config;
+        this.fieldBindings = new AncestorHashMap<>(config.getTypeInfo());
     }
 
     public void reset() {

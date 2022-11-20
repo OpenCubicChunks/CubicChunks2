@@ -33,8 +33,7 @@ public class ConfigLoader {
 
         MappingResolver map = getMapper();
 
-        HierarchyTree hierarchy = new HierarchyTree();
-        loadHierarchy(hierarchy, root.get("hierarchy").getAsJsonObject(), map, null);
+        TypeInfo hierarchy = loadHierarchy(root.getAsJsonArray("type_info"), map);
 
         Map<String, MethodID> methodIDMap = loadMethodDefinitions(root.get("method_definitions"), map);
         Map<String, TransformType> transformTypeMap = loadTransformTypes(root.get("types"), map, methodIDMap);
@@ -107,7 +106,7 @@ public class ConfigLoader {
     }
 
     private static Map<Type, ClassTransformInfo> loadClassInfo(JsonElement classes, MappingResolver map, Map<String, MethodID> methodIDMap, Map<String, TransformType> transformTypeMap,
-                                                               HierarchyTree hierarchy) {
+                                                               TypeInfo hierarchy) {
         JsonArray arr = classes.getAsJsonArray();
         Map<Type, ClassTransformInfo> classInfo = new HashMap<>();
         for (JsonElement element : arr) {
@@ -159,30 +158,12 @@ public class ConfigLoader {
         return classInfo;
     }
 
-    private static void loadHierarchy(HierarchyTree hierarchy, JsonObject descendants, MappingResolver map, Type parent) {
-        for (Map.Entry<String, JsonElement> entry : descendants.entrySet()) {
-            if (entry.getKey().equals("extra_interfaces")) {
-                JsonArray arr = entry.getValue().getAsJsonArray();
-                for (JsonElement element : arr) {
-                    Type type = remapType(Type.getObjectType(element.getAsString()), map);
-                    hierarchy.addInterface(type);
-                }
-            } else if (entry.getKey().equals("__interfaces")) {
-                JsonArray arr = entry.getValue().getAsJsonArray();
-                for (JsonElement element : arr) {
-                    Type type = remapType(Type.getObjectType(element.getAsString()), map);
-                    hierarchy.addInterface(type, parent);
-                }
-            } else {
-                Type type = remapType(Type.getObjectType(entry.getKey()), map);
-                hierarchy.addNode(type, parent);
-                loadHierarchy(hierarchy, entry.getValue().getAsJsonObject(), map, type);
-            }
-        }
+    private static TypeInfo loadHierarchy(JsonArray data, MappingResolver map) {
+        return new TypeInfo(data, t -> remapType(t, map));
     }
 
     private static AncestorHashMap<MethodID, List<MethodParameterInfo>> loadMethodParameterInfo(JsonElement methods, MappingResolver map, Map<String, MethodID> methodIDMap,
-                                                                                                Map<String, TransformType> transformTypes, HierarchyTree hierarchy) {
+                                                                                                Map<String, TransformType> transformTypes, TypeInfo hierarchy) {
         final AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo = new AncestorHashMap<>(hierarchy);
 
         if (methods == null) return parameterInfo;

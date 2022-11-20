@@ -7,10 +7,10 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.byt
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.VariableAllocator;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.HierarchyTree;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodParameterInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodReplacement;
-import org.junit.Test;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TypeInfo;
+import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;
@@ -27,23 +27,23 @@ public class ConfigTest {
 
     @Test
     public void verifyHierarchy() throws ClassNotFoundException {
-        HierarchyTree tree = CONFIG.getHierarchy();
+        TypeInfo tree = CONFIG.getTypeInfo();
 
         //Verify known interfaces
         for (Type itf : tree.getKnownInterfaces()) {
-            Class<?> clazz = Class.forName(itf.getClassName());
+            Class<?> clazz = loadClass(itf.getClassName());
             if (!clazz.isInterface()) {
                 throw new AssertionError("Class " + clazz.getName() + " is not an interface");
             }
         }
 
         //Verify super info
-        for (HierarchyTree.Node node : tree.nodes()) {
-            Class<?> clazz = Class.forName(node.getValue().getClassName());
+        for (TypeInfo.Node node : tree.nodes()) {
+            Class<?> clazz = loadClass(node.getValue().getClassName());
 
             //Check interfaces
             for (Type itf : node.getInterfaces()) {
-                Class<?> itfClazz = Class.forName(itf.getClassName());
+                Class<?> itfClazz = loadClass(itf.getClassName());
 
                 if (!itfClazz.isAssignableFrom(clazz)) {
                     throw new AssertionError("Class " + clazz.getName() + " does not implement " + itfClazz.getName());
@@ -59,14 +59,14 @@ public class ConfigTest {
                 continue;
             }
 
-            if (node.getParent() != null) {
+            if (node.getSuperclass() != null) {
                 if (clazz.getSuperclass() == null) {
                     throw new AssertionError("Class " + clazz.getName() + " does not have a superclass");
                 }
 
-                if (!clazz.getSuperclass().getName().equals(node.getParent().getValue().getClassName())) {
+                if (!clazz.getSuperclass().getName().equals(node.getSuperclass().getValue().getClassName())) {
                     throw new AssertionError(
-                        "Class " + clazz.getName() + " has a superclass " + clazz.getSuperclass().getName() + " but config gives " + node.getParent().getValue().getClassName());
+                        "Class " + clazz.getName() + " has a superclass " + clazz.getSuperclass().getName() + " but config gives " + node.getSuperclass().getValue().getClassName());
                 }
             } else if (clazz.getSuperclass() != null) {
                 throw new AssertionError("Class " + clazz.getName() + " has a superclass");
@@ -161,6 +161,18 @@ public class ConfigTest {
             analyzer.analyze("no/such/Class", method);
         } catch (AnalyzerException e) {
             throw new AssertionError("Failed to verify bytecode factory", e);
+        }
+    }
+
+    /**
+     * Loads class without initializing it
+     * @param name The full binary name of the class to load (separated by dots)
+     */
+    private static Class<?> loadClass(String name) {
+        try {
+            return Class.forName(name, false, ClassLoader.getSystemClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new AssertionError("Class " + name + " not found", e);
         }
     }
 }

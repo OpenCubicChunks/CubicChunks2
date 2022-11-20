@@ -17,7 +17,7 @@ import net.minecraft.world.level.lighting.LayerLightEngine;
 import net.minecraft.world.level.lighting.LayerLightSectionStorage;
 import net.minecraft.world.level.lighting.SkyLightEngine;
 import net.minecraft.world.level.lighting.SkyLightSectionStorage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 

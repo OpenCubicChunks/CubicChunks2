@@ -151,7 +151,7 @@ public class TypeTransformConfigGen {
             typeInfo.add(typeInfoEntry);
         }
 
-        meta.add("type_info", typeInfo);
+        root.add("type_info", typeInfo);
     }
 
     private Set<Type> getAllUsedTypes(ClassNode node) {
@@ -366,7 +366,7 @@ public class TypeTransformConfigGen {
             int dimensions = type.getDimensions();
             return Type.getType("[".repeat(dimensions) + mapType(type.getElementType()).getDescriptor());
         } else if (type.getSort() == Type.OBJECT) {
-            return Type.getObjectType(mapClassName(type.getClassName()));
+            return Type.getObjectType(mapClassName(type.getInternalName()));
         } else {
             return type;
         }

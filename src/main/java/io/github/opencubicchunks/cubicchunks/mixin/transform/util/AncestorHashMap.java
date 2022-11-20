@@ -5,16 +5,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.HierarchyTree;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TypeInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 
 public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, T> {
     private final Map<U, T> map = new HashMap<>();
-    private final HierarchyTree hierarchy;
+    private final TypeInfo hierarchy;
 
-    public AncestorHashMap(HierarchyTree hierarchy) {
+    public AncestorHashMap(TypeInfo hierarchy) {
         this.hierarchy = hierarchy;
     }
 
@@ -116,7 +116,7 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
         return map.entrySet();
     }
 
-    public HierarchyTree getHierarchy() {
+    public TypeInfo getHierarchy() {
         return hierarchy;
     }
 }

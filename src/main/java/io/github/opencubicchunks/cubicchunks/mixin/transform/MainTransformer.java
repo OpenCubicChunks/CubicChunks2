@@ -1,11 +1,8 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform;
 
-import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.ARRAY;
 import static org.objectweb.asm.Type.OBJECT;
 import static org.objectweb.asm.Type.getObjectType;
-import static org.objectweb.asm.Type.getType;
-import static org.objectweb.asm.commons.Method.getMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,10 +19,6 @@ import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.VarInsnNode;
 
 public class MainTransformer {
     public static final Config TRANSFORM_CONFIG;
@@ -37,7 +30,6 @@ public class MainTransformer {
 
         transformer.analyzeAllMethods();
 
-        //transformer.makeConstructor("(III)V", makeDynGraphConstructor());
         transformer.makeConstructor("(III)V");
 
         transformer.transformAllMethods();
@@ -79,51 +71,6 @@ public class MainTransformer {
 
     public static void transformLayerLightSectionStorage(ClassNode targetClass) {
         defaultTransform(targetClass);
-    }
-
-    /**
-     * Create a static accessor method for a given method we created on a class.
-     * <p>
-     * e.g. if we had created a method {@code public boolean bar(int, int)} on a class {@code Foo}, this method would create a method {@code public static boolean bar(Foo, int, int)}.
-     *
-     * @param node class of the method
-     * @param newMethod method to create a static accessor for
-     */
-    private static void makeStaticSyntheticAccessor(ClassNode node, MethodNode newMethod) {
-        Type[] params = Type.getArgumentTypes(newMethod.desc);
-        Type[] newParams = new Type[params.length + 1];
-        System.arraycopy(params, 0, newParams, 1, params.length);
-        newParams[0] = getObjectType(node.name);
-
-        Type returnType = Type.getReturnType(newMethod.desc);
-        MethodNode newNode = new MethodNode(newMethod.access | ACC_STATIC | ACC_SYNTHETIC, newMethod.name,
-            Type.getMethodDescriptor(returnType, newParams), null, null);
-
-        int j = 0;
-        for (Type param : newParams) {
-            newNode.instructions.add(new VarInsnNode(param.getOpcode(ILOAD), j));
-            j += param.getSize();
-        }
-        newNode.instructions.add(new MethodInsnNode(INVOKEVIRTUAL, node.name, newMethod.name, newMethod.desc, false));
-        newNode.instructions.add(new InsnNode(returnType.getOpcode(IRETURN)));
-        node.methods.add(newNode);
-    }
-
-    private static MethodNode findExistingMethod(ClassNode node, String name, String desc) {
-        return node.methods.stream().filter(m -> m.name.equals(name) && m.desc.equals(desc)).findAny().orElse(null);
-    }
-
-    private static ClassField remapField(ClassField clField) {
-        MappingResolver mappingResolver = TestMappingUtils.getMappingResolver();
-
-        Type mappedType = remapType(clField.owner);
-        String mappedName = mappingResolver.mapFieldName("intermediary",
-            clField.owner.getClassName(), clField.name, clField.desc.getDescriptor());
-        Type mappedDesc = remapDescType(clField.desc);
-        if (clField.name.contains("field") && IS_DEV && mappedName.equals(clField.name)) {
-            throw new Error("Fail! Mapping field " + clField.name + " failed in dev!");
-        }
-        return new ClassField(mappedType, mappedName, mappedDesc);
     }
 
     @NotNull private static ClassMethod remapMethod(ClassMethod clMethod) {
@@ -225,47 +172,6 @@ public class MainTransformer {
                 "owner=" + owner +
                 ", method=" + method +
                 ", mappingOwner=" + mappingOwner +
-                '}';
-        }
-    }
-
-    public static final class ClassField {
-        public final Type owner;
-        public final String name;
-        public final Type desc;
-
-        ClassField(String owner, String name, String desc) {
-            this.owner = getObjectType(owner);
-            this.name = name;
-            this.desc = getType(desc);
-        }
-
-        ClassField(Type owner, String name, Type desc) {
-            this.owner = owner;
-            this.name = name;
-            this.desc = desc;
-        }
-
-        @Override public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            ClassField that = (ClassField) o;
-            return owner.equals(that.owner) && name.equals(that.name) && desc.equals(that.desc);
-        }
-
-        @Override public int hashCode() {
-            return Objects.hash(owner, name, desc);
-        }
-
-        @Override public String toString() {
-            return "ClassField{" +
-                "owner=" + owner +
-                ", name='" + name + '\'' +
-                ", desc=" + desc +
                 '}';
         }
     }

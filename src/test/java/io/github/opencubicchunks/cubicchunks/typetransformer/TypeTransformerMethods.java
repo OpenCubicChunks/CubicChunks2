@@ -23,7 +23,7 @@ import io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import net.fabricmc.loader.api.MappingResolver;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;

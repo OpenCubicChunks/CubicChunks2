@@ -127,7 +127,7 @@
       ]
     },
     {
-      "method": "s net/minecraft/core/BlockPos#offset (JLnet.minecraft.class_2350;)J",
+      "method": "s net/minecraft/core/BlockPos#offset (JLnet/minecraft/core/Direction;)J",
       "possibilities": [
         {
           "parameters": [
@@ -236,7 +236,7 @@
       ]
     },
     {
-      "method": "i it/unimi/dsi/fastutil/longs/Long2ByteMap#keySet ()Lit.unimi.dsi.fastutil.longs.LongSet;",
+      "method": "i it/unimi/dsi/fastutil/longs/Long2ByteMap#keySet ()Lit/unimi/dsi/fastutil/longs/LongSet;",
       "possibilities": [
         {
           "parameters": [
@@ -247,7 +247,7 @@
             [
               {
                 "type": "INVOKEVIRTUAL",
-                "method": "v io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap#keySet ()Lio.github.opencubicchunks.cubicchunks.utils.LinkedInt3HashSet;"
+                "method": "v io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap#keySet ()Lio/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet;"
               }
             ]
           ],
@@ -262,7 +262,7 @@
       ]
     },
     {
-      "method": "i it/unimi/dsi/fastutil/longs/LongSet#forEach (Ljava.util.function.LongConsumer;)V",
+      "method": "i it/unimi/dsi/fastutil/longs/LongSet#forEach (Ljava/util/function/LongConsumer;)V",
       "possibilities": [
         {
           "parameters": [
@@ -287,7 +287,7 @@
       ]
     },
     {
-      "method": "i it/unimi/dsi/fastutil/longs/LongSet#forEach (Lit.unimi.dsi.fastutil.longs.LongConsumer;)V",
+      "method": "i it/unimi/dsi/fastutil/longs/LongSet#forEach (Lit/unimi/dsi/fastutil/longs/LongConsumer;)V",
       "possibilities": [
         {
           "parameters": [
@@ -312,7 +312,7 @@
       ]
     },
     {
-      "method": "i it/unimi/dsi/fastutil/longs/LongLost#forEach (Ljava.util.function.LongConsumer;)V",
+      "method": "i it/unimi/dsi/fastutil/longs/LongLost#forEach (Ljava/util/function/LongConsumer;)V",
       "possibilities": [
         {
           "parameters": [
@@ -337,7 +337,7 @@
       ]
     },
     {
-      "method": "i it/unimi/dsi/fastutil/longs/LongLost#forEach (Lit.unimi.dsi.fastutil.longs.LongConsumer;)V",
+      "method": "i it/unimi/dsi/fastutil/longs/LongLost#forEach (Lit/unimi/dsi/fastutil/longs/LongConsumer;)V",
       "possibilities": [
         {
           "parameters": [
@@ -541,7 +541,7 @@
       ]
     },
     {
-      "method": "v net/minecraft/core/BlockPos$MutableBlockPos#set (J)Lnet.minecraft.class_2338$class_2339;",
+      "method": "v net/minecraft/core/BlockPos$MutableBlockPos#set (J)Lnet/minecraft/core/BlockPos$MutableBlockPos;",
       "possibilities": [
         {
           "parameters": [
@@ -624,7 +624,7 @@
       ]
     },
     {
-      "method": "s net/minecraft/core/BlockPos#of (J)Lnet.minecraft.class_2338;",
+      "method": "s net/minecraft/core/BlockPos#of (J)Lnet/minecraft/core/BlockPos;",
       "mappedName": "BlockPos.of",
       "possibilities": [
         {
@@ -776,7 +776,7 @@
         },
         {
           "mapped": "getDebugData",
-          "method": "v net/minecraft/world/level/lighting/LayerLightEngine#getDebugData (J)Ljava.lang.String;",
+          "method": "v net/minecraft/world/level/lighting/LayerLightEngine#getDebugData (J)Ljava/lang/String;",
           "types": [
             null,
             "blockpos"
@@ -839,71 +839,6 @@
       "net/minecraft/world/level/lighting/SkyLightEngine",
       "net/minecraft/world/level/lighting/BlockLightSectionStorage",
       "net/minecraft/world/level/lighting/SkyLightSectionStorage"
-    ]
-  },
-  "hierarchy": {
-    "java/lang/Object": {
-      "net/minecraft/core/Vec3i": {
-        "net/minecraft/core/BlockPos": {}
-      },
-      "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint": {
-        "net/minecraft/world/level/lighting/LayerLightEngine": {
-          "net/minecraft/world/level/lighting/BlockLightEngine": {},
-          "net/minecraft/world/level/lighting/SkyLightEngine": {}
-        },
-        "net/minecraft/server/level/ChunkTracker": {
-          "net/minecraft/server/level/DistanceManager$FixedPlayerDistanceChunkTracker": {
-            "net/minecraft/server/level/DistanceManager$PlayerTicketTracker": {}
-          },
-          "net/minecraft/server/level/DistanceManager$ChunkTicketTracker": {}
-        },
-        "net/minecraft/server/level/SectionTracker": {
-          "net/minecraft/world/level/lighting/LayerLightSectionStorage": {
-            "net/minecraft/world/level/lighting/BlockLightSectionStorage": {},
-            "net/minecraft/world/level/lighting/SkyLightSectionStorage": {}
-          },
-          "net/minecraft/world/entity/ai/village/poi/PoiManager$DistanceTracker": {}
-        }
-      },
-      "java/util/AbstractCollection": {
-        "it/unimi/dsi/fastutil/longs/AbstractLongCollection": {
-          "it/unimi/dsi/fastutil/longs/AbstractLongSet": {
-            "it/unimi/dsi/fastutil/longs/AbstractLongSortedSet": {
-              "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet": {},
-              "__interfaces": [
-                "it/unimi/dsi/fastutil/longs/LongSortedSet"
-              ]
-            },
-            "__interfaces": [
-              "it/unimi/dsi/fastutil/longs/LongSet",
-              "java/lang/Cloneable"
-            ]
-          },
-          "it/unimi/dsi/fastutil/longs/AbstractLongList": {
-            "it/unimi/dsi/fastutil/longs/LongArrayList": {},
-            "__interfaces": [
-              "it/unimi/dsi/fastutil/longs/LongList",
-              "it/unimi/dsi/fastutil/longs/LongStack"
-            ]
-          },
-          "__interfaces": [
-            "it/unimi/dsi/fastutil/longs/LongCollection"
-          ]
-        },
-        "__interfaces": [
-          "java/util/Collection"
-        ]
-      },
-      "it/unimi/dsi/fastutil/longs/Long2ByteMap": {
-        "__interfaces": [
-          "it/unimi/dsi/fastutil/longs/Long2ByteFunction",
-          "java/util/Map"
-        ]
-      }
-    },
-    "extra_interfaces": [
-      "it/unimi/dsi/fastutil/longs/LongIterator",
-      "it/unimi/dsi/fastutil/objects/ObjectIterator"
     ]
   }
 }

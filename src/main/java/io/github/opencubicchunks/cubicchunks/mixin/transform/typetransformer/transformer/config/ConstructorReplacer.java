@@ -58,7 +58,7 @@ public record ConstructorReplacer(String originalDesc, Map<String, String> repla
                 int opcode = methodInsnNode.getOpcode();
                 boolean itf = opcode == Opcodes.INVOKEINTERFACE;
                 if (itf || opcode == Opcodes.INVOKEVIRTUAL) {
-                    itf = transformer.getConfig().getHierarchy().recognisesInterface(owner);
+                    itf = transformer.getConfig().getTypeInfo().recognisesInterface(owner);
 
                     opcode = itf ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL;
                 }

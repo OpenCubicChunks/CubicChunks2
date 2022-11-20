@@ -28,11 +28,11 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tra
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ClassTransformInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConstructorReplacer;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.HierarchyTree;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.InvokerInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodParameterInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodReplacement;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TypeInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
@@ -124,7 +124,7 @@ public class TypeTransformer {
     public TypeTransformer(Config config, ClassNode classNode, boolean addSafety) {
         this.config = config;
         this.classNode = classNode;
-        this.fieldPseudoValues = new AncestorHashMap<>(config.getHierarchy());
+        this.fieldPseudoValues = new AncestorHashMap<>(config.getTypeInfo());
         this.addSafety = addSafety;
 
         //Create field pseudo values
@@ -1376,7 +1376,7 @@ public class TypeTransformer {
                 "Expected 1 subType but got " + types.size() + ". Define a custom replacement for this method (" + methodCall.owner + "#" + methodCall.name + methodCall.desc + ")");
         }
 
-        HierarchyTree hierarchy = config.getHierarchy();
+        TypeInfo hierarchy = config.getTypeInfo();
 
         Type potentionalOwner = types.get(0);
         if (methodCall.getOpcode() != Opcodes.INVOKESPECIAL) {
@@ -1386,7 +1386,7 @@ public class TypeTransformer {
         }
     }
 
-    private void findOwnerNormal(MethodInsnNode methodCall, HierarchyTree hierarchy, Type potentionalOwner) {
+    private void findOwnerNormal(MethodInsnNode methodCall, TypeInfo hierarchy, Type potentionalOwner) {
         int opcode = methodCall.getOpcode();
 
         if (opcode == Opcodes.INVOKEVIRTUAL || opcode == Opcodes.INVOKEINTERFACE) {
@@ -1402,21 +1402,21 @@ public class TypeTransformer {
         methodCall.setOpcode(opcode);
     }
 
-    private void findOwnerInvokeSpecial(MethodInsnNode methodCall, TransformTrackingValue[] args, HierarchyTree hierarchy, Type potentionalOwner) {
+    private void findOwnerInvokeSpecial(MethodInsnNode methodCall, TransformTrackingValue[] args, TypeInfo hierarchy, Type potentionalOwner) {
         String currentOwner = methodCall.owner;
-        HierarchyTree.Node current = hierarchy.getNode(Type.getObjectType(currentOwner));
-        HierarchyTree.Node potential = hierarchy.getNode(potentionalOwner);
-        HierarchyTree.Node given = hierarchy.getNode(args[0].getType());
+        TypeInfo.Node current = hierarchy.getNode(Type.getObjectType(currentOwner));
+        TypeInfo.Node potential = hierarchy.getNode(potentionalOwner);
+        TypeInfo.Node given = hierarchy.getNode(args[0].getType());
 
         if (given == null || current == null) {
             System.err.println("Don't have hierarchy for " + args[0].getType() + " or " + methodCall.owner);
             methodCall.owner = potentionalOwner.getInternalName();
         } else if (given.isDirectDescendantOf(current)) {
-            if (potential == null || potential.getParent() == null) {
+            if (potential == null || potential.getSuperclass() == null) {
                 throw new IllegalStateException("Cannot change owner of super call if hierarchy for " + potentionalOwner + " is not defined");
             }
 
-            Type newOwner = potential.getParent().getValue();
+            Type newOwner = potential.getSuperclass().getValue();
             methodCall.owner = newOwner.getInternalName();
         } else {
             methodCall.owner = potentionalOwner.getInternalName();
@@ -2086,9 +2086,8 @@ public class TypeTransformer {
 
         //Stack traces don't specify the descriptor so we set the line numbers to a known value to detect whether we were in a CC synthetic emthod
 
-        final int MIN = 60000;
-
-        int lineStart = MIN;
+        final int min = 60000;
+        int lineStart = min;
         Int2ObjectMap<String> descLookup = CC_SYNTHETIC_LOOKUP.computeIfAbsent(ownerName, k -> new Int2ObjectOpenHashMap<>());
         while (descLookup.containsKey(lineStart)) {
             lineStart += 10;

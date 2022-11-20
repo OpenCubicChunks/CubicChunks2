@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config;
 
-import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +18,7 @@ import org.objectweb.asm.tree.analysis.Interpreter;
 import org.objectweb.asm.tree.analysis.Value;
 
 public class Config {
-    private final HierarchyTree hierarchy;
+    private final TypeInfo typeInfo;
     private final Map<String, TransformType> types;
     private final AncestorHashMap<MethodID, List<MethodParameterInfo>> methodParameterInfo;
     private final Map<Type, ClassTransformInfo> classes;
@@ -28,37 +27,20 @@ public class Config {
     private TransformTrackingInterpreter interpreter;
     private Analyzer<TransformTrackingValue> analyzer;
 
-    public Config(HierarchyTree hierarchy, Map<String, TransformType> transformTypeMap, AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo,
+    public Config(TypeInfo typeInfo, Map<String, TransformType> transformTypeMap, AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo,
                   Map<Type, ClassTransformInfo> classes,
                   Map<Type, InvokerInfo> invokers) {
         this.types = transformTypeMap;
         this.methodParameterInfo = parameterInfo;
-        this.hierarchy = hierarchy;
+        this.typeInfo = typeInfo;
         this.classes = classes;
         this.invokers = invokers;
 
         TransformSubtype.init(this); //TODO: Don't do this - this is a terrible idea
     }
 
-    public void print(PrintStream out) {
-        System.out.println("Hierarchy:");
-        hierarchy.print(out);
-
-        for (Map.Entry<String, TransformType> entry : types.entrySet()) {
-            out.println(entry.getValue());
-        }
-
-        System.out.println("\nMethod Parameter Info:");
-
-        for (Map.Entry<MethodID, List<MethodParameterInfo>> entry : methodParameterInfo.entrySet()) {
-            for (MethodParameterInfo info : entry.getValue()) {
-                out.println(info);
-            }
-        }
-    }
-
-    public HierarchyTree getHierarchy() {
-        return hierarchy;
+    public TypeInfo getTypeInfo() {
+        return typeInfo;
     }
 
     public Map<String, TransformType> getTypes() {

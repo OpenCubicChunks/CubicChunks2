@@ -20,13 +20,13 @@ import javax.annotation.Nullable;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils;
 import io.github.opencubicchunks.dasm.MappingsProvider;
 import io.github.opencubicchunks.dasm.RedirectsParseException;
 import io.github.opencubicchunks.dasm.RedirectsParser;
 import io.github.opencubicchunks.dasm.Transformer;
 import net.fabricmc.loader.api.FabricLoader;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;

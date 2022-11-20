@@ -11,8 +11,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.HierarchyTree;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TypeInfo;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
@@ -161,7 +161,7 @@ public class TransformSubtype {
      * @param type A type
      * @return The potential subtype of the type. If unknown, returns NONE
      */
-    public static SubType getSubType(Type type, HierarchyTree hierarchy) {
+    public static SubType getSubType(Type type, TypeInfo hierarchy) {
         while (type != null) {
             if (type.getSort() == Type.OBJECT) {
                 for (var t: hierarchy.ancestry(type)) {

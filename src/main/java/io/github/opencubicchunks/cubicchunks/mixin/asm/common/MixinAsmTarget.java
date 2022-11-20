@@ -1,8 +1,8 @@
 package io.github.opencubicchunks.cubicchunks.mixin.asm.common;
 
-import net.minecraft.core.SectionPos;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueue;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ChunkTaskPriorityQueue;
