@@ -30,7 +30,9 @@ import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Value;
 
@@ -150,7 +152,7 @@ public class ASMUtil {
     public static boolean isConstant(AbstractInsnNode insn) {
         if (insn instanceof LdcInsnNode) {
             return true;
-        } else if (insn instanceof IntInsnNode) {
+        } else if (insn instanceof IntInsnNode && insn.getOpcode() != NEWARRAY) {
             return true;
         }
 
@@ -682,6 +684,24 @@ public class ASMUtil {
         }
 
         return Type.getMethodDescriptor(Type.getType(method.getReturnType()), types);
+    }
+
+    public static AbstractInsnNode makeNew(Type type, int dimsAmount) {
+        int totalDims = type.getDimensions();
+
+        if (totalDims == 0) {
+            return new TypeInsnNode(NEW, type.getInternalName());
+        } else {
+            return new MultiANewArrayInsnNode(type.getDescriptor(), dimsAmount);
+        }
+    }
+
+    public static Type getArrayElement(Type type) {
+        if (type.getSort() != Type.ARRAY) {
+            throw new IllegalArgumentException("Type is not an array: " + type);
+        }
+
+        return Type.getType(type.getDescriptor().substring(1));
     }
 
     public static record MethodCondition(String name, @Nullable String desc) implements Predicate<MethodNode> {

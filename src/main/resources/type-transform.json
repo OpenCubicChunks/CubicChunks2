@@ -42,6 +42,14 @@
             2147483647,
             2147483647
           ]
+        },
+        {
+          "from": 0,
+          "to": [
+            0,
+            0,
+            0
+          ]
         }
       ],
       "original_predicate": "java/util/function/LongPredicate",
@@ -799,7 +807,7 @@
       ]
     },
     {
-      "class": "net/minecraft/world/level/Aquifer$NoiseBasedAquifer",
+      "class": "net/minecraft/world/level/levelgen/Aquifer$NoiseBasedAquifer",
       "in_place": true
     }
   ],
@@ -844,7 +852,7 @@
       "net/minecraft/world/level/lighting/SkyLightEngine",
       "net/minecraft/world/level/lighting/BlockLightSectionStorage",
       "net/minecraft/world/level/lighting/SkyLightSectionStorage",
-      "net/minecraft/world/level/Aquifer$NoiseBasedAquifer"
+      "net/minecraft/world/level/levelgen/Aquifer$NoiseBasedAquifer"
     ]
   },
 
@@ -854,6 +862,7 @@
     "net/minecraft/world/level/lighting/LayerLightSectionStorage",
     "net/minecraft/world/level/lighting/BlockLightEngine",
     "net/minecraft/world/level/lighting/SkyLightEngine",
-    "net/minecraft/world/level/lighting/BlockLightSectionStorage"
+    "net/minecraft/world/level/lighting/BlockLightSectionStorage",
+    "net/minecraft/world/level/lighting/SkyLightSectionStorage"
   ]
 }

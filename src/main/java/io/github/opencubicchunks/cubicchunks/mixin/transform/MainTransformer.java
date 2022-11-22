@@ -44,6 +44,10 @@ public class MainTransformer {
         transformer.callMagicSuperConstructor();
     }
 
+    public static void transformNoiseBasedAquifer(ClassNode target) {
+        defaultTransform(target);
+    }
+
     public static void transformSectionPos(ClassNode targetClass) {
         TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
 

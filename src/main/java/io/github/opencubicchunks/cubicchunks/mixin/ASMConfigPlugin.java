@@ -211,6 +211,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         String sectionPos = map.mapClassName("intermediary", "net.minecraft.class_4076");
         String blockLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3552");
         String skyLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3572");
+        String noiseBasedAquifer = map.mapClassName("intermediary", "net.minecraft.class_6350$class_5832");
 
         Set<String> defaulted = Set.of(
             blockLightSectionStorage,
@@ -227,6 +228,8 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             MainTransformer.transformLayerLightSectionStorage(targetClass);
         } else if (targetClassName.equals(sectionPos)) {
             MainTransformer.transformSectionPos(targetClass);
+        } else if (targetClassName.equals(noiseBasedAquifer)){
+            MainTransformer.transformNoiseBasedAquifer(targetClass);
         } else if (defaulted.contains(targetClassName)) {
             MainTransformer.defaultTransform(targetClass);
         } else {
@@ -238,7 +241,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         try {
             Files.createDirectories(savePath.getParent());
 
-            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+            ClassWriter writer = new ClassWriter(0);
             targetClass.accept(writer);
             byte[] bytes = writer.toByteArray();
             Files.write(savePath, bytes);

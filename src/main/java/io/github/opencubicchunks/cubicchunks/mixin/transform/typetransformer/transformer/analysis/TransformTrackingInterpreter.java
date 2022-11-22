@@ -143,6 +143,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     public @Nullable TransformTrackingValue unaryOperation(AbstractInsnNode insn, TransformTrackingValue value) throws AnalyzerException {
         consumeBy(value, insn);
 
+        FieldInsnNode fieldInsnNode;
         switch (insn.getOpcode()) {
             case INEG:
             case IINC:
@@ -183,11 +184,22 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             case FRETURN:
             case DRETURN:
             case ARETURN:
+                return null;
             case PUTSTATIC:
+                fieldInsnNode = (FieldInsnNode) insn;
+
+                if (fieldInsnNode.owner.equals(currentClass.name)) {
+                    FieldID fieldAndDesc = new FieldID(Type.getObjectType(fieldInsnNode.owner), fieldInsnNode.name, Type.getType(fieldInsnNode.desc));
+                    TransformTrackingValue field = fieldBindings.get(fieldAndDesc);
+
+                    if (field != null) {
+                        TransformTrackingValue.setSameType(field, value);
+                    }
+                }
                 return null;
             case GETFIELD: {
                 //Add field source and set the value to have the same transform as the field
-                FieldInsnNode fieldInsnNode = (FieldInsnNode) insn;
+                fieldInsnNode = (FieldInsnNode) insn;
                 TransformTrackingValue fieldValue = new TransformTrackingValue(Type.getType(((FieldInsnNode) insn).desc), insn, fieldBindings, config);
                 FieldSource fieldSource = new FieldSource(fieldInsnNode.owner, fieldInsnNode.name, fieldInsnNode.desc, 0);
                 fieldValue.addFieldSource(fieldSource);
@@ -308,7 +320,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
                 }
                 return value;
             case AALOAD:
-                value = new TransformTrackingValue(value1.getType().getElementType(), insn, fieldBindings, config);
+                value = new TransformTrackingValue(ASMUtil.getArrayElement(value1.getType()), insn, fieldBindings, config);
                 deepenFieldSource(value1, value);
                 return value;
             case LCMP:
@@ -326,7 +338,18 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             case IF_ICMPLE:
             case IF_ACMPEQ:
             case IF_ACMPNE:
+                return null;
             case PUTFIELD:
+                FieldInsnNode fieldInsnNode = (FieldInsnNode) insn;
+
+                if (fieldInsnNode.owner.equals(currentClass.name)) {
+                    FieldID fieldAndDesc = new FieldID(Type.getObjectType(fieldInsnNode.owner), fieldInsnNode.name, Type.getType(fieldInsnNode.desc));
+                    TransformTrackingValue field = fieldBindings.get(fieldAndDesc);
+
+                    if (field != null) {
+                        TransformTrackingValue.setSameType(field, value2);
+                    }
+                }
                 return null;
             default:
                 throw new AssertionError();
@@ -399,6 +422,13 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             }
 
             return returnValue;
+        }
+
+        if (methodCall.owner.equals("java/util/Arrays") && methodCall.name.equals("fill")) {
+            TransformTrackingValue array = values.get(0);
+            TransformTrackingValue value = values.get(1);
+
+            TransformTrackingValue.setSameType(array, value);
         }
 
         if (subType.getSort() == Type.VOID) return null;

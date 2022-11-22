@@ -62,7 +62,8 @@ public class TypeTransformerMethods {
             "net.minecraft.class_3569", //SkyLightSectionStorage
             "net.minecraft.class_4076",
             "net.minecraft.class_3552",
-            "net.minecraft.class_3572"
+            "net.minecraft.class_3572",
+            "net.minecraft.class_6350$class_5832"
         ).map(name -> map.mapClassName("intermediary", name)).collect(Collectors.toSet());
 
         Set<MethodID> methodsUsed = new ObjectOpenCustomHashSet<>(MethodID.HASH_CALL_TYPE);

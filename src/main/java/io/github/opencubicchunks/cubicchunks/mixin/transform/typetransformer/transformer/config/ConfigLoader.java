@@ -121,19 +121,22 @@ public class ConfigLoader {
             JsonObject obj = element.getAsJsonObject();
             Type type = remapType(Type.getObjectType(obj.get("class").getAsString()), map);
 
-            JsonArray typeHintsArr = obj.get("type_hints").getAsJsonArray();
+            JsonElement typeHintsElem = obj.get("type_hints");
             Map<MethodID, Map<Integer, TransformType>> typeHints = new AncestorHashMap<>(hierarchy);
-            for (JsonElement typeHint : typeHintsArr) {
-                MethodID method = loadMethodIDFromLookup(typeHint.getAsJsonObject().get("method"), map, methodIDMap);
-                Map<Integer, TransformType> paramTypes = new HashMap<>();
-                JsonArray paramTypesArr = typeHint.getAsJsonObject().get("types").getAsJsonArray();
-                for (int i = 0; i < paramTypesArr.size(); i++) {
-                    JsonElement paramType = paramTypesArr.get(i);
-                    if (!paramType.isJsonNull()) {
-                        paramTypes.put(i, transformTypeMap.get(paramType.getAsString()));
+            if (typeHintsElem != null) {
+                JsonArray typeHintsArr = typeHintsElem.getAsJsonArray();
+                for (JsonElement typeHint : typeHintsArr) {
+                    MethodID method = loadMethodIDFromLookup(typeHint.getAsJsonObject().get("method"), map, methodIDMap);
+                    Map<Integer, TransformType> paramTypes = new HashMap<>();
+                    JsonArray paramTypesArr = typeHint.getAsJsonObject().get("types").getAsJsonArray();
+                    for (int i = 0; i < paramTypesArr.size(); i++) {
+                        JsonElement paramType = paramTypesArr.get(i);
+                        if (!paramType.isJsonNull()) {
+                            paramTypes.put(i, transformTypeMap.get(paramType.getAsString()));
+                        }
                     }
+                    typeHints.put(method, paramTypes);
                 }
-                typeHints.put(method, paramTypes);
             }
 
             JsonElement constructorReplacersArr = obj.get("constructor_replacers");
@@ -159,7 +162,12 @@ public class ConfigLoader {
                 }
             }
 
-            ClassTransformInfo info = new ClassTransformInfo(typeHints, constructorReplacers);
+            boolean inPlace = false;
+            if (obj.has("in_place")) {
+                inPlace = obj.get("in_place").getAsBoolean();
+            }
+
+            ClassTransformInfo info = new ClassTransformInfo(typeHints, constructorReplacers, inPlace);
             classInfo.put(type, info);
         }
 

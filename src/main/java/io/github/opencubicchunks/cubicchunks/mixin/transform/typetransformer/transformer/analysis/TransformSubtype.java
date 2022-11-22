@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
@@ -230,6 +231,10 @@ public class TransformSubtype {
             types.add(transformType.getValue().getTransformedPredicateType());
         }
 
+        if (arrayDimensionality != 0) {
+            types = types.stream().map(t -> Type.getType("[".repeat(arrayDimensionality) + t.getDescriptor())).collect(Collectors.toList());
+        }
+
         return types;
     }
 
@@ -253,8 +258,10 @@ public class TransformSubtype {
             return Objects.requireNonNull(this.originalType).getSize();
         }
 
-        if (subtype == SubType.NONE) {
+        if (subtype == SubType.NONE && this.arrayDimensionality == 0) {
             return transformType.getValue().getTransformedSize();
+        } else if (this.arrayDimensionality != 0) {
+            return this.resultingTypes().size();
         } else {
             return 1;
         }

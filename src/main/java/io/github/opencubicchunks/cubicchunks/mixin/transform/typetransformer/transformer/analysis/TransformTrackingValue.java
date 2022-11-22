@@ -329,4 +329,8 @@ public class TransformTrackingValue implements Value {
     public List<Type> transformedTypes() {
         return this.transform.resultingTypes();
     }
+
+    public boolean isTransformed() {
+        return this.transform.getTransformType() != null;
+    }
 }

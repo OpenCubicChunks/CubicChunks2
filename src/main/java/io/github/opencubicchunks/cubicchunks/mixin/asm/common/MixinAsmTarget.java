@@ -9,6 +9,7 @@ import net.minecraft.server.level.ChunkTaskPriorityQueue;
 import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
 import net.minecraft.server.level.DistanceManager;
 import net.minecraft.world.level.NaturalSpawner;
+import net.minecraft.world.level.levelgen.Aquifer;
 import net.minecraft.world.level.lighting.BlockLightEngine;
 import net.minecraft.world.level.lighting.BlockLightSectionStorage;
 import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
@@ -39,7 +40,8 @@ import org.spongepowered.asm.mixin.Mixin;
     SectionPos.class,
     LayerLightSectionStorage.class,
     SkyLightSectionStorage.class,
-    BlockLightSectionStorage.class
+    BlockLightSectionStorage.class,
+    Aquifer.NoiseBasedAquifer.class
 })
 public class MixinAsmTarget {
     // intentionally empty

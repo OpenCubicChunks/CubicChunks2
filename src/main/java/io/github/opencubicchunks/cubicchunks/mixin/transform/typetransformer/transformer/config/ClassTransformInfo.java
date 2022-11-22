@@ -7,10 +7,12 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 public class ClassTransformInfo {
     private final Map<MethodID, Map<Integer, TransformType>> typeHints;
     private final Map<String, ConstructorReplacer> constructorReplacers;
+    private final boolean inPlace;
 
-    public ClassTransformInfo(Map<MethodID, Map<Integer, TransformType>> typeHints, Map<String, ConstructorReplacer> constructorReplacers) {
+    public ClassTransformInfo(Map<MethodID, Map<Integer, TransformType>> typeHints, Map<String, ConstructorReplacer> constructorReplacers, boolean inPlace) {
         this.typeHints = typeHints;
         this.constructorReplacers = constructorReplacers;
+        this.inPlace = inPlace;
     }
 
     public Map<MethodID, Map<Integer, TransformType>> getTypeHints() {
@@ -19,5 +21,9 @@ public class ClassTransformInfo {
 
     public Map<String, ConstructorReplacer> getConstructorReplacers() {
         return constructorReplacers;
+    }
+
+    public boolean isInPlace() {
+        return inPlace;
     }
 }
