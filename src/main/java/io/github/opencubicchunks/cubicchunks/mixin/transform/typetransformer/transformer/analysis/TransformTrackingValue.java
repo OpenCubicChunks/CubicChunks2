@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -11,11 +10,8 @@ import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tra
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FieldID;
-import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
-import net.minecraft.Util;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.analysis.Value;
 
 /**
@@ -58,14 +54,12 @@ public class TransformTrackingValue implements Value {
 
         setSameType(this, other);
 
-        TransformTrackingValue newValue = new TransformTrackingValue(
+        return new TransformTrackingValue(
             type,
             transform,
             pseudoValues,
             config
         );
-
-        return newValue;
     }
 
     public @Nullable TransformType getTransformType() {

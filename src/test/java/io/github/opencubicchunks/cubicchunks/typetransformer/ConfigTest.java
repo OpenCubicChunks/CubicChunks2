@@ -126,7 +126,11 @@ public class ConfigTest {
             List<Type> transformedTypes = subtype.resultingTypes();
 
             for (int index : indices[j]) {
-                types.add(transformedTypes.get(index));
+                if (transformedTypes.get(index).getSort() == Type.VOID) {
+                    types.add(argTypes[j]);
+                } else {
+                    types.add(transformedTypes.get(index));
+                }
             }
         }
         return types;

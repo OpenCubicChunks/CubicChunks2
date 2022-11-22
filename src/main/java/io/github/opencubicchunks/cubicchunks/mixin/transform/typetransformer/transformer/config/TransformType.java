@@ -105,7 +105,7 @@ public class TransformType {
             );
             MethodParameterInfo info = new MethodParameterInfo(
                 methodID,
-                TransformSubtype.createDefault(),
+                TransformSubtype.createDefault(methodID.getDescriptor().getReturnType()),
                 new TransformSubtype[] { TransformSubtype.of(this) },
                 null,
                 methodReplacement
@@ -123,7 +123,7 @@ public class TransformType {
 
         TransformSubtype[] parameterTypes = new TransformSubtype[this.to.length];
         for (int i = 0; i < parameterTypes.length; i++) {
-            parameterTypes[i] = TransformSubtype.createDefault();
+            parameterTypes[i] = TransformSubtype.createDefault(this.to[i]);
         }
 
         List<Integer>[][] indices = new List[parameterTypes.length][parameterTypes.length];
@@ -159,18 +159,18 @@ public class TransformType {
 
         MethodTransformChecker.Minimum[] minimums = new MethodTransformChecker.Minimum[] {
             new MethodTransformChecker.Minimum(
-                TransformSubtype.createDefault(),
+                TransformSubtype.createDefault(returnType),
                 TransformSubtype.of(this, subType),
-                TransformSubtype.createDefault()
+                TransformSubtype.createDefault(this.from)
             ),
             new MethodTransformChecker.Minimum(
-                TransformSubtype.createDefault(),
-                TransformSubtype.createDefault(),
+                TransformSubtype.createDefault(returnType),
+                TransformSubtype.createDefault(type),
                 TransformSubtype.of(this)
             )
         };
 
-        MethodParameterInfo info = new MethodParameterInfo(consumerID, TransformSubtype.createDefault(), argTypes, minimums, methodReplacement);
+        MethodParameterInfo info = new MethodParameterInfo(consumerID, TransformSubtype.createDefault(consumerID.getDescriptor().getReturnType()), argTypes, minimums, methodReplacement);
         parameterInfo.computeIfAbsent(consumerID, k -> new ArrayList<>()).add(info);
     }
 

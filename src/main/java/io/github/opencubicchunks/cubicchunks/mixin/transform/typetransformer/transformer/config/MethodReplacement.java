@@ -6,7 +6,6 @@ import java.util.List;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.BytecodeFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.Type;
 
 public class MethodReplacement {
     private final BytecodeFactory[] bytecodeFactories;

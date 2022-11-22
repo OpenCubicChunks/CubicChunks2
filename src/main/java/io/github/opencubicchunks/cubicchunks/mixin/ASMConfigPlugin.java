@@ -21,14 +21,12 @@ import javax.annotation.Nullable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FabricMappingsProvider;
 import io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils;
 import io.github.opencubicchunks.dasm.MappingsProvider;
 import io.github.opencubicchunks.dasm.RedirectsParseException;
 import io.github.opencubicchunks.dasm.RedirectsParser;
 import io.github.opencubicchunks.dasm.Transformer;
-import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -228,7 +226,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             MainTransformer.transformLayerLightSectionStorage(targetClass);
         } else if (targetClassName.equals(sectionPos)) {
             MainTransformer.transformSectionPos(targetClass);
-        } else if (targetClassName.equals(noiseBasedAquifer)){
+        } else if (targetClassName.equals(noiseBasedAquifer)) {
             MainTransformer.transformNoiseBasedAquifer(targetClass);
         } else if (defaulted.contains(targetClassName)) {
             MainTransformer.defaultTransform(targetClass);

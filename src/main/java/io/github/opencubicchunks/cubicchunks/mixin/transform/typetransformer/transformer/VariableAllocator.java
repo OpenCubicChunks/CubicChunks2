@@ -26,85 +26,6 @@ public class VariableAllocator {
     }
 
     /**
-     * Allocates a variable which takes up a single slot
-     *
-     * @param from The index of the first place this variable will be used
-     * @param to The index of the last place this variable will be used
-     *
-     * @return The index of the variable
-     */
-    public int allocateSingle(int from, int to) {
-        int level = 0;
-        while (true) {
-            if (level >= variables.size()) {
-                variables.add(new boolean[maxLength]);
-            }
-            boolean[] var = variables.get(level);
-
-            //Check that all of it is free
-            boolean free = true;
-            for (int i = from; i < to; i++) {
-                if (var[i]) {
-                    free = false;
-                    break;
-                }
-            }
-
-            if (free) {
-                //Mark it as used
-                for (int i = from; i < to; i++) {
-                    var[i] = true;
-                }
-
-                return level + baseline;
-            }
-
-            level++;
-        }
-    }
-
-    /**
-     * Allocates a variable which takes up two slots
-     *
-     * @param from The index of the first place this variable will be used
-     * @param to The index of the last place this variable will be used
-     *
-     * @return The index of the variable
-     */
-    public int allocateDouble(int from, int to) {
-        int level = 0;
-        while (true) {
-            while (level + 1 >= variables.size()) {
-                variables.add(new boolean[maxLength]);
-            }
-
-            boolean[] var1 = variables.get(level);
-            boolean[] var2 = variables.get(level + 1);
-
-            //Check that all of it is free
-            boolean free = true;
-            for (int i = from; i < to; i++) {
-                if (var1[i] || var2[i]) {
-                    free = false;
-                    break;
-                }
-            }
-
-            if (free) {
-                //Mark it as used
-                for (int i = from; i < to; i++) {
-                    var1[i] = true;
-                    var2[i] = true;
-                }
-
-                return level + baseline;
-            }
-
-            level++;
-        }
-    }
-
-    /**
      * Allocates n consecutive slots
      *
      * @param from The index of the first place this variable will be used
@@ -160,11 +81,19 @@ public class VariableAllocator {
      * @return The index of the variable
      */
     public int allocate(int minIndex, int maxIndex, Type type) {
-        if (type.getSort() == Type.DOUBLE || type.getSort() == Type.LONG) {
-            return allocateDouble(minIndex, maxIndex);
-        } else {
-            return allocateSingle(minIndex, maxIndex);
-        }
+        return this.allocate(minIndex, maxIndex, type.getSize());
+    }
+
+    /**
+     * Allocates a variable which takes up a single slot
+     *
+     * @param from The index of the first place this variable will be used
+     * @param to The index of the last place this variable will be used
+     *
+     * @return The index of the variable
+     */
+    public int allocateSingle(int from, int to) {
+        return this.allocate(from, to, 1);
     }
 
     public static Function<Type, Integer> makeBasicAllocator(int baseline) {

@@ -182,19 +182,19 @@ public class TypeInferenceTest {
                             error.append(", ");
                         }
 
-                        error.append(TransformSubtype.createDefault());
+                        error.append(TransformSubtype.createDefault(null));
                     }
 
                     error.append(" ]\n\nActual: \n\t[ ");
 
                     boolean start = true;
-                    for (i = isStatic ? 0 : 1; i < results.argTypes().length; i++) {
+                    for (i = isStatic ? 0 : 1; i < results.getArgTypes().length; i++) {
                         if (!start) {
                             error.append(", ");
                         }
                         start = false;
 
-                        error.append(results.argTypes()[i]);
+                        error.append(results.getArgTypes()[i]);
                     }
 
                     error.append(" ]");
@@ -230,7 +230,7 @@ public class TypeInferenceTest {
         }
 
         public boolean check(AnalysisResults results) {
-            TransformSubtype[] args = results.argTypes();
+            TransformSubtype[] args = results.getArgTypes();
 
             int argsIndex = ASMUtil.isStatic(results.methodNode()) ? 0 : 1;
 
@@ -257,7 +257,7 @@ public class TypeInferenceTest {
 
             for (int i = 0; i < types.length; i++) {
                 if (types[i] == null) {
-                    expected[i] = TransformSubtype.createDefault();
+                    expected[i] = TransformSubtype.createDefault(Type.VOID_TYPE);
                     continue;
                 }
 
@@ -274,7 +274,7 @@ public class TypeInferenceTest {
 
             for (int i = 0; i < types.length; i++) {
                 if (types[i] == null) {
-                    expected[i] = TransformSubtype.createDefault();
+                    expected[i] = TransformSubtype.createDefault(Type.VOID_TYPE);
                     continue;
                 }
 

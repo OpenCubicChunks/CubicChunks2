@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.server.level;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 

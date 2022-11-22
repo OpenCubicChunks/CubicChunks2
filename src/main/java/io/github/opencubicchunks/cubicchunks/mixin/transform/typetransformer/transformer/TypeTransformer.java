@@ -125,7 +125,7 @@ public class TypeTransformer {
         //Create field pseudo values
         for (var field : classNode.fields) {
             TransformTrackingValue value = new TransformTrackingValue(Type.getType(field.desc), fieldPseudoValues, config);
-            fieldPseudoValues.put(new FieldID(Type.getObjectType(classNode.name), field.name, Type.getType(field.desc)), value);
+            fieldPseudoValues.put(FieldID.of(classNode.name, field), value);
         }
 
         //Extract per-class config from the global config
@@ -210,7 +210,7 @@ public class TypeTransformer {
         config.getInterpreter().setCurrentClass(classNode);
         config.getInterpreter().setFieldBindings(fieldPseudoValues);
 
-        MethodID methodID = new MethodID(classNode.name, methodNode.name, methodNode.desc, null);
+        MethodID methodID = MethodID.of(classNode, methodNode);
 
         //Get any type hints for this method
         Map<Integer, TransformType> typeHints;
@@ -244,7 +244,7 @@ public class TypeTransformer {
     }
 
     private void addDummyValues(MethodNode methodNode) {
-        //We still want to infer the argument types of abstract methods so we create a single frame whose locals represent the arguments
+        //We still want to infer the argument types of abstract methods, so we create a single frame whose locals represent the arguments
         Type[] args = Type.getArgumentTypes(methodNode.desc);
 
         MethodID methodID = new MethodID(classNode.name, methodNode.name, methodNode.desc, MethodID.CallType.VIRTUAL);
@@ -254,7 +254,7 @@ public class TypeTransformer {
         TransformSubtype[] argTypes = new TransformSubtype[args.length];
         int index = 1; //Abstract methods can't be static, so they have the 'this' argument
         for (int i = 0; i < args.length; i++) {
-            argTypes[i] = TransformSubtype.createDefault();
+            argTypes[i] = TransformSubtype.createDefault(args[i]);
 
             if (typeHints != null && typeHints.containsKey(index)) {
                 argTypes[i] = TransformSubtype.of(typeHints.get(index));
@@ -343,7 +343,7 @@ public class TypeTransformer {
         cleanUpTransform();
     }
 
-    public void transformMethod(String name, String desc) {
+    public void generateTransformedMethod(String name, String desc) {
         MethodNode methodNode = classNode.methods.stream().filter(m -> m.name.equals(name) && m.desc.equals(desc)).findAny().orElse(null);
         if (methodNode == null) {
             throw new RuntimeException("Method " + name + desc + " not found in class " + classNode.name);
@@ -433,7 +433,7 @@ public class TypeTransformer {
             return;
         }
 
-        transformMethod(methodNode, newMethod, context);
+        generateTransformedMethod(methodNode, newMethod, context);
 
         markSynthetic(newMethod, "AUTO-TRANSFORMED", methodNode.name + methodNode.desc, classNode.name);
 
@@ -447,7 +447,7 @@ public class TypeTransformer {
      * @param methodNode The method to modify
      * @param context Transform context
      */
-    private void transformMethod(MethodNode oldMethod, MethodNode methodNode, TransformContext context) {
+    private void generateTransformedMethod(MethodNode oldMethod, MethodNode methodNode, TransformContext context) {
         transformDesc(methodNode, context);
 
         //Change variable names to make it easier to debug
@@ -508,51 +508,54 @@ public class TypeTransformer {
                 AbstractInsnNode instruction = instructions[i];
                 Frame<TransformTrackingValue> frame = frames[i];
 
-                int opcode = instruction.getOpcode();
-
-                if (instruction instanceof MethodInsnNode methodCall) {
-                    transformMethodCall(context, frames, i, frame, methodCall);
-                } else if (instruction instanceof VarInsnNode varNode) {
-                    transformVarInsn(context, i, varNode);
-                } else if (instruction instanceof IincInsnNode iincNode) {
-                    transformIincInsn(context, iincNode);
-                } else if (ASMUtil.isConstant(instruction)) {
-                    transformConstantInsn(context, frames[i + 1], i, instruction);
-                } else if (isACompare(opcode)) {
-                    transformCmp(context, i, instruction, frame, opcode);
-                } else if (instruction instanceof InvokeDynamicInsnNode dynamicInsnNode) {
-                    transformInvokeDynamicInsn(frames, i, frame, dynamicInsnNode);
-                } else if (opcode == Opcodes.NEW) {
-                    transformNewInsn(frames[i + 1], (TypeInsnNode) instruction);
-                } else if (opcode == Opcodes.ANEWARRAY || opcode == Opcodes.NEWARRAY) {
-                    transformNewArray(context, i, frames[i + 1], instruction, 1);
-                } else if (instruction instanceof MultiANewArrayInsnNode arrayInsn) {
-                    transformNewArray(context, i, frames[i + 1], instruction, arrayInsn.dims);
-                } else if (isArrayLoad(instruction.getOpcode())) {
-                    transformArrayLoad(context, i, instruction, frame);
-                } else if (isArrayStore(instruction.getOpcode())) {
-                    transformArrayStore(context, i, instruction, frame);
-                }
-
-                if (inPlace) {
-                    if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC || opcode == Opcodes.GETFIELD || opcode == Opcodes.PUTFIELD) {
-                        transformFieldInsn(context, i, (FieldInsnNode) instruction);
-                    }
-                }
-
+                dispatchInstructionTransform(context, frames, i, instruction, frame);
             } catch (Exception e) {
                 throw new RuntimeException("Error transforming instruction #" + i + ": " + ASMUtil.textify(instructions[i]), e);
             }
         }
     }
 
-    private void transformMethodCall(TransformContext context, Frame<TransformTrackingValue>[] frames, int i, Frame<TransformTrackingValue> frame, MethodInsnNode methodCall) {
+    private void dispatchInstructionTransform(TransformContext context, Frame<TransformTrackingValue>[] frames, int i, AbstractInsnNode instruction, Frame<TransformTrackingValue> frame) {
+        int opcode = instruction.getOpcode();
+
+        if (instruction instanceof MethodInsnNode methodCall) {
+            transformMethodCall(context, frames, i, frame, methodCall);
+        } else if (instruction instanceof VarInsnNode varNode) {
+            transformVarInsn(context, i, varNode);
+        } else if (instruction instanceof IincInsnNode iincNode) {
+            transformIincInsn(context, iincNode);
+        } else if (ASMUtil.isConstant(instruction)) {
+            transformConstantInsn(context, frames[i + 1], i, instruction);
+        } else if (isACompare(opcode)) {
+            transformCmp(context, i, instruction, frame, opcode);
+        } else if (instruction instanceof InvokeDynamicInsnNode dynamicInsnNode) {
+            transformInvokeDynamicInsn(frames, i, frame, dynamicInsnNode);
+        } else if (opcode == Opcodes.NEW) {
+            transformNewInsn(frames[i + 1], (TypeInsnNode) instruction);
+        } else if (opcode == Opcodes.ANEWARRAY || opcode == Opcodes.NEWARRAY) {
+            transformNewArray(context, i, frames[i + 1], instruction, 1);
+        } else if (instruction instanceof MultiANewArrayInsnNode arrayInsn) {
+            transformNewArray(context, i, frames[i + 1], instruction, arrayInsn.dims);
+        } else if (isArrayLoad(instruction.getOpcode())) {
+            transformArrayLoad(context, i, instruction, frame);
+        } else if (isArrayStore(instruction.getOpcode())) {
+            transformArrayStore(context, i, instruction, frame);
+        }
+
+        if (inPlace) {
+            if (opcode == Opcodes.GETSTATIC || opcode == Opcodes.PUTSTATIC || opcode == Opcodes.GETFIELD || opcode == Opcodes.PUTFIELD) {
+                transformFieldInsn(context, i, (FieldInsnNode) instruction);
+            }
+        }
+    }
+
+    private void transformMethodCall(TransformContext context, Frame<TransformTrackingValue>[] frames, int insnIdx, Frame<TransformTrackingValue> frame, MethodInsnNode methodCall) {
         MethodID methodID = MethodID.from(methodCall);
 
         //Get the return value (if it exists). It is on the top of the stack if the next frame
         TransformTrackingValue returnValue = null;
         if (methodID.getDescriptor().getReturnType() != Type.VOID_TYPE) {
-            returnValue = ASMUtil.getTop(frames[i + 1]);
+            returnValue = ASMUtil.getTop(frames[insnIdx + 1]);
         }
 
         //Get all the values that are passed to the method call
@@ -563,7 +566,7 @@ public class TypeTransformer {
         }
 
         //Find replacement information for the method call
-        MethodParameterInfo info = context.methodInfos[i];
+        MethodParameterInfo info = context.methodInfos[insnIdx];
 
         if (info != null && info.getReplacement() != null) {
             applyReplacement(context, methodCall, info, args);
@@ -573,7 +576,7 @@ public class TypeTransformer {
                 throw new IllegalStateException("Cannot generate default replacement for method with multiple return types '" + methodID + "'");
             }
 
-            applyDefaultReplacement(context, i, methodCall, returnValue, args);
+            applyDefaultReplacement(context, insnIdx, methodCall, returnValue, args);
         }
     }
 
@@ -659,7 +662,7 @@ public class TypeTransformer {
         boolean isStatic = (methodCall.getOpcode() == Opcodes.INVOKESTATIC);
         int staticOffset = isStatic ? 0 : 1;
 
-        TransformSubtype returnType = TransformSubtype.createDefault();
+        TransformSubtype returnType = TransformSubtype.createDefault(Type.getReturnType(methodCall.desc));
         TransformSubtype[] argTypes = new TransformSubtype[args.length - staticOffset];
 
         if (returnValue != null) {
@@ -671,9 +674,16 @@ public class TypeTransformer {
         }
 
         //Create the new descriptor
-        String newDescriptor = MethodParameterInfo.getNewDesc(returnType, argTypes, methodCall.desc);
-        methodCall.desc = newDescriptor;
+        methodCall.desc = MethodParameterInfo.getNewDesc(returnType, argTypes, methodCall.desc);
 
+        addSuffixIfNeeded(methodCall, args, staticOffset);
+
+        if (!isStatic) {
+            updateMethodOwner(methodCall, args);
+        }
+    }
+
+    private void addSuffixIfNeeded(MethodInsnNode methodCall, TransformTrackingValue[] args, int staticOffset) {
         Type methodOwner = Type.getObjectType(methodCall.owner);
         if (this.config.getTypesWithSuffixedTransforms().contains(methodOwner)) {
             if (args.length == staticOffset) {
@@ -687,12 +697,9 @@ public class TypeTransformer {
                 }
             }
         }
+    }
 
-        if (isStatic) {
-            return;
-        }
-
-        //Change the method owner if needed
+    private void updateMethodOwner(MethodInsnNode methodCall, TransformTrackingValue[] args) {
         List<Type> types = args[0].transformedTypes();
         if (types.size() != 1) {
             throw new IllegalStateException(
@@ -788,7 +795,7 @@ public class TypeTransformer {
         }
     }
 
-    private void transformVarInsn(TransformContext context, int i, VarInsnNode varNode) {
+    private void transformVarInsn(TransformContext context, int insnIdx, VarInsnNode varNode) {
         /*
          * There are two reasons this is needed.
          * 1. Some values take up different amount of variable slots because of their transforms, so we need to shift all variables accesses'
@@ -807,7 +814,7 @@ public class TypeTransformer {
         };
 
         //If the variable is being loaded, it is in the current frame, if it is being stored, it will be in the next frame
-        TransformSubtype varType = context.varTypes()[i + (baseOpcode == Opcodes.ISTORE ? 1 : 0)][originalVarIndex];
+        TransformSubtype varType = context.varTypes()[insnIdx + (baseOpcode == Opcodes.ISTORE ? 1 : 0)][originalVarIndex];
         //Get the actual types that need to be stored or loaded
         List<Type> types = varType.resultingTypes();
 
@@ -865,9 +872,9 @@ public class TypeTransformer {
         iincNode.var = context.varLookup()[originalVarIndex];
     }
 
-    private void transformConstantInsn(TransformContext context, Frame<TransformTrackingValue> frame, int i, AbstractInsnNode instruction) {
+    private void transformConstantInsn(TransformContext context, Frame<TransformTrackingValue> nextFrame, int insnIndex, AbstractInsnNode instruction) {
         //Check if value is transformed
-        TransformTrackingValue value = ASMUtil.getTop(frame);
+        TransformTrackingValue value = ASMUtil.getTop(nextFrame);
         if (value.getTransformType() != null) {
             if (value.getTransform().getSubtype() != TransformSubtype.SubType.NONE) {
                 throw new IllegalStateException("Cannot expand constant value of subType " + value.getTransform().getSubtype());
@@ -886,7 +893,7 @@ public class TypeTransformer {
 
             InsnList newInstructions = new InsnList();
             for (BytecodeFactory factory : replacement) {
-                newInstructions.add(factory.generate(t -> context.variableAllocator.allocate(i, i + 1, t)));
+                newInstructions.add(factory.generate(t -> context.variableAllocator.allocate(insnIndex, insnIndex + 1, t)));
             }
 
             context.target().instructions.insert(instruction, newInstructions);
@@ -963,7 +970,7 @@ public class TypeTransformer {
         context.target().instructions.remove(instruction);
     }
 
-    private void transformInvokeDynamicInsn(Frame<TransformTrackingValue>[] frames, int i, Frame<TransformTrackingValue> frame, InvokeDynamicInsnNode dynamicInsnNode) {
+    private void transformInvokeDynamicInsn(Frame<TransformTrackingValue>[] frames, int insnIdx, Frame<TransformTrackingValue> frame, InvokeDynamicInsnNode dynamicInsnNode) {
         //Check if it LambdaMetafactory.metafactory
         if (dynamicInsnNode.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory")) {
             Handle methodReference = (Handle) dynamicInsnNode.bsmArgs[1];
@@ -978,7 +985,7 @@ public class TypeTransformer {
             }
 
             //The return value (the lambda) is on the top of the stack of the next frame
-            TransformTrackingValue returnValue = ASMUtil.getTop(frames[i + 1]);
+            TransformTrackingValue returnValue = ASMUtil.getTop(frames[insnIdx + 1]);
 
             dynamicInsnNode.desc = MethodParameterInfo.getNewDesc(returnValue, values, dynamicInsnNode.desc);
 
@@ -1040,21 +1047,21 @@ public class TypeTransformer {
         }
     }
 
-    private void transformNewInsn(Frame<TransformTrackingValue> frame1, TypeInsnNode instruction) {
-        TransformTrackingValue value = ASMUtil.getTop(frame1);
+    private void transformNewInsn(Frame<TransformTrackingValue> frame, TypeInsnNode instruction) {
+        TransformTrackingValue value = ASMUtil.getTop(frame);
         if (value.getTransform().getTransformType() != null) {
             instruction.desc = value.getTransform().getSingleType().getInternalName();
         }
     }
 
-    private void transformNewArray(TransformContext context, int i, Frame<TransformTrackingValue> frame, AbstractInsnNode instruction, int dimsKnown) {
-        TransformTrackingValue top = ASMUtil.getTop(frame);
+    private void transformNewArray(TransformContext context, int insnIdx, Frame<TransformTrackingValue> nextFrame, AbstractInsnNode instruction, int dimsKnown) {
+        TransformTrackingValue top = ASMUtil.getTop(nextFrame);
 
         if (!top.isTransformed()) return;
 
         int dimsNeeded = top.getTransform().getArrayDimensionality();
 
-        int dimsSaved = context.variableAllocator.allocate(i, i + 1, dimsKnown);
+        int dimsSaved = context.variableAllocator.allocate(insnIdx, insnIdx + 1, dimsKnown);
 
         for (int j = dimsKnown - 1; j < dimsNeeded; j++) {
             context.target.instructions.insertBefore(instruction, new VarInsnNode(Opcodes.ISTORE, dimsSaved + j));
@@ -1071,17 +1078,17 @@ public class TypeTransformer {
         context.target.instructions.remove(instruction);
     }
 
-    private void transformArrayLoad(TransformContext context, int i, AbstractInsnNode instruction, Frame<TransformTrackingValue> frame) {
+    private void transformArrayLoad(TransformContext context, int insnIdx, AbstractInsnNode instruction, Frame<TransformTrackingValue> frame) {
         TransformTrackingValue array = frame.getStack(frame.getStackSize() - 2);
 
         if (!array.isTransformed()) return;
 
         InsnList list = new InsnList();
 
-        int indexIdx = context.variableAllocator.allocateSingle(i, i + 1);
+        int indexIdx = context.variableAllocator.allocateSingle(insnIdx, insnIdx + 1);
         list.add(new VarInsnNode(Opcodes.ISTORE, indexIdx));
 
-        int arrayIdx = context.variableAllocator.allocate(i, i + 1, array.getTransformedSize());
+        int arrayIdx = context.variableAllocator.allocate(insnIdx, insnIdx + 1, array.getTransformedSize());
         int[] arrayOffsets = array.getTransform().getIndices();
         storeStackInLocals(array.getTransform(), list, arrayIdx);
 
@@ -1101,7 +1108,7 @@ public class TypeTransformer {
         context.target.instructions.remove(instruction);
     }
 
-    private void transformArrayStore(TransformContext context, int i, AbstractInsnNode instruction, Frame<TransformTrackingValue> frame) {
+    private void transformArrayStore(TransformContext context, int insnIdx, AbstractInsnNode instruction, Frame<TransformTrackingValue> frame) {
         TransformTrackingValue array = frame.getStack(frame.getStackSize() - 3);
         TransformTrackingValue value = frame.getStack(frame.getStackSize() - 1);
 
@@ -1109,14 +1116,14 @@ public class TypeTransformer {
 
         InsnList list = new InsnList();
 
-        int valueIdx = context.variableAllocator.allocate(i, i + 1, value.getTransformedSize());
+        int valueIdx = context.variableAllocator.allocate(insnIdx, insnIdx + 1, value.getTransformedSize());
         int[] valueOffsets = value.getTransform().getIndices();
         storeStackInLocals(value.getTransform(), list, valueIdx);
 
-        int indexIdx = context.variableAllocator.allocateSingle(i, i + 1);
+        int indexIdx = context.variableAllocator.allocateSingle(insnIdx, insnIdx + 1);
         list.add(new VarInsnNode(Opcodes.ISTORE, indexIdx));
 
-        int arrayIdx = context.variableAllocator.allocate(i, i + 1, array.getTransformedSize());
+        int arrayIdx = context.variableAllocator.allocate(insnIdx, insnIdx + 1, array.getTransformedSize());
         int[] arrayOffsets = array.getTransform().getIndices();
         storeStackInLocals(array.getTransform(), list, arrayIdx);
 
@@ -1478,11 +1485,7 @@ public class TypeTransformer {
 
         AnalysisResults results = this.analyzeMethod(node);
 
-        int idx = 0;
-        for (TransformTrackingValue arg : argsForAnalysis) {
-            TransformTrackingValue.setSameType(arg, results.frames()[0].getLocal(idx));
-            idx += arg.getTransform().getTransformedSize();
-        }
+        TransformTrackingInterpreter.bindValuesToMethod(results, 0, argsForAnalysis);
 
         this.generateTransformedMethod(node);
 
@@ -1927,7 +1930,7 @@ public class TypeTransformer {
         }
 
         //Change descriptor
-        String newDescriptor = MethodParameterInfo.getNewDesc(TransformSubtype.createDefault(), actualParameters, methodNode.desc);
+        String newDescriptor = MethodParameterInfo.getNewDesc(TransformSubtype.createDefault(Type.getReturnType(methodNode.desc)), actualParameters, methodNode.desc);
         methodNode.desc = newDescriptor;
     }
 
@@ -1999,5 +2002,5 @@ public class TypeTransformer {
         VariableAllocator variableAllocator,
         Map<AbstractInsnNode, Integer> indexLookup,
         MethodParameterInfo[] methodInfos
-    ) {}
+    ) { }
 }

@@ -59,11 +59,12 @@ public class InvokerInfo {
 
             //Generate the actual argTypes array who's first element is `this`
             TransformSubtype[] newArgTypes = new TransformSubtype[argTypes.length + 1];
-            newArgTypes[0] = TransformSubtype.createDefault();
+            newArgTypes[0] = TransformSubtype.createDefault(methodID.getOwner());
             System.arraycopy(argTypes, 0, newArgTypes, 1, argTypes.length);
 
             //Generate minimums
             List<MethodTransformChecker.Minimum> minimums = new ArrayList<>();
+            Type[] args = methodID.getDescriptor().getArgumentTypes();
 
             for (int j = 0; j < argTypes.length; j++) {
                 if (argTypes[j].getTransformType() != null) {
@@ -71,19 +72,19 @@ public class InvokerInfo {
 
                     for (int k = 0; k < min.length; k++) {
                         if (k != j + 1) {
-                            min[k] = TransformSubtype.createDefault();
+                            min[k] = TransformSubtype.createDefault(args[j]);
                         } else {
                             min[k] = argTypes[j];
                         }
                     }
 
-                    minimums.add(new MethodTransformChecker.Minimum(TransformSubtype.createDefault(), min));
+                    minimums.add(new MethodTransformChecker.Minimum(TransformSubtype.createDefault(args[j]), min));
                 }
             }
 
             MethodParameterInfo info = new MethodParameterInfo(
                 methodID,
-                TransformSubtype.createDefault(),
+                TransformSubtype.createDefault(methodID.getDescriptor().getReturnType()),
                 newArgTypes,
                 minimums.toArray(new MethodTransformChecker.Minimum[0]),
                 new MethodReplacement(replacement, newArgTypes)

@@ -19,7 +19,7 @@ public class MethodTransformChecker {
      * @param returnValue The current return value
      * @param parameters The current parameters
      *
-     * @return -1 if they are incompatible, 0 if they are compatible, 1 if they should be transformed
+     * @return -1 if they are incompatible, 0 if they are not yet rejected nor accepted, 1 if they should definitely be transformed
      */
     public int checkValidity(@Nullable TransformTrackingValue returnValue, TransformTrackingValue... parameters) {
         //First check if it is still possible

@@ -89,7 +89,8 @@ public class ConfigLoader {
                 String targetMethod = obj2.get("calls").getAsString();
                 targetMethod = map.mapMethodName("intermediary", targetName.replace('/', '.'), targetMethod, method.getDescriptor());
 
-                TransformSubtype[] transformTypes = new TransformSubtype[Type.getArgumentTypes(method.getDescriptor()).length];
+                Type[] args = Type.getArgumentTypes(method.getDescriptor());
+                TransformSubtype[] transformTypes = new TransformSubtype[args.length];
 
                 JsonArray types = obj2.get("types").getAsJsonArray();
 
@@ -100,7 +101,7 @@ public class ConfigLoader {
                 }
 
                 for (; i < transformTypes.length; i++) {
-                    transformTypes[i] = TransformSubtype.createDefault();
+                    transformTypes[i] = TransformSubtype.createDefault(args[i]);
                 }
 
                 methodInfos.add(new InvokerInfo.InvokerMethodInfo(transformTypes, method.getName(), targetMethod, method.getDescriptor()));
@@ -197,9 +198,9 @@ public class ConfigLoader {
             for (JsonElement possibilityElement : possibilites) {
                 JsonObject possibility = possibilityElement.getAsJsonObject();
                 JsonArray paramsJson = possibility.get("parameters").getAsJsonArray();
-                TransformSubtype[] params = loadParameterTypes(transformTypes, paramsJson);
+                TransformSubtype[] params = loadParameterTypes(methodID, transformTypes, paramsJson);
 
-                TransformSubtype returnType = TransformSubtype.createDefault();
+                TransformSubtype returnType = TransformSubtype.createDefault(methodID.getDescriptor().getReturnType());
                 JsonElement returnTypeJson = possibility.get("return");
 
                 if (returnTypeJson != null) {
@@ -230,7 +231,7 @@ public class ConfigLoader {
                     getMethodReplacement(map, methodIDMap, possibility, params, expansionsNeeded, indices, replacementJsonArray);
 
                 JsonElement minimumsJson = possibility.get("minimums");
-                MethodTransformChecker.Minimum[] minimums = getMinimums(transformTypes, minimumsJson);
+                MethodTransformChecker.Minimum[] minimums = getMinimums(methodID, transformTypes, minimumsJson);
 
                 MethodParameterInfo info = new MethodParameterInfo(methodID, returnType, params, minimums, mr);
                 paramInfo.add(info);
@@ -241,15 +242,22 @@ public class ConfigLoader {
         return parameterInfo;
     }
 
-    @NotNull private static TransformSubtype[] loadParameterTypes(Map<String, TransformType> transformTypes, JsonArray paramsJson) {
+    @NotNull private static TransformSubtype[] loadParameterTypes(MethodID method, Map<String, TransformType> transformTypes, JsonArray paramsJson) {
         TransformSubtype[] params = new TransformSubtype[paramsJson.size()];
+        Type[] args = method.getDescriptor().getArgumentTypes();
 
         for (int i = 0; i < paramsJson.size(); i++) {
             JsonElement param = paramsJson.get(i);
             if (param.isJsonPrimitive()) {
                 params[i] = TransformSubtype.fromString(param.getAsString(), transformTypes);
             } else if (param.isJsonNull()) {
-                params[i] = TransformSubtype.createDefault();
+                if (method.isStatic()) {
+                    params[i] = TransformSubtype.createDefault(args[i]);
+                } else if (i == 0) {
+                    params[i] = TransformSubtype.createDefault(method.getOwner());
+                } else {
+                    params[i] = TransformSubtype.createDefault(args[i - 1]);
+                }
             }
         }
 
@@ -315,7 +323,7 @@ public class ConfigLoader {
         }
     }
 
-    @Nullable private static MethodTransformChecker.Minimum[] getMinimums(Map<String, TransformType> transformTypes, JsonElement minimumsJson) {
+    @Nullable private static MethodTransformChecker.Minimum[] getMinimums(MethodID method, Map<String, TransformType> transformTypes, JsonElement minimumsJson) {
         MethodTransformChecker.Minimum[] minimums = null;
         if (minimumsJson != null) {
             if (!minimumsJson.isJsonArray()) {
@@ -329,16 +337,19 @@ public class ConfigLoader {
                 if (minimum.has("return")) {
                     minimumReturnType = TransformSubtype.fromString(minimum.get("return").getAsString(), transformTypes);
                 } else {
-                    minimumReturnType = TransformSubtype.createDefault();
+                    minimumReturnType = TransformSubtype.createDefault(method.getDescriptor().getReturnType());
                 }
 
                 TransformSubtype[] argTypes = new TransformSubtype[minimum.get("parameters").getAsJsonArray().size()];
+                Type[] args = method.getDescriptor().getArgumentTypes();
                 for (int j = 0; j < argTypes.length; j++) {
                     JsonElement argType = minimum.get("parameters").getAsJsonArray().get(j);
                     if (!argType.isJsonNull()) {
                         argTypes[j] = TransformSubtype.fromString(argType.getAsString(), transformTypes);
+                    } else if (j == 0 && !method.isStatic()) {
+                        argTypes[j] = TransformSubtype.createDefault(method.getOwner());
                     } else {
-                        argTypes[j] = TransformSubtype.createDefault();
+                        argTypes[j] = TransformSubtype.createDefault(args[j - method.getCallType().getOffset()]);
                     }
                 }
 

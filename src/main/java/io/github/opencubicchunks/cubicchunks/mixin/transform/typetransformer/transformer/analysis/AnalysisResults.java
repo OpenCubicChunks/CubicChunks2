@@ -4,6 +4,7 @@ import java.io.PrintStream;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodParameterInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.analysis.Frame;
 
@@ -45,10 +46,13 @@ public record AnalysisResults(MethodNode methodNode, Frame<TransformTrackingValu
     }
 
     public TransformSubtype[] getArgTypes() {
-        TransformSubtype[] argTypes = new TransformSubtype[methodNode.desc.length() - methodNode.desc.indexOf(')') - 1];
+        int offset = ASMUtil.isStatic(methodNode) ? 0 : 1;
+        Type[] args = Type.getArgumentTypes(methodNode.desc);
+        TransformSubtype[] argTypes = new TransformSubtype[args.length + offset];
 
-        for (int i = 0; i < argTypes.length; i += frames[0].getLocal(i).getSize()) {
-            argTypes[i] = frames[0].getLocal(i).getTransform();
+        int idx = 0;
+        for (int i = 0; idx < argTypes.length; i += frames[0].getLocal(i).getSize()) {
+            argTypes[idx++] = frames[0].getLocal(i).getTransform();
         }
 
         return argTypes;
@@ -68,6 +72,6 @@ public record AnalysisResults(MethodNode methodNode, Frame<TransformTrackingValu
             System.arraycopy(argTypes, 1, types, 0, types.length);
         }
 
-        return MethodParameterInfo.getNewDesc(TransformSubtype.createDefault(), types, methodNode.desc);
+        return MethodParameterInfo.getNewDesc(TransformSubtype.createDefault(Type.getReturnType(methodNode.desc)), types, methodNode.desc);
     }
 }

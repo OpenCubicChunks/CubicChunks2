@@ -5,6 +5,10 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
 public record FieldID(Type owner, String name, Type desc) implements Ancestralizable<FieldID> {
+    public static FieldID of(String owner, FieldNode field) {
+        return new FieldID(Type.getObjectType(owner), field.name, Type.getType(field.desc));
+    }
+
     @Override
     public Type getAssociatedType() {
         return owner;

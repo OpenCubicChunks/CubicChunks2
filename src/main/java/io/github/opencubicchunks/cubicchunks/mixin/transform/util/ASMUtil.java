@@ -5,14 +5,11 @@ import static org.objectweb.asm.Opcodes.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -22,7 +19,6 @@ import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
-import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -95,12 +91,16 @@ public class ASMUtil {
             case Type.BOOLEAN, Type.CHAR, Type.BYTE, Type.SHORT, Type.INT -> list.add(new JumpInsnNode(equal ? IF_ICMPEQ : IF_ICMPNE, label));
             case Type.ARRAY, Type.OBJECT -> list.add(new JumpInsnNode(equal ? IF_ACMPEQ : IF_ACMPNE, label));
             default -> {
-                list.add(new InsnNode(switch (type.getSort()) {
-                    case Type.FLOAT -> FCMPL;
-                    case Type.LONG -> LCMP;
-                    case Type.DOUBLE -> DCMPL;
-                    default -> throw new IllegalArgumentException("Invalid type: " + type);
-                }));
+                list.add(
+                    new InsnNode(
+                        switch (type.getSort()) {
+                            case Type.FLOAT -> FCMPL;
+                            case Type.LONG -> LCMP;
+                            case Type.DOUBLE -> DCMPL;
+                            default -> throw new IllegalArgumentException("Invalid type: " + type);
+                        }
+                    )
+                );
                 list.add(new JumpInsnNode(equal ? IFEQ : IFNE, label));
             }
         }

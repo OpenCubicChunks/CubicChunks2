@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -86,6 +85,8 @@ public class JSONBytecodeFactory implements BytecodeFactory {
                             varNames.put(actualName, varNames.size());
                             varTypes.add(t);
                         }
+
+                        break;
                     }
                 }
             }
@@ -95,10 +96,10 @@ public class JSONBytecodeFactory implements BytecodeFactory {
         for (JsonElement element : data) {
             if (element.isJsonPrimitive()) {
                 //It is a simple instruction (a string)
-                instructionGenerators.add(Objects.requireNonNull(createInstructionFactoryFromName(element.getAsString(), varNames)));
+                instructionGenerators.add(createInstructionFactoryFromName(element.getAsString(), varNames));
             } else {
                 //It is a complex instruction
-                instructionGenerators.add(Objects.requireNonNull(createInstructionFactoryFromObject(element.getAsJsonObject(), mappings, methodIDMap)));
+                instructionGenerators.add(createInstructionFactoryFromObject(element.getAsJsonObject(), mappings, methodIDMap));
             }
         }
     }
@@ -114,7 +115,7 @@ public class JSONBytecodeFactory implements BytecodeFactory {
             return generateTypeInsn(object, mappings, type);
         }
 
-        return null;
+        throw new IllegalArgumentException("Unknown instruction type: " + type);
     }
 
     private BiConsumer<InsnList, int[]> generateMethodCall(JsonObject object, MappingResolver mappings, Map<String, MethodID> methodIDMap, String type) {
@@ -141,9 +142,7 @@ public class JSONBytecodeFactory implements BytecodeFactory {
         }
 
         MethodID finalMethodID = methodID;
-        return (insnList, __) -> {
-            insnList.add(finalMethodID.callNode());
-        };
+        return (insnList, __) -> insnList.add(finalMethodID.callNode());
     }
 
     private BiConsumer<InsnList, int[]> generateConstantInsn(JsonObject object) {
@@ -163,9 +162,7 @@ public class JSONBytecodeFactory implements BytecodeFactory {
 
         InstructionFactory generator = new ConstantFactory(constant);
 
-        return (insnList, __) -> {
-            insnList.add(generator.create());
-        };
+        return (insnList, __) -> insnList.add(generator.create());
     }
 
     private BiConsumer<InsnList, int[]> generateTypeInsn(JsonObject object, MappingResolver mappings, String type) {

@@ -31,9 +31,9 @@ public class TransformSubtype {
     //The subtype. Either NONE, CONSUMER or PREDICATE
     private SubType subtype;
 
-    private final @Nullable Type originalType;
+    private final Type originalType;
 
-    public TransformSubtype(TransformTypePtr transformType, int arrayDimensionality, SubType subtype, @Nullable Type originalType) {
+    public TransformSubtype(TransformTypePtr transformType, int arrayDimensionality, SubType subtype, Type originalType) {
         this.transformType = transformType;
         this.arrayDimensionality = arrayDimensionality;
         this.subtype = subtype;
@@ -77,12 +77,8 @@ public class TransformSubtype {
      * @return A transform subtype for which nothing is known yet. The transform type is null, array dimensionality is 0 and
      * the subtype is NONE
      */
-    public static TransformSubtype createDefault() {
-        return new TransformSubtype(new TransformTypePtr(null), 0, SubType.NONE, null);
-    }
-
-    public static TransformSubtype createDefault(Type originalType) {
-        return new TransformSubtype(new TransformTypePtr(null), 0, SubType.NONE, originalType);
+    public static TransformSubtype createDefault(Type type) {
+        return new TransformSubtype(new TransformTypePtr(null), 0, SubType.NONE, type);
     }
 
     /**

@@ -5,7 +5,9 @@ import java.util.Objects;
 import it.unimi.dsi.fastutil.Hash;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 
 public class MethodID implements Ancestralizable<MethodID> {
     public static final Hash.Strategy<MethodID> HASH_CALL_TYPE = new Hash.Strategy<>() {
@@ -46,6 +48,10 @@ public class MethodID implements Ancestralizable<MethodID> {
         CallType callType = CallType.fromOpcode(methodCall.getOpcode());
 
         return new MethodID(owner, name, descriptor, callType);
+    }
+
+    public static MethodID of(ClassNode owner, MethodNode method) {
+        return new MethodID(Type.getObjectType(owner.name), method.name, Type.getMethodType(method.desc), ASMUtil.isStatic(method) ? CallType.STATIC : CallType.VIRTUAL);
     }
 
     public Type getOwner() {

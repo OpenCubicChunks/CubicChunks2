@@ -62,7 +62,7 @@ public class MainTransformer {
         transformer.analyzeMethod(blockToSection.method.getName(), blockToSection.method.getDescriptor());
         transformer.cleanUpAnalysis();
 
-        transformer.transformMethod(blockToSection.method.getName(), blockToSection.method.getDescriptor());
+        transformer.generateTransformedMethod(blockToSection.method.getName(), blockToSection.method.getDescriptor());
         transformer.cleanUpTransform();
     }
 
