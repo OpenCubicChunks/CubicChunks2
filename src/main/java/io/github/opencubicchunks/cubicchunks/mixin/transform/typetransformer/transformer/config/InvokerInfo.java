@@ -37,11 +37,10 @@ public class InvokerInfo {
 
     public record InvokerMethodInfo(TransformSubtype[] argTypes, String mixinMethodName, String targetMethodName, String desc) {
         public void addReplacementTo(AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo, InvokerInfo invokerInfo) {
-            Type[] originalTypes = Type.getArgumentTypes(desc);
             List<Type> transformedTypes = new ArrayList<>();
 
             for (int i = 0; i < argTypes.length; i++) {
-                transformedTypes.addAll(argTypes[i].transformedTypes(originalTypes[i]));
+                transformedTypes.addAll(argTypes[i].resultingTypes());
             }
 
             StringBuilder newDescBuilder = new StringBuilder();

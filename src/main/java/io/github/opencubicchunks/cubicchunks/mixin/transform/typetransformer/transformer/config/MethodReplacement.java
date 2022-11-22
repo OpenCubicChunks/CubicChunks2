@@ -31,7 +31,7 @@ public class MethodReplacement {
             if (argTypes[i].getTransformType() == null) {
                 indices.add(0);
             } else {
-                for (int j = 0; j < argTypes[i].transformedTypes(Type.VOID_TYPE).size(); j++) {
+                for (int j = 0; j < argTypes[i].resultingTypes().size(); j++) {
                     indices.add(j);
                 }
             }

@@ -90,7 +90,7 @@ public class MethodParameterInfo {
         StringBuilder sb = new StringBuilder("(");
         for (int i = 0; i < parameterTypes.length; i++) {
             if (parameterTypes[i] != null && parameterTypes[i].getTransformType() != null) {
-                for (Type type : parameterTypes[i].transformedTypes(Type.VOID_TYPE /*This doesn't matter because we know it won't be used because getTransformType() != null*/)) {
+                for (Type type : parameterTypes[i].resultingTypes()) {
                     sb.append(type.getDescriptor());
                 }
             } else {
@@ -99,10 +99,10 @@ public class MethodParameterInfo {
         }
         sb.append(")");
         if (returnType != null && returnType.getTransformType() != null) {
-            if (returnType.transformedTypes(Type.VOID_TYPE).size() != 1) {
+            if (returnType.resultingTypes().size() != 1) {
                 throw new IllegalArgumentException("Return type must have exactly one transform type");
             }
-            sb.append(returnType.transformedTypes(Type.VOID_TYPE).get(0).getDescriptor());
+            sb.append(returnType.resultingTypes().get(0).getDescriptor());
         } else {
             sb.append(Type.getReturnType(originalDesc).getDescriptor());
         }

@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tr
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -12,7 +11,6 @@ import java.util.function.Supplier;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TypeInfo;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
@@ -25,13 +23,6 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class TransformSubtype {
-    //All types that are known to be regular transform subtypes
-    private static final Set<Type> REGULAR_TYPES = new HashSet<>();
-    //All types that are known to be consumer transform types
-    private static final Set<Type> CONSUMER_TYPES = new HashSet<>();
-    //All types that are known to be predicate transform types
-    private static final Set<Type> PREDICATE_TYPES = new HashSet<>();
-
     //A reference to a TransformType. THis means when the transform type gets changed all referenced ones can get notified
     private final TransformTypePtr transformType;
     //Array dimensionality of type. So an array of longs (with type long -> (int, int, int)) would have dimensionality 1
@@ -39,10 +30,13 @@ public class TransformSubtype {
     //The subtype. Either NONE, CONSUMER or PREDICATE
     private SubType subtype;
 
-    public TransformSubtype(TransformTypePtr transformType, int arrayDimensionality, SubType subtype) {
+    private final @Nullable Type originalType;
+
+    public TransformSubtype(TransformTypePtr transformType, int arrayDimensionality, SubType subtype, @Nullable Type originalType) {
         this.transformType = transformType;
         this.arrayDimensionality = arrayDimensionality;
         this.subtype = subtype;
+        this.originalType = originalType;
     }
 
     /**
@@ -79,25 +73,15 @@ public class TransformSubtype {
     }
 
     /**
-     * Initializes {@code REGULAR_TYPES}, {@code CONSUMER_TYPES} and {@code PREDICATE_TYPES} with
-     * the transform types listed in the config
-     * @param config The config to use
-     */
-    public static void init(Config config) {
-        for (var entry : config.getTypes().entrySet()) {
-            var subType = entry.getValue();
-            REGULAR_TYPES.add(subType.getFrom());
-            CONSUMER_TYPES.add(subType.getOriginalConsumerType());
-            PREDICATE_TYPES.add(subType.getOriginalPredicateType());
-        }
-    }
-
-    /**
      * @return A transform subtype for which nothing is known yet. The transform type is null, array dimensionality is 0 and
      * the subtype is NONE
      */
     public static TransformSubtype createDefault() {
-        return new TransformSubtype(new TransformTypePtr(null), 0, SubType.NONE);
+        return new TransformSubtype(new TransformTypePtr(null), 0, SubType.NONE, null);
+    }
+
+    public static TransformSubtype createDefault(Type originalType) {
+        return new TransformSubtype(new TransformTypePtr(null), 0, SubType.NONE, originalType);
     }
 
     /**
@@ -123,7 +107,8 @@ public class TransformSubtype {
         } else {
             subType = SubType.fromString(parts[1]);
         }
-        return new TransformSubtype(new TransformTypePtr(transformType), arrDimensionality, subType);
+
+        return new TransformSubtype(new TransformTypePtr(transformType), arrDimensionality, subType, getRawType(transformType, subType));
     }
 
     /**
@@ -132,17 +117,15 @@ public class TransformSubtype {
      * @return A transform subtype with the given transform type and no array dimensionality
      */
     public static TransformSubtype of(@Nullable TransformType subType) {
-        return new TransformSubtype(new TransformTypePtr(subType), 0, SubType.NONE);
+        return new TransformSubtype(new TransformTypePtr(subType), 0, SubType.NONE, getRawType(subType, SubType.NONE));
     }
 
     /**
      * Creates a TransformSubtype
-     * @param transformType The transform type of the subtype
-     * @param subType The subtype as a string
      * @return A transform subtype with no array dimensionality
      */
-    public static TransformSubtype of(TransformType transformType, String subType) {
-        return new TransformSubtype(new TransformTypePtr(transformType), 0, SubType.fromString(subType));
+    public static TransformSubtype of(TransformType transformType, SubType subType) {
+        return new TransformSubtype(new TransformTypePtr(transformType), 0, subType, getRawType(transformType, subType));
     }
 
     /**
@@ -150,7 +133,11 @@ public class TransformSubtype {
      * @return The original type of the transform type using the subtype of this object
      */
     public Type getRawType(TransformType transform) {
-        return switch (this.subtype) {
+        return getRawType(transform, this.subtype);
+    }
+
+    private static Type getRawType(TransformType transform, SubType subtype) {
+        return switch (subtype) {
             case NONE -> transform.getFrom();
             case PREDICATE -> transform.getOriginalPredicateType();
             case CONSUMER -> transform.getOriginalConsumerType();
@@ -161,24 +148,24 @@ public class TransformSubtype {
      * @param type A type
      * @return The potential subtype of the type. If unknown, returns NONE
      */
-    public static SubType getSubType(Type type, TypeInfo hierarchy) {
+    public static SubType getSubType(@Nullable Type type, Config config) {
         while (type != null) {
             if (type.getSort() == Type.OBJECT) {
-                for (var t: hierarchy.ancestry(type)) {
-                    if (REGULAR_TYPES.contains(t)) {
+                for (var t: config.getTypeInfo().ancestry(type)) {
+                    if (config.getRegularTypes().contains(t)) {
                         return SubType.NONE;
-                    } else if (CONSUMER_TYPES.contains(t)) {
+                    } else if (config.getConsumerTypes().contains(t)) {
                         return SubType.CONSUMER;
-                    } else if (PREDICATE_TYPES.contains(t)) {
+                    } else if (config.getPredicateTypes().contains(t)) {
                         return SubType.PREDICATE;
                     }
                 }
             } else {
-                if (REGULAR_TYPES.contains(type)) {
+                if (config.getRegularTypes().contains(type)) {
                     return SubType.NONE;
-                } else if (CONSUMER_TYPES.contains(type)) {
+                } else if (config.getConsumerTypes().contains(type)) {
                     return SubType.CONSUMER;
-                } else if (PREDICATE_TYPES.contains(type)) {
+                } else if (config.getPredicateTypes().contains(type)) {
                     return SubType.PREDICATE;
                 }
             }
@@ -197,7 +184,7 @@ public class TransformSubtype {
     /**
      * @return The single transformed type of this transform subtype.
      * @throws IllegalStateException If this subtype is not NONE or there is not a single transformed type. To get all the types
-     * use {@link #transformedTypes()}
+     * use {@link #resultingTypes()}
      */
     public Type getSingleType() {
         if (subtype == SubType.NONE && transformType.getValue().getTo().length != 1) {
@@ -223,9 +210,17 @@ public class TransformSubtype {
     //Does not work with array dimensionality
     /**
      * @return The list of transformed types that should replace a value with this transform subtype.
-     * If the transform subtype is not known this will return an empty list.
+     * If this represents a value that does not need to be transformed, it returns a singleton list with the original type.
      */
-    private List<Type> transformedTypes() {
+    public List<Type> resultingTypes() {
+        if (transformType.getValue() == null) {
+            if (this.originalType != null) {
+                return List.of(this.originalType);
+            } else {
+                return List.of(Type.VOID_TYPE);
+            }
+        }
+
         List<Type> types = new ArrayList<>();
         if (subtype == SubType.NONE) {
             types.addAll(Arrays.asList(transformType.getValue().getTo()));
@@ -238,16 +233,15 @@ public class TransformSubtype {
         return types;
     }
 
-    /**
-     * Similar to {@link #transformedTypes()} but returns a list of a single element.
-     * @param subType The type to default to
-     * @return The list of transformed types that should replace a value that has this transform subtype.
-     */
-    public List<Type> transformedTypes(Type subType) {
-        if (transformType.getValue() == null) {
-            return List.of(subType);
+    public int[] getIndices() {
+        List<Type> types = resultingTypes();
+        int[] indices = new int[types.size()];
+
+        for (int i = 1; i < indices.length; i++) {
+            indices[i] = indices[i - 1] + types.get(i - 1).getSize();
         }
-        return transformedTypes();
+
+        return indices;
     }
 
     /**
@@ -255,6 +249,10 @@ public class TransformSubtype {
      * @return The size
      */
     public int getTransformedSize() {
+        if (transformType.getValue() == null) {
+            return Objects.requireNonNull(this.originalType).getSize();
+        }
+
         if (subtype == SubType.NONE) {
             return transformType.getValue().getTransformedSize();
         } else {

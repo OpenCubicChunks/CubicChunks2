@@ -49,12 +49,20 @@ public class ConfigLoader {
             invoker.addReplacementTo(parameterInfo);
         }
 
+        JsonArray suffixedMethods = root.getAsJsonArray("suffixed_methods");
+        List<Type> typesWithSuffixedMethods = new ArrayList<>();
+
+        for (JsonElement element : suffixedMethods) {
+            typesWithSuffixedMethods.add(remapType(Type.getObjectType(element.getAsString()), map));
+        }
+
         Config config = new Config(
             hierarchy,
             transformTypeMap,
             parameterInfo,
             classes,
-            invokers
+            invokers,
+            typesWithSuffixedMethods
         );
 
         return config;
@@ -192,7 +200,7 @@ public class ConfigLoader {
                     }
                 }
 
-                int expansionsNeeded = returnType.transformedTypes(Type.INT_TYPE /*This can be anything cause we just want the length*/).size();
+                int expansionsNeeded = returnType.resultingTypes().size();
 
                 List<Integer>[][] indices = new List[expansionsNeeded][params.length];
 
@@ -277,7 +285,7 @@ public class ConfigLoader {
                 continue;
             }
 
-            List<Type> types = param.transformedTypes(Type.INT_TYPE /*This doesn't matter because we are just querying the size*/);
+            List<Type> types = param.resultingTypes();
             if (types.size() != 1 && types.size() != expansionsNeeded && expansionsNeeded != 1) {
                 throw new IllegalArgumentException("Expansion size does not match parameter size");
             }
@@ -370,7 +378,7 @@ public class ConfigLoader {
                 } else {
                     for (int i = 0; i < params.length; i++) {
                         List<Integer> l = new ArrayList<>();
-                        for (int j = 0; j < params[i].transformedTypes(Type.INT_TYPE).size(); j++) {
+                        for (int j = 0; j < params[i].resultingTypes().size(); j++) {
                             l.add(j);
                         }
                         finalizerIndices[i] = l;

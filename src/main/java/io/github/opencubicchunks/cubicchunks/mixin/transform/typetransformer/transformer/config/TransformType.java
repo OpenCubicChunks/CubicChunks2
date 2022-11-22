@@ -82,11 +82,11 @@ public class TransformType {
         }
 
         if (originalPredicateType != null) {
-            addSpecialInfo(parameterInfo, originalPredicateType, "test", Type.BOOLEAN_TYPE, "predicate", transformedPredicateType);
+            addSpecialInfo(parameterInfo, originalPredicateType, "test", Type.BOOLEAN_TYPE, TransformSubtype.SubType.PREDICATE, transformedPredicateType);
         }
 
         if (originalConsumerType != null) {
-            addSpecialInfo(parameterInfo, originalConsumerType, "accept", Type.VOID_TYPE, "consumer", transformedConsumerType);
+            addSpecialInfo(parameterInfo, originalConsumerType, "accept", Type.VOID_TYPE, TransformSubtype.SubType.CONSUMER, transformedConsumerType);
         }
     }
 
@@ -103,7 +103,13 @@ public class TransformType {
                     }
                 }
             );
-            MethodParameterInfo info = new MethodParameterInfo(methodID, TransformSubtype.createDefault(), new TransformSubtype[] { TransformSubtype.of(this) }, null, methodReplacement);
+            MethodParameterInfo info = new MethodParameterInfo(
+                methodID,
+                TransformSubtype.createDefault(),
+                new TransformSubtype[] { TransformSubtype.of(this) },
+                null,
+                methodReplacement
+            );
             parameterInfo.computeIfAbsent(methodID, k -> new ArrayList<>()).add(info);
             i++;
         }
@@ -135,11 +141,11 @@ public class TransformType {
         parameterInfo.computeIfAbsent(toOriginal, k -> new ArrayList<>()).add(info);
     }
 
-    private void addSpecialInfo(Map<MethodID, List<MethodParameterInfo>> parameterInfo, Type type, String methodName, Type returnType, String subtypeName,
+    private void addSpecialInfo(Map<MethodID, List<MethodParameterInfo>> parameterInfo, Type type, String methodName, Type returnType, TransformSubtype.SubType subType,
                                 Type transformedType) {
         MethodID consumerID = new MethodID(type, methodName, Type.getMethodType(returnType, from), MethodID.CallType.INTERFACE);
 
-        TransformSubtype[] argTypes = new TransformSubtype[] { TransformSubtype.of(this, subtypeName), TransformSubtype.of(this) };
+        TransformSubtype[] argTypes = new TransformSubtype[] { TransformSubtype.of(this, subType), TransformSubtype.of(this) };
 
         MethodReplacement methodReplacement = new MethodReplacement(
             (Function<Type, Integer> variableAllocator) -> {
@@ -152,8 +158,16 @@ public class TransformType {
         );
 
         MethodTransformChecker.Minimum[] minimums = new MethodTransformChecker.Minimum[] {
-            new MethodTransformChecker.Minimum(TransformSubtype.createDefault(), TransformSubtype.of(this, subtypeName), TransformSubtype.createDefault()),
-            new MethodTransformChecker.Minimum(TransformSubtype.createDefault(), TransformSubtype.createDefault(), TransformSubtype.of(this))
+            new MethodTransformChecker.Minimum(
+                TransformSubtype.createDefault(),
+                TransformSubtype.of(this, subType),
+                TransformSubtype.createDefault()
+            ),
+            new MethodTransformChecker.Minimum(
+                TransformSubtype.createDefault(),
+                TransformSubtype.createDefault(),
+                TransformSubtype.of(this)
+            )
         };
 
         MethodParameterInfo info = new MethodParameterInfo(consumerID, TransformSubtype.createDefault(), argTypes, minimums, methodReplacement);

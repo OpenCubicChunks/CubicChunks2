@@ -88,6 +88,22 @@ public class ASMUtil {
         }
     }
 
+    public static void jumpIfCmp(InsnList list, Type type, boolean equal, LabelNode label) {
+        switch (type.getSort()) {
+            case Type.BOOLEAN, Type.CHAR, Type.BYTE, Type.SHORT, Type.INT -> list.add(new JumpInsnNode(equal ? IF_ICMPEQ : IF_ICMPNE, label));
+            case Type.ARRAY, Type.OBJECT -> list.add(new JumpInsnNode(equal ? IF_ACMPEQ : IF_ACMPNE, label));
+            default -> {
+                list.add(new InsnNode(switch (type.getSort()) {
+                    case Type.FLOAT -> FCMPL;
+                    case Type.LONG -> LCMP;
+                    case Type.DOUBLE -> DCMPL;
+                    default -> throw new IllegalArgumentException("Invalid type: " + type);
+                }));
+                list.add(new JumpInsnNode(equal ? IFEQ : IFNE, label));
+            }
+        }
+    }
+
     public static String onlyClassName(String name) {
         name = name.replace('/', '.');
         int index = name.lastIndexOf('.');
@@ -229,33 +245,6 @@ public class ASMUtil {
         } else {
             return 0;
         }
-    }
-
-    /**
-     * Creates a series of instructions which compares two values and jumps if a criterion is met.
-     *
-     * @param type The types that are being compared.
-     * @param opcode Either {@link Opcodes#IF_ICMPEQ} or {@link Opcodes#IF_ICMPNE}. If it is the first, it will jump if the two values are equal. If it is the second, it will jump if the
-     *     two values are not equal.
-     * @param label The label to jump to if the criterion is met.
-     *
-     * @return The instructions. This assumes that the two values are on the stack.
-     */
-    public static InsnList generateCompareAndJump(Type type, int opcode, LabelNode label) {
-        InsnList list = new InsnList();
-        if (type.getSort() == Type.OBJECT) {
-            list.add(new JumpInsnNode(type.getOpcode(opcode), label)); //IF_ACMPEQ or IF_ACMPNE
-        } else if (type == Type.INT_TYPE) {
-            list.add(new JumpInsnNode(opcode, label)); //IF_ICMPEQ or IF_ICMPNE
-        } else {
-            list.add(new InsnNode(getCompare(type)));
-            if (opcode == IF_ICMPEQ) {
-                list.add(new JumpInsnNode(IFEQ, label));
-            } else {
-                list.add(new JumpInsnNode(IFNE, label));
-            }
-        }
-        return list;
     }
 
     /**
@@ -647,6 +636,10 @@ public class ASMUtil {
         return loadClassNode(clazz.getName().replace('.', '/') + ".class");
     }
 
+    public static ClassNode loadClassNode(Type type) {
+        return loadClassNode(type.getInternalName()+ ".class");
+    }
+
     public static ClassNode loadClassNode(String path) {
         try {
             ClassNode classNode = new ClassNode();
@@ -661,6 +654,8 @@ public class ASMUtil {
             throw new RuntimeException(e);
         }
     }
+
+
 
     public static MethodNode getMethod(ClassNode classNode, Predicate<MethodNode> condition) {
         //Ensure there us only one match

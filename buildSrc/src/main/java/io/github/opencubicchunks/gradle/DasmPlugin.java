@@ -37,14 +37,16 @@ public class DasmPlugin implements Plugin<Project> {
         LoomGradleExtension loom = (LoomGradleExtension) project.getExtensions().getByName("loom");
 
         File destinationDir = processResources.getDestinationDir();
-        processResources.filesMatching("dasm/**/*.json", copySpec -> {
-            MappingsProviderImpl mappingsProvider = loom.getMappingsProvider();
+
+        //TODO: Fix this properly
+        //processResources.filesMatching("dasm/**/*.json", copySpec -> {
+        /*    MappingsProviderImpl mappingsProvider = loom.getMappingsProvider();
 
             copySpec.exclude();
             File file = copySpec.getFile();
             File output = copySpec.getRelativePath().getFile(destinationDir);
             processFile(file, output, mappingsProvider);
-        });
+        });*/
     }
 
     private void processFile(File file, File output, MappingsProviderImpl mappingsProvider) {

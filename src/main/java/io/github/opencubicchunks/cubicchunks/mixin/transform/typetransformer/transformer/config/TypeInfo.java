@@ -36,8 +36,9 @@ public class TypeInfo {
     }
 
     private Node load(Type type, JsonObject data, Map<Type, JsonObject> loadInfo, Function<Type, Type> mapper) {
-        if (this.lookup.containsKey(type)) {
-            return this.lookup.get(type);
+        Type mappedType = mapper.apply(type);
+        if (this.lookup.containsKey(mappedType)) {
+            return this.lookup.get(mappedType);
         }
 
         Node superClass = null;
@@ -56,8 +57,17 @@ public class TypeInfo {
 
         boolean isItf = data.get("is_interface").getAsBoolean();
 
-        Node node = new Node(mapper.apply(type), interfaces, superClass, isItf);
-        this.lookup.put(node.getValue(), node);
+        Node node = new Node(mappedType, interfaces, superClass, isItf);
+
+        if (superClass != null) {
+            superClass.getChildren().add(node);
+        }
+
+        for (Node itf : interfaces) {
+            itf.getChildren().add(node);
+        }
+
+        this.lookup.put(mappedType, node);
         return node;
     }
 

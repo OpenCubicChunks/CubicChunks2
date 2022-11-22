@@ -102,7 +102,7 @@ public class ConfigTest {
 
         Type[] returnTypes = methodInfo.getReturnType() == null ?
             new Type[] { Type.VOID_TYPE } :
-            methodInfo.getReturnType().transformedTypes(returnType).toArray(new Type[0]);
+            methodInfo.getReturnType().resultingTypes().toArray(new Type[0]);
 
         for (int i = 0; i < replacement.getParameterIndices().length; i++) {
             List<Type> types = getTypesFromIndices(methodInfo, argTypes, replacement.getParameterIndices()[i]);
@@ -123,7 +123,7 @@ public class ConfigTest {
 
         for (int j = 0; j < indices.length; j++) {
             TransformSubtype subtype = methodInfo.getParameterTypes()[j];
-            List<Type> transformedTypes = subtype.transformedTypes(argTypes[j]);
+            List<Type> transformedTypes = subtype.resultingTypes();
 
             for (int index : indices[j]) {
                 types.add(transformedTypes.get(index));

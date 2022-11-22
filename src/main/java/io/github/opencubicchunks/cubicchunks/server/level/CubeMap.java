@@ -35,15 +35,6 @@ public interface CubeMap {
     @Nullable
     ChunkHolder updateCubeScheduling(long cubePosIn, int newLevel, @Nullable ChunkHolder holder, int oldLevel);
 
-    // implemented by ASM
-    void processCubeUnloads(BooleanSupplier shouldKeepTicking);
-
-    // implemented by ASM
-    void saveAllCubes(boolean flush);
-
-    // implemented by ASM
-    boolean cubeSave(CubeAccess cube);
-
     void setServerChunkCache(ServerChunkCache cache);
 
     // used from ASM

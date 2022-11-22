@@ -333,10 +333,6 @@ test.apply {
 
 val processResources: ProcessResources by tasks
 processResources.apply {
-    outputs.upToDateWhen {
-        false
-    }
-
     inputs.property("version", project.version)
 
     filesMatching("fabric.mod.json") {

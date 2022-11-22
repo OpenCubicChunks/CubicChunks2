@@ -245,7 +245,7 @@ public class TypeTransformerMethods {
         ClassNode classNode = new ClassNode();
         try {
             ClassReader classReader = new ClassReader(is);
-            classReader.accept(classNode, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            classReader.accept(classNode, 0);
         } catch (IOException e) {
             throw new RuntimeException("Could not read class " + className, e);
         }

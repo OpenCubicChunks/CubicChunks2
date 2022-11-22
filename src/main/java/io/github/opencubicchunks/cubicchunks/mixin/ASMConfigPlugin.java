@@ -21,6 +21,8 @@ import javax.annotation.Nullable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ConfigLoader;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FabricMappingsProvider;
 import io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils;
 import io.github.opencubicchunks.dasm.MappingsProvider;
 import io.github.opencubicchunks.dasm.RedirectsParseException;
@@ -45,8 +47,18 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
 
     private final Transformer transformer;
 
+    private final MappingsProvider mappings;
+
     public ASMConfigPlugin() {
-        this.transformer = new Transformer(MappingsProvider.IDENTITY, FabricLoader.getInstance().isDevelopmentEnvironment());
+        this.transformer = new Transformer(
+            MappingsProvider.IDENTITY,
+            TestMappingUtils.isDev()
+        );
+
+        this.mappings = new FabricMappingsProvider(
+            TestMappingUtils.getMappingResolver(),
+            "intermediary"
+        );
 
         List<RedirectsParser.RedirectSet> redirectSets;
         List<RedirectsParser.ClassTarget> targetClasses;
@@ -127,7 +139,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             //Ideally the input json would all have the same, and we'd just figure it out here
             RedirectsParser.ClassTarget target = classTargetByName.get(targetClassName);
             if (target == null) {
-                throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
+                return; //Class is transformed by MainTransformer
             }
             if (target.isWholeClass()) {
                 ClassNode duplicate = new ClassNode();
@@ -226,9 +238,10 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         try {
             Files.createDirectories(savePath.getParent());
 
-            ClassWriter writer = new ClassWriter(0);
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
             targetClass.accept(writer);
-            Files.write(savePath, writer.toByteArray());
+            byte[] bytes = writer.toByteArray();
+            Files.write(savePath, bytes);
             System.out.println("Saved " + targetClassName + " to " + savePath);
         } catch (IOException e) {
             throw new IllegalStateException(e);

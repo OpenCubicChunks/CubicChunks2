@@ -111,10 +111,10 @@ public class VariableAllocator {
      * @param to The index of the last place this variable will be used
      * @param n The number of consecutive slots to allocate
      */
-    public void allocate(int from, int to, int n) {
+    public int allocate(int from, int to, int n) {
         int level = 0;
         while (true) {
-            if (level + n - 1 >= variables.size()) {
+            while (level + n - 1 >= variables.size()) {
                 variables.add(new boolean[maxLength]);
             }
 
@@ -143,7 +143,7 @@ public class VariableAllocator {
                     }
                 }
 
-                return;
+                return level + baseline;
             }
 
             level++;
