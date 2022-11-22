@@ -1,5 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.util;
 
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.FieldNode;
 
@@ -15,11 +16,6 @@ public record FieldID(Type owner, String name, Type desc) implements Ancestraliz
     }
 
     @Override
-    public boolean equalsWithoutType(FieldID other) {
-        return other.name.equals(name) && other.desc.equals(desc);
-    }
-
-    @Override
     public String toString() {
         return ASMUtil.onlyClassName(owner.getClassName()) + "." + name;
     }
@@ -28,7 +24,7 @@ public record FieldID(Type owner, String name, Type desc) implements Ancestraliz
         return toNode(null, access);
     }
 
-    public FieldNode toNode(Object defaultValue, int access) {
+    public FieldNode toNode(@Nullable Object defaultValue, int access) {
         return new FieldNode(access, name, desc.getDescriptor(), null, defaultValue);
     }
 }

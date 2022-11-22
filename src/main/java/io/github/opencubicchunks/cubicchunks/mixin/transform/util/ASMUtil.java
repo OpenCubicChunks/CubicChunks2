@@ -119,36 +119,6 @@ public class ASMUtil {
         return frame.getStack(frame.getStackSize() - 1);
     }
 
-    public static Type getType(int opcode) {
-        return switch (opcode) {
-            case ALOAD, ASTORE -> Type.getType("Ljava/lang/Object;");
-            case DLOAD, DSTORE -> Type.DOUBLE_TYPE;
-            case FLOAD, FSTORE -> Type.FLOAT_TYPE;
-            case ILOAD, ISTORE -> Type.INT_TYPE;
-            case LLOAD, LSTORE -> Type.LONG_TYPE;
-            default -> {
-                throw new UnsupportedOperationException("Opcode " + opcode + " is not supported yet!");
-            }
-        };
-    }
-
-    public static int stackConsumed(AbstractInsnNode insn) {
-        if (insn instanceof MethodInsnNode methodCall) {
-            return argumentCount(methodCall.desc, methodCall.getOpcode() == INVOKESTATIC);
-        } else if (insn instanceof InvokeDynamicInsnNode dynamicCall) {
-            return argumentCount(dynamicCall.desc, true);
-        } else {
-            return switch (insn.getOpcode()) {
-                case ISTORE, LSTORE, FSTORE, DSTORE, ASTORE, ANEWARRAY, ARETURN, ARRAYLENGTH, ATHROW, CHECKCAST, D2F, D2I, D2L, DNEG, DRETURN, F2D, F2I, F2L, FNEG, FRETURN, GETFIELD,
-                    TABLESWITCH, PUTSTATIC, POP2, L2I, L2F, LNEG, LRETURN, MONITORENTER, MONITOREXIT, POP, I2B, I2C, I2D, I2F, I2L, I2S, INEG, IRETURN, L2D, DUP -> 1;
-                case AALOAD, BALOAD, CALOAD, DADD, DALOAD, DCMPG, DCMPL, DDIV, DMUL, DREM, DSUB, FADD, FALOAD, FCMPG, FCMPL, FDIV, FMUL, FREM, FSUB, SALOAD, PUTFIELD, LSHR, LSUB, LALOAD,
-                    LCMP, LDIV, LMUL, LOR, LREM, LSHL, LUSHR, LXOR, LADD, IADD, IALOAD, IAND, IDIV, IMUL, IOR, IREM, ISHL, ISHR, ISUB, IUSHR, IXOR -> 2;
-                case AASTORE, BASTORE, CASTORE, DASTORE, FASTORE, SASTORE, LASTORE, IASTORE -> 3;
-                default -> 0;
-            };
-        }
-    }
-
     public static boolean isConstant(AbstractInsnNode insn) {
         if (insn instanceof LdcInsnNode) {
             return true;
@@ -159,18 +129,6 @@ public class ASMUtil {
         int opcode = insn.getOpcode();
         return opcode == ICONST_M1 || opcode == ICONST_0 || opcode == ICONST_1 || opcode == ICONST_2 || opcode == ICONST_3 || opcode == ICONST_4 || opcode == ICONST_5 || opcode == LCONST_0
             || opcode == LCONST_1 || opcode == FCONST_0 || opcode == FCONST_1 || opcode == FCONST_2 || opcode == DCONST_0 || opcode == DCONST_1;
-    }
-
-    public static int getCompare(Type subType) {
-        if (subType == Type.FLOAT_TYPE) {
-            return FCMPL;
-        } else if (subType == Type.DOUBLE_TYPE) {
-            return DCMPL;
-        } else if (subType == Type.LONG_TYPE) {
-            return LCMP;
-        } else {
-            throw new IllegalArgumentException("Type " + subType + " is not allowed!");
-        }
     }
 
     public static Object getConstant(AbstractInsnNode insn) {
@@ -454,139 +412,6 @@ public class ASMUtil {
         };
     }
 
-    /**
-     * Returns the amount of values that are pushed onto the stack by the given opcode. This will usually be 0 or 1 but some DUP and SWAPs can have higher values (up to six). If you know
-     * that none of the instructions are DUP_X2, DUP2, DUP2_X1, DUP2_X2, POP2 you can use the {@link #numValuesReturnedBasic(AbstractInsnNode)} method instead which does not require the
-     * frame.
-     *
-     * @param frame
-     * @param insnNode
-     *
-     * @return
-     */
-    public static int numValuesReturned(Frame<?> frame, AbstractInsnNode insnNode) {
-        //Manage DUP and SWAPs
-        int opcode = insnNode.getOpcode();
-        int top = frame.getStackSize();
-        if (opcode == DUP) {
-            return 2;
-        } else if (opcode == DUP_X1) {
-            return 3;
-        } else if (opcode == DUP_X2) {
-            Value value2 = frame.getStack(top - 2);
-            if (value2.getSize() == 2) {
-                return 3;
-            } else {
-                return 4;
-            }
-        } else if (opcode == DUP2) {
-            Value value1 = frame.getStack(top - 1);
-            if (value1.getSize() == 2) {
-                return 2;
-            } else {
-                return 4;
-            }
-        } else if (opcode == DUP2_X1) {
-            Value value1 = frame.getStack(top - 1);
-            if (value1.getSize() == 2) {
-                return 3;
-            } else {
-                return 5;
-            }
-        } else if (opcode == DUP2_X2) {
-            return handleDup2X2(frame, top);
-        } else if (opcode == SWAP) {
-            return 2;
-        } else if (opcode == POP2) {
-            Value value1 = frame.getStack(top - 1);
-            if (value1.getSize() == 2) {
-                return 1;
-            } else {
-                return 2;
-            }
-        }
-
-        //The remaining do not need the frame context
-        return numValuesReturnedBasic(insnNode);
-    }
-
-    private static int handleDup2X2(Frame<?> frame, int top) {
-    /*
-     Here are the forms of the instruction:
-     The rows are the forms, the columns are the value nums from https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-6.html and the number is the computational type of the
-     argument. '-' Represents a value that is not used. On the right is the resulting stack and the amount of values that are pushed.
-
-           | 1 | 2 | 3 | 4 |
-     Form 1| 1 | 1 | 1 | 1 | -> [2, 1, 4, 3, 2, 1] (6)
-     Form 2| 2 | 1 | 1 | - | -> [1, 3, 2, 1] (4)
-     Form 3| 1 | 1 | 2 | - | -> [2, 1, 3, 2, 1] (5)
-     Form 4| 2 | 2 | - | - | -> [1, 2, 1] (3)
-     */
-
-        Value value1 = frame.getStack(top - 1);
-        if (value1.getSize() == 2) {
-            Value value2 = frame.getStack(top - 2);
-            if (value2.getSize() == 2) {
-                return 3; //Form 4
-            } else {
-                return 4; //Form 2
-            }
-        } else {
-            Value value3 = frame.getStack(top - 3);
-            if (value3.getSize() == 2) {
-                return 5; //Form 3
-            } else {
-                return 6; //Form 1
-            }
-        }
-    }
-
-
-    private static int numValuesReturnedBasic(AbstractInsnNode insnNode) {
-        if (insnNode.getOpcode() == -1) {
-            return 0;
-        }
-
-        if (numValuesReturnedNeedsFrame(insnNode)) {
-            throw new IllegalArgumentException("The frame is required for the following opcodes: " + opcodeName(insnNode.getOpcode()));
-        }
-
-        return numValuesReturnUnsafe(insnNode);
-    }
-
-    private static int numValuesReturnUnsafe(AbstractInsnNode insnNode) {
-        return switch (insnNode.getOpcode()) {
-            case AALOAD, ACONST_NULL, ALOAD, ANEWARRAY, ARRAYLENGTH, BALOAD, BIPUSH, CALOAD, CHECKCAST, D2F, D2I, D2L, DADD, DALOAD, DCMPG, DCMPL, DCONST_0, DCONST_1, DDIV, DLOAD, DMUL,
-                DNEG, DREM, DSUB, F2D, F2I, F2L, FADD, FALOAD, FCMPG, FCMPL, FCONST_0, FCONST_1, FCONST_2, FDIV, FLOAD, FMUL, FNEG, FREM, FSUB, GETFIELD, GETSTATIC, I2B, I2C, I2D, I2F,
-                I2L, I2S, IADD, IALOAD, IAND, ICONST_0, ICONST_1, ICONST_2, ICONST_3, ICONST_4, ICONST_5, ICONST_M1, IDIV, ILOAD, IMUL, INEG, INSTANCEOF, IOR, IREM, ISHL, ISHR, ISUB,
-                IUSHR, IXOR, JSR, L2D, L2F, L2I, LADD, LALOAD, LAND, LCMP, LCONST_0, LCONST_1, LDC, LDIV, LLOAD, LMUL, LNEG, LOR, LREM, LSHL, LSHR, LSUB, LUSHR, LXOR, MULTIANEWARRAY, NEW,
-                NEWARRAY, SALOAD, SIPUSH -> 1;
-            case AASTORE, ARETURN, ASTORE, ATHROW, BASTORE, CASTORE, DRETURN, DSTORE, FASTORE, FRETURN, FSTORE, GOTO, IASTORE, IF_ACMPEQ, IF_ACMPNE, IF_ICMPEQ, IF_ICMPNE, IF_ICMPGE,
-                IF_ICMPLE, IF_ICMPGT, IF_ICMPLT, IFEQ, IFNE, IFGE, IFLE, IFGT, IFLT, IFNONNULL, IFNULL, IINC, IRETURN, ISTORE, LASTORE, LOOKUPSWITCH, TABLESWITCH, LRETURN, LSTORE,
-                MONITORENTER, MONITOREXIT, NOP, POP, PUTFIELD, PUTSTATIC, RET, RETURN, SASTORE -> 0;
-            case DUP, SWAP -> 2;
-            case DUP_X1 -> 3;
-            default -> {
-                if (insnNode instanceof MethodInsnNode methodCall) {
-                    yield methodPush(methodCall.desc);
-                } else if (insnNode instanceof InvokeDynamicInsnNode methodCall) {
-                    yield methodPush(methodCall.desc);
-                } else {
-                    throw new IllegalArgumentException("Unsupported instruction: " + insnNode.getClass().getSimpleName());
-                }
-            }
-        };
-    }
-
-    private static boolean numValuesReturnedNeedsFrame(AbstractInsnNode insnNode) {
-        int op = insnNode.getOpcode();
-        return op == DUP_X2 || op == DUP2_X1 || op == DUP2_X2 || op == POP2;
-    }
-
-    private static int methodPush(String desc) {
-        return Type.getReturnType(desc) == Type.VOID_TYPE ? 0 : 1;
-    }
-
     public static String prettyPrintMethod(String name, String descriptor) {
         Type[] types = Type.getArgumentTypes(descriptor);
         Type returnType = Type.getReturnType(descriptor);
@@ -609,37 +434,8 @@ public class ASMUtil {
         return sb.toString();
     }
 
-    @Nullable
-    public static AbstractInsnNode getFirstMatch(InsnList instructions, Predicate<AbstractInsnNode> predicate) {
-        return getFirstMatch(instructions.getFirst(), predicate);
-    }
-
-    /**
-     * Finds the first instruction in a linked list of instructions that matches a provided condition.
-     *
-     * @param start The head of the linked list of instructions to search.
-     * @param predicate The condition to match.
-     *
-     * @return The first instruction in the linked list that matches the condition. If {@code start} is null or no instruction is found, null is returned.
-     */
-    @Nullable
-    public static AbstractInsnNode getFirstMatch(@Nullable final AbstractInsnNode start, final Predicate<AbstractInsnNode> predicate) {
-        AbstractInsnNode current = start;
-        while (current != null) {
-            if (predicate.test(current)) {
-                return current;
-            }
-            current = current.getNext();
-        }
-        return null;
-    }
-
     public static ClassNode loadClassNode(Class<?> clazz) {
         return loadClassNode(clazz.getName().replace('.', '/') + ".class");
-    }
-
-    public static ClassNode loadClassNode(Type type) {
-        return loadClassNode(type.getInternalName()+ ".class");
     }
 
     public static ClassNode loadClassNode(String path) {
@@ -655,25 +451,6 @@ public class ASMUtil {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-
-
-    public static MethodNode getMethod(ClassNode classNode, Predicate<MethodNode> condition) {
-        //Ensure there us only one match
-
-        List<MethodNode> matches = new ArrayList<>();
-        for (MethodNode method : classNode.methods) {
-            if (condition.test(method)) {
-                matches.add(method);
-            }
-        }
-
-        if (matches.size() != 1) {
-            throw new IllegalArgumentException("Expected one match, but found " + matches.size());
-        }
-
-        return matches.get(0);
     }
 
     public static String getDescriptor(Method method) {

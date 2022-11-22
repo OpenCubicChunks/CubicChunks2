@@ -10,10 +10,9 @@ import org.objectweb.asm.tree.analysis.Frame;
 /**
  * Holds the results of the analysis of a single method.
  * @param methodNode The method these results are for
- * @param argTypes The deduced transformed types of the parameters of the method.
  * If the method is not static, this includes information for the 'this' parameter
  */
-public record AnalysisResults(MethodNode methodNode, TransformSubtype[] argTypes, Frame<TransformTrackingValue>[] frames) {
+public record AnalysisResults(MethodNode methodNode, Frame<TransformTrackingValue>[] frames) {
     /**
      * Prints information about the analysis results.
      * @param out Where to print the information.
@@ -22,7 +21,7 @@ public record AnalysisResults(MethodNode methodNode, TransformSubtype[] argTypes
     public void print(PrintStream out, boolean printFrames) {
         out.println("Analysis Results for " + methodNode.name);
         out.println("  Arg Types:");
-        for (TransformSubtype argType : argTypes) {
+        for (TransformSubtype argType : this.getArgTypes()) {
             out.println("    " + argType);
         }
 
@@ -45,11 +44,22 @@ public record AnalysisResults(MethodNode methodNode, TransformSubtype[] argTypes
         }
     }
 
+    public TransformSubtype[] getArgTypes() {
+        TransformSubtype[] argTypes = new TransformSubtype[methodNode.desc.length() - methodNode.desc.indexOf(')') - 1];
+
+        for (int i = 0; i < argTypes.length; i += frames[0].getLocal(i).getSize()) {
+            argTypes[i] = frames[0].getLocal(i).getTransform();
+        }
+
+        return argTypes;
+    }
+
     /**
      * Creates the new description using the transformed argument types
      * @return A descriptor as a string
      */
     public String getNewDesc() {
+        TransformSubtype[] argTypes = getArgTypes();
         TransformSubtype[] types = argTypes;
         if (!ASMUtil.isStatic(methodNode)) {
             //If the method is not static then the first element of this.types is the 'this' argument.

@@ -92,11 +92,6 @@ public class MethodID implements Ancestralizable<MethodID> {
     }
 
     @Override
-    public boolean equalsWithoutType(MethodID other) {
-        return Objects.equals(name, other.name) && Objects.equals(descriptor, other.descriptor);
-    }
-
-    @Override
     public String toString() {
         String ownerName = ASMUtil.onlyClassName(owner.getClassName());
 

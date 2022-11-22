@@ -26,25 +26,13 @@ public class TransformTrackingValue implements Value {
     final Set<UnresolvedMethodTransform> possibleTransformChecks = new HashSet<>(); //Used to track possible transform checks
 
     private final @Nullable Type type;
-    private final Set<AbstractInsnNode> source;
-    private final Set<Integer> localVars; //Used uniquely for parameters
-    private final Set<AbstractInsnNode> consumers = new HashSet<>(); //Any instruction which "consumes" this value
-    private final Set<FieldSource> fieldSources = new HashSet<>(); //Used for field detecting which field this value comes from. For now only tracks instance fields (i.e not static)
     private final AncestorHashMap<FieldID, TransformTrackingValue> pseudoValues;
-
-    private final List<TransformTrackingValue> mergedFrom = new ArrayList<>(2);
-    private final List<TransformTrackingValue> mergedTo = new ArrayList<>(1);
-
     private final TransformSubtype transform;
-
     private final Set<TransformTrackingValue> valuesWithSameType = new HashSet<>();
-
     private final Config config;
 
     public TransformTrackingValue(@Nullable Type type, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues, Config config) {
         this.type = type;
-        this.source = new HashSet<>();
-        this.localVars = new HashSet<>();
         this.pseudoValues = fieldPseudoValues;
         this.transform = TransformSubtype.createDefault(type);
         this.config = config;
@@ -53,44 +41,8 @@ public class TransformTrackingValue implements Value {
         this.transform.setSubType(TransformSubtype.getSubType(type, config));
     }
 
-    public TransformTrackingValue(@Nullable Type type, int localVar, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues, Config config) {
+    public TransformTrackingValue(@Nullable Type type, TransformSubtype transform, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues, Config config) {
         this.type = type;
-        this.source = new HashSet<>();
-        this.localVars = new HashSet<>();
-        localVars.add(localVar);
-        this.pseudoValues = fieldPseudoValues;
-        this.transform = TransformSubtype.createDefault(type);
-        this.config = config;
-
-        this.transform.getTransformTypePtr().addTrackingValue(this);
-        this.transform.setSubType(TransformSubtype.getSubType(type, config));
-    }
-
-    public TransformTrackingValue(@Nullable Type type, AbstractInsnNode source, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues, Config config) {
-        this(type, fieldPseudoValues, config);
-        this.source.add(source);
-    }
-
-    public TransformTrackingValue(@Nullable Type type, AbstractInsnNode insn, int var, TransformSubtype transform, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues,
-                                  Config config) {
-        this.type = type;
-        this.source = new HashSet<>();
-        this.source.add(insn);
-        this.localVars = new HashSet<>();
-        this.localVars.add(var);
-        this.transform = transform;
-        this.pseudoValues = fieldPseudoValues;
-        this.config = config;
-
-        this.transform.getTransformTypePtr().addTrackingValue(this);
-        this.transform.setSubType(TransformSubtype.getSubType(type, config));
-    }
-
-    public TransformTrackingValue(@Nullable Type type, Set<AbstractInsnNode> source, Set<Integer> localVars, TransformSubtype transform,
-                                  AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues, Config config) {
-        this.type = type;
-        this.source = source;
-        this.localVars = localVars;
         this.transform = transform;
         this.pseudoValues = fieldPseudoValues;
         this.config = config;
@@ -108,18 +60,10 @@ public class TransformTrackingValue implements Value {
 
         TransformTrackingValue newValue = new TransformTrackingValue(
             type,
-            union(source, other.source),
-            union(localVars, other.localVars),
             transform,
             pseudoValues,
             config
         );
-
-        newValue.mergedFrom.add(this);
-        newValue.mergedFrom.add(other);
-
-        this.mergedTo.add(newValue);
-        other.mergedTo.add(newValue);
 
         return newValue;
     }
@@ -165,34 +109,6 @@ public class TransformTrackingValue implements Value {
                 check.accept();
             }
         }
-
-        if (fieldSources.size() > 0) {
-            for (FieldSource fieldSource : fieldSources) {
-                //System.out.println("Field " + source.root() + " is now " + newType);
-                FieldID id = new FieldID(Type.getObjectType(fieldSource.classNode()), fieldSource.fieldName(), Type.getType(fieldSource.fieldDesc()));
-                if (pseudoValues.containsKey(id)) {
-                    TransformTrackingValue value = pseudoValues.get(id);
-                    //value.transform.setArrayDimensionality(source.arrayDepth());
-                    value.setTransformType(newType);
-                }
-            }
-        }
-    }
-
-    public void addFieldSource(FieldSource fieldSource) {
-        fieldSources.add(fieldSource);
-    }
-
-    public void addFieldSources(Set<FieldSource> sources) {
-        this.fieldSources.addAll(sources);
-    }
-
-    public Set<FieldSource> getFieldSources() {
-        return fieldSources;
-    }
-
-    public void addPossibleTransformCheck(UnresolvedMethodTransform transformCheck) {
-        possibleTransformChecks.add(transformCheck);
     }
 
     @Override
@@ -204,12 +120,11 @@ public class TransformTrackingValue implements Value {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TransformTrackingValue that = (TransformTrackingValue) o;
-        return Objects.equals(type, that.type) && Objects.equals(source, that.source) && Objects
-            .equals(consumers, that.consumers);
+        return Objects.equals(type, that.type) && Objects.equals(transform, that.transform);
     }
 
     @Override public int hashCode() {
-        return Objects.hash(type, source, localVars, consumers, transform);
+        return Objects.hash(type, transform);
     }
 
     public static <T> Set<T> union(Set<T> first, Set<T> second) {
@@ -218,46 +133,8 @@ public class TransformTrackingValue implements Value {
         return union;
     }
 
-    public Type getType() {
+    public @Nullable Type getType() {
         return type;
-    }
-
-    public Set<AbstractInsnNode> getSource() {
-        return source;
-    }
-
-    public Set<Integer> getLocalVars() {
-        return localVars;
-    }
-
-    public Set<AbstractInsnNode> getConsumers() {
-        return consumers;
-    }
-
-    public void consumeBy(AbstractInsnNode consumer) {
-        consumers.add(consumer);
-    }
-
-    public Set<TransformTrackingValue> getAllRelatedValues() {
-        Set<TransformTrackingValue> relatedValues = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
-
-        Set<TransformTrackingValue> newValues = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
-        newValues.addAll(mergedTo);
-        newValues.add(this);
-
-        while (!newValues.isEmpty()) {
-            Set<TransformTrackingValue> nextValues = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
-            for (TransformTrackingValue value : newValues) {
-                relatedValues.add(value);
-                nextValues.addAll(value.mergedFrom);
-                nextValues.addAll(value.mergedTo);
-            }
-            nextValues.removeAll(relatedValues);
-            nextValues.removeAll(newValues);
-            newValues = nextValues;
-        }
-
-        return relatedValues;
     }
 
     public static void setSameType(TransformTrackingValue first, TransformTrackingValue second) {
@@ -296,19 +173,6 @@ public class TransformTrackingValue implements Value {
 
         if (transform.getTransformType() != null) {
             sb.append(" (").append(transform).append(")");
-        }
-
-        if (fieldSources.size() > 0) {
-            sb.append(" (from ");
-            int i = 0;
-            for (FieldSource fieldSource : fieldSources) {
-                sb.append(fieldSource.toString());
-                if (i < fieldSources.size() - 1) {
-                    sb.append(", ");
-                }
-                i++;
-            }
-            sb.append(")");
         }
 
         return sb.toString();

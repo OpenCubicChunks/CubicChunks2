@@ -83,9 +83,7 @@ public class MixinCrashReport {
     private @Nullable Method getMethodIfSynthetic(StackTraceElement element) {
         try {
             Class<?> clazz = Class.forName(element.getClassName());
-            Method method = TypeTransformer.getSyntheticMethod(clazz, element.getMethodName(), element.getLineNumber());
-
-            return method;
+            return TypeTransformer.getSyntheticMethod(clazz, element.getMethodName(), element.getLineNumber());
         } catch (ClassNotFoundException e) {
             //Do nothing
         }

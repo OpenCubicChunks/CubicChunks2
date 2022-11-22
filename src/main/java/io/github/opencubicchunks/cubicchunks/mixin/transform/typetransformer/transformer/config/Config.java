@@ -110,10 +110,6 @@ public class Config {
         return classes;
     }
 
-    public Map<Type, InvokerInfo> getInvokers() {
-        return invokers;
-    }
-
     /**
      * Makes DUP instructions (DUP, DUP_X1, SWAP, etc...) actually make duplicates for all values e.g Old: [Value@1] -> [Value@1, Value@2 (copyOperation(Value@1))] New: [Value@1] -> [Value@2
      * (copyOperation(Value@1)), Value@3 (copyOperation(Value@1))]
