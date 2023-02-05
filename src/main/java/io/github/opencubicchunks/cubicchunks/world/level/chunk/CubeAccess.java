@@ -2,9 +2,12 @@ package io.github.opencubicchunks.cubicchunks.world.level.chunk;
 
 import static io.github.opencubicchunks.cc_core.api.CubicConstants.DIAMETER_IN_BLOCKS;
 import static io.github.opencubicchunks.cc_core.api.CubicConstants.DIAMETER_IN_SECTIONS;
-import static io.github.opencubicchunks.cc_core.utils.Coords.*;
 import static io.github.opencubicchunks.cc_core.utils.Coords.blockToCubeLocalSection;
-import static io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor.*;
+import static io.github.opencubicchunks.cc_core.utils.Coords.blockToIndex;
+import static io.github.opencubicchunks.cc_core.utils.Coords.blockToLocal;
+import static io.github.opencubicchunks.cc_core.utils.Coords.columnToColumnIndex;
+import static io.github.opencubicchunks.cc_core.utils.Coords.sectionToIndex;
+import static io.github.opencubicchunks.cc_core.utils.Coords.sectionToMinBlock;
 
 import java.util.List;
 import java.util.Map;
@@ -15,7 +18,6 @@ import javax.annotation.Nullable;
 import com.google.common.collect.Maps;
 import com.mojang.datafixers.util.Either;
 import io.github.opencubicchunks.cc_core.api.CubePos;
-import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapSource;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
