@@ -4,9 +4,11 @@ import io.github.opencubicchunks.gradle.GeneratePackageInfo
 import org.gradle.internal.os.OperatingSystem
 import java.util.*
 
+
 buildscript {
     dependencies {
         classpath("com.google.code.gson:gson:2.8.5")
+        classpath("io.github.opencubicchunks:stirrin:1.1.7")
     }
 }
 plugins {
@@ -18,6 +20,28 @@ plugins {
     id("io.github.opencubicchunks.gradle.mcGitVersion")
     id("io.github.opencubicchunks.gradle.mixingen")
     id("io.github.opencubicchunks.gradle.dasm")
+    id("io.github.opencubicchunks.stirrin").version("1.1.7")
+}
+
+stirrin {
+    setAcceptedJars(".*minecraft.*")
+    setConfigs(setOf(
+            "cubicchunks.mixins.access.json",
+            "cubicchunks.mixins.asm.json",
+            "cubicchunks.mixins.asmfixes.json",
+            "cubicchunks.mixins.core.json",
+            "cubicchunks.mixins.debug.json",
+            "cubicchunks.mixins.levelgen.json",
+            "cubicchunks.mixins.optifine.json"
+    ))
+    setAdditionalSourceSets(
+            setOf(
+                file("CubicChunksCore/src/main/java"),
+                    org.gradle.internal.jvm.Jvm.current().javaHome
+            )
+//            project(":CubicChunksCore").java.sourceSets.main.get().java.srcDirs
+    )
+    setDebug(true) // if true, the artifact transform is always run
 }
 
 val minecraftVersion: String by project
@@ -266,7 +290,7 @@ dependencies {
     debugCompile("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
     debugRuntime("org.lwjgl:lwjgl::$lwjglNatives")
 
-    include(implementation("com.github.OpenCubicChunks:dasm:81e0a37")!!)
+    include(implementation("com.github.OpenCubicChunks:dasm:2895c9ccc8")!!)
     include(implementation("io.github.opencubicchunks:regionlib:0.63.0-SNAPSHOT")!!)
     include(implementation("org.spongepowered:noise:2.0.0-SNAPSHOT")!!)
 
