@@ -298,6 +298,10 @@ jar.apply {
     }
 }
 
+if (project.tasks.findByName("ideaSyncTask") != null) {
+    project.tasks.findByName("ideaSyncTask")!!.dependsOn("CubicChunksCore:assemble")
+}
+
 // unzipping subproject (CubicChunksCore) tests
 val unzipTests by tasks.creating(Copy::class) {
     outputs.upToDateWhen {
