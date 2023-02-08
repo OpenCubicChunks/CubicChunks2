@@ -24,7 +24,6 @@ import io.github.opencubicchunks.cubicchunks.chunk.VerticalViewDistanceListener;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkMapAccess;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeHolder;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
-import io.github.opencubicchunks.cubicchunks.server.level.CubicDistanceManager;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType;
 import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
 import io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner;
@@ -94,11 +93,11 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
 
     @Override
     public <T> void addCubeRegionTicket(TicketType<T> type, CubePos pos, int distance, T value) {
-        ((CubicDistanceManager) this.distanceManager).addCubeRegionTicket(type, pos, distance, value);
+        this.distanceManager.addCubeRegionTicket(type, pos, distance, value);
     }
 
     public <T> void removeCubeRegionTicket(TicketType<T> type, CubePos pos, int distance, T value) {
-        ((CubicDistanceManager) this.distanceManager).removeCubeRegionTicket(type, pos, distance, value);
+        this.distanceManager.removeCubeRegionTicket(type, pos, distance, value);
     }
 
     @Override public int getTickingGeneratedCubes() {
@@ -182,7 +181,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     // forceChunk
     @Override
     public void forceCube(CubePos pos, boolean add) {
-        ((CubicDistanceManager) this.distanceManager).updateCubeForced(pos, add);
+        this.distanceManager.updateCubeForced(pos, add);
     }
 
 
@@ -216,7 +215,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
         int j = 33 + CubeStatus.getDistance(requiredStatus);
         ChunkHolder chunkholder = this.getVisibleCubeIfPresent(i);
         if (load) {
-            ((CubicDistanceManager) this.distanceManager).addCubeTicket(CubicTicketType.UNKNOWN, cubePos, j, cubePos);
+            this.distanceManager.addCubeTicket(CubicTicketType.UNKNOWN, cubePos, j, cubePos);
             if (this.chunkAbsent(chunkholder, j)) {
                 ProfilerFiller profiler = this.level.getProfiler();
                 profiler.push("chunkLoad");

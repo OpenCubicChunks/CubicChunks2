@@ -41,7 +41,6 @@ stirrin {
             )
 //            project(":CubicChunksCore").java.sourceSets.main.get().java.srcDirs
     )
-    setDebug(true) // if true, the artifact transform is always run
 }
 
 val minecraftVersion: String by project
