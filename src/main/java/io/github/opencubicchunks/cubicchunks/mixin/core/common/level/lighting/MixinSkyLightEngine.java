@@ -6,6 +6,7 @@ import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMap;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
+import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LayerLightSectionStorageAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;
@@ -162,12 +163,12 @@ public abstract class MixinSkyLightEngine extends MixinLayerLightEngine<SkyLight
                 ColumnCubeMap columnCubeMap = ((ColumnCubeMapGetter) chunk).getCubeMap();
                 if (!columnCubeMap.isLoaded(cubePos.getY())) {
                     // This is probably only happening because we don't have load order fixed yet
-                    System.out.println(cube.getCubePos() + " : Cube not in cubemap during sky lighting");
+                    CubicChunks.LOGGER.warn(cube.getCubePos() + " : Cube not in cubemap during sky lighting");
                 }
 
                 Heightmap heightmap = ((LightHeightmapGetter) chunk).getLightHeightmap();
                 if (heightmap == null) {
-                    System.out.println("heightmap null");
+                    CubicChunks.LOGGER.warn("heightmap null");
                     return;
                 }
                 for (int z = 0; z < 16; z++) {

@@ -177,7 +177,7 @@ public class LevelCube extends CubeAccess {
 
                 this.lightHeightmaps[i] = protoCubeLightHeightmaps[i];
                 if (this.lightHeightmaps[i] == null) {
-                    System.out.println("Got a null light heightmap while upgrading from CubePrimer at " + this.cubePos);
+                    CubicChunks.LOGGER.warn("Got a null light heightmap while upgrading from CubePrimer at " + this.cubePos);
                 } else {
                     this.lightHeightmaps[i].loadSource(cubeMinSection.x() + localX, cubeMinSection.z() + localZ, ((CubicServerLevel) this.level).getHeightmapStorage(), this);
                 }

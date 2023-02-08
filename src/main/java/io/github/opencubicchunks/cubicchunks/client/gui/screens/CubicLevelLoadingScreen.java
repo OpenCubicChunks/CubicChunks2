@@ -22,6 +22,7 @@ import com.mojang.math.Vector3f;
 import com.mojang.math.Vector4f;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
+import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.UserFunction;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.StoringCubeProgressListener;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
@@ -73,19 +74,19 @@ public class CubicLevelLoadingScreen {
         List<ChunkStatus> statusList = ChunkStatus.getStatusList();
 
         map.put(statusList.get(0), 0xFF00FF);
-        System.out.println(statusList.get(0) + ": 0x" + Integer.toHexString(0xFF00FF).toUpperCase(Locale.ROOT));
+        CubicChunks.LOGGER.debug(statusList.get(0) + ": 0x" + Integer.toHexString(0xFF00FF).toUpperCase(Locale.ROOT));
         map.put(statusList.get(1), 0x444444);
-        System.out.println(statusList.get(1) + ": 0x" + Integer.toHexString(0).toUpperCase(Locale.ROOT));
+        CubicChunks.LOGGER.debug(statusList.get(1) + ": 0x" + Integer.toHexString(0).toUpperCase(Locale.ROOT));
 
         for (int i = 2; i < statusList.size() - 1; i++) {
             ChunkStatus chunkStatus = statusList.get(i);
             int v = hsvToRgb((float) (i - 2) / (statusList.size() - 3), 1, 1);
             map.put(chunkStatus, v);
-            System.out.println(chunkStatus + ": 0x" + Integer.toHexString(v).toUpperCase(Locale.ROOT));
+            CubicChunks.LOGGER.debug(chunkStatus + ": 0x" + Integer.toHexString(v).toUpperCase(Locale.ROOT));
         }
 
         map.put(statusList.get(statusList.size() - 1), 0xFFFFFF);
-        System.out.println(statusList.get(statusList.size() - 1) + ": 0x" + Integer.toHexString(0xFFFFFF).toUpperCase(Locale.ROOT));
+        CubicChunks.LOGGER.debug(statusList.get(statusList.size() - 1) + ": 0x" + Integer.toHexString(0xFFFFFF).toUpperCase(Locale.ROOT));
 
         return map;
     }
