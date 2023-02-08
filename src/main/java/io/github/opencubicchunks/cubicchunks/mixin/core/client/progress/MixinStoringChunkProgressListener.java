@@ -33,7 +33,7 @@ public abstract class MixinStoringChunkProgressListener implements CubeProgressL
     @Override
     public void startCubes(CubePos spawn) {
         if (this.started) {
-            ((CubeProgressListener) this.delegate).startCubes(spawn);
+            this.delegate.startCubes(spawn);
             this.spawnCube = spawn;
             this.spawnPos = spawnCube.asChunkPos();
         }
@@ -42,7 +42,7 @@ public abstract class MixinStoringChunkProgressListener implements CubeProgressL
     @Override
     public void onCubeStatusChange(CubePos cubePos, @Nullable ChunkStatus newStatus) {
         if (this.started) {
-            ((CubeProgressListener) this.delegate).onCubeStatusChange(cubePos, newStatus);
+            this.delegate.onCubeStatusChange(cubePos, newStatus);
             if (newStatus == null) {
                 this.cubeStatuses.remove(cubePos.asLong());
             } else {

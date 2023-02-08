@@ -32,7 +32,7 @@ public abstract class MixinViewArea {
     protected void setViewDistance(int renderDistanceChunks, CallbackInfo ci) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level != null) {
-            if (!((CubicLevelHeightAccessor) level).isCubic()) {
+            if (!level.isCubic()) {
                 return;
             }
         }
@@ -49,7 +49,7 @@ public abstract class MixinViewArea {
     private void repositionCamera(double viewEntityX, double viewEntityZ, CallbackInfo ci) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level != null) {
-            if (!((CubicLevelHeightAccessor) level).isCubic()) {
+            if (!level.isCubic()) {
                 return;
             }
         }
@@ -91,7 +91,7 @@ public abstract class MixinViewArea {
     private void getRenderChunkAt(BlockPos pos, CallbackInfoReturnable<ChunkRenderDispatcher.RenderChunk> cir) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level != null) {
-            if (!((CubicLevelHeightAccessor) level).isCubic()) {
+            if (!level.isCubic()) {
                 return;
             }
         }

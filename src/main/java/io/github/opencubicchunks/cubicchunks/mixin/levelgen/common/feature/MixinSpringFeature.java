@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.feature;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.SpringFeature;
 import net.minecraft.world.level.levelgen.feature.configurations.SpringConfiguration;
@@ -15,7 +14,7 @@ public class MixinSpringFeature {
 
     @Inject(at = @At("HEAD"), method = "place", cancellable = true)
     private void cancel(FeaturePlaceContext<SpringConfiguration> featurePlaceContext, CallbackInfoReturnable<Boolean> cir) {
-        if (!((CubicLevelHeightAccessor) featurePlaceContext.level()).isCubic()) {
+        if (!featurePlaceContext.level().isCubic()) {
             return;
         }
         cir.setReturnValue(true);

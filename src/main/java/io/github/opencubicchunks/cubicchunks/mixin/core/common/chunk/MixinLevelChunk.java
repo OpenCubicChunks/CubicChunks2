@@ -19,7 +19,6 @@ import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.Clie
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.ClientSurfaceTracker;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
-import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -111,8 +110,8 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
         if (!this.isCubic()) {
             return;
         }
-        lightHeightmap = ((LightHeightmapGetter) protoChunk).getLightHeightmap();
-        columnCubeMap = ((ColumnCubeMapGetter) protoChunk).getCubeMap();
+        lightHeightmap = protoChunk.getLightHeightmap();
+        columnCubeMap = protoChunk.getCubeMap();
     }
 
     @Inject(
@@ -137,7 +136,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
             serverLightHeightmap.update(relX, pos.getY(), relZ, state);
             int newHeight = serverLightHeightmap.getFirstAvailable(relX, relZ);
             if (newHeight != oldHeight) {
-                ((SkyLightColumnChecker) this.level.getChunkSource().getLightEngine()).checkSkyLightColumn(this, pos.getX(), pos.getZ(), oldHeight, newHeight);
+                this.level.getChunkSource().getLightEngine().checkSkyLightColumn(this, pos.getX(), pos.getZ(), oldHeight, newHeight);
             }
         }
     }
@@ -149,7 +148,7 @@ public abstract class MixinLevelChunk extends ChunkAccess implements LightHeight
             + "Lnet/minecraft/world/level/levelgen/blending/BlendingData;)V",
         at = @At(value = "NEW", target = "net/minecraft/world/level/levelgen/Heightmap"))
     private Heightmap createSurfaceTracker(ChunkAccess chunkAccess, Heightmap.Types type) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) { // The fields are not initialized here yet.
+        if (!this.level.isCubic()) { // The fields are not initialized here yet.
             return new Heightmap(chunkAccess, type);
         }
         if (this.level.isClientSide()) {

@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
@@ -21,7 +20,7 @@ public class MixinOptions {
     private void getCloudsTypeForVerticalViewDistance(CallbackInfoReturnable<CloudStatus> cir) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level != null) {
-            if (!((CubicLevelHeightAccessor) level).isCubic()) {
+            if (!level.isCubic()) {
                 return;
             }
         }

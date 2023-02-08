@@ -14,13 +14,10 @@ import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.InterleavedHeightmapStorage;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
-import io.github.opencubicchunks.cubicchunks.chunk.entity.ChunkEntityStateEventSource;
-import io.github.opencubicchunks.cubicchunks.chunk.entity.IsCubicEntityContext;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubicNoiseBasedChunkGenerator;
 import io.github.opencubicchunks.cubicchunks.world.CubicChunksSavedData;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelTicks;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
-import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -94,7 +91,7 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
 
         Path dimensionFolderPath = levelStorageAccess.getDimensionPath(levelKey);
         File dimensionFolder = dimensionFolderPath.toFile();
-        var config = ((CubicMinecraftServer) minecraftServer).getServerConfig();
+        var config = minecraftServer.getServerConfig();
 
         this.heightmapStorage = new InterleavedHeightmapStorage(new File(dimensionFolder, "tempHeightmap"));
 
@@ -130,7 +127,7 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
 
     @Redirect(method = "<init>", at = @At(value = "NEW", target = "net/minecraft/world/ticks/LevelTicks"))
     private <T> LevelTicks<T> constructTickList(LongPredicate longPredicate, Supplier<ProfilerFiller> supplier) {
-        if (!((CubicLevelHeightAccessor) this).isCubic()) {
+        if (!this.isCubic()) {
             return new LevelTicks<>(longPredicate, supplier);
         }
         return new CubicLevelTicks<>(longPredicate, supplier);
@@ -140,12 +137,12 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
     private void markCubic(MinecraftServer minecraftServer, Executor executor, LevelStorageSource.LevelStorageAccess levelStorageAccess, ServerLevelData serverLevelData,
                            ResourceKey resourceKey, Holder holder, ChunkProgressListener chunkProgressListener, ChunkGenerator chunkGenerator, boolean bl, long l,
                            List list, boolean bl2, CallbackInfo ci) {
-        ((IsCubicEntityContext) this.entityManager).setIsCubic(((CubicLevelHeightAccessor) this).isCubic());
+        this.entityManager.setIsCubic(((CubicLevelHeightAccessor) this).isCubic());
         if (this.fluidTicks instanceof CubicLevelTicks ticks) {
-            ((ChunkEntityStateEventSource) this.entityManager).registerChunkEntityStateEventHandler(ticks);
+            this.entityManager.registerChunkEntityStateEventHandler(ticks);
         }
         if (this.blockTicks instanceof CubicLevelTicks ticks) {
-            ((ChunkEntityStateEventSource) this.entityManager).registerChunkEntityStateEventHandler(ticks);
+            this.entityManager.registerChunkEntityStateEventHandler(ticks);
         }
     }
 

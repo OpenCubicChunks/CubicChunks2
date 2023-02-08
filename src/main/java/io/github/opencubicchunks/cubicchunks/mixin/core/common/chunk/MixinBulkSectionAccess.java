@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk;
 
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.minecraft.core.BlockPos;
@@ -32,7 +31,7 @@ public class MixinBulkSectionAccess {
 
     @Inject(method = "getSection", at = @At("HEAD"), cancellable = true)
     private void returnCubeSection(BlockPos blockPos, CallbackInfoReturnable<LevelChunkSection> cir) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
         ChunkAccess cube = ((CubeWorldGenRegion) this.level).getCube(blockPos);

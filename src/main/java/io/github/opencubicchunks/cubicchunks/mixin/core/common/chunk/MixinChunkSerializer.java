@@ -5,7 +5,6 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
@@ -41,7 +40,7 @@ public abstract class MixinChunkSerializer {
      */
     @Inject(method = "read", at = @At("HEAD"), cancellable = true)
     private static void read(ServerLevel serverLevel, PoiManager poiManager, ChunkPos pos, CompoundTag compound, CallbackInfoReturnable<ProtoChunk> cir) {
-        if (!((CubicLevelHeightAccessor) serverLevel).isCubic()) {
+        if (!serverLevel.isCubic()) {
             return;
         }
         cir.cancel();
@@ -93,7 +92,7 @@ public abstract class MixinChunkSerializer {
      */
     @Inject(method = "write", at = @At("HEAD"), cancellable = true)
     private static void write(ServerLevel serverLevel, ChunkAccess column, CallbackInfoReturnable<CompoundTag> cir) {
-        if (!((CubicLevelHeightAccessor) serverLevel).isCubic()) {
+        if (!serverLevel.isCubic()) {
             return;
         }
         cir.cancel();

@@ -60,8 +60,8 @@ public class MixinServerLevel {
 
                 //ProtoChunks only contain a global light heightmap
                 if (chunk instanceof ProtoChunk protoChunk && !(chunk instanceof ImposterProtoChunk)) {
-                    ColumnCubeMap cubeMap = ((ColumnCubeMapGetter) protoChunk).getCubeMap();
-                    LightSurfaceTrackerWrapper heightmap = ((LightHeightmapGetter) protoChunk).getServerLightHeightmap();
+                    ColumnCubeMap cubeMap = protoChunk.getCubeMap();
+                    LightSurfaceTrackerWrapper heightmap = protoChunk.getServerLightHeightmap();
                     if (heightmap != null) {
                         SurfaceTrackerBranch root = heightmap.getSurfaceTrackerSection();
                         verifyHeightmapTree(root, cubeMap);

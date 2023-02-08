@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.render;
 
 import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.mixin.access.client.ChunkRenderDispatcherAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
 import net.minecraft.client.Minecraft;
@@ -34,7 +33,7 @@ public abstract class MixinRenderChunk {
     private void doesChunkAndCubeExistAt(BlockPos blockPos, CallbackInfoReturnable<Boolean> cir) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level != null) {
-            if (!((CubicLevelHeightAccessor) level).isCubic()) {
+            if (!level.isCubic()) {
                 return;
             }
         }
@@ -61,7 +60,7 @@ public abstract class MixinRenderChunk {
     private void onHasAllNeighbors(CallbackInfoReturnable<Boolean> cir) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level != null) {
-            if (!((CubicLevelHeightAccessor) level).isCubic()) {
+            if (!level.isCubic()) {
                 return;
             }
         }

@@ -72,20 +72,19 @@ public abstract class MixinMinecraftServer {
         serverChunkCache.getLightEngine().setTaskPerBatch(500);
         this.nextTickTime = Util.getMillis();
 
-        ServerCubeCache prov = (ServerCubeCache) serverChunkCache;
         addChunk(serverChunkCache, new ChunkPos(0, 0));
-        addCube(prov, CubePos.of(0, 0, 0));
+        addCube(serverChunkCache, CubePos.of(0, 0, 0));
 
-        addCube(prov, CubePos.of(5, 5, 5));
-        addCube(prov, CubePos.of(-5, 5, 5));
-        addCube(prov, CubePos.of(-5, -5, 5));
-        addCube(prov, CubePos.of(-5, -5, -5));
-        addCube(prov, CubePos.of(5, -5, 5));
-        addCube(prov, CubePos.of(5, -5, -5));
-        addCube(prov, CubePos.of(5, 5, -5));
-        addCube(prov, CubePos.of(-5, 5, -5));
+        addCube(serverChunkCache, CubePos.of(5, 5, 5));
+        addCube(serverChunkCache, CubePos.of(-5, 5, 5));
+        addCube(serverChunkCache, CubePos.of(-5, -5, 5));
+        addCube(serverChunkCache, CubePos.of(-5, -5, -5));
+        addCube(serverChunkCache, CubePos.of(5, -5, 5));
+        addCube(serverChunkCache, CubePos.of(5, -5, -5));
+        addCube(serverChunkCache, CubePos.of(5, 5, -5));
+        addCube(serverChunkCache, CubePos.of(-5, 5, -5));
 
-        while (this.isRunning() && (serverChunkCache.getTickingGenerated() + prov.getTickingGeneratedCubes() < count)) {
+        while (this.isRunning() && (serverChunkCache.getTickingGenerated() + serverChunkCache.getTickingGeneratedCubes() < count)) {
             this.nextTickTime = Util.getMillis() + 10L;
             this.waitUntilNextTick();
         }

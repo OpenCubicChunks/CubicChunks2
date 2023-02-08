@@ -18,9 +18,9 @@ public abstract class MixinRenderChunkRegion implements CubicLevelHeightAccessor
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void initIsCubic(Level level, int i, int j, RenderChunk[][] renderChunks, CallbackInfo ci) {
-        isCubic = ((CubicLevelHeightAccessor) level).isCubic();
-        generates2DChunks = ((CubicLevelHeightAccessor) level).generates2DChunks();
-        worldStyle = ((CubicLevelHeightAccessor) level).worldStyle();
+        isCubic = level.isCubic();
+        generates2DChunks = level.generates2DChunks();
+        worldStyle = level.worldStyle();
     }
 
     @Override public WorldStyle worldStyle() {

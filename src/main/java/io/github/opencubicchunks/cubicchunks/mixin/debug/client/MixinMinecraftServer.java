@@ -3,7 +3,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.debug.client;
 import java.io.IOException;
 import java.util.Map;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.debug.DebugVisualization;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -31,7 +30,7 @@ public class MixinMinecraftServer {
     private void onLoadWorlds(ChunkProgressListener chunkProgressListener, CallbackInfo ci) {
         for (Map.Entry<ResourceKey<LevelStem>, LevelStem> lvl : this.worldData.worldGenSettings().dimensions().entrySet()) {
             ServerLevel serverLevel = levels.get(lvl.getKey());
-            if (((CubicLevelHeightAccessor) serverLevel).isCubic()) {
+            if (serverLevel.isCubic()) {
                 DebugVisualization.onWorldLoad(serverLevel);
             }
         }
@@ -39,7 +38,7 @@ public class MixinMinecraftServer {
 
     @Redirect(method = "stopServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerLevel;close()V"))
     private void onUnloadWorld(ServerLevel serverLevel) throws IOException {
-        if (((CubicLevelHeightAccessor) serverLevel).isCubic()) {
+        if (serverLevel.isCubic()) {
             DebugVisualization.onWorldUnload(serverLevel);
         }
         serverLevel.close();

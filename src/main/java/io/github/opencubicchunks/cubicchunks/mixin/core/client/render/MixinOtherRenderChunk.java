@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.render;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import net.minecraft.client.renderer.chunk.RenderChunk;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,7 +17,7 @@ public class MixinOtherRenderChunk {
 
     @Inject(method = "getBlockState", at = @At("HEAD"), cancellable = true)
     private void goThroughLevel(BlockPos blockPos, CallbackInfoReturnable<BlockState> cir) {
-        if (((CubicLevelHeightAccessor) this.wrapped).isCubic()) {
+        if (this.wrapped.isCubic()) {
             cir.setReturnValue(this.wrapped.getBlockState(blockPos));
         }
     }

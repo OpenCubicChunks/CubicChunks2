@@ -22,6 +22,6 @@ public class MixinTransientEntitySectionManager<T extends EntityAccess> implemen
 
     @Override public void setIsCubic(boolean isCubic) {
         this.isCubic = isCubic;
-        ((IsCubicEntityContext) this.sectionStorage).setIsCubic(isCubic);
+        this.sectionStorage.setIsCubic(isCubic);
     }
 }

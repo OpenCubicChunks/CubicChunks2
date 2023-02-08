@@ -13,7 +13,6 @@ import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.datafixers.DataFixer;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.config.ServerConfig;
 import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.BiomeGenerationSettingsAccess;
@@ -125,7 +124,7 @@ public abstract class MixinMinecraftServer extends ReentrantBlockableEventLoop<T
         System.out.println("PREPARELEVELS HERE " + MinecraftServer.class.getClassLoader().getClass().getName());
 
         ServerLevel serverLevel = this.overworld();
-        if (!((CubicLevelHeightAccessor) serverLevel).isCubic()) {
+        if (!serverLevel.isCubic()) {
             return;
         }
         ci.cancel();
@@ -144,11 +143,11 @@ public abstract class MixinMinecraftServer extends ReentrantBlockableEventLoop<T
         int d = radius * 2 + 1;
         ((ServerCubeCache) serverChunkCache).addCubeRegionTicket(TicketType.START, spawnPosCube, radius + 1, Unit.INSTANCE);
 
-        while (this.isRunning() && ((ServerCubeCache) serverChunkCache).getTickingGeneratedCubes() < d * d * d) {
+        while (this.isRunning() && serverChunkCache.getTickingGeneratedCubes() < d * d * d) {
             this.nextTickTime = Util.getMillis() + 10L;
             this.waitUntilNextTick();
         }
-        LOGGER.info("Current loaded chunks: " + serverChunkCache.getTickingGenerated() + " | " + ((ServerCubeCache) serverChunkCache).getTickingGeneratedCubes());
+        LOGGER.info("Current loaded chunks: " + serverChunkCache.getTickingGenerated() + " | " + serverChunkCache.getTickingGeneratedCubes());
         this.nextTickTime = Util.getMillis() + 10L;
         this.waitUntilNextTick();
 

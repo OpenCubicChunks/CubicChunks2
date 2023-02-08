@@ -5,7 +5,6 @@ import javax.annotation.Nullable;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLevelLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicSkyLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
@@ -49,22 +48,22 @@ public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, Li
     @Override
     public void retainData(CubePos cubePos, boolean retain) {
         if (this.blockEngine != null) {
-            ((CubicLayerLightEngine) this.blockEngine).retainCubeData(cubePos, retain);
+            this.blockEngine.retainCubeData(cubePos, retain);
         }
 
         if (this.skyEngine != null) {
-            ((CubicLayerLightEngine) this.skyEngine).retainCubeData(cubePos, retain);
+            this.skyEngine.retainCubeData(cubePos, retain);
         }
     }
 
     @Override
     public void enableLightSources(CubePos cubePos, boolean retain) {
         if (this.blockEngine != null) {
-            ((CubicLayerLightEngine) this.blockEngine).enableLightSources(cubePos, retain);
+            this.blockEngine.enableLightSources(cubePos, retain);
         }
 
         if (this.skyEngine != null) {
-            ((CubicLayerLightEngine) this.skyEngine).enableLightSources(cubePos, retain);
+            this.skyEngine.enableLightSources(cubePos, retain);
         }
     }
 

@@ -101,7 +101,7 @@ public class MixinChunkStatus {
         List<ChunkAccess> chunks, ChunkAccess chunk, boolean bl,
         CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
 
-        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
+        if (level.generates2DChunks()) {
             if (!(chunk instanceof CubeAccess)) {
                 return;
             }
@@ -143,7 +143,7 @@ public class MixinChunkStatus {
         at = @At("HEAD"), cancellable = true
     )
     private static void cubicChunksStructureReferences(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
-        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
+        if (level.generates2DChunks()) {
             return;
         }
         ci.cancel();
@@ -163,7 +163,7 @@ public class MixinChunkStatus {
     private static void cubicChunksBiome(ChunkStatus chunkStatus, Executor executor, ServerLevel level, ChunkGenerator chunkGenerator, StructureManager structureManager,
                                          ThreadedLevelLightEngine threadedLevelLightEngine, Function function, List<CubeAccess> cubes, ChunkAccess chunkAccess, boolean bl,
                                          CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
-        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
+        if (level.generates2DChunks()) {
             return;
         }
         if (/*!bl && */chunkAccess.getStatus().isOrAfter(chunkStatus)) { // bl is probably for terrain blending
@@ -201,7 +201,7 @@ public class MixinChunkStatus {
                                          CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> ci) {
 
 
-        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
+        if (level.generates2DChunks()) {
             if (chunk instanceof CubeAccess) {
                 ci.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
             }
@@ -301,7 +301,7 @@ public class MixinChunkStatus {
         at = @At("HEAD"), cancellable = true
     )
     private static void cubicChunksSurface(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
-        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
+        if (level.generates2DChunks()) {
             return;
         }
         ci.cancel();
@@ -314,7 +314,7 @@ public class MixinChunkStatus {
         at = @At("HEAD"), cancellable = true
     )
     private static void cubicChunksCarvers(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
-        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
+        if (level.generates2DChunks()) {
             return;
         }
         ci.cancel();
@@ -327,7 +327,7 @@ public class MixinChunkStatus {
         at = @At("HEAD"), cancellable = true
     )
     private static void cubicChunksLiquidCarvers(ChunkStatus status, ServerLevel level, ChunkGenerator generator, List<ChunkAccess> neighbors, ChunkAccess chunk, CallbackInfo ci) {
-        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
+        if (level.generates2DChunks()) {
             return;
         }
         ci.cancel();
@@ -348,7 +348,7 @@ public class MixinChunkStatus {
         List<ChunkAccess> chunks, ChunkAccess chunk, boolean bl,
         CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
 
-        if (((CubicLevelHeightAccessor) level).generates2DChunks()) {
+        if (level.generates2DChunks()) {
             if (!(chunk instanceof ProtoCube protoCube)) {
                 return;
             }
@@ -385,7 +385,7 @@ public class MixinChunkStatus {
     private static void lightChunkCC(ChunkStatus status, ThreadedLevelLightEngine lightEngine, ChunkAccess chunk,
                                      CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
 
-        if (!((CubicLevelHeightAccessor) chunk).isCubic()) {
+        if (!chunk.isCubic()) {
             return;
         }
 
@@ -400,7 +400,7 @@ public class MixinChunkStatus {
             cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
             return;
         }
-        boolean flag = ((ProtoCube) chunk).getStatus().isOrAfter(status) && chunk.isLightCorrect();
+        boolean flag = chunk.getStatus().isOrAfter(status) && chunk.isLightCorrect();
         if (!chunk.getStatus().isOrAfter(status)) {
             ((ProtoCube) chunk).updateCubeStatus(status);
         }

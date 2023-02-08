@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.blockentity;
 
 import java.util.List;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.ConduitBlockEntity;
@@ -21,7 +20,7 @@ public class MixinConduitBlockEntity {
     // TODO: redirect getHeight()
     @Redirect(method = "applyEffects", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/phys/AABB;expandTowards(DDD)Lnet/minecraft/world/phys/AABB;"))
     private static AABB limitConduitEffectYRange(AABB aabb, double x, double y, double z, Level level, BlockPos pos, List<BlockPos> activatingBlocks) {
-        if (!((CubicLevelHeightAccessor) level).isCubic()) {
+        if (!level.isCubic()) {
             return aabb.expandTowards(x, y, z);
         }
         // TODO: limit this to vertical view distance?

@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.feature.nether;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.WorldGenLevel;
@@ -14,7 +13,7 @@ public class MixinBasaltPillarFeature {
 
     @Redirect(method = "place", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/WorldGenLevel;isOutsideBuildHeight(Lnet/minecraft/core/BlockPos;)Z"))
     private boolean useCubeMinY(WorldGenLevel worldGenLevel, BlockPos blockPos) {
-        if (!((CubicLevelHeightAccessor) worldGenLevel).isCubic()) {
+        if (!worldGenLevel.isCubic()) {
             return worldGenLevel.isOutsideBuildHeight(blockPos);
         }
         return !((CubeWorldGenRegion) worldGenLevel).insideCubeHeight(blockPos.getY());
@@ -22,7 +21,7 @@ public class MixinBasaltPillarFeature {
 
     @Redirect(method = "place", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/WorldGenLevel;isEmptyBlock(Lnet/minecraft/core/BlockPos;)Z", ordinal = 4))
     private boolean cancelOutOfCubeBounds(WorldGenLevel level, BlockPos pos) {
-        if (!((CubicLevelHeightAccessor) level).isCubic()) {
+        if (!level.isCubic()) {
             return level.isEmptyBlock(pos);
         }
         return ((CubeWorldGenRegion) level).insideCubeHeight(pos.getY()) && level.isEmptyBlock(pos);

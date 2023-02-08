@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -24,7 +23,7 @@ public abstract class MixinClientPacketListener {
     @Redirect(method = "lambda$queueLightUpdate$4(Lnet/minecraft/network/protocol/game/ClientboundForgetLevelChunkPacket;)V",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;getMaxSection()I"))
     private int getFakeMaxSectionY(ClientLevel clientLevel) {
-        if (!((CubicLevelHeightAccessor) clientLevel).isCubic()) {
+        if (!clientLevel.isCubic()) {
             return clientLevel.getMaxSection();
         }
         return clientLevel.getMinSection() - 1; // disable the loop, cube packets do the necessary work
@@ -36,7 +35,7 @@ public abstract class MixinClientPacketListener {
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;getLightSectionCount()I")
     )
     private int getFakeSectionCount(LevelLightEngine engine) {
-        if (!((CubicLevelHeightAccessor) getLevel()).isCubic()) {
+        if (!getLevel().isCubic()) {
             return engine.getLightSectionCount();
         }
 

@@ -66,7 +66,7 @@ public abstract class MixinProtoChunk extends ChunkAccess implements LightHeight
         }
         if (lightHeightmap == null && this.getStatus().isOrAfter(ChunkStatus.FEATURES)) {
             // Lighting only starts happening after FEATURES, so we init here to avoid creating unnecessary heightmaps
-            lightHeightmap = new LightSurfaceTrackerWrapper((ChunkAccess) this, ((CubicServerLevel) this.levelHeightAccessor).getHeightmapStorage());
+            lightHeightmap = new LightSurfaceTrackerWrapper(this, ((CubicServerLevel) this.levelHeightAccessor).getHeightmapStorage());
         }
     }
 }

@@ -67,7 +67,7 @@ public abstract class MixinClientLevel extends MixinLevel implements CubicClient
     @Redirect(method = "onChunkLoaded",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/entity/TransientEntitySectionManager;startTicking(Lnet/minecraft/world/level/ChunkPos;)V"))
     private void doNothingOnLoadIfCube(TransientEntitySectionManager<?> transientEntitySectionManager, ChunkPos pos) {
-        if (!((CubicLevelHeightAccessor) this).isCubic()) {
+        if (!this.isCubic()) {
             transientEntitySectionManager.startTicking(pos);
         }
     }
@@ -76,7 +76,7 @@ public abstract class MixinClientLevel extends MixinLevel implements CubicClient
     @Redirect(method = "unload",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/entity/TransientEntitySectionManager;stopTicking(Lnet/minecraft/world/level/ChunkPos;)V"))
     private void doNothingOnUnloadIfCube(TransientEntitySectionManager<?> transientEntitySectionManager, ChunkPos pos) {
-        if (!((CubicLevelHeightAccessor) this).isCubic()) {
+        if (!this.isCubic()) {
             transientEntitySectionManager.stopTicking(pos);
         }
     }

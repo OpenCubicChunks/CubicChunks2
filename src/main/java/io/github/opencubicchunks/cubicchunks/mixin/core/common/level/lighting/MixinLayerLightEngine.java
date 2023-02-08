@@ -5,11 +5,9 @@ import javax.annotation.Nullable;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LayerLightSectionStorageAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightEngine;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightSectionStorage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.BlockGetter;
@@ -51,7 +49,7 @@ public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S 
     @Override
     public void retainCubeData(CubePos posIn, boolean retain) {
         long i = posIn.asSectionPos().asLong();
-        ((CubicLayerLightSectionStorage) this.storage).retainCubeData(i, retain);
+        this.storage.retainCubeData(i, retain);
     }
 
     @Override
@@ -73,7 +71,7 @@ public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S 
             return;
         }
 
-        this.isCubic = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).isCubic();
+        this.isCubic = this.chunkSource.getLevel().isCubic();
 //        this.generates2DChunks = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).generates2DChunks();
 //        this.worldStyle = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).worldStyle();
     }

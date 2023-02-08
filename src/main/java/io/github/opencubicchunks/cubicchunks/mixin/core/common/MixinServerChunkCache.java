@@ -32,7 +32,6 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeStatus;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;
-import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -103,7 +102,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     }
 
     @Override public int getTickingGeneratedCubes() {
-        return ((CubeMap) chunkMap).getTickingGeneratedCubes();
+        return chunkMap.getTickingGeneratedCubes();
     }
 
     @Nullable
@@ -230,7 +229,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
             }
         }
 
-        return this.chunkAbsent(chunkholder, j) ? CubeHolder.UNLOADED_CUBE_FUTURE : ((CubeHolder) chunkholder).getOrScheduleCubeFuture(requiredStatus,
+        return this.chunkAbsent(chunkholder, j) ? CubeHolder.UNLOADED_CUBE_FUTURE : chunkholder.getOrScheduleCubeFuture(requiredStatus,
             this.chunkMap);
     }
 
@@ -286,7 +285,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     @Nullable
     public BlockGetter getCubeForLighting(int cubeX, int cubeY, int cubeZ) {
         long cubePosAsLong = CubePos.of(cubeX, cubeY, cubeZ).asLong();
-        ChunkHolder chunkholder = ((CubeMap) this.chunkMap).getVisibleCubeIfPresent(cubePosAsLong);
+        ChunkHolder chunkholder = this.chunkMap.getVisibleCubeIfPresent(cubePosAsLong);
         if (chunkholder == null) {
             return null;
         } else {
@@ -310,7 +309,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     private void initChunkMapForCC(ServerLevel serverLevel, LevelStorageSource.LevelStorageAccess levelStorageAccess, DataFixer dataFixer, StructureManager structureManager,
                                    Executor executor, ChunkGenerator chunkGenerator, int i, int j, boolean bl, ChunkProgressListener chunkProgressListener,
                                    ChunkStatusUpdateListener chunkStatusUpdateListener, Supplier supplier, CallbackInfo ci) {
-        ((CubeMap) this.chunkMap).setServerChunkCache((ServerChunkCache) (Object) this);
+        this.chunkMap.setServerChunkCache((ServerChunkCache) (Object) this);
     }
 
     /**
@@ -322,7 +321,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;
         }
-        ChunkHolder chunkholder = ((CubeMap) this.chunkMap).getUpdatingCubeIfPresent(CubePos.from(pos).asLong());
+        ChunkHolder chunkholder = this.chunkMap.getUpdatingCubeIfPresent(CubePos.from(pos).asLong());
         if (chunkholder != null) {
             // markBlockChanged
             chunkholder.blockChanged(new BlockPos(Coords.localX(pos), Coords.localY(pos), Coords.localZ(pos)));
@@ -334,10 +333,10 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
             + "Lnet/minecraft/world/level/LocalMobCapCalculator;)Lnet/minecraft/world/level/NaturalSpawner$SpawnState;"))
     private NaturalSpawner.SpawnState cubicChunksSpawnState(int spawnableChunkCount, Iterable<Entity> entities, NaturalSpawner.ChunkGetter chunkGetter,
                                                             LocalMobCapCalculator localMobCapCalculator) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return NaturalSpawner.createState(spawnableChunkCount, entities, chunkGetter, localMobCapCalculator);
         }
-        int naturalSpawnCountForColumns = ((CubicDistanceManager) this.distanceManager).getNaturalSpawnCubeCount()
+        int naturalSpawnCountForColumns = this.distanceManager.getNaturalSpawnCubeCount()
             * CubicConstants.DIAMETER_IN_SECTIONS * CubicConstants.DIAMETER_IN_SECTIONS / (CubicNaturalSpawner.SPAWN_RADIUS * 2 / CubicConstants.DIAMETER_IN_BLOCKS + 1);
 
         return CubicNaturalSpawner.createState(naturalSpawnCountForColumns, entities, this::getFullCube, localMobCapCalculator);
@@ -348,7 +347,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
         locals = LocalCapture.CAPTURE_FAILHARD)
     private void tickCubes(CallbackInfo ci, long gameTime, long timeSinceUpdate, LevelData levelData, ProfilerFiller profilerFiller, int randomTicking, boolean bl2, int spawnChunkCount,
                            NaturalSpawner.SpawnState spawnState, List list) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
 
@@ -356,10 +355,10 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
             LevelCube cube = ((CubeHolder) cubeHolder).getTickingCube();
             if (cube != null) {
                 this.level.getProfiler().push("broadcast");
-                ((CubeHolder) cubeHolder).broadcastChanges(cube);
+                cubeHolder.broadcastChanges(cube);
                 this.level.getProfiler().pop();
 
-                if (!((CubeMap) this.chunkMap).noPlayersCloseForSpawning(cube.getCubePos())) {
+                if (!this.chunkMap.noPlayersCloseForSpawning(cube.getCubePos())) {
                     // TODO probably want to make sure column-based inhabited time works too
                     cube.setInhabitedTime(cube.getInhabitedTime() + timeSinceUpdate);
 
@@ -369,7 +368,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
                             CubicNaturalSpawner.spawnForCube(this.level, cube, spawnState, this.spawnFriendlies, this.spawnEnemies, bl2);
                         }
                     }
-                    ((CubicServerLevel) this.level).tickCube(cube, randomTicking);
+                    this.level.tickCube(cube, randomTicking);
                 }
             }
         });
@@ -399,7 +398,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
      */
     @Inject(method = "gatherStats", at = @At("HEAD"), cancellable = true)
     public void gatherStatsForCubicChunks(CallbackInfoReturnable<String> cir) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
         cir.setReturnValue("ServerChunkCache: " + this.getLoadedChunksCount() + " | " + ((CubeMap) chunkMap).sizeCubes());
@@ -407,7 +406,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
 
     @Inject(method = "isPositionTicking", at = @At("HEAD"), cancellable = true)
     private void isCubeAtPositionTicking(long pos, CallbackInfoReturnable<Boolean> cir) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
         cir.setReturnValue(this.checkCubeFuture(pos, (chunkHolder) -> unsafeCast(chunkHolder.getTickingChunkFuture())));
@@ -417,7 +416,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
     @SuppressWarnings("target")
     @Inject(method = "lambda$onLightUpdate$6(Lnet/minecraft/core/SectionPos;Lnet/minecraft/world/level/LightLayer;)V", at = @At(value = "HEAD"), cancellable = true)
     private void onlyCubes(SectionPos pos, LightLayer type, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
         ci.cancel();

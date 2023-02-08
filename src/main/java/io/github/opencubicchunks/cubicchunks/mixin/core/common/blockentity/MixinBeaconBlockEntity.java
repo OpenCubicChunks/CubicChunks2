@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.blockentity;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.effect.MobEffect;
@@ -22,7 +21,7 @@ public abstract class MixinBeaconBlockEntity {
     @Redirect(method = "applyEffects", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/phys/AABB;expandTowards(DDD)Lnet/minecraft/world/phys/AABB;"))
     private static AABB limitBeaconEffectYRange(AABB aabb, double x, double y, double z, Level level, BlockPos pos, int beaconLevel, @Nullable MobEffect primaryEffect,
                                                 @Nullable MobEffect secondaryEffect) {
-        if (!((CubicLevelHeightAccessor) level).isCubic()) {
+        if (!level.isCubic()) {
             return aabb.expandTowards(x, y, z);
         }
         CubicChunks.LOGGER.warn("on$expand called");

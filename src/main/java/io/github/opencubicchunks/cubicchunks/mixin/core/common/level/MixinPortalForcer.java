@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -31,7 +30,7 @@ public class MixinPortalForcer {
         "INVOKE",
         target = "Lnet/minecraft/server/level/ServerChunkCache;addRegionTicket(Lnet/minecraft/server/level/TicketType;Lnet/minecraft/world/level/ChunkPos;ILjava/lang/Object;)V"))
     private <T> void addCubeRegionTicket(ServerChunkCache serverChunkCache, TicketType<T> ticketType, ChunkPos chunkPos, int radius, T argument, PoiRecord poiRecord) {
-        if (!((CubicLevelHeightAccessor) serverChunkCache.getLevel()).isCubic()) {
+        if (!serverChunkCache.getLevel().isCubic()) {
             serverChunkCache.addRegionTicket(ticketType, chunkPos, radius, argument);
             return;
         }
@@ -40,16 +39,16 @@ public class MixinPortalForcer {
 
     @Redirect(method = "createPortal", at = @At(value = "INVOKE", target = "Ljava/lang/Math;min(II)I", ordinal = 0))
     private int limitYUp(int a, int b, BlockPos pos, Direction.Axis axis) {
-        return !((CubicLevelHeightAccessor) this.level).isCubic() ? Math.min(a, b) : pos.getY() + Y_PORTAL_RADIUS;
+        return !this.level.isCubic() ? Math.min(a, b) : pos.getY() + Y_PORTAL_RADIUS;
     }
 
     @Redirect(method = "createPortal", at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(II)I"))
     private int limitYDown(int a, int b, BlockPos pos, Direction.Axis axis) {
-        return !((CubicLevelHeightAccessor) this.level).isCubic() ? Math.max(a, b) : pos.getY() - Y_PORTAL_RADIUS;
+        return !this.level.isCubic() ? Math.max(a, b) : pos.getY() - Y_PORTAL_RADIUS;
     }
 
     @Redirect(method = "createPortal", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerLevel;getMinBuildHeight()I"))
     private int limitYDown(ServerLevel serverLevel, BlockPos pos, Direction.Axis axis) {
-        return !((CubicLevelHeightAccessor) serverLevel).isCubic() ? serverLevel.getMinBuildHeight() : pos.getY() - Y_PORTAL_RADIUS;
+        return !serverLevel.isCubic() ? serverLevel.getMinBuildHeight() : pos.getY() - Y_PORTAL_RADIUS;
     }
 }

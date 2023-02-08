@@ -18,7 +18,6 @@ import com.mojang.serialization.OptionalDynamic;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicSectionStorage;
 import io.github.opencubicchunks.cubicchunks.world.storage.RegionCubeIO;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -80,14 +79,14 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
     private void getServerLevel(Path path, Function function, Function function2, DataFixer dataFixer, DataFixTypes dataFixTypes, boolean bl, LevelHeightAccessor levelAccessor,
                                 CallbackInfo ci) throws IOException {
 
-        if (((CubicLevelHeightAccessor) levelAccessor).isCubic()) {
+        if (levelAccessor.isCubic()) {
             cubeWorker = new RegionCubeIO(path.toFile(), path.toFile().getName() + "-chunk", path.toFile().getName());
         }
     }
 
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void tickCube(BooleanSupplier shouldKeepTicking, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) levelHeightAccessor).isCubic()) {
+        if (!levelHeightAccessor.isCubic()) {
             return;
         }
         ci.cancel();
@@ -100,7 +99,7 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
 
     @Inject(method = "getOrLoad", at = @At("HEAD"), cancellable = true)
     private void getOrLoadCube(long pos, CallbackInfoReturnable<Optional<R>> cir) {
-        if (!((CubicLevelHeightAccessor) levelHeightAccessor).isCubic()) {
+        if (!levelHeightAccessor.isCubic()) {
             return;
         }
 

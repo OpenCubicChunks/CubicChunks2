@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level.lighting;
 
 import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LayerLightSectionStorageAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;
@@ -40,7 +39,7 @@ public abstract class MixinSkyLightSectionStorage extends LayerLightSectionStora
             isCubic = true;
             return;
         }
-        isCubic = ((CubicLevelHeightAccessor) lightChunkGetter.getLevel()).isCubic();
+        isCubic = lightChunkGetter.getLevel().isCubic();
     }
 
     @Inject(method = "getLightValue(JZ)I", cancellable = true, at = @At("HEAD"))

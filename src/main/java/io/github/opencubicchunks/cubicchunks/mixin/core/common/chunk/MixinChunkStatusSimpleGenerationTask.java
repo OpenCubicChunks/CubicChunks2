@@ -6,7 +6,6 @@ import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import com.mojang.datafixers.util.Either;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
@@ -34,7 +33,7 @@ public interface MixinChunkStatusSimpleGenerationTask {
         ChunkStatus status, Executor executor, ServerLevel level, ChunkGenerator generator, StructureManager structureManager, ThreadedLevelLightEngine threadedLevelLightEngine,
         Function<ChunkAccess, CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> function, List<ChunkAccess> neighbors, ChunkAccess chunk, boolean bl) {
 
-        if (!((CubicLevelHeightAccessor) chunk).isCubic()) {
+        if (!chunk.isCubic()) {
             if (!chunk.getStatus().isOrAfter(status)) {
                 this.doWork(status, level, generator, neighbors, chunk);
                 if (chunk instanceof ProtoChunk) {

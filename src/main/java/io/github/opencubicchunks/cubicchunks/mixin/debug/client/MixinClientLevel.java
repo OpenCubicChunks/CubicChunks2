@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.debug.client;
 
 import java.util.function.Supplier;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.debug.DebugVisualization;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -32,7 +31,7 @@ public abstract class MixinClientLevel extends Level {
     private void onClientWorldConstruct(ClientPacketListener clientPacketListener, ClientLevel.ClientLevelData clientLevelData, ResourceKey resourceKey,
                                         Holder holder, int i, int j, Supplier supplier, LevelRenderer levelRenderer, boolean bl, long l, CallbackInfo ci) {
 
-        if (((CubicLevelHeightAccessor) this).isCubic()) {
+        if (this.isCubic()) {
             DebugVisualization.onWorldLoad(this);
         }
     }
