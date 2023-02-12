@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'net.fabricmc:fabric-loom:1.0-SNAPSHOT'
+    implementation 'net.fabricmc:fabric-loom:1.1-SNAPSHOT'
     implementation 'net.fabricmc:mapping-io:0.2.1'
     implementation 'com.github.OpenCubicChunks:dasm:1ceaf6f68d'
     implementation 'org.ow2.asm:asm:9.3'

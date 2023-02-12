@@ -19,8 +19,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
+import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
+import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import org.gradle.api.Plugin;
@@ -33,23 +34,25 @@ public class DasmPlugin implements Plugin<Project> {
     private static final boolean TO_NAMED = false;
 
     @Override public void apply(Project project) {
-        ProcessResources processResources = ((ProcessResources) project.getTasks().getByName("processResources"));
-        LoomGradleExtension loom = (LoomGradleExtension) project.getExtensions().getByName("loom");
+        project.afterEvaluate(proj -> {
+            ProcessResources processResources = ((ProcessResources) project.getTasks().getByName("processResources"));
+            LoomGradleExtensionAPI loomApi = project.getExtensions().getByType(LoomGradleExtensionAPI.class);
+            // TODO: try to use LoomGradleExtensionAPI#getMappingsFile() instead of loom internals
+            MemoryMappingTree mappings = ((LoomGradleExtensionImpl) loomApi).getMappingConfiguration().getMappingsService(new ScopedSharedServiceManager()).getMappingTree();
 
-        File destinationDir = processResources.getDestinationDir();
-        processResources.filesMatching("dasm/**/*.json", copySpec -> {
-            MappingsProviderImpl mappingsProvider = loom.getMappingsProvider();
+            File destinationDir = processResources.getDestinationDir();
+            processResources.filesMatching("dasm/**/*.json", copySpec -> {
+                copySpec.exclude();
+                File file = copySpec.getFile();
+                File output = copySpec.getRelativePath().getFile(destinationDir);
+                processFile(file, output, mappings);
+            });
 
-            copySpec.exclude();
-            File file = copySpec.getFile();
-            File output = copySpec.getRelativePath().getFile(destinationDir);
-            processFile(file, output, mappingsProvider);
         });
     }
 
-    private void processFile(File file, File output, MappingsProviderImpl mappingsProvider) {
+    private void processFile(File file, File output, MemoryMappingTree mappings) {
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
-            MemoryMappingTree mappings = mappingsProvider.getMappings();
 
             JsonElement parsed = new JsonParser().parse(bufferedReader);
             if (file.getName().equals("targets.json")) {
