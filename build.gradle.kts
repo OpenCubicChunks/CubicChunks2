@@ -4,11 +4,9 @@ import io.github.opencubicchunks.gradle.GeneratePackageInfo
 import org.gradle.internal.os.OperatingSystem
 import java.util.*
 
-
 buildscript {
     dependencies {
         classpath("com.google.code.gson:gson:2.8.5")
-        classpath("io.github.opencubicchunks:stirrin:1.1.7")
     }
 }
 plugins {
@@ -20,7 +18,7 @@ plugins {
     id("io.github.opencubicchunks.gradle.mcGitVersion")
     id("io.github.opencubicchunks.gradle.mixingen")
     id("io.github.opencubicchunks.gradle.dasm")
-    id("io.github.opencubicchunks.stirrin").version("1.1.7")
+    id("io.github.opencubicchunks.stirrin").version("1.3.1")
 }
 
 stirrin {
@@ -34,13 +32,6 @@ stirrin {
             "cubicchunks.mixins.levelgen.json",
             "cubicchunks.mixins.optifine.json"
     ))
-    setAdditionalSourceSets(
-            setOf(
-                file("CubicChunksCore/src/main/java"),
-                    org.gradle.internal.jvm.Jvm.current().javaHome
-            )
-//            project(":CubicChunksCore").java.sourceSets.main.get().java.srcDirs
-    )
 }
 
 val minecraftVersion: String by project
@@ -258,6 +249,8 @@ when (OperatingSystem.current()) {
 }
 
 dependencies {
+    stirrin.addDependency("net.fabricmc:sponge-mixin:0.11.4+mixin.0.8.5")
+
     minecraft("com.mojang:minecraft:${minecraftVersion}")
     mappings(loom.layered {
         officialMojangMappings {
@@ -278,6 +271,7 @@ dependencies {
 //        exclude module: "fabric-loader"
 //    }
 
+    stirrin.addDependency(project(":CubicChunksCore"))
     // we shade the core classes directly into CC, so it gets remapped
     shade(implementation(project(":CubicChunksCore")) {
         attributes {
