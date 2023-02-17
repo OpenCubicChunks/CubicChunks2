@@ -280,6 +280,15 @@ dependencies {
         isTransitive = false
     })
 
+    // To work around an Intellij bug where compile and runtime dependencies of a project differ, causing artifact transforms to run twice on a dependency
+    // which then creates two jars in the same dependency, resulting in Intellij failing to resolve the classes.
+    {
+        stirrin.addDependency("org.jetbrains:annotations:24.0.0") // core dependency
+
+        implementation("com.google.guava:guava:31.1-jre")
+        implementation("com.google.code.gson:gson:2.9.0")
+    }
+
     debugCompile("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
     debugRuntime("org.lwjgl:lwjgl::$lwjglNatives")
 
