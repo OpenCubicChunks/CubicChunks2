@@ -18,8 +18,16 @@ plugins {
     id("io.github.opencubicchunks.gradle.mcGitVersion")
     id("io.github.opencubicchunks.gradle.mixingen")
     id("io.github.opencubicchunks.gradle.dasm")
-    id("io.github.opencubicchunks.stirrin").version("1.3.1")
+    id("io.github.opencubicchunks.stirrin").version("1.3.3")
 }
+
+val minecraftVersion: String by project
+val loaderVersion: String by project
+val fabricVersion: String by project
+val lwjglVersion: String by project
+val lwjglNatives: String by project
+val modId: String by project
+val debugArtifactTransforms: String by project
 
 stirrin {
     setAcceptedJars(".*minecraft.*")
@@ -32,15 +40,8 @@ stirrin {
             "cubicchunks.mixins.levelgen.json",
             "cubicchunks.mixins.optifine.json"
     ))
+    setDebug(debugArtifactTransforms.toBoolean())
 }
-
-val minecraftVersion: String by project
-val loaderVersion: String by project
-val fabricVersion: String by project
-val lwjglVersion: String by project
-val lwjglNatives: String by project
-val modId: String by project
-val debugArtifactTransforms: String by project
 
 javaHeaders {
     setAcceptedJars(".*CubicChunksCore.*")
@@ -271,9 +272,8 @@ dependencies {
 //        exclude module: "fabric-loader"
 //    }
 
-    stirrin.addDependency(project(":CubicChunksCore"))
     // we shade the core classes directly into CC, so it gets remapped
-    shade(implementation(project(":CubicChunksCore")) {
+    shade(implementation(stirrin.addDependency(project(":CubicChunksCore"))) {
         attributes {
             attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements::class, LibraryElements.JAR))
         }
