@@ -18,7 +18,7 @@ plugins {
     id("io.github.opencubicchunks.gradle.mcGitVersion")
     id("io.github.opencubicchunks.gradle.mixingen")
     id("io.github.opencubicchunks.gradle.dasm")
-    id("io.github.opencubicchunks.stirrin").version("1.3.3")
+    id("io.github.opencubicchunks.stirrin").version("1.3.4")
 }
 
 val minecraftVersion: String by project
