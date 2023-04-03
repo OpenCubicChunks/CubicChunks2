@@ -8,6 +8,7 @@ import java.util.function.IntSupplier;
 import javax.annotation.Nullable;
 
 import com.mojang.datafixers.util.Either;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
@@ -22,7 +23,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.chunk.ChunkStatus;
 
 public interface CubeMap {
-    int MAX_CUBE_DISTANCE = 33 + CubeStatus.maxDistance();
+    @UsedFromASM int MAX_CUBE_DISTANCE = 33 + CubeStatus.maxDistance();
 
     // getTickingGenerated
     int getTickingGeneratedCubes();
@@ -32,21 +33,19 @@ public interface CubeMap {
 
     // implemented by ASM in MainTransformer
     @Nullable
-    ChunkHolder updateCubeScheduling(long cubePosIn, int newLevel, @Nullable ChunkHolder holder, int oldLevel);
+    @UsedFromASM ChunkHolder updateCubeScheduling(long cubePosIn, int newLevel, @Nullable ChunkHolder holder, int oldLevel);
 
     void setServerChunkCache(ServerChunkCache cache);
 
-    // used from ASM
-    void markCubePositionReplaceable(CubePos cubePos);
+    @UsedFromASM void markCubePositionReplaceable(CubePos cubePos);
 
-    // used from ASM
-    byte markCubePosition(CubePos cubePos, ChunkStatus.ChunkType status);
+    @UsedFromASM byte markCubePosition(CubePos cubePos, ChunkStatus.ChunkType status);
 
     LongSet getCubesToDrop();
 
     // getUpdatingChunkIfPresent
     @Nullable
-    ChunkHolder getUpdatingCubeIfPresent(long cubePosIn);
+    @UsedFromASM ChunkHolder getUpdatingCubeIfPresent(long cubePosIn);
 
     // getVisibleChunkIfPresent
     @Nullable
@@ -57,17 +56,17 @@ public interface CubeMap {
                                                                                         ChunkStatus chunkStatusIn);
 
     // prepareAccessibleChunk
-    CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareAccessibleCube(ChunkHolder chunkHolder);
+    @UsedFromASM CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareAccessibleCube(ChunkHolder chunkHolder);
 
     // prepareTickingChunk
-    CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareTickingCube(ChunkHolder chunkHolder);
+    @UsedFromASM CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareTickingCube(ChunkHolder chunkHolder);
+
+    // prepareEntityTickingChunk
+    @UsedFromASM CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareEntityTickingCube(CubePos pos);
 
     // getChunkRangeFuture
     CompletableFuture<Either<List<CubeAccess>, ChunkHolder.ChunkLoadingFailure>> getCubeRangeFuture(CubePos pos, int radius,
                                                                                                     IntFunction<ChunkStatus> getParentStatus);
-
-    // prepareEntityTickingChunk
-    CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareEntityTickingCube(CubePos pos);
 
     // getChunks
     Iterable<ChunkHolder> getCubes();

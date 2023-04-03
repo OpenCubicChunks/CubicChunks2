@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.MathUtil;
@@ -75,6 +76,7 @@ import net.minecraft.world.ticks.TickContainerAccess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@UsedFromASM
 public class LevelCube extends CubeAccess {
     private static final TickingBlockEntity NULL_TICKER = new TickingBlockEntity() {
         public void tick() {

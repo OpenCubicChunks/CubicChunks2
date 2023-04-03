@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.mojang.datafixers.util.Pair;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.TicketAccess;
 import it.unimi.dsi.fastutil.longs.Long2ByteMap;
@@ -15,6 +16,7 @@ import net.minecraft.server.level.Ticket;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.util.SortedArraySet;
 
+@UsedFromASM
 public class CubeTickingTracker extends CubeTracker {
     private static final int INITIAL_TICKET_LIST_CAPACITY = 4;
     protected final Long2ByteMap chunks = new Long2ByteOpenHashMap();
@@ -25,6 +27,7 @@ public class CubeTickingTracker extends CubeTracker {
         this.chunks.defaultReturnValue((byte) 33);
     }
 
+    @UsedFromASM
     private SortedArraySet<Ticket<?>> getTickets(long l) {
         return this.tickets.computeIfAbsent(l, (lx) -> SortedArraySet.create(4));
     }
@@ -33,6 +36,7 @@ public class CubeTickingTracker extends CubeTracker {
         return sortedArraySet.isEmpty() ? 34 : sortedArraySet.first().getTicketLevel();
     }
 
+    @UsedFromASM
     public void addTicket(long l, Ticket<?> ticket) {
         SortedArraySet<Ticket<?>> sortedArraySet = this.getTickets(l);
         int i = this.getTicketLevelAt(sortedArraySet);
@@ -42,10 +46,12 @@ public class CubeTickingTracker extends CubeTracker {
         }
     }
 
+    @UsedFromASM
     public <T> void addTicket(TicketType<T> ticketType, CubePos chunkPos, int i, T object) {
         this.addTicket(chunkPos.asLong(), TicketAccess.createNew(ticketType, i, object));
     }
 
+    @UsedFromASM
     public void removeTicket(long l, Ticket<?> ticket) {
         SortedArraySet<Ticket<?>> sortedArraySet = this.getTickets(l);
         sortedArraySet.remove(ticket);
@@ -56,11 +62,13 @@ public class CubeTickingTracker extends CubeTracker {
         this.update(l, this.getTicketLevelAt(sortedArraySet), false);
     }
 
+    @UsedFromASM
     public <T> void removeTicket(TicketType<T> ticketType, CubePos chunkPos, int i, T object) {
         Ticket<T> ticket = TicketAccess.createNew(ticketType, i, object);
         this.removeTicket(chunkPos.asLong(), ticket);
     }
 
+    @UsedFromASM
     public void replacePlayerTicketsLevel(int i) {
         List<Pair<Ticket<CubePos>, Long>> list = new ArrayList<>();
         ObjectIterator<Long2ObjectMap.Entry<SortedArraySet<Ticket<?>>>> var3 = this.tickets.long2ObjectEntrySet().iterator();
@@ -92,6 +100,7 @@ public class CubeTickingTracker extends CubeTracker {
         return sortedArraySet != null && !sortedArraySet.isEmpty() ? sortedArraySet.first().getTicketLevel() : Integer.MAX_VALUE;
     }
 
+    @UsedFromASM
     public int getLevel(CubePos chunkPos) {
         return this.getLevel(chunkPos.asLong());
     }
@@ -108,10 +117,12 @@ public class CubeTickingTracker extends CubeTracker {
         }
     }
 
+    @UsedFromASM
     public void runAllUpdates() {
         this.runUpdates(Integer.MAX_VALUE);
     }
 
+    @UsedFromASM
     public String getTicketDebugString(long l) {
         SortedArraySet<Ticket<?>> sortedArraySet = this.tickets.get(l);
         return sortedArraySet != null && !sortedArraySet.isEmpty() ? sortedArraySet.first().toString() : "no_ticket";

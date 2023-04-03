@@ -1,11 +1,14 @@
 package io.github.opencubicchunks.cubicchunks.server.level;
 
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import it.unimi.dsi.fastutil.longs.Long2ByteMap;
 import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 import net.minecraft.server.level.ServerPlayer;
 
+@UsedFromASM
 public class FixedPlayerDistanceCubeTracker extends CubeTracker {
+    @UsedFromASM
     public final Long2ByteMap cubes = new Long2ByteOpenHashMap();
     protected final int range;
     private final CubicDistanceManager cubicDistanceManager; // this$0
@@ -43,7 +46,7 @@ public class FixedPlayerDistanceCubeTracker extends CubeTracker {
         return cubePlayers != null && !cubePlayers.isEmpty();
     }
 
-    // used from ASM
+    @UsedFromASM
     public void runAllUpdates() {
         this.runUpdates(Integer.MAX_VALUE);
     }

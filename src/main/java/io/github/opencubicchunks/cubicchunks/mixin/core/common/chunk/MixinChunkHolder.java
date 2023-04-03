@@ -15,6 +15,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import com.mojang.datafixers.util.Either;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
@@ -81,7 +82,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
 
     @Shadow private boolean hasChangedSections;
 
-    private CubePos cubePos; // set from ASM
+    @UsedFromASM private CubePos cubePos;
 
     private final ShortArraySet[] changedLocalBlocks = new ShortArraySet[CubicConstants.SECTION_COUNT];
 
@@ -149,7 +150,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
         this.pos = newCubePos.asChunkPos();
     }
 
-    // used from ASM
+    @UsedFromASM
     private static ChunkStatus getCubeStatus(int cubeLevel) {
         return CubeHolder.getCubeStatusFromLevel(cubeLevel);
     }

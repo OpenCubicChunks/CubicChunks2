@@ -34,6 +34,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.datafixers.util.Either;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.ChunkIoMainThreadTaskUtils;
@@ -168,25 +169,22 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Shadow @Final ServerLevel level;
     @Shadow int viewDistance;
 
-    final LongSet cubesToDrop = new LongOpenHashSet();
+    @UsedFromASM final LongSet cubesToDrop = new LongOpenHashSet();
 
-    private CubeTaskPriorityQueueSorter cubeQueueSorter;
+    @UsedFromASM private CubeTaskPriorityQueueSorter cubeQueueSorter;
 
-    private final Long2ObjectLinkedOpenHashMap<ChunkHolder> updatingCubeMap = new Long2ObjectLinkedOpenHashMap<>();
-    private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleCubeMap = this.updatingCubeMap.clone();
+    @UsedFromASM private final Long2ObjectLinkedOpenHashMap<ChunkHolder> updatingCubeMap = new Long2ObjectLinkedOpenHashMap<>();
+    @UsedFromASM private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleCubeMap = this.updatingCubeMap.clone();
 
-    // NOTE: used from ASM, don't rename
     private final LongSet cubeEntitiesInLevel = new LongOpenHashSet();
-    private final Long2ObjectLinkedOpenHashMap<ChunkHolder> pendingCubeUnloads = new Long2ObjectLinkedOpenHashMap<>();
+    @UsedFromASM private final Long2ObjectLinkedOpenHashMap<ChunkHolder> pendingCubeUnloads = new Long2ObjectLinkedOpenHashMap<>();
 
-    // worldgenMailbox
     private ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeWorldgenMailbox;
-    // mainThreadMailbox
     private ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeMainThreadMailbox;
 
     private final AtomicInteger tickingGeneratedCubes = new AtomicInteger();
 
-    private final Long2ByteMap cubeTypeCache = new Long2ByteOpenHashMap();
+    @UsedFromASM private final Long2ByteMap cubeTypeCache = new Long2ByteOpenHashMap();
     private final Queue<Runnable> cubeUnloadQueue = Queues.newConcurrentLinkedQueue();
 
     private ServerChunkCache serverChunkCache;
@@ -468,7 +466,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         cubeSavingFutures.entrySet().removeIf(entry -> entry.getValue().isDone());
     }
 
-    // Called from ASM
+    @UsedFromASM
     private CompoundTag readCubeNBT(CubePos cubePos) throws IOException {
         return regionCubeIO.loadCubeNBT(cubePos);
     }
