@@ -283,6 +283,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
+    testImplementation("net.fabricmc:fabric-loader-junit:${loaderVersion}") // required for bootstrapping in unit tests
 
     testImplementation("org.hamcrest:hamcrest-junit:2.0.0.0")
     testImplementation("org.hamcrest:hamcrest:2.2")
