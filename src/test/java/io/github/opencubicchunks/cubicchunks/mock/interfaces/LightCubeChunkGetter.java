@@ -1,4 +1,4 @@
-package io.github.opencubicchunks.cubicchunks.levelgen.lighting;
+package io.github.opencubicchunks.cubicchunks.mock.interfaces;
 
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;
 import net.minecraft.world.level.chunk.LightChunkGetter;
