@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import io.github.opencubicchunks.cubicchunks.mock.TestBlockGetter;
 import io.github.opencubicchunks.cubicchunks.utils.Result;
 import io.github.opencubicchunks.cubicchunks.utils.Vector2i;
 import net.minecraft.core.BlockPos;
@@ -16,7 +17,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.lighting.LayerLightEngine;
 
 public class LightTestUtil {
-    public static void validateBlockLighting(LayerLightEngine<?, ?> lightEngine, BlockGetter blockGetter,
+    public static void validateBlockLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter,
                                              Set<SectionPos> sectionsPresent, Map<BlockPos, Integer> lights) throws AssertionError {
         sectionsPresent.forEach(sectionPos -> {
             BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos(0, 0, 0);
@@ -27,7 +28,12 @@ public class LightTestUtil {
                         Integer sourceLight = lights.get(blockPos);
                         if (sourceLight != null) {
                             if (sourceLight != light) {
-                                System.err.println(createXZLightSlices(lightEngine, x, y, z, sectionPos.minBlockX(), maxX, sectionPos.minBlockY(), maxY, sectionPos.minBlockZ(), maxZ));
+                                System.err.println(createXZLightSlices(lightEngine, blockGetter,
+                                    x, y, z,
+                                    sectionPos.minBlockX(), maxX,
+                                    sectionPos.minBlockY(), maxY,
+                                    sectionPos.minBlockZ(), maxZ)
+                                );
                                 fail(String.format("Light sources wrong! (%d, %d, %d)", x, y, z));
                             }
                             // Light is source, so we can skip other validation
@@ -41,7 +47,7 @@ public class LightTestUtil {
         });
     }
 
-    public static void validateSkyLighting(LayerLightEngine<?, ?> lightEngine, BlockGetter blockGetter, Set<SectionPos> sectionsPresent,
+    public static void validateSkyLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent,
                                            Map<Vector2i, SortedArraySet<Integer>> heightMap) throws AssertionError {
         sectionsPresent.forEach(sectionPos -> {
             BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos(0, 0, 0);
@@ -54,7 +60,13 @@ public class LightTestUtil {
                         if (height == null) height = Integer.MIN_VALUE;
                         if (y >= height) {
                             if (15 != light) {
-                                System.err.println(createXZLightSlices(lightEngine, x, y, z, sectionPos.minBlockX(), maxX, sectionPos.minBlockY(), maxY, sectionPos.minBlockZ(), maxZ));
+                                System.err.println(createXZLightSlices(lightEngine,
+                                    blockGetter,
+                                    x, y, z,
+                                    sectionPos.minBlockX(), maxX,
+                                    sectionPos.minBlockY(), maxY,
+                                    sectionPos.minBlockZ(), maxZ)
+                                );
                                 fail(String.format("Block above heightmap wrong! (%d, %d, %d)", x, y, z));
                             }
                             // Light is source, so we can skip other validation
@@ -68,12 +80,18 @@ public class LightTestUtil {
         });
     }
 
-    private static void validateLight(LayerLightEngine<?, ?> lightEngine, BlockGetter blockGetter, Set<SectionPos> sectionsPresent, SectionPos sectionPos, BlockPos.MutableBlockPos blockPos,
-                                  int x, int maxX, int y, int maxY, int z, int maxZ, int light) {
+    private static void validateLight(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent, SectionPos sectionPos,
+                                      BlockPos.MutableBlockPos blockPos, int x, int maxX, int y, int maxY, int z, int maxZ, int light) {
         // TODO: handle voxel shape occlusion
         Result<Boolean, Void> occludedOrError = validateOccluded(blockGetter, blockPos, light);
         if (occludedOrError.isErr()) {
-            System.err.println(createXZLightSlices(lightEngine, x, y, z, sectionPos.minBlockX(), maxX, sectionPos.minBlockY(), maxY, sectionPos.minBlockZ(), maxZ));
+            System.err.println(createXZLightSlices(lightEngine,
+                blockGetter,
+                x, y, z,
+                sectionPos.minBlockX(), maxX,
+                sectionPos.minBlockY(), maxY,
+                sectionPos.minBlockZ(), maxZ)
+            );
             fail(String.format("Occluding block has light! (%d, %d, %d)", x, y, z));
         } else {
             if (occludedOrError.asOk()) {
@@ -83,7 +101,13 @@ public class LightTestUtil {
 
         Optional<String> error = validateNeighbors(lightEngine, sectionsPresent, blockPos, x, y, z, light);
         if (error.isPresent()) {
-            System.err.println(createXZLightSlices(lightEngine, x, y, z, sectionPos.minBlockX(), maxX, sectionPos.minBlockY(), maxY, sectionPos.minBlockZ(), maxZ));
+            System.err.println(createXZLightSlices(lightEngine,
+                blockGetter,
+                x, y, z,
+                sectionPos.minBlockX(), maxX,
+                sectionPos.minBlockY(), maxY,
+                sectionPos.minBlockZ(), maxZ)
+            );
             fail(error.get());
         }
     }
