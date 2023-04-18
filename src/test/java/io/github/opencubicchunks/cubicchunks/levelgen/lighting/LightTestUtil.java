@@ -168,8 +168,9 @@ public class LightTestUtil {
         }
 
         int brightestNeighbor = Math.max(Math.max(Math.max(lightAbove, lightBelow), Math.max(lightNorth, lightEast)), Math.max(lightSouth, lightWest));
-        if (Math.max(brightestNeighbor - 1, 0) != light) {
-            return Optional.of(formatPropagationError(x, y, z, lightAbove, lightBelow, lightNorth, lightSouth, lightEast, lightWest, height));
+        int expected = Math.max(brightestNeighbor - 1, 0);
+        if (expected != light) {
+            return Optional.of(formatPropagationError(x, y, z, expected, light, lightAbove, lightBelow, lightNorth, lightSouth, lightEast, lightWest, height));
         }
         return Optional.empty();
     }
@@ -178,8 +179,11 @@ public class LightTestUtil {
      * This exists because having 9 final variables every time it's called would be dumb.
      * <p><b>Java is dumb.</b></p>
      */
-    public static String formatPropagationError(int x, int y, int z, int lightAbove, int lightBelow, int lightNorth, int lightSouth, int lightEast, int lightWest, int height) {
-        return String.format("Propagation wrong for pos: (%d, %d, %d) | Heightmap: %d\n\tAbove: %d | Below: %d\n\tNorth: %d | South: %d\n\tEast: %d | West: %d",
-            x, y, z, height, lightAbove, lightBelow, lightNorth, lightSouth, lightEast, lightWest);
+    public static String formatPropagationError(int x, int y, int z,
+                                                int expected, int found,
+                                                int lightAbove, int lightBelow, int lightNorth, int lightSouth, int lightEast, int lightWest,
+                                                int height) {
+        return String.format("Invalid propagation! Expected: %d | Found: %d | Pos: (%d, %d, %d)\n\tAbove: %d | Below: %d\n\tNorth: %d | South: %d\n\tEast: %d | West: %d\n\tHeightmap: %d",
+            expected, found, x, y, z, lightAbove, lightBelow, lightNorth, lightSouth, lightEast, lightWest, height);
     }
 }

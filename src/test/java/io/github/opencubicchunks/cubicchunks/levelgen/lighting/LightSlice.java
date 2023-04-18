@@ -42,7 +42,7 @@ public class LightSlice {
     }
 
     private static void appendHeader(int errorX, int errorZ, StringBuilder stringBuilder, int xRange, int zRange) {
-        stringBuilder.append("\n\n").append(LEFT_MARGIN_GAP)
+        stringBuilder.append(LEFT_MARGIN_GAP)
             .append(String.format("%-" + (2 * xRange) + "s", "XY Slice " + errorZ))
             .append(XZ_SLICE_GAP)
             .append(String.format("%-" + (2 * zRange) + "s", "ZY Slice " + errorX))
