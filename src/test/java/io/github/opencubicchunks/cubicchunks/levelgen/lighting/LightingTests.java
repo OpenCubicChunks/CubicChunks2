@@ -38,8 +38,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.lighting.BlockLightEngine;
 import net.minecraft.world.level.lighting.SkyLightEngine;
-import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -318,8 +318,8 @@ public class LightingTests {
             .ifErr(LightError::report);
     }
 
-    @Ignore // TODO: ignored because it fails!
-    @ParameterizedTest
+    @Disabled
+    @ParameterizedTest // TODO: disabled because it fails!
     @ValueSource(longs = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })
     public void testSkyLightEngineSeededRandom(long seed) {
         Random r = new Random(seed);
