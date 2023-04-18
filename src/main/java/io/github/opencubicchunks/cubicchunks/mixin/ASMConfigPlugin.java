@@ -40,7 +40,11 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     private final Transformer transformer;
 
     public ASMConfigPlugin() {
-        this.transformer = new Transformer(MappingsProvider.IDENTITY, FabricLoader.getInstance().isDevelopmentEnvironment());
+        boolean developmentEnvironment = true;
+        try {
+            FabricLoader.getInstance().isDevelopmentEnvironment();
+        } catch(NullPointerException ignored) {} // isDevelopmentEnvironment can throw from a test environment as it has no launcher instance
+        this.transformer = new Transformer(MappingsProvider.IDENTITY, developmentEnvironment);
 
         List<RedirectsParser.RedirectSet> redirectSets;
         List<RedirectsParser.ClassTarget> targetClasses;

@@ -154,6 +154,8 @@ repositories {
 }
 
 loom {
+    createRemapConfigurations(sourceSets.test.get())
+
     accessWidenerPath.set(file("src/main/resources/cubicchunks.accesswidener"))
     // intermediaryUrl = { "http://localhost:9000/intermediary-20w49a-v2.jar" }
 
@@ -286,6 +288,9 @@ dependencies {
     testImplementation("net.fabricmc:fabric-loader-junit:${loaderVersion}") // required for bootstrapping in unit tests
 
     testImplementation("org.mockito:mockito-core:5.3.0")
+
+    // added at runtime, and fails to compile if used normally
+    "modTestRuntimeOnly"("supercoder79:databreaker:0.2.9")
 
     testImplementation("org.hamcrest:hamcrest-junit:2.0.0.0")
     testImplementation("org.hamcrest:hamcrest:2.2")
