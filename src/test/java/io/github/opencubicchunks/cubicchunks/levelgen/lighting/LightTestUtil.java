@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.levelgen.lighting;
 
 import static io.github.opencubicchunks.cubicchunks.levelgen.lighting.LightSlice.createXZLightSlices;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Map;
 import java.util.Optional;
@@ -17,9 +16,9 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.lighting.LayerLightEngine;
 
 public class LightTestUtil {
-    public static void validateBlockLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter,
+    public static Result<Void, StringBuilder> validateBlockLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter,
                                              Set<SectionPos> sectionsPresent, Map<BlockPos, Integer> lights) throws AssertionError {
-        sectionsPresent.forEach(sectionPos -> {
+        for (SectionPos sectionPos : sectionsPresent) {
             BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos(0, 0, 0);
             for (int x = sectionPos.minBlockX(), maxX = x + SectionPos.SECTION_SIZE; x < maxX; x++) {
                 for (int y = sectionPos.minBlockY(), maxY = y + SectionPos.SECTION_SIZE; y < maxY; y++) {
@@ -28,28 +27,32 @@ public class LightTestUtil {
                         Integer sourceLight = lights.get(blockPos);
                         if (sourceLight != null) {
                             if (sourceLight != light) {
-                                System.err.println(createXZLightSlices(lightEngine, blockGetter,
+                                StringBuilder sb = createXZLightSlices(lightEngine, blockGetter,
                                     x, y, z,
                                     sectionPos.minBlockX(), maxX,
                                     sectionPos.minBlockY(), maxY,
-                                    sectionPos.minBlockZ(), maxZ)
-                                );
-                                fail(String.format("Light sources wrong! (%d, %d, %d)", x, y, z));
+                                    sectionPos.minBlockZ(), maxZ);
+                                sb.append(String.format("Light sources wrong! (%d, %d, %d)", x, y, z));
+                                return Result.err(sb);
                             }
                             // Light is source, so we can skip other validation
                             continue;
                         }
 
-                        validateLight(lightEngine, blockGetter, sectionsPresent, sectionPos, blockPos, x, maxX, y, maxY, z, maxZ, light);
+                        Result<Void, StringBuilder> result = validateLight(lightEngine, blockGetter, sectionsPresent, sectionPos, blockPos, x, maxX, y, maxY, z, maxZ, light, -0xFFFFFFFF);
+                        if (result.isErr()) {
+                            return result;
+                        }
                     }
                 }
             }
-        });
+        }
+        return Result.ok(null);
     }
 
-    public static void validateSkyLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent,
+    public static Result<Void, StringBuilder> validateSkyLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent,
                                            Map<Vector2i, SortedArraySet<Integer>> heightMap) throws AssertionError {
-        sectionsPresent.forEach(sectionPos -> {
+        for (SectionPos sectionPos : sectionsPresent) {
             BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos(0, 0, 0);
             for (int x = sectionPos.minBlockX(), maxX = x + SectionPos.SECTION_SIZE; x < maxX; x++) {
                 for (int y = sectionPos.minBlockY(), maxY = y + SectionPos.SECTION_SIZE; y < maxY; y++) {
@@ -57,59 +60,65 @@ public class LightTestUtil {
                         int light = lightEngine.getLightValue(blockPos.set(x, y, z));
                         Integer height = heightMap.get(new Vector2i(x, z)).first();
                         //noinspection ConstantValue
-                        if (height == null) height = Integer.MIN_VALUE;
+                        if (height == null)
+                            height = Integer.MIN_VALUE;
                         if (y >= height) {
                             if (15 != light) {
-                                System.err.println(createXZLightSlices(lightEngine,
-                                    blockGetter,
+                                StringBuilder sb = createXZLightSlices(lightEngine, blockGetter,
                                     x, y, z,
                                     sectionPos.minBlockX(), maxX,
                                     sectionPos.minBlockY(), maxY,
-                                    sectionPos.minBlockZ(), maxZ)
+                                    sectionPos.minBlockZ(), maxZ
                                 );
-                                fail(String.format("Block above heightmap wrong! (%d, %d, %d)", x, y, z));
+                                sb.append(String.format("Block above heightmap wrong! (%d, %d, %d)", x, y, z));
+                                return Result.err(sb);
                             }
                             // Light is source, so we can skip other validation
                             continue;
                         }
 
-                        validateLight(lightEngine, blockGetter, sectionsPresent, sectionPos, blockPos, x, maxX, y, maxY, z, maxZ, light);
+                        Result<Void, StringBuilder> result = validateLight(lightEngine, blockGetter, sectionsPresent, sectionPos, blockPos, x, maxX, y, maxY, z, maxZ, light, height);
+                        if (result.isErr()) {
+                            return result;
+                        }
                     }
                 }
             }
-        });
+        }
+        return Result.ok(null);
     }
 
-    private static void validateLight(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent, SectionPos sectionPos,
-                                      BlockPos.MutableBlockPos blockPos, int x, int maxX, int y, int maxY, int z, int maxZ, int light) {
+    private static Result<Void, StringBuilder> validateLight(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent, SectionPos sectionPos,
+                                      BlockPos.MutableBlockPos blockPos, int x, int maxX, int y, int maxY, int z, int maxZ, int light, int height) {
         // TODO: handle voxel shape occlusion
         Result<Boolean, Void> occludedOrError = validateOccluded(blockGetter, blockPos, light);
         if (occludedOrError.isErr()) {
-            System.err.println(createXZLightSlices(lightEngine,
-                blockGetter,
+            StringBuilder sb = createXZLightSlices(lightEngine, blockGetter,
                 x, y, z,
                 sectionPos.minBlockX(), maxX,
                 sectionPos.minBlockY(), maxY,
-                sectionPos.minBlockZ(), maxZ)
+                sectionPos.minBlockZ(), maxZ
             );
-            fail(String.format("Occluding block has light! (%d, %d, %d)", x, y, z));
+            sb.append(String.format("Occluding block has light! (%d, %d, %d) | Heightmap: %d", x, y, z, height));
+            return Result.err(sb);
         } else {
             if (occludedOrError.asOk()) {
-                return;
+                return Result.ok(null);
             }
         }
 
-        Optional<String> error = validateNeighbors(lightEngine, sectionsPresent, blockPos, x, y, z, light);
+        Optional<String> error = validateNeighbors(lightEngine, sectionsPresent, blockPos, x, y, z, light, height);
         if (error.isPresent()) {
-            System.err.println(createXZLightSlices(lightEngine,
-                blockGetter,
+            StringBuilder sb = createXZLightSlices(lightEngine, blockGetter,
                 x, y, z,
                 sectionPos.minBlockX(), maxX,
-                sectionPos.minBlockY(), maxY,
-                sectionPos.minBlockZ(), maxZ)
+                sectionPos.minBlockY(), height,
+                sectionPos.minBlockZ(), maxZ
             );
-            fail(error.get());
+            sb.append(error.get());
+            return Result.err(sb);
         }
+        return Result.ok(null);
     }
 
     private static Result<Boolean, Void> validateOccluded(BlockGetter blockGetter, BlockPos.MutableBlockPos blockPos, int light) {
@@ -126,7 +135,7 @@ public class LightTestUtil {
      * @return An optional error message (if there was an error)
      */
     private static Optional<String> validateNeighbors(LayerLightEngine<?, ?> lightEngine, Set<SectionPos> sectionsPresent, BlockPos.MutableBlockPos blockPos, int x, int y, int z,
-                                                      int light) {
+                                                      int light, int height) {
         blockPos.set(x, y + 1, z);
         int lightAbove = 0;
         if (sectionsPresent.contains(SectionPos.of(blockPos))) {
@@ -160,7 +169,7 @@ public class LightTestUtil {
 
         int brightestNeighbor = Math.max(Math.max(Math.max(lightAbove, lightBelow), Math.max(lightNorth, lightEast)), Math.max(lightSouth, lightWest));
         if (Math.max(brightestNeighbor - 1, 0) != light) {
-            return Optional.of(formatPropagationError(x, y, z, lightAbove, lightBelow, lightNorth, lightSouth, lightEast, lightWest));
+            return Optional.of(formatPropagationError(x, y, z, lightAbove, lightBelow, lightNorth, lightSouth, lightEast, lightWest, height));
         }
         return Optional.empty();
     }
@@ -169,8 +178,8 @@ public class LightTestUtil {
      * This exists because having 9 final variables every time it's called would be dumb.
      * <p><b>Java is dumb.</b></p>
      */
-    public static String formatPropagationError(int x, int y, int z, int lightAbove, int lightBelow, int lightNorth, int lightSouth, int lightEast, int lightWest) {
-        return String.format("Propagation wrong for pos: (%d, %d, %d)!\n\tAbove: %d | Below: %d\n\tNorth: %d | South: %d\n\tEast: %d | West: %d",
-            x, y, z, lightAbove, lightBelow, lightNorth, lightSouth, lightEast, lightWest);
+    public static String formatPropagationError(int x, int y, int z, int lightAbove, int lightBelow, int lightNorth, int lightSouth, int lightEast, int lightWest, int height) {
+        return String.format("Propagation wrong for pos: (%d, %d, %d) | Heightmap: %d\n\tAbove: %d | Below: %d\n\tNorth: %d | South: %d\n\tEast: %d | West: %d",
+            x, y, z, height, lightAbove, lightBelow, lightNorth, lightSouth, lightEast, lightWest);
     }
 }

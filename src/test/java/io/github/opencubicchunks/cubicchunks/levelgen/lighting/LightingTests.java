@@ -75,7 +75,8 @@ public class LightingTests {
 
         levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
 
-        validateBlockLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), Collections.singletonMap(new BlockPos(0, 0, 0), 15));
+        validateBlockLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), Collections.singletonMap(new BlockPos(0, 0, 0), 15))
+            .ifErr(err -> fail(err.toString()));
     }
 
     /**
@@ -110,7 +111,8 @@ public class LightingTests {
 
         ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
 
-        validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner);
+        validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner)
+            .ifErr(err -> fail(err.toString()));
     }
 
     @Test
@@ -150,7 +152,8 @@ public class LightingTests {
 
         ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
 
-        validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner);
+        validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner)
+            .ifErr(err -> fail(err.toString()));
     }
 
     @Test
@@ -188,7 +191,8 @@ public class LightingTests {
 
         ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
 
-        validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner);
+        validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner)
+            .ifErr(err -> fail(err.toString()));
     }
 
     @Test
@@ -233,7 +237,8 @@ public class LightingTests {
         ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
         levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
 
-        validateSkyLighting(levelLightEngine, blockGetter, new HashSet<>(sections), blockGetter.getHeightmap().inner);
+        validateSkyLighting(levelLightEngine, blockGetter, new HashSet<>(sections), blockGetter.getHeightmap().inner)
+            .ifErr(err -> fail(err.toString()));
     }
 
     static Stream<Arguments> testSkyLightEngineMultiCubeOrderedArguments() {
@@ -305,7 +310,8 @@ public class LightingTests {
         levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
 
         assertEquals(0, levelLightEngine.getLightValue(new BlockPos(15, 73, 15)));
-        validateSkyLighting(levelLightEngine, blockGetter, sectionsForCubes(cubes), blockGetter.getHeightmap().inner);
+        validateSkyLighting(levelLightEngine, blockGetter, sectionsForCubes(cubes), blockGetter.getHeightmap().inner)
+            .ifErr(err -> fail(err.toString()));
     }
 
     public static Collection<SectionPos> sectionsWithinCube(CubePos cubePos) {

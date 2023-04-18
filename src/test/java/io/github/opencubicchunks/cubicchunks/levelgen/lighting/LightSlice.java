@@ -14,7 +14,7 @@ public class LightSlice {
     private static final String LEFT_MARGIN_GAP = " ".repeat(8);
     private static final char[] HEX_CHARS = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-    public static String createXZLightSlices(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter,
+    public static StringBuilder createXZLightSlices(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter,
                                              int errorX, int errorY, int errorZ,
                                              int startX, int endX, int startY, int endY, int startZ, int endZ) {
 
@@ -27,7 +27,7 @@ public class LightSlice {
         }, errorX, errorY, errorZ, startX, endX, startY, endY, startZ, endZ);
     }
 
-    private static String createXZLightSlices(LayerLightEngine<?, ?> lightEngine, Function<BlockPos, BlockOpacityState> opaqueState,
+    private static StringBuilder createXZLightSlices(LayerLightEngine<?, ?> lightEngine, Function<BlockPos, BlockOpacityState> opaqueState,
                                              int errorX, int errorY, int errorZ,
                                              int startX, int endX, int startY, int endY, int startZ, int endZ) {
         StringBuilder stringBuilder = new StringBuilder();
@@ -38,7 +38,7 @@ public class LightSlice {
 
         appendFooter(stringBuilder, startX, endX, startZ, endZ);
 
-        return stringBuilder.toString();
+        return stringBuilder;
     }
 
     private static void appendHeader(int errorX, int errorZ, StringBuilder stringBuilder, int xRange, int zRange) {
