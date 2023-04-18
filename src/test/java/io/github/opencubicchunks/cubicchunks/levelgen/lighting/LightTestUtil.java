@@ -59,8 +59,9 @@ public class LightTestUtil {
                         int light = lightEngine.getLightValue(blockPos.set(x, y, z));
                         Integer height = heightMap.get(new Vector2i(x, z)).first();
                         //noinspection ConstantValue
-                        if (height == null)
+                        if (height == null) {
                             height = Integer.MIN_VALUE;
+                        }
                         if (y >= height) {
                             if (15 != light) {
                                 StringBuilder sb = createXZLightSlices(lightEngine, blockGetter,

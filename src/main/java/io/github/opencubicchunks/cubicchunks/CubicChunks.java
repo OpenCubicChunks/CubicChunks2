@@ -22,7 +22,7 @@ import net.minecraft.server.level.ChunkMap;
  */
 // The value here should match an entry in the META-INF/mods.toml file
 public class CubicChunks extends CubicChunksBase implements ModInitializer {
-    protected static CommonConfig CONFIG = null;
+    protected static CommonConfig config = null;
 
     public CubicChunks() {
         if (!(CubeMap.class.isAssignableFrom(ChunkMap.class))) {
@@ -59,9 +59,9 @@ public class CubicChunks extends CubicChunksBase implements ModInitializer {
     }
 
     public static CommonConfig config() {
-        if (CONFIG == null) {
-            CONFIG = CommonConfig.getConfig();
+        if (config == null) {
+            config = CommonConfig.getConfig();
         }
-        return CONFIG;
+        return config;
     }
 }

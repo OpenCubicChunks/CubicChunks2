@@ -60,7 +60,8 @@ public abstract class Result<T, E> {
         public void ifOk(Consumer<T> consumer) {
             consumer.accept(this.value);
         }
-        public void ifErr(Consumer<E> consumer) { }
+        public void ifErr(Consumer<E> consumer) {
+        }
 
         @Nullable public <R> R mapOk(Function<T, R> f) {
             return f.apply(this.value);
@@ -101,7 +102,8 @@ public abstract class Result<T, E> {
             return value;
         }
 
-        public void ifOk(Consumer<T> consumer) {}
+        public void ifOk(Consumer<T> consumer) {
+        }
         public void ifErr(Consumer<E> consumer) {
             consumer.accept(this.value);
         }
