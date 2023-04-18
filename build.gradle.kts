@@ -330,6 +330,9 @@ tasks["checkstyleTest"].dependsOn(unzipTests)
 
 val test: Test by tasks
 test.apply {
+    minHeapSize = "512M"
+    maxHeapSize = "2048M"
+
     dependsOn(unzipTests)
     useJUnitPlatform()
 
