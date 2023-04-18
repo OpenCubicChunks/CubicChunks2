@@ -16,7 +16,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.lighting.LayerLightEngine;
 
 public class LightTestUtil {
-    public static Result<Void, StringBuilder> validateBlockLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter,
+    public static Result<Void, LightError> validateBlockLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter,
                                              Set<SectionPos> sectionsPresent, Map<BlockPos, Integer> lights) throws AssertionError {
         for (SectionPos sectionPos : sectionsPresent) {
             BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos(0, 0, 0);
@@ -32,14 +32,13 @@ public class LightTestUtil {
                                     sectionPos.minBlockX(), maxX,
                                     sectionPos.minBlockY(), maxY,
                                     sectionPos.minBlockZ(), maxZ);
-                                sb.append(String.format("Light sources wrong! (%d, %d, %d)", x, y, z));
-                                return Result.err(sb);
+                                return Result.err(new LightError(String.format("Light sources wrong! (%d, %d, %d)", x, y, z), sb.toString()));
                             }
                             // Light is source, so we can skip other validation
                             continue;
                         }
 
-                        Result<Void, StringBuilder> result = validateLight(lightEngine, blockGetter, sectionsPresent, sectionPos, blockPos, x, maxX, y, maxY, z, maxZ, light, -0xFFFFFFFF);
+                        Result<Void, LightError> result = validateLight(lightEngine, blockGetter, sectionsPresent, sectionPos, blockPos, x, maxX, y, maxY, z, maxZ, light, -0xFFFFFFFF);
                         if (result.isErr()) {
                             return result;
                         }
@@ -50,7 +49,7 @@ public class LightTestUtil {
         return Result.ok(null);
     }
 
-    public static Result<Void, StringBuilder> validateSkyLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent,
+    public static Result<Void, LightError> validateSkyLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent,
                                            Map<Vector2i, SortedArraySet<Integer>> heightMap) throws AssertionError {
         for (SectionPos sectionPos : sectionsPresent) {
             BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos(0, 0, 0);
@@ -70,14 +69,13 @@ public class LightTestUtil {
                                     sectionPos.minBlockY(), maxY,
                                     sectionPos.minBlockZ(), maxZ
                                 );
-                                sb.append(String.format("Block above heightmap wrong! (%d, %d, %d)", x, y, z));
-                                return Result.err(sb);
+                                return Result.err(new LightError(String.format("Block above heightmap wrong! (%d, %d, %d)", x, y, z), sb.toString()));
                             }
                             // Light is source, so we can skip other validation
                             continue;
                         }
 
-                        Result<Void, StringBuilder> result = validateLight(lightEngine, blockGetter, sectionsPresent, sectionPos, blockPos, x, maxX, y, maxY, z, maxZ, light, height);
+                        Result<Void, LightError> result = validateLight(lightEngine, blockGetter, sectionsPresent, sectionPos, blockPos, x, maxX, y, maxY, z, maxZ, light, height);
                         if (result.isErr()) {
                             return result;
                         }
@@ -88,7 +86,7 @@ public class LightTestUtil {
         return Result.ok(null);
     }
 
-    private static Result<Void, StringBuilder> validateLight(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent, SectionPos sectionPos,
+    private static Result<Void, LightError> validateLight(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent, SectionPos sectionPos,
                                       BlockPos.MutableBlockPos blockPos, int x, int maxX, int y, int maxY, int z, int maxZ, int light, int height) {
         // TODO: handle voxel shape occlusion
         Result<Boolean, Void> occludedOrError = validateOccluded(blockGetter, blockPos, light);
@@ -99,8 +97,7 @@ public class LightTestUtil {
                 sectionPos.minBlockY(), maxY,
                 sectionPos.minBlockZ(), maxZ
             );
-            sb.append(String.format("Occluding block has light! (%d, %d, %d) | Heightmap: %d", x, y, z, height));
-            return Result.err(sb);
+            return Result.err(new LightError(String.format("Occluding block has light! (%d, %d, %d) | Heightmap: %d", x, y, z, height), sb.toString()));
         } else {
             if (occludedOrError.asOk()) {
                 return Result.ok(null);
@@ -115,8 +112,7 @@ public class LightTestUtil {
                 sectionPos.minBlockY(), height,
                 sectionPos.minBlockZ(), maxZ
             );
-            sb.append(error.get());
-            return Result.err(sb);
+            return Result.err(new LightError(error.get(), sb.toString()));
         }
         return Result.ok(null);
     }

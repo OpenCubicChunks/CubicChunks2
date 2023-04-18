@@ -76,7 +76,7 @@ public class LightingTests {
         levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
 
         validateBlockLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), Collections.singletonMap(new BlockPos(0, 0, 0), 15))
-            .ifErr(err -> fail(err.toString()));
+            .ifErr(LightError::report);
     }
 
     /**
@@ -112,7 +112,7 @@ public class LightingTests {
         ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
 
         validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner)
-            .ifErr(err -> fail(err.toString()));
+            .ifErr(LightError::report);
     }
 
     @Test
@@ -153,7 +153,7 @@ public class LightingTests {
         ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
 
         validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner)
-            .ifErr(err -> fail(err.toString()));
+            .ifErr(LightError::report);
     }
 
     @Test
@@ -192,7 +192,7 @@ public class LightingTests {
         ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
 
         validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner)
-            .ifErr(err -> fail(err.toString()));
+            .ifErr(LightError::report);
     }
 
     @Test
@@ -238,7 +238,7 @@ public class LightingTests {
         levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
 
         validateSkyLighting(levelLightEngine, blockGetter, new HashSet<>(sections), blockGetter.getHeightmap().inner)
-            .ifErr(err -> fail(err.toString()));
+            .ifErr(LightError::report);
     }
 
     static Stream<Arguments> testSkyLightEngineMultiCubeOrderedArguments() {
@@ -311,7 +311,7 @@ public class LightingTests {
 
         assertEquals(0, levelLightEngine.getLightValue(new BlockPos(15, 73, 15)));
         validateSkyLighting(levelLightEngine, blockGetter, sectionsForCubes(cubes), blockGetter.getHeightmap().inner)
-            .ifErr(err -> fail(err.toString()));
+            .ifErr(LightError::report);
     }
 
     public static Collection<SectionPos> sectionsWithinCube(CubePos cubePos) {
