@@ -28,17 +28,14 @@ public class LightTestUtil {
                         if (sourceLight != null) {
                             if (sourceLight != light) {
                                 StringBuilder sb = createXZLightSlices(lightEngine, blockGetter,
-                                    x, y, z,
-                                    sectionPos.minBlockX(), maxX,
-                                    sectionPos.minBlockY(), maxY,
-                                    sectionPos.minBlockZ(), maxZ);
+                                    x, y, z, 15, 15, 15);
                                 return Result.err(new LightError(String.format("Light sources wrong! (%d, %d, %d)", x, y, z), sb.toString()));
                             }
                             // Light is source, so we can skip other validation
                             continue;
                         }
 
-                        Result<Void, LightError> result = validateLight(lightEngine, blockGetter, sectionsPresent, sectionPos, blockPos, x, maxX, y, maxY, z, maxZ, light, -0xFFFFFFFF);
+                        Result<Void, LightError> result = validateLight(lightEngine, blockGetter, sectionsPresent, blockPos, x, y, z, 15, -15, 15, light, -0xFFFFFFFF);
                         if (result.isErr()) {
                             return result;
                         }
@@ -66,9 +63,7 @@ public class LightTestUtil {
                             if (15 != light) {
                                 StringBuilder sb = createXZLightSlices(lightEngine, blockGetter,
                                     x, y, z,
-                                    sectionPos.minBlockX(), maxX,
-                                    sectionPos.minBlockY(), maxY,
-                                    sectionPos.minBlockZ(), maxZ
+                                    5, -1, height - y
                                 );
                                 return Result.err(new LightError(String.format("Block above heightmap wrong! (%d, %d, %d)", x, y, z), sb.toString()));
                             }
@@ -76,7 +71,7 @@ public class LightTestUtil {
                             continue;
                         }
 
-                        Result<Void, LightError> result = validateLight(lightEngine, blockGetter, sectionsPresent, sectionPos, blockPos, x, maxX, y, maxY, z, maxZ, light, height);
+                        Result<Void, LightError> result = validateLight(lightEngine, blockGetter, sectionsPresent, blockPos, x, y, z, 5, -1, height - y, light, height);
                         if (result.isErr()) {
                             return result;
                         }
@@ -87,31 +82,28 @@ public class LightTestUtil {
         return Result.ok(null);
     }
 
-    private static Result<Void, LightError> validateLight(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent, SectionPos sectionPos,
-                                      BlockPos.MutableBlockPos blockPos, int x, int maxX, int y, int maxY, int z, int maxZ, int light, int height) {
+    private static Result<Void, LightError> validateLight(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent,
+                                                          BlockPos.MutableBlockPos blockPos, int errorX, int errorY, int errorZ,
+                                                          int xzRadius, int yMinOffset, int yMaxOffset, int light, int height) {
         // TODO: handle voxel shape occlusion
         Result<Boolean, Void> occludedOrError = validateOccluded(blockGetter, blockPos, light);
         if (occludedOrError.isErr()) {
             StringBuilder sb = createXZLightSlices(lightEngine, blockGetter,
-                x, y, z,
-                sectionPos.minBlockX(), maxX,
-                sectionPos.minBlockY(), maxY,
-                sectionPos.minBlockZ(), maxZ
+                errorX, errorY, errorZ,
+                xzRadius, yMinOffset, yMaxOffset
             );
-            return Result.err(new LightError(String.format("Occluding block has light! (%d, %d, %d) | Heightmap: %d", x, y, z, height), sb.toString()));
+            return Result.err(new LightError(String.format("Occluding block has light! (%d, %d, %d) | Heightmap: %d", errorX, errorY, errorZ, height), sb.toString()));
         } else {
             if (occludedOrError.asOk()) {
                 return Result.ok(null);
             }
         }
 
-        Optional<String> error = validateNeighbors(lightEngine, sectionsPresent, blockPos, x, y, z, light, height);
+        Optional<String> error = validateNeighbors(lightEngine, sectionsPresent, blockPos, errorX, errorY, errorZ, light, height);
         if (error.isPresent()) {
             StringBuilder sb = createXZLightSlices(lightEngine, blockGetter,
-                x, y, z,
-                sectionPos.minBlockX(), maxX,
-                sectionPos.minBlockY(), height,
-                sectionPos.minBlockZ(), maxZ
+                errorX, errorY, errorZ,
+                xzRadius, yMinOffset, yMaxOffset
             );
             return Result.err(new LightError(error.get(), sb.toString()));
         }
@@ -131,7 +123,8 @@ public class LightTestUtil {
     /**
      * @return An optional error message (if there was an error)
      */
-    private static Optional<String> validateNeighbors(LayerLightEngine<?, ?> lightEngine, Set<SectionPos> sectionsPresent, BlockPos.MutableBlockPos blockPos, int x, int y, int z,
+    private static Optional<String> validateNeighbors(LayerLightEngine<?, ?> lightEngine, Set<SectionPos> sectionsPresent, BlockPos.MutableBlockPos blockPos,
+                                                      int x, int y, int z,
                                                       int light, int height) {
         blockPos.set(x, y + 1, z);
         int lightAbove = 0;
