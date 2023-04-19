@@ -101,16 +101,13 @@ public class LightSlice {
     }
 
     @NotNull private static Character getLightCharacterForPos(LayerLightEngine<?, ?> lightEngine, Function<BlockPos, BlockOpacityState> opaqueState, BlockPos pos) {
-        int light = lightEngine.getLightValue(pos);
-        if (light == 0) {
-            BlockOpacityState opacityState = opaqueState.apply(pos);
-            if (opacityState == BlockOpacityState.UNLOADED) {
-                return '.';
-            }
-            if (opacityState == BlockOpacityState.OPAQUE) {
-                return '#';
-            }
+        BlockOpacityState opacityState = opaqueState.apply(pos);
+        if (opacityState == BlockOpacityState.UNLOADED) {
+            return '.';
+        } else if (opacityState == BlockOpacityState.OPAQUE) {
+            return '#';
         }
+        int light = lightEngine.getLightValue(pos);
         return HEX_CHARS[light];
     }
 
