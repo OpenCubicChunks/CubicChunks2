@@ -31,11 +31,11 @@ public class LightSlice {
                                                      int errorX, int errorY, int errorZ,
                                                      int xzRadius, int yMinOffset, int yMaxOffset) {
         int startX = errorX - xzRadius;
-        int endX = errorX  + xzRadius + 1; // + 1 so the parameter bound is inclusive
+        int endX = errorX + xzRadius + 1; // + 1 so the parameter bound is inclusive
         int startY = errorY + yMinOffset;
-        int endY = errorY  + yMaxOffset + 1; // + 1 so the parameter bound is inclusive
+        int endY = errorY + yMaxOffset + 1; // + 1 so the parameter bound is inclusive
         int startZ = errorZ - xzRadius;
-        int endZ = errorZ  + xzRadius + 1; // + 1 so the parameter bound is inclusive
+        int endZ = errorZ + xzRadius + 1; // + 1 so the parameter bound is inclusive
 
         StringBuilder stringBuilder = new StringBuilder();
 
@@ -50,9 +50,9 @@ public class LightSlice {
 
     private static void appendHeader(int errorX, int errorZ, StringBuilder stringBuilder, int xRange, int zRange) {
         stringBuilder.append(LEFT_MARGIN_GAP)
-            .append(String.format("%-" + (2 * xRange) + "s", "XY Slice " + errorZ))
+            .append(String.format("%-" + (3 * xRange) + "s", "XY Slice " + errorZ))
             .append(XZ_SLICE_GAP)
-            .append(String.format("%-" + (2 * zRange) + "s", "ZY Slice " + errorX))
+            .append(String.format("%-" + (3 * zRange) + "s", "ZY Slice " + errorX))
             .append("\n");
     }
 
@@ -61,7 +61,8 @@ public class LightSlice {
                                    int startX, int endX, int startY, int endY, int startZ, int endZ,
                                    StringBuilder stringBuilder) {
         for (int y = endY - 1; y >= startY; y--) {
-            stringBuilder.append(String.format("%4d >  ", y));
+            String format = String.format("%4d", y);
+            stringBuilder.append(format.substring(Math.max(0, format.length() - 4))).append(" >  ");
             appendRow(stringBuilder, y, startX, endX, errorX, errorY, (row, col) -> {
                 BlockPos pos = new BlockPos(row, col, errorZ);
                 return getLightCharacterForPos(lightEngine, opaqueState, pos);
@@ -85,24 +86,26 @@ public class LightSlice {
                 sb.append(">");
             }
             sb.append(rowColToLightValue.apply(i, y));
-            sb.append((i == errorRow && y == errorColumn) ? "<" : " ");
+            sb.append((i == errorRow && y == errorColumn) ? "< " : "  ");
         }
     }
 
     private static void appendFooter(StringBuilder stringBuilder, int startX, int endX, int startZ, int endZ) {
         stringBuilder
             .append("\n").append(LEFT_MARGIN_GAP)
-            .append("^ ".repeat(Math.max(0, endX - startX)))
+            .append("^  ".repeat(Math.max(0, endX - startX)))
             .append(XZ_SLICE_GAP)
-            .append("^ ".repeat(Math.max(0, endZ - startZ)))
+            .append("^  ".repeat(Math.max(0, endZ - startZ)))
             .append("\n").append(LEFT_MARGIN_GAP);
 
         for (int x = startX; x < endX; x++) {
-            stringBuilder.append(String.format("%-2d", x));
+            String format = String.format("%-3d", x);
+            stringBuilder.append(format.substring(Math.max(0, format.length() - 3)));
         }
         stringBuilder.append(XZ_SLICE_GAP);
         for (int z = startZ; z < endZ; z++) {
-            stringBuilder.append(String.format("%-2d", z));
+            String format = String.format("%-3d", z);
+            stringBuilder.append(format.substring(Math.max(0, format.length() - 3)));
         }
         stringBuilder.append("\n");
     }
