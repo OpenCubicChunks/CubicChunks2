@@ -39,7 +39,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.lighting.BlockLightEngine;
 import net.minecraft.world.level.lighting.SkyLightEngine;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -405,12 +404,11 @@ public class LightingTests {
             .ifErr(LightError::report);
     }
 
-    @Disabled
-    @ParameterizedTest // TODO: disabled because it fails!
+    @ParameterizedTest
     @ValueSource(longs = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })
     public void testSkyLightEngineSeededRandom(long seed) {
         Random r = new Random(seed);
-        int cubesToLoad = r.nextInt(1, 5);
+        int cubesToLoad = r.nextInt(10, 20);
 
         TestBlockGetter blockGetter = new TestBlockGetter();
         ColumnCubeMap columnCubeMap = new ColumnCubeMap();
@@ -429,10 +427,22 @@ public class LightingTests {
 
         SkyLightEngine levelLightEngine = new SkyLightEngine(lightCubeGetter);
         ((CubicLayerLightEngine) (Object) levelLightEngine).setCubic();
+        chunks.keySet().forEach(chunkPos -> {
+            levelLightEngine.enableLightSources(chunkPos, true);
+        });
+
         Set<Integer> loadedCubes = new HashSet<>();
         List<TestBlockGetter.OffsetCube> cubes = new ArrayList<>();
 
+        int[] beforeValues = new int[CubicConstants.DIAMETER_IN_BLOCKS * CubicConstants.DIAMETER_IN_BLOCKS];
+
         for (int i = 0; i < cubesToLoad; i++) {
+            for (int x = 0; x < CubicConstants.DIAMETER_IN_BLOCKS; x++) {
+                for (int z = 0; z < CubicConstants.DIAMETER_IN_BLOCKS; z++) {
+                    beforeValues[x + z * CubicConstants.DIAMETER_IN_BLOCKS] = blockGetter.getHeightmap().getFirstAvailable(x, z);
+                }
+            }
+
             int cubeY = r.nextInt(-cubesToLoad, cubesToLoad);
             while (loadedCubes.contains(cubeY)) {
                 cubeY = r.nextInt(-cubesToLoad, cubesToLoad);
@@ -441,8 +451,7 @@ public class LightingTests {
             loadedCubes.add(cubeY);
             cubes.add(cube);
 
-
-            for (int j = 0; j < r.nextInt(0, 50); j++) {
+            for (int j = 0; j < r.nextInt(30, 200); j++) {
                 BlockPos pos = new BlockPos(r.nextInt(32), r.nextInt(32), r.nextInt(32));
                 cube.setBlockState(pos, Blocks.STONE.defaultBlockState());
             }
@@ -453,9 +462,22 @@ public class LightingTests {
             sections.forEach(sectionPos ->
                 levelLightEngine.updateSectionStatus(sectionPos, false)
             );
+            ((CubicLayerLightEngine) (Object) levelLightEngine).enableLightSources(cube.getCubePos(), true);
             ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
-            levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
 
+            chunks.forEach((chunkPos, chunk) -> {
+                for (int x = 0; x < 16; x++) {
+                    for (int z = 0; z < 16; z++) {
+                        int globalX = chunkPos.x * 16 + x;
+                        int globalZ = chunkPos.z * 16 + z;
+                        ((SkyLightColumnChecker) (Object) levelLightEngine).checkSkyLightColumn(chunk,
+                            chunkPos.getBlockX(x), chunkPos.getBlockZ(z), beforeValues[globalX + globalZ * CubicConstants.DIAMETER_IN_BLOCKS],
+                            blockGetter.getHeightmap().getFirstAvailable(globalX, globalZ)
+                        );
+                    }
+                }
+            });
+            levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
             validateSkyLighting(levelLightEngine, blockGetter, sectionsForCubes(cubes), blockGetter.getHeightmap().inner)
                 .ifErr(err -> {
                     List<Integer> cubeLoadOrder = cubes.stream().map(c -> c.getCubePos().getY()).toList();
