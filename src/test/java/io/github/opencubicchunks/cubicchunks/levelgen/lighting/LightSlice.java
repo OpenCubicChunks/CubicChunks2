@@ -60,22 +60,50 @@ public class LightSlice {
                                    int errorX, int errorY, int errorZ,
                                    int startX, int endX, int startY, int endY, int startZ, int endZ,
                                    StringBuilder stringBuilder) {
+        boolean previousRowUnloaded = false;
         for (int y = endY - 1; y >= startY; y--) {
-            String format = String.format("%4d", y);
-            stringBuilder.append(format.substring(Math.max(0, format.length() - 4))).append(" >  ");
-            appendRow(stringBuilder, y, startX, endX, errorX, errorY, (row, col) -> {
-                BlockPos pos = new BlockPos(row, col, errorZ);
-                return getLightCharacterForPos(lightEngine, opaqueState, pos);
-            });
-
-            stringBuilder.append(XZ_SLICE_GAP);
-            appendRow(stringBuilder, y, startZ, endZ, errorZ, errorY, (row, col) -> {
-                BlockPos pos = new BlockPos(errorX, col, row);
-                return getLightCharacterForPos(lightEngine, opaqueState, pos);
-            });
-
-            stringBuilder.append("\n");
+            BlockOpacityState errorState = opaqueState.apply(new BlockPos(errorX, y, errorZ));
+            // Skip repeated unloaded rows
+            if (errorState == BlockOpacityState.UNLOADED) {
+                if (!previousRowUnloaded) {
+                    appendUnloadedBodyPreContent(stringBuilder);
+                    appendBodyContent(lightEngine, opaqueState, errorX, errorY, errorZ, startX, endX, startZ, endZ, stringBuilder, y);
+                    previousRowUnloaded = true;
+                }
+            } else {
+                // Row not unloaded? print normally
+                appendBodyPreContent(stringBuilder, y);
+                appendBodyContent(lightEngine, opaqueState, errorX, errorY, errorZ, startX, endX, startZ, endZ, stringBuilder, y);
+                previousRowUnloaded = false;
+            }
         }
+    }
+
+    private static void appendUnloadedBodyPreContent(StringBuilder stringBuilder) {
+        String format = String.format("%4s", "...");
+        stringBuilder.append(format.substring(Math.max(0, format.length() - 4))).append(" >  ");
+    }
+
+    private static void appendBodyPreContent(StringBuilder stringBuilder, int y) {
+        String format = String.format("%4d", y);
+        stringBuilder.append(format.substring(Math.max(0, format.length() - 4))).append(" >  ");
+    }
+
+    private static void appendBodyContent(LayerLightEngine<?, ?> lightEngine, Function<BlockPos, BlockOpacityState> opaqueState,
+                                          int errorX, int errorY, int errorZ,
+                                          int startX, int endX, int startZ, int endZ,
+                                          StringBuilder stringBuilder, int y) {
+        appendRow(stringBuilder, y, startX, endX, errorX, errorY, (row, col) -> {
+            BlockPos pos = new BlockPos(row, col, errorZ);
+            return getLightCharacterForPos(lightEngine, opaqueState, pos);
+        });
+
+        stringBuilder.append(XZ_SLICE_GAP);
+        appendRow(stringBuilder, y, startZ, endZ, errorZ, errorY, (row, col) -> {
+            BlockPos pos = new BlockPos(errorX, col, row);
+            return getLightCharacterForPos(lightEngine, opaqueState, pos);
+        });
+        stringBuilder.append('\n');
     }
 
     private static void appendRow(StringBuilder sb, int y, int start, int end, int errorRow, int errorColumn,
