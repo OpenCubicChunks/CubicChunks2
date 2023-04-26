@@ -154,6 +154,5 @@ public class TestWorld implements LightChunkGetter, LightCubeGetter {
 
         int newHeight = heightmap.getFirstAvailable(pos.getX(), pos.getZ());
         ((SkyLightColumnChecker) (Object) skyLightEngine).checkSkyLightColumn(this.chunkMap.get(new ChunkPos(pos)), pos.getX(), pos.getZ(), oldHeight, newHeight);
-        skyLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
     }
 }
