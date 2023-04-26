@@ -1,14 +1,12 @@
-package io.github.opencubicchunks.cubicchunks.levelgen.lighting;
+package io.github.opencubicchunks.cubicchunks.testutils;
 
-import static io.github.opencubicchunks.cubicchunks.levelgen.lighting.LightSlice.createXZLightSlices;
+import static io.github.opencubicchunks.cubicchunks.testutils.LightSlice.createXZLightSlices;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import io.github.opencubicchunks.cubicchunks.mock.TestBlockGetter;
-import io.github.opencubicchunks.cubicchunks.utils.ColumnPos;
-import io.github.opencubicchunks.cubicchunks.utils.Result;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.SortedArraySet;

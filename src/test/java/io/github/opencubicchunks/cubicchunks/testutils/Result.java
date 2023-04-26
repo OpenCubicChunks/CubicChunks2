@@ -1,4 +1,4 @@
-package io.github.opencubicchunks.cubicchunks.utils;
+package io.github.opencubicchunks.cubicchunks.testutils;
 
 import java.util.function.Consumer;
 import java.util.function.Function;

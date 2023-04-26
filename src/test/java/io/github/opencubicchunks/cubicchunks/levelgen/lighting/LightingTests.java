@@ -1,7 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.levelgen.lighting;
 
-import static io.github.opencubicchunks.cubicchunks.levelgen.lighting.LightTestUtil.validateBlockLighting;
-import static io.github.opencubicchunks.cubicchunks.levelgen.lighting.LightTestUtil.validateSkyLighting;
+import static io.github.opencubicchunks.cubicchunks.testutils.LightTestUtil.validateBlockLighting;
+import static io.github.opencubicchunks.cubicchunks.testutils.LightTestUtil.validateSkyLighting;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -24,6 +24,7 @@ import io.github.opencubicchunks.cc_core.world.ColumnCubeMap;
 import io.github.opencubicchunks.cubicchunks.mock.TestBlockGetter;
 import io.github.opencubicchunks.cubicchunks.mock.TestWorld;
 import io.github.opencubicchunks.cubicchunks.mock.interfaces.LightCubeChunkGetter;
+import io.github.opencubicchunks.cubicchunks.testutils.LightError;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightEngine;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;

@@ -1,4 +1,4 @@
-package io.github.opencubicchunks.cubicchunks.utils;
+package io.github.opencubicchunks.cubicchunks.testutils;
 
 import static io.github.opencubicchunks.cc_core.utils.Coords.sectionToCube;
 

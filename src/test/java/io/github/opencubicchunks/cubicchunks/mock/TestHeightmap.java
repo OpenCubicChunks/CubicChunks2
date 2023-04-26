@@ -4,7 +4,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.github.opencubicchunks.cubicchunks.utils.ColumnPos;
+import io.github.opencubicchunks.cubicchunks.testutils.ColumnPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.SortedArraySet;
 import net.minecraft.world.level.block.Blocks;

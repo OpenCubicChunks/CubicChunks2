@@ -1,4 +1,4 @@
-package io.github.opencubicchunks.cubicchunks.levelgen.lighting;
+package io.github.opencubicchunks.cubicchunks.testutils;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;

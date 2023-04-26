@@ -1,4 +1,4 @@
-package io.github.opencubicchunks.cubicchunks.levelgen.lighting;
+package io.github.opencubicchunks.cubicchunks.testutils;
 
 public record LightError(String message, String lightSliceInfo) {
     public void report() {
