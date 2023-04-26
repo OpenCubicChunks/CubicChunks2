@@ -45,6 +45,7 @@ generatePackageInfo.apply {
     group = "filegen"
     doFirst {
         GeneratePackageInfo.generateFiles(project.sourceSets["main"])
+        GeneratePackageInfo.generateFiles(project.sourceSets["test"])
     }
 }
 
