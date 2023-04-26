@@ -27,7 +27,8 @@
         "cubicchunks.mixins.core.json",
         "cubicchunks.mixins.levelgen.json",
         "cubicchunks.mixins.optifine.json",
-        "cubicchunks.mixins.debug.json"
+        "cubicchunks.mixins.debug.json",
+        "cubicchunks.mixins.test.json"
     ],
     "depends": {
         "fabricloader": ">=0.7.4",
