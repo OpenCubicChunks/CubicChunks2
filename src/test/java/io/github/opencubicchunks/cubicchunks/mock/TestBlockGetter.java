@@ -1,6 +1,9 @@
 package io.github.opencubicchunks.cubicchunks.mock;
 
+import static io.github.opencubicchunks.cc_core.api.CubicConstants.SECTION_DIAMETER;
+
 import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
@@ -22,6 +25,7 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.ticks.TickContainerAccess;
 import org.apache.commons.lang3.NotImplementedException;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mockito.Mockito;
 
@@ -35,11 +39,20 @@ public class TestBlockGetter implements BlockGetter {
         Mockito.when(MOCK_LEVEL_HEIGHT_ACCESSOR.getSectionsCount()).thenReturn(0);
     }
 
-    private final HashMap<CubePos, BlockState[]> blockStates = new HashMap<>();
+    private final Map<CubePos, TestCube> cubes = new HashMap<>();
     private final TestHeightmap heightmap = new TestHeightmap();
 
-    public OffsetCube offsetCube(CubePos cubePos) {
-        return new OffsetCube(cubePos);
+    public void addCube(TestCube cube) {
+        // update the global heightmap with the cube's blocks
+        for (int blockX = cube.getCubePos().minCubeX(), maxX = blockX + CubicConstants.DIAMETER_IN_BLOCKS; blockX < maxX; blockX++) {
+            for (int blockZ = cube.getCubePos().minCubeZ(), maxZ = blockZ + CubicConstants.DIAMETER_IN_BLOCKS; blockZ < maxZ; blockZ++) {
+                for (int blockY = cube.getCubePos().minCubeY(), maxY = blockY + CubicConstants.DIAMETER_IN_BLOCKS; blockY < maxY; blockY++) {
+                    heightmap.update(blockX, blockY, blockZ, cube.getBlockState(new BlockPos(blockX, blockY, blockZ)));
+                }
+            }
+        }
+        // add the cube
+        this.cubes.put(cube.getCubePos(), cube);
     }
 
     public TestHeightmap getHeightmap() {
@@ -47,12 +60,9 @@ public class TestBlockGetter implements BlockGetter {
     }
 
     public void setBlockState(BlockPos pos, BlockState state) {
-        this.blockStates.computeIfAbsent(CubePos.from(pos), p -> new BlockState[CubicConstants.BLOCK_COUNT])[index(pos)] = state;
+        TestCube cube = this.cubes.get(CubePos.from(pos));
+        cube.setBlockStateLocal(pos, state);
         this.heightmap.update(pos.getX(), pos.getY(), pos.getZ(), state);
-    }
-
-    private static int index(BlockPos pos) {
-        return Coords.blockToLocal(pos.getX()) + CubicConstants.DIAMETER_IN_BLOCKS * (Coords.blockToLocal(pos.getY()) + Coords.blockToLocal(pos.getZ()) * CubicConstants.DIAMETER_IN_BLOCKS);
     }
 
     @Nullable @Override public BlockEntity getBlockEntity(BlockPos pos) {
@@ -60,21 +70,19 @@ public class TestBlockGetter implements BlockGetter {
     }
 
     @Nullable public BlockState getNullableBlockState(BlockPos pos) {
-        BlockState[] states = this.blockStates.get(CubePos.from(pos));
-        if (states == null) {
+        TestCube cube = this.cubes.get(CubePos.from(pos));
+        if (cube == null) {
             return null;
         }
-        BlockState state = states[index(pos)];
-        return state != null ? state : Blocks.AIR.defaultBlockState();
+        return cube.getBlockState(pos);
     }
 
     @Override public BlockState getBlockState(BlockPos pos) {
-        BlockState[] states = this.blockStates.get(CubePos.from(pos));
-        if (states == null) {
+        TestCube cube = this.cubes.get(CubePos.from(pos));
+        if (cube == null) {
             return Blocks.BEDROCK.defaultBlockState();
         }
-        BlockState state = states[index(pos)];
-        return state != null ? state : Blocks.AIR.defaultBlockState();
+        return cube.getBlockState(pos);
     }
 
     @Override public FluidState getFluidState(BlockPos pos) {
@@ -89,32 +97,28 @@ public class TestBlockGetter implements BlockGetter {
         throw new NotImplementedException(TestBlockGetter.class.toString());
     }
 
-    public class OffsetCube extends CubeAccess implements BlockGetter {
-        private final int offsetX;
-        private final int offsetY;
-        private final int offsetZ;
+    public static class TestCube extends CubeAccess implements BlockGetter {
+        private final BlockState[][] sections = new BlockState[CubicConstants.SECTION_COUNT][];
 
-        private OffsetCube(CubePos cubePos) {
+        public TestCube(CubePos cubePos) {
             super(cubePos, MOCK_LEVEL_HEIGHT_ACCESSOR, null, MOCK_LEVEL_HEIGHT_ACCESSOR, null, 0, null, null);
-            this.offsetX = Coords.cubeToMinBlock(cubePos.getX());
-            this.offsetY = Coords.cubeToMinBlock(cubePos.getY());
-            this.offsetZ = Coords.cubeToMinBlock(cubePos.getZ());
-
-            TestBlockGetter.this.blockStates.computeIfAbsent(cubePos, p -> new BlockState[CubicConstants.BLOCK_COUNT]);
+            for (int i = 0; i < this.sections.length; i++) {
+                this.sections[i] = new BlockState[SECTION_DIAMETER * SECTION_DIAMETER * SECTION_DIAMETER];
+            }
         }
 
-        public void setBlockState(BlockPos pos, BlockState state) {
-            BlockPos offset = pos.offset(this.offsetX, this.offsetY, this.offsetZ);
-            TestBlockGetter.this.blockStates
-                .computeIfAbsent(CubePos.from(offset),
-                    p -> new BlockState[CubicConstants.BLOCK_COUNT]
-                )[index(offset)] = state;
-            TestBlockGetter.this.heightmap.update(
-                offset.getX(),
-                offset.getY(),
-                offset.getZ(),
-                state
-            );
+        private static int blockIndex(int x, int y, int z) {
+            return x + SECTION_DIAMETER * (y + z * SECTION_DIAMETER);
+        }
+
+        public void setBlockStateLocal(BlockPos pos, BlockState state) {
+            int index = Coords.blockToIndex(pos);
+            this.sections[index][
+                blockIndex(
+                    pos.getX() & 15,
+                    pos.getY() & 15,
+                    pos.getZ() & 15)
+                ] = state;
         }
 
         @Nullable @Override public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
@@ -125,12 +129,14 @@ public class TestBlockGetter implements BlockGetter {
             throw new NotImplementedException(TestBlockGetter.class.toString());
         }
 
-        @Override public BlockState getBlockState(BlockPos pos) {
-            BlockState[] states = TestBlockGetter.this.blockStates.get(CubePos.from(pos));
-            if (states == null) {
-                return Blocks.BEDROCK.defaultBlockState();
-            }
-            BlockState state = states[index(pos)];
+        @NotNull @Override public BlockState getBlockState(BlockPos pos) {
+            int index = Coords.blockToIndex(pos);
+            BlockState state = this.sections[index][
+                blockIndex(
+                    pos.getX() & 15,
+                    pos.getY() & 15,
+                    pos.getZ() & 15)
+                ];
             return state != null ? state : Blocks.AIR.defaultBlockState();
         }
 

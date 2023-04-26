@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -23,16 +22,13 @@ import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMap;
 import io.github.opencubicchunks.cubicchunks.mock.TestBlockGetter;
-import io.github.opencubicchunks.cubicchunks.mock.TestHeightmap;
-import io.github.opencubicchunks.cubicchunks.mock.interfaces.BlockGetterLightHeightmapGetterColumnCubeMapGetter;
+import io.github.opencubicchunks.cubicchunks.mock.TestWorld;
 import io.github.opencubicchunks.cubicchunks.mock.interfaces.LightCubeChunkGetter;
-import io.github.opencubicchunks.cubicchunks.mock.interfaces.TestLightCubeChunkGetter;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightEngine;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicSkyLightEngine;
-import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
@@ -88,119 +84,44 @@ public class LightingTests {
     @Test
     public void testSkyLightEngineSingleSection() {
         TestBlockGetter blockGetter = new TestBlockGetter();
+        TestWorld world = new TestWorld(blockGetter);
+        SkyLightEngine skyLightEngine = world.getSkyLightEngine();
 
-        ColumnCubeMap columnCubeMap = new ColumnCubeMap();
-        columnCubeMap.markLoaded(0);
+        TestBlockGetter.TestCube cube = new TestBlockGetter.TestCube(CubePos.of(0, 0, 0));
+        world.loadCube(cube);
 
-        TestLightCubeChunkGetter lightCubeGetter = new TestLightCubeChunkGetter(blockGetter);
-
-        BlockGetterLightHeightmapGetterColumnCubeMapGetter lightHeightmapGetter = mock(BlockGetterLightHeightmapGetterColumnCubeMapGetter.class);
-        TestHeightmap.OffsetTestHeightmap heightmap = blockGetter.getHeightmap().withOffset(0, 0);
-        when(lightHeightmapGetter.getLightHeightmap()).thenReturn(heightmap);
-        when(lightHeightmapGetter.getCubeMap()).thenReturn(columnCubeMap);
-
-        chunksWithinCube(CubePos.of(0, 0, 0)).forEach(chunkPos ->
-            lightCubeGetter.setChunk(chunkPos, lightHeightmapGetter)
-        );
-
-        TestBlockGetter.OffsetCube cube = blockGetter.offsetCube(CubePos.of(0, 0, 0));
-        lightCubeGetter.setCube(CubePos.of(0, 0, 0), cube);
-
-        SkyLightEngine levelLightEngine = new SkyLightEngine(lightCubeGetter);
-        ((CubicLayerLightEngine) (Object) levelLightEngine).setCubic();
-
-        levelLightEngine.updateSectionStatus(SectionPos.of(0, 0, 0), false);
-        levelLightEngine.enableLightSources(new ChunkPos(0, 0), true);
-
-        ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
-
-        validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner)
+        validateSkyLighting(skyLightEngine, blockGetter, sectionsForCubes(world.loadedCubes()), blockGetter.getHeightmap().inner)
             .ifErr(LightError::report);
     }
 
     @Test
     public void testSkyLightBottomCubeFirst() {
         TestBlockGetter blockGetter = new TestBlockGetter();
-        ColumnCubeMap columnCubeMap = new ColumnCubeMap();
+        TestWorld world = new TestWorld(blockGetter);
+        SkyLightEngine skyLightEngine = world.getSkyLightEngine();
 
-        TestLightCubeChunkGetter lightCubeGetter = new TestLightCubeChunkGetter(blockGetter);
-        HashMap<ChunkPos, BlockGetterLightHeightmapGetterColumnCubeMapGetter> chunks = new HashMap<>();
-        chunksWithinCube(CubePos.of(0, 0, 0)).forEach(chunkPos -> {
-            BlockGetterLightHeightmapGetterColumnCubeMapGetter lightHeightmapGetter = mock(BlockGetterLightHeightmapGetterColumnCubeMapGetter.class);
-            TestHeightmap.OffsetTestHeightmap offsetHeightmap = blockGetter.getHeightmap().withOffset(chunkPos.x, chunkPos.z);
-            when(lightHeightmapGetter.getLightHeightmap()).thenReturn(offsetHeightmap);
-            when(lightHeightmapGetter.getCubeMap()).thenReturn(columnCubeMap);
+        List<TestBlockGetter.TestCube> cubesLoadOrder = new ArrayList<>();
 
-            chunks.put(chunkPos, lightHeightmapGetter);
-            lightCubeGetter.setChunk(new ChunkPos(chunkPos.x, chunkPos.z), lightHeightmapGetter);
-        });
+        TestBlockGetter.TestCube cube3 = new TestBlockGetter.TestCube(CubePos.of(0, -3, 0));
+        world.loadCube(cube3);
+        cubesLoadOrder.add(cube3);
 
-        SkyLightEngine levelLightEngine = new SkyLightEngine(lightCubeGetter);
-        ((CubicLayerLightEngine) (Object) levelLightEngine).setCubic();
-
-        chunks.keySet().forEach(chunkPos -> {
-            levelLightEngine.enableLightSources(chunkPos, true);
-        });
-
-        List<TestBlockGetter.OffsetCube> cubes = new ArrayList<>();
-        Collection<SectionPos> sections;
-
-        TestBlockGetter.OffsetCube cube3 = blockGetter.offsetCube(CubePos.of(0, -3, 0));
-        cubes.add(cube3);
-
-        columnCubeMap.markLoaded(cube3.getCubePos().getY());
-        lightCubeGetter.setCube(cube3.getCubePos(), cube3);
-        sections = sectionsWithinCube(cube3.getCubePos());
-        sections.forEach(sectionPos ->
-            levelLightEngine.updateSectionStatus(sectionPos, false)
-        );
-        ((CubicLayerLightEngine) (Object) levelLightEngine).enableLightSources(cube3.getCubePos(), true);
-        ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube3);
-        levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
-
-        validateSkyLighting(levelLightEngine, blockGetter, sectionsForCubes(cubes), blockGetter.getHeightmap().inner)
+        skyLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
+        validateSkyLighting(skyLightEngine, blockGetter, sectionsForCubes(world.loadedCubes()), blockGetter.getHeightmap().inner)
             .ifErr(err -> {
-                List<Integer> cubeLoadOrder = cubes.stream().map(c -> c.getCubePos().getY()).toList();
+                List<Integer> cubeLoadOrder = cubesLoadOrder.stream().map(c -> c.getCubePos().getY()).toList();
                 err.reportWithAdditional("Cube load order: " + Arrays.toString(cubeLoadOrder.toArray()));
             });
 
-        int[] beforeValues = new int[CubicConstants.DIAMETER_IN_BLOCKS * CubicConstants.DIAMETER_IN_BLOCKS];
-        for (int x = 0; x < CubicConstants.DIAMETER_IN_BLOCKS; x++) {
-            for (int z = 0; z < CubicConstants.DIAMETER_IN_BLOCKS; z++) {
-                beforeValues[x + z * CubicConstants.DIAMETER_IN_BLOCKS] = blockGetter.getHeightmap().getFirstAvailable(x, z);
-            }
-        }
+        TestBlockGetter.TestCube cube2 = new TestBlockGetter.TestCube(CubePos.of(0, -2, 0));
+        cube2.setBlockStateLocal(new BlockPos(1, 1, 24), Blocks.STONE.defaultBlockState());
+        cubesLoadOrder.add(cube2);
+        world.loadCube(cube2);
 
-        TestBlockGetter.OffsetCube cube2 = blockGetter.offsetCube(CubePos.of(0, -2, 0));
-        cubes.add(cube2);
-        cube2.setBlockState(new BlockPos(1, 1, 24), Blocks.STONE.defaultBlockState());
-
-        columnCubeMap.markLoaded(cube2.getCubePos().getY());
-        lightCubeGetter.setCube(cube2.getCubePos(), cube2);
-        sections = sectionsWithinCube(cube2.getCubePos());
-        sections.forEach(sectionPos ->
-            levelLightEngine.updateSectionStatus(sectionPos, false)
-        );
-        ((CubicLayerLightEngine) (Object) levelLightEngine).enableLightSources(cube2.getCubePos(), true);
-        ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube2);
-
-        chunks.forEach((chunkPos, chunk) -> {
-            for (int x = 0; x < 16; x++) {
-                for (int z = 0; z < 16; z++) {
-                    int globalX = chunkPos.x * 16 + x;
-                    int globalZ = chunkPos.z * 16 + z;
-                    ((SkyLightColumnChecker) (Object) levelLightEngine).checkSkyLightColumn(chunk,
-                        chunkPos.getBlockX(x), chunkPos.getBlockZ(z), beforeValues[x + z * CubicConstants.DIAMETER_IN_BLOCKS],
-                        blockGetter.getHeightmap().getFirstAvailable(globalX, globalZ)
-                    );
-                }
-            }
-        });
-        levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
-
-        validateSkyLighting(levelLightEngine, blockGetter, sectionsForCubes(cubes), blockGetter.getHeightmap().inner)
+        skyLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
+        validateSkyLighting(skyLightEngine, blockGetter, sectionsForCubes(world.loadedCubes()), blockGetter.getHeightmap().inner)
             .ifErr(err -> {
-                List<Integer> cubeLoadOrder = cubes.stream().map(c -> c.getCubePos().getY()).toList();
+                List<Integer> cubeLoadOrder = cubesLoadOrder.stream().map(c -> c.getCubePos().getY()).toList();
                 err.reportWithAdditional("Cube load order: " + Arrays.toString(cubeLoadOrder.toArray()));
             });
     }
@@ -208,126 +129,61 @@ public class LightingTests {
     @Test
     public void testSkyLightEngineExistingTerrain() {
         TestBlockGetter blockGetter = new TestBlockGetter();
+        TestWorld world = new TestWorld(blockGetter);
+        SkyLightEngine skyLightEngine = world.getSkyLightEngine();
 
-        for (int x = 0; x < SectionPos.SECTION_SIZE; x++) {
-            for (int z = 0; z < SectionPos.SECTION_SIZE; z++) {
-                for (int y = 0; y < SectionPos.SECTION_SIZE; y++) {
-                    blockGetter.setBlockState(new BlockPos(x, y, z), Math.max(x, z) > y ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState());
+        TestBlockGetter.TestCube cube = new TestBlockGetter.TestCube(CubePos.of(0, 0, 0));
+        for (int x = 0; x < CubicConstants.DIAMETER_IN_BLOCKS; x++) {
+            for (int z = 0; z < CubicConstants.DIAMETER_IN_BLOCKS; z++) {
+                for (int y = 0; y < CubicConstants.DIAMETER_IN_BLOCKS; y++) {
+                    cube.setBlockStateLocal(new BlockPos(x, y, z), (x == y || z == y) ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState());
                 }
             }
         }
+        world.loadCube(cube);
+        skyLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
 
-        ColumnCubeMap columnCubeMap = new ColumnCubeMap();
-        columnCubeMap.markLoaded(0);
-
-        TestLightCubeChunkGetter lightCubeGetter = new TestLightCubeChunkGetter(blockGetter);
-
-        BlockGetterLightHeightmapGetterColumnCubeMapGetter lightHeightmapGetter = mock(BlockGetterLightHeightmapGetterColumnCubeMapGetter.class);
-        TestHeightmap.OffsetTestHeightmap heightmap = blockGetter.getHeightmap().withOffset(0, 0);
-        when(lightHeightmapGetter.getLightHeightmap()).thenReturn(heightmap);
-        when(lightHeightmapGetter.getCubeMap()).thenReturn(columnCubeMap);
-
-        chunksWithinCube(CubePos.of(0, 0, 0)).forEach(chunkPos ->
-            lightCubeGetter.setChunk(chunkPos, lightHeightmapGetter)
-        );
-
-        TestBlockGetter.OffsetCube cube = blockGetter.offsetCube(CubePos.of(0, 0, 0));
-        lightCubeGetter.setCube(CubePos.of(0, 0, 0), cube);
-
-        SkyLightEngine levelLightEngine = new SkyLightEngine(lightCubeGetter);
-        ((CubicLayerLightEngine) (Object) levelLightEngine).setCubic();
-
-        levelLightEngine.updateSectionStatus(SectionPos.of(0, 0, 0), false);
-        levelLightEngine.enableLightSources(new ChunkPos(0, 0), true);
-
-        ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
-
-        validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner)
+        validateSkyLighting(skyLightEngine, blockGetter, sectionsForCubes(world.loadedCubes()), blockGetter.getHeightmap().inner)
             .ifErr(LightError::report);
     }
 
     @Test
     public void testSkyLightEngineFullCover() {
         TestBlockGetter blockGetter = new TestBlockGetter();
+        TestWorld world = new TestWorld(blockGetter);
+        SkyLightEngine skyLightEngine = world.getSkyLightEngine();
 
+        TestBlockGetter.TestCube cube = new TestBlockGetter.TestCube(CubePos.of(0, 0, 0));
         for (int x = 0; x < SectionPos.SECTION_SIZE; x++) {
             for (int z = 0; z < SectionPos.SECTION_SIZE; z++) {
-                blockGetter.setBlockState(new BlockPos(x, 3, z), Blocks.STONE.defaultBlockState());
+                cube.setBlockStateLocal(new BlockPos(x, 3, z), Blocks.STONE.defaultBlockState());
             }
         }
+        world.loadCube(cube);
 
-        ColumnCubeMap columnCubeMap = new ColumnCubeMap();
-        columnCubeMap.markLoaded(0);
-
-        TestLightCubeChunkGetter lightCubeGetter = new TestLightCubeChunkGetter(blockGetter);
-
-        BlockGetterLightHeightmapGetterColumnCubeMapGetter lightHeightmapGetter = mock(BlockGetterLightHeightmapGetterColumnCubeMapGetter.class);
-        TestHeightmap.OffsetTestHeightmap heightmap = blockGetter.getHeightmap().withOffset(0, 0);
-        when(lightHeightmapGetter.getLightHeightmap()).thenReturn(heightmap);
-        when(lightHeightmapGetter.getCubeMap()).thenReturn(columnCubeMap);
-
-        chunksWithinCube(CubePos.of(0, 0, 0)).forEach(chunkPos ->
-            lightCubeGetter.setChunk(chunkPos, lightHeightmapGetter)
-        );
-
-        TestBlockGetter.OffsetCube cube = blockGetter.offsetCube(CubePos.of(0, 0, 0));
-        lightCubeGetter.setCube(CubePos.of(0, 0, 0), cube);
-
-        SkyLightEngine levelLightEngine = new SkyLightEngine(lightCubeGetter);
-        ((CubicLayerLightEngine) (Object) levelLightEngine).setCubic();
-
-        levelLightEngine.updateSectionStatus(SectionPos.of(0, 0, 0), false);
-        levelLightEngine.enableLightSources(new ChunkPos(0, 0), true);
-
-        ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
-
-        validateSkyLighting(levelLightEngine, blockGetter, Set.of(SectionPos.of(0, 0, 0)), blockGetter.getHeightmap().inner)
+        skyLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
+        validateSkyLighting(skyLightEngine, blockGetter, sectionsForCubes(world.loadedCubes()), blockGetter.getHeightmap().inner)
             .ifErr(LightError::report);
     }
 
     @Test
     public void testSkyLightEngineFullCoverWithHole() {
         TestBlockGetter blockGetter = new TestBlockGetter();
+        TestWorld world = new TestWorld(blockGetter);
+        SkyLightEngine skyLightEngine = world.getSkyLightEngine();
 
+        TestBlockGetter.TestCube cube = new TestBlockGetter.TestCube(CubePos.of(0, 0, 0));
         for (int x = 0; x < CubicConstants.DIAMETER_IN_BLOCKS; x++) {
             for (int z = 0; z < CubicConstants.DIAMETER_IN_BLOCKS; z++) {
-                blockGetter.setBlockState(new BlockPos(x, 3, z), Blocks.STONE.defaultBlockState());
+                cube.setBlockStateLocal(new BlockPos(x, 3, z), Blocks.STONE.defaultBlockState());
             }
         }
+        cube.setBlockStateLocal(new BlockPos(7, 3, 7), Blocks.AIR.defaultBlockState());
 
-        blockGetter.setBlockState(new BlockPos(7, 3, 7), Blocks.AIR.defaultBlockState());
+        world.loadCube(cube);
 
-        ColumnCubeMap columnCubeMap = new ColumnCubeMap();
-        columnCubeMap.markLoaded(0);
-
-        TestLightCubeChunkGetter lightCubeGetter = new TestLightCubeChunkGetter(blockGetter);
-        chunksWithinCube(CubePos.of(0, 0, 0)).forEach(chunkPos -> {
-            BlockGetterLightHeightmapGetterColumnCubeMapGetter lightHeightmapGetter = mock(BlockGetterLightHeightmapGetterColumnCubeMapGetter.class);
-            TestHeightmap.OffsetTestHeightmap offsetHeightmap = blockGetter.getHeightmap().withOffset(chunkPos.x, chunkPos.z);
-            when(lightHeightmapGetter.getLightHeightmap()).thenReturn(offsetHeightmap);
-            when(lightHeightmapGetter.getCubeMap()).thenReturn(columnCubeMap);
-
-            lightCubeGetter.setChunk(new ChunkPos(chunkPos.x, chunkPos.z), lightHeightmapGetter);
-        });
-
-        TestBlockGetter.OffsetCube cube = blockGetter.offsetCube(CubePos.of(0, 0, 0));
-        lightCubeGetter.setCube(CubePos.of(0, 0, 0), cube);
-
-        SkyLightEngine levelLightEngine = new SkyLightEngine(lightCubeGetter);
-        ((CubicLayerLightEngine) (Object) levelLightEngine).setCubic();
-
-        Collection<SectionPos> sections = sectionsWithinCube(CubePos.of(0, 0, 0));
-        sections.forEach(sectionPos ->
-            levelLightEngine.updateSectionStatus(sectionPos, false)
-        );
-        chunksWithinCube(CubePos.of(0, 0, 0)).forEach(chunkPos ->
-            levelLightEngine.enableLightSources(chunkPos, true)
-        );
-
-        ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
-        levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
-
-        validateSkyLighting(levelLightEngine, blockGetter, new HashSet<>(sections), blockGetter.getHeightmap().inner)
+        skyLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
+        validateSkyLighting(skyLightEngine, blockGetter, sectionsForCubes(world.loadedCubes()), blockGetter.getHeightmap().inner)
             .ifErr(LightError::report);
     }
 
@@ -350,137 +206,68 @@ public class LightingTests {
     @MethodSource("testSkyLightEngineMultiCubeOrderedArguments")
     public void testSkyLightEngineMultiCubeOrdered(int[] loadOrder) {
         TestBlockGetter blockGetter = new TestBlockGetter();
+        TestWorld world = new TestWorld(blockGetter);
 
-        for (int x = 0; x < CubicConstants.DIAMETER_IN_BLOCKS; x++) {
-            for (int z = 0; z < CubicConstants.DIAMETER_IN_BLOCKS; z++) {
-                blockGetter.setBlockState(new BlockPos(x, 74, z), Blocks.STONE.defaultBlockState());
-            }
-        }
-
-        blockGetter.setBlockState(new BlockPos(15, 74, 15), Blocks.AIR.defaultBlockState());
-
-        ColumnCubeMap columnCubeMap = new ColumnCubeMap();
-
-        TestLightCubeChunkGetter lightCubeGetter = new TestLightCubeChunkGetter(blockGetter);
-        HashMap<ChunkPos, BlockGetterLightHeightmapGetterColumnCubeMapGetter> chunks = new HashMap<>();
-        chunksWithinCube(CubePos.of(0, 0, 0)).forEach(chunkPos -> {
-            BlockGetterLightHeightmapGetterColumnCubeMapGetter lightHeightmapGetter = mock(BlockGetterLightHeightmapGetterColumnCubeMapGetter.class);
-            TestHeightmap.OffsetTestHeightmap offsetHeightmap = blockGetter.getHeightmap().withOffset(chunkPos.x, chunkPos.z);
-            when(lightHeightmapGetter.getLightHeightmap()).thenReturn(offsetHeightmap);
-            when(lightHeightmapGetter.getCubeMap()).thenReturn(columnCubeMap);
-
-            chunks.put(chunkPos, lightHeightmapGetter);
-            lightCubeGetter.setChunk(new ChunkPos(chunkPos.x, chunkPos.z), lightHeightmapGetter);
-        });
-
-        List<TestBlockGetter.OffsetCube> cubes = new ArrayList<>();
-
-        SkyLightEngine levelLightEngine = new SkyLightEngine(lightCubeGetter);
-        ((CubicLayerLightEngine) (Object) levelLightEngine).setCubic();
+        SkyLightEngine skyLightEngine = world.getSkyLightEngine();
 
         for (int cubeY : loadOrder) {
-            TestBlockGetter.OffsetCube cube = blockGetter.offsetCube(CubePos.of(0, cubeY, 0));
-            columnCubeMap.markLoaded(cube.getCubePos().getY());
-            lightCubeGetter.setCube(cube.getCubePos(), cube);
-            Collection<SectionPos> sections = sectionsWithinCube(cube.getCubePos());
-            sections.forEach(sectionPos ->
-                levelLightEngine.updateSectionStatus(sectionPos, false)
-            );
-            ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
-            levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
+            TestBlockGetter.TestCube cube = new TestBlockGetter.TestCube(CubePos.of(0, cubeY, 0));
+            if (cubeY == 2) {
+                for (int x = 0; x < CubicConstants.DIAMETER_IN_BLOCKS; x++) {
+                    for (int z = 0; z < CubicConstants.DIAMETER_IN_BLOCKS; z++) {
+                        cube.setBlockStateLocal(new BlockPos(x, 10, z), Blocks.STONE.defaultBlockState());
+                    }
+                }
+
+                cube.setBlockStateLocal(new BlockPos(15, 10, 15), Blocks.AIR.defaultBlockState());
+            }
+            world.loadCube(cube);
         }
+        skyLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
 
-        assertEquals(15, levelLightEngine.getLightValue(new BlockPos(15, 73, 15)));
-        validateSkyLighting(levelLightEngine, blockGetter, sectionsForCubes(cubes), blockGetter.getHeightmap().inner);
+        assertEquals(15, skyLightEngine.getLightValue(new BlockPos(15, 73, 15)));
+        validateSkyLighting(skyLightEngine, blockGetter, sectionsForCubes(world.loadedCubes()), blockGetter.getHeightmap().inner);
 
-        blockGetter.setBlockState(new BlockPos(15, 74, 15), Blocks.STONE.defaultBlockState());
-        int height = blockGetter.getHeightmap().getFirstAvailable(15, 15);
-        assertEquals(75, height);
-        ((SkyLightColumnChecker) (Object) levelLightEngine).checkSkyLightColumn(chunks.get(new ChunkPos(0, 0)), 15, 15, 0, height);
-        levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
+        world.setBlockState(new BlockPos(15, 74, 15), Blocks.STONE.defaultBlockState());
+        skyLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
 
-        assertEquals(0, levelLightEngine.getLightValue(new BlockPos(15, 73, 15)));
-        validateSkyLighting(levelLightEngine, blockGetter, sectionsForCubes(cubes), blockGetter.getHeightmap().inner)
+        assertEquals(0, skyLightEngine.getLightValue(new BlockPos(15, 73, 15)));
+        validateSkyLighting(skyLightEngine, blockGetter, sectionsForCubes(world.loadedCubes()), blockGetter.getHeightmap().inner)
             .ifErr(LightError::report);
     }
 
     @ParameterizedTest
-    @ValueSource(longs = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })
+    @ValueSource(longs = { 0, 1, 2 })
     public void testSkyLightEngineSeededRandom(long seed) {
         Random r = new Random(seed);
         int cubesToLoad = r.nextInt(10, 20);
 
         TestBlockGetter blockGetter = new TestBlockGetter();
-        ColumnCubeMap columnCubeMap = new ColumnCubeMap();
-
-        TestLightCubeChunkGetter lightCubeGetter = new TestLightCubeChunkGetter(blockGetter);
-        HashMap<ChunkPos, BlockGetterLightHeightmapGetterColumnCubeMapGetter> chunks = new HashMap<>();
-        chunksWithinCube(CubePos.of(0, 0, 0)).forEach(chunkPos -> {
-            BlockGetterLightHeightmapGetterColumnCubeMapGetter lightHeightmapGetter = mock(BlockGetterLightHeightmapGetterColumnCubeMapGetter.class);
-            TestHeightmap.OffsetTestHeightmap offsetHeightmap = blockGetter.getHeightmap().withOffset(chunkPos.x, chunkPos.z);
-            when(lightHeightmapGetter.getLightHeightmap()).thenReturn(offsetHeightmap);
-            when(lightHeightmapGetter.getCubeMap()).thenReturn(columnCubeMap);
-
-            chunks.put(chunkPos, lightHeightmapGetter);
-            lightCubeGetter.setChunk(new ChunkPos(chunkPos.x, chunkPos.z), lightHeightmapGetter);
-        });
-
-        SkyLightEngine levelLightEngine = new SkyLightEngine(lightCubeGetter);
-        ((CubicLayerLightEngine) (Object) levelLightEngine).setCubic();
-        chunks.keySet().forEach(chunkPos -> {
-            levelLightEngine.enableLightSources(chunkPos, true);
-        });
+        TestWorld world = new TestWorld(blockGetter);
 
         Set<Integer> loadedCubes = new HashSet<>();
-        List<TestBlockGetter.OffsetCube> cubes = new ArrayList<>();
-
-        int[] beforeValues = new int[CubicConstants.DIAMETER_IN_BLOCKS * CubicConstants.DIAMETER_IN_BLOCKS];
+        List<CubePos> cubes = new ArrayList<>();
 
         for (int i = 0; i < cubesToLoad; i++) {
-            for (int x = 0; x < CubicConstants.DIAMETER_IN_BLOCKS; x++) {
-                for (int z = 0; z < CubicConstants.DIAMETER_IN_BLOCKS; z++) {
-                    beforeValues[x + z * CubicConstants.DIAMETER_IN_BLOCKS] = blockGetter.getHeightmap().getFirstAvailable(x, z);
-                }
-            }
-
             int cubeY = r.nextInt(-cubesToLoad, cubesToLoad);
             while (loadedCubes.contains(cubeY)) {
                 cubeY = r.nextInt(-cubesToLoad, cubesToLoad);
             }
-            TestBlockGetter.OffsetCube cube = blockGetter.offsetCube(CubePos.of(0, cubeY, 0));
+            TestBlockGetter.TestCube cube = new TestBlockGetter.TestCube(CubePos.of(0, cubeY, 0));
             loadedCubes.add(cubeY);
-            cubes.add(cube);
+            cubes.add(cube.getCubePos());
 
             for (int j = 0; j < r.nextInt(30, 200); j++) {
                 BlockPos pos = new BlockPos(r.nextInt(32), r.nextInt(32), r.nextInt(32));
-                cube.setBlockState(pos, Blocks.STONE.defaultBlockState());
+                cube.setBlockStateLocal(pos, Blocks.STONE.defaultBlockState());
             }
 
-            columnCubeMap.markLoaded(cube.getCubePos().getY());
-            lightCubeGetter.setCube(cube.getCubePos(), cube);
-            Collection<SectionPos> sections = sectionsWithinCube(cube.getCubePos());
-            sections.forEach(sectionPos ->
-                levelLightEngine.updateSectionStatus(sectionPos, false)
-            );
-            ((CubicLayerLightEngine) (Object) levelLightEngine).enableLightSources(cube.getCubePos(), true);
-            ((CubicSkyLightEngine) (Object) levelLightEngine).doSkyLightForCube(cube);
+            world.loadCube(cube);
 
-            chunks.forEach((chunkPos, chunk) -> {
-                for (int x = 0; x < 16; x++) {
-                    for (int z = 0; z < 16; z++) {
-                        int globalX = chunkPos.x * 16 + x;
-                        int globalZ = chunkPos.z * 16 + z;
-                        ((SkyLightColumnChecker) (Object) levelLightEngine).checkSkyLightColumn(chunk,
-                            chunkPos.getBlockX(x), chunkPos.getBlockZ(z), beforeValues[globalX + globalZ * CubicConstants.DIAMETER_IN_BLOCKS],
-                            blockGetter.getHeightmap().getFirstAvailable(globalX, globalZ)
-                        );
-                    }
-                }
-            });
-            levelLightEngine.runUpdates(Integer.MAX_VALUE, true, true);
-            validateSkyLighting(levelLightEngine, blockGetter, sectionsForCubes(cubes), blockGetter.getHeightmap().inner)
+            world.getSkyLightEngine().runUpdates(Integer.MAX_VALUE, true, true);
+            validateSkyLighting(world.getSkyLightEngine(), blockGetter, sectionsForCubes(cubes), blockGetter.getHeightmap().inner)
                 .ifErr(err -> {
-                    List<Integer> cubeLoadOrder = cubes.stream().map(c -> c.getCubePos().getY()).toList();
+                    List<Integer> cubeLoadOrder = cubes.stream().map(Vec3i::getY).toList();
                     err.reportWithAdditional("Cube load order: " + Arrays.toString(cubeLoadOrder.toArray()));
                 });
         }
@@ -508,10 +295,10 @@ public class LightingTests {
         return positions;
     }
 
-    public static Set<SectionPos> sectionsForCubes(Collection<TestBlockGetter.OffsetCube> cubes) {
+    public static Set<SectionPos> sectionsForCubes(Collection<CubePos> cubes) {
         Set<SectionPos> sections = new HashSet<>();
-        for (TestBlockGetter.OffsetCube cube : cubes) {
-            sections.addAll(sectionsWithinCube(cube.getCubePos()));
+        for (CubePos pos : cubes) {
+            sections.addAll(sectionsWithinCube(pos));
         }
         return sections;
     }

@@ -4,7 +4,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.github.opencubicchunks.cubicchunks.utils.Vector2i;
+import io.github.opencubicchunks.cubicchunks.utils.ColumnPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.SortedArraySet;
 import net.minecraft.world.level.block.Blocks;
@@ -21,14 +21,14 @@ public class TestHeightmap {
         Mockito.when(MOCK_CHUNK_ACCESS.getHeight()).thenReturn(1);
     }
 
-    public final Map<Vector2i, SortedArraySet<Integer>> inner = new HashMap<>();
+    public final Map<ColumnPos, SortedArraySet<Integer>> inner = new HashMap<>();
 
     public OffsetTestHeightmap withOffset(int sectionX, int sectionZ) {
         return new OffsetTestHeightmap(sectionX, sectionZ);
     }
 
     public int getFirstAvailable(int x, int z) {
-        SortedArraySet<Integer> heights = inner.get(new Vector2i(x, z));
+        SortedArraySet<Integer> heights = inner.get(new ColumnPos(x, z));
         Integer first = heights.first();
         //noinspection ConstantValue
         if (first == null) {
@@ -39,9 +39,10 @@ public class TestHeightmap {
 
     public boolean update(int x, int y, int z, BlockState state) {
         y += 1;
-        Vector2i xz = new Vector2i(x, z);
+        ColumnPos xz = new ColumnPos(x, z);
         SortedArraySet<Integer> heights = inner.computeIfAbsent(xz, v -> (SortedArraySet<Integer>) SortedArraySet.create(Comparator.naturalOrder().reversed()));
 
+        // TODO: implement occlusion properly
         if (state.canOcclude()) {
             return heights.add(y);
         } else {

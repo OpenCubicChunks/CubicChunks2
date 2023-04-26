@@ -7,8 +7,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.github.opencubicchunks.cubicchunks.mock.TestBlockGetter;
+import io.github.opencubicchunks.cubicchunks.utils.ColumnPos;
 import io.github.opencubicchunks.cubicchunks.utils.Result;
-import io.github.opencubicchunks.cubicchunks.utils.Vector2i;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.SortedArraySet;
@@ -47,23 +47,23 @@ public class LightTestUtil {
     }
 
     public static Result<Void, LightError> validateSkyLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent,
-                                           Map<Vector2i, SortedArraySet<Integer>> heightMap) throws AssertionError {
+                                           Map<ColumnPos, SortedArraySet<Integer>> heightMap) throws AssertionError {
         for (SectionPos sectionPos : sectionsPresent) {
             BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos(0, 0, 0);
             for (int x = sectionPos.minBlockX(), maxX = x + SectionPos.SECTION_SIZE; x < maxX; x++) {
-                for (int y = sectionPos.minBlockY(), maxY = y + SectionPos.SECTION_SIZE; y < maxY; y++) {
-                    for (int z = sectionPos.minBlockZ(), maxZ = z + SectionPos.SECTION_SIZE; z < maxZ; z++) {
+                for (int z = sectionPos.minBlockZ(), maxZ = z + SectionPos.SECTION_SIZE; z < maxZ; z++) {
+                    Integer height = heightMap.get(new ColumnPos(x, z)).first();
+                    //noinspection ConstantValue
+                    if (height == null) {
+                        height = Integer.MIN_VALUE;
+                    }
+                    for (int y = sectionPos.minBlockY(), maxY = y + SectionPos.SECTION_SIZE; y < maxY; y++) {
                         int light = lightEngine.getLightValue(blockPos.set(x, y, z));
-                        Integer height = heightMap.get(new Vector2i(x, z)).first();
-                        //noinspection ConstantValue
-                        if (height == null) {
-                            height = Integer.MIN_VALUE;
-                        }
                         if (y >= height) {
                             if (15 != light) {
                                 StringBuilder sb = createXZLightSlices(lightEngine, blockGetter,
                                     x, y, z,
-                                    5, -1, height - y
+                                    5, -1, Math.max(16, height - y)
                                 );
                                 return Result.err(new LightError(String.format("Block above heightmap wrong! (%d, %d, %d)", x, y, z), sb.toString()));
                             }
