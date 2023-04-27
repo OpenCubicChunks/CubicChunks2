@@ -20,13 +20,11 @@ import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.utils.Utils;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.StripedBiomeSource;
 import io.github.opencubicchunks.cubicchunks.levelgen.chunk.CubeGenerator;
 import io.github.opencubicchunks.cubicchunks.levelgen.util.CubicWorldGenUtils;
 import io.github.opencubicchunks.cubicchunks.levelgen.util.NonAtomicWorldgenRandom;
-import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import it.unimi.dsi.fastutil.ints.IntArraySet;
@@ -118,7 +116,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
     )
     private void createCubicStructures(RegistryAccess registryAccess, StructureFeatureManager structureFeatureManager, ChunkAccess chunkAccess, StructureManager structureManager,
                                        long seed, CallbackInfo ci) {
-        if (((CubicLevelHeightAccessor) chunkAccess).generates2DChunks()) {
+        if (chunkAccess.generates2DChunks()) {
             return;
         }
         if (!(chunkAccess instanceof CubeAccess cube)) {
@@ -289,7 +287,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
 
     @Inject(method = "createReferences", at = @At("HEAD"), cancellable = true)
     public void createReferences(WorldGenLevel worldGenLevel, StructureFeatureManager featureManager, ChunkAccess chunkAccess, CallbackInfo ci) {
-        if (((CubicLevelHeightAccessor) chunkAccess).generates2DChunks()) {
+        if (chunkAccess.generates2DChunks()) {
             return;
         }
         if (!(chunkAccess instanceof CubeAccess cube)) {
@@ -358,7 +356,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
                                         CallbackInfoReturnable<Pair<BlockPos, Holder<ConfiguredStructureFeature<?, ?>>>> cir, Set<Holder<Biome>> structureBiomes,
                                         Set<Holder<Biome>> possibleBiomes, Pair<BlockPos, Holder<ConfiguredStructureFeature<?, ?>>> nearestStructure,
                                         double nearestDistance, Map<StructurePlacement, Set<Holder<ConfiguredStructureFeature<?, ?>>>> structuresPerPlacement) {
-        if (((CubicLevelHeightAccessor) serverLevel).generates2DChunks()) {
+        if (serverLevel.generates2DChunks()) {
             return;
         }
 
@@ -471,7 +469,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
                                 return Pair.of(StructureFeature.getLocatePos(randomSpreadStructurePlacement, potentialCube.asChunkPos()), structure);
                             }
 
-                            CubeAccess cubeAccess = ((CubicLevelAccessor) serverLevel).getCube(potentialCube, ChunkStatus.STRUCTURE_STARTS);
+                            CubeAccess cubeAccess = serverLevel.getCube(potentialCube, ChunkStatus.STRUCTURE_STARTS);
 
                             StructureStart start = structureFeatureManager.getStartForFeature(null /*This isn't used in the method*/, structure.value(), cubeAccess);
 

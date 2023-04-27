@@ -10,7 +10,6 @@ import java.util.concurrent.Executor;
 import com.google.common.collect.ImmutableList;
 import com.mojang.datafixers.DataFixer;
 import io.github.opencubicchunks.cc_core.api.CubePos;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicEntityStorage;
@@ -48,7 +47,7 @@ public abstract class MixinEntityStorage implements CubicEntityStorage {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void setupCubeIO(ServerLevel serverLevel, Path path, DataFixer dataFixer, boolean bl, Executor executor, CallbackInfo ci) throws IOException {
-        if (((CubicLevelHeightAccessor) serverLevel).isCubic()) {
+        if (serverLevel.isCubic()) {
             cubeWorker = new RegionCubeIO(path.toFile(), path.toFile().getName(), path.toFile().getName());
         }
     }
@@ -86,7 +85,7 @@ public abstract class MixinEntityStorage implements CubicEntityStorage {
 
     @Inject(method = "storeEntities", at = @At("HEAD"), cancellable = true)
     private void storeEntitiesForCube(ChunkEntities<Entity> dataList, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
         ci.cancel();

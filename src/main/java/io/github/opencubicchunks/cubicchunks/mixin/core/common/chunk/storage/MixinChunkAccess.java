@@ -34,21 +34,21 @@ public class MixinChunkAccess implements CubicLevelHeightAccessor {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onInit(ChunkPos chunkPos, UpgradeData upgradeData, LevelHeightAccessor levelAccessor, Registry registry, long l, LevelChunkSection[] levelChunkSections,
                         BlendingData blendingData, CallbackInfo ci) {
-        isCubic = ((CubicLevelHeightAccessor) levelAccessor).isCubic();
-        generates2DChunks = ((CubicLevelHeightAccessor) levelAccessor).generates2DChunks();
-        worldStyle = ((CubicLevelHeightAccessor) levelAccessor).worldStyle();
+        isCubic = levelAccessor.isCubic();
+        generates2DChunks = levelAccessor.generates2DChunks();
+        worldStyle = levelAccessor.worldStyle();
     }
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/LevelHeightAccessor;getSectionsCount()I"))
     private int getFakeSectionsCount(LevelHeightAccessor accessor) {
-        if (!((CubicLevelHeightAccessor) accessor).isCubic()) {
+        if (!accessor.isCubic()) {
             return this.levelHeightAccessor.getSectionsCount();
         }
         if (accessor instanceof ProtoCube.FakeSectionCount) {
             return accessor.getSectionsCount();
         }
         if (accessor instanceof Level) {
-            if (((CubicLevelHeightAccessor) accessor).generates2DChunks()) {
+            if (accessor.generates2DChunks()) {
                 int height = ((Level) accessor).dimensionType().height();
                 int minY = ((Level) accessor).dimensionType().minY();
 
@@ -67,7 +67,7 @@ public class MixinChunkAccess implements CubicLevelHeightAccessor {
     @Inject(method = "getHeight()I", at = @At("HEAD"), cancellable = true)
     private void setHeight(CallbackInfoReturnable<Integer> cir) {
         if (this.levelHeightAccessor instanceof Level level) {
-            if (((CubicLevelHeightAccessor) this).generates2DChunks()) {
+            if (this.generates2DChunks()) {
                 cir.setReturnValue(level.dimensionType().height());
             }
         }

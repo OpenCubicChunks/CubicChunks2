@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level.lighting;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightSectionStorage;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -70,7 +69,7 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
      */
     @Inject(method = "markNewInconsistencies", at = @At("HEAD"), cancellable = true)
     protected void markNewInconsistenciesForCube(LayerLightEngine<M, ?> engine, boolean updateSkyLight, boolean updateBlockLight, CallbackInfo ci) {
-        if (this.chunkSource.getLevel() == null || !((CubicLevelHeightAccessor) this.chunkSource.getLevel()).isCubic()) {
+        if (this.chunkSource.getLevel() == null || !this.chunkSource.getLevel().isCubic()) {
             return;
         }
         ci.cancel();

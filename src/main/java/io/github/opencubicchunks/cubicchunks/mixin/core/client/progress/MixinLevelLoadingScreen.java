@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.progress;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.client.gui.screens.CubicLevelLoadingScreen;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.client.Minecraft;
@@ -32,7 +31,7 @@ public class MixinLevelLoadingScreen extends Screen {
                                     int xBase, int yBase, int scale, int spacing, CallbackInfo ci) {
 
         Level level = Minecraft.getInstance().getSingleplayerServer().overworld();
-        if (level == null || !((CubicLevelHeightAccessor) level).isCubic()) {
+        if (level == null || !level.isCubic()) {
             return;
         }
 

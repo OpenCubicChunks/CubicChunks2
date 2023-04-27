@@ -2,6 +2,7 @@ package io.github.opencubicchunks.cubicchunks.mixin;
 
 import static org.objectweb.asm.Opcodes.*;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -50,5 +51,15 @@ public class AnnotationConfigPlugin implements IMixinConfigPlugin {
     }
 
     @Override public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        // Removing any @StirrinStub annotated methods (our mixins can now create those methods normally)
+        for (Iterator<MethodNode> it = targetClass.methods.iterator(); it.hasNext();) {
+            MethodNode method = it.next();
+            List<AnnotationNode> visibleAnnotations = method.visibleAnnotations;
+            if (visibleAnnotations != null) {
+                if (visibleAnnotations.stream().anyMatch(annotationNode -> annotationNode.desc.equals("Lio/github/opencubicchunks/stirrin/StirrinStub;"))) {
+                    it.remove();
+                }
+            }
+        }
     }
 }

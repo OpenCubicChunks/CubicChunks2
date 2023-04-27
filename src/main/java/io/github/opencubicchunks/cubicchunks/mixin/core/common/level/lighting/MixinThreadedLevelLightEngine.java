@@ -10,7 +10,6 @@ import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
@@ -59,7 +58,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
      */
     @Inject(method = "checkBlock", at = @At("HEAD"), cancellable = true)
     public void checkBlock(BlockPos blockPosIn, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
+        if (!this.levelHeightAccessor.isCubic()) {
             return;
         }
         ci.cancel();
@@ -155,7 +154,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
 
     @Inject(method = "updateChunkStatus", at = @At("HEAD"), cancellable = true)
     private void cancelUpdateChunkStatus(ChunkPos pos, CallbackInfo ci) {
-        if (((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
+        if (this.levelHeightAccessor.isCubic()) {
             ci.cancel();
         }
     }
@@ -166,7 +165,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
      */
     @Inject(method = "updateSectionStatus", at = @At("HEAD"), cancellable = true)
     public void updateSectionStatus(SectionPos pos, boolean isEmpty, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
+        if (!this.levelHeightAccessor.isCubic()) {
             return;
         }
         ci.cancel();
@@ -189,7 +188,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
      */
     @Inject(method = "queueSectionData", at = @At("HEAD"), cancellable = true)
     public void queueSectionData(LightLayer type, SectionPos pos, @Nullable DataLayer array, boolean flag, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
+        if (!this.levelHeightAccessor.isCubic()) {
             return;
         }
         ci.cancel();

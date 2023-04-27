@@ -2,7 +2,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.debug.client;
 
 import javax.annotation.Nullable;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.debug.DebugVisualization;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -21,7 +20,7 @@ public class MixinMinecraft {
     @Inject(method = "setLevel", at = @At("HEAD"))
     private void unloadWorld(ClientLevel clientLevel, CallbackInfo ci) {
         if (this.level != null) {
-            if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+            if (!this.level.isCubic()) {
                 return;
             }
             DebugVisualization.onWorldUnload(this.level);
@@ -31,7 +30,7 @@ public class MixinMinecraft {
     @Inject(method = "clearLevel(Lnet/minecraft/client/gui/screens/Screen;)V", at = @At("HEAD"))
     private void unloadWorld(Screen screen, CallbackInfo ci) {
         if (this.level != null) {
-            if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+            if (!this.level.isCubic()) {
                 return;
             }
             DebugVisualization.onWorldUnload(this.level);

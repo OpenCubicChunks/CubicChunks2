@@ -21,9 +21,9 @@ public class MixinWorldGenRegion implements CubicLevelHeightAccessor {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void setCubic(ServerLevel serverLevel, List<ChunkAccess> list, ChunkStatus status, int i, CallbackInfo ci) {
-        isCubic = ((CubicLevelHeightAccessor) serverLevel).isCubic();
-        generates2DChunks = ((CubicLevelHeightAccessor) serverLevel).generates2DChunks();
-        worldStyle = ((CubicLevelHeightAccessor) serverLevel).worldStyle();
+        isCubic = serverLevel.isCubic();
+        generates2DChunks = serverLevel.generates2DChunks();
+        worldStyle = serverLevel.worldStyle();
     }
 
     @Override public WorldStyle worldStyle() {

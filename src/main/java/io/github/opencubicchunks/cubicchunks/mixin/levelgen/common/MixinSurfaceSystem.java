@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.world.level.biome.Biome;
@@ -32,7 +31,7 @@ public abstract class MixinSurfaceSystem {
                                   boolean bl,
                                   WorldGenerationContext worldGenerationContext,
                                   ChunkAccess chunkAccess) {
-        if (((CubicLevelHeightAccessor) chunkAccess).isCubic() && yPos < chunkAccess.getMinBuildHeight()) {
+        if (chunkAccess.isCubic() && yPos < chunkAccess.getMinBuildHeight()) {
             return Blocks.STONE.defaultBlockState();
         }
         return instance.getBlock(yPos);

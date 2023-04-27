@@ -3,7 +3,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.feature.neth
 import java.util.Random;
 
 import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
@@ -25,7 +24,7 @@ public class MixinHugeFungusFeature {
 
     @Redirect(method = "place", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/ChunkGenerator;getGenDepth()I"))
     private int useCubeRegionBounds(ChunkGenerator chunkGenerator, FeaturePlaceContext<HugeFungusConfiguration> context) {
-        if (!((CubicLevelHeightAccessor) context.level()).isCubic()) {
+        if (!context.level().isCubic()) {
             return chunkGenerator.getGenDepth();
         }
         return Coords.cubeToMaxBlock(((CubeWorldGenRegion) context.level()).getMaxCubeY());

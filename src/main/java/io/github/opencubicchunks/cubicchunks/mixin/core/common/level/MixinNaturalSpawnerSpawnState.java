@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
-import io.github.opencubicchunks.cubicchunks.world.CubicLocalMobCapCalculator;
 import io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobCategory;
@@ -21,7 +20,7 @@ public class MixinNaturalSpawnerSpawnState implements CubicNaturalSpawner.CubicS
 
     @Override
     public boolean canSpawnForCategory(MobCategory mobCategory, CubePos cubePos) {
-        return ((CubicLocalMobCapCalculator) localMobCapCalculator).canSpawn(mobCategory, cubePos);
+        return localMobCapCalculator.canSpawn(mobCategory, cubePos);
     }
 
     @Redirect(
@@ -29,10 +28,8 @@ public class MixinNaturalSpawnerSpawnState implements CubicNaturalSpawner.CubicS
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/LocalMobCapCalculator;addMob(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/entity/MobCategory;)V")
     )
     private void addToCubic(LocalMobCapCalculator instance, ChunkPos chunkPos, MobCategory mobCategory, Mob mob, ChunkAccess chunkAccess) {
-        CubicLocalMobCapCalculator cubicLocalMobCapCalculator = (CubicLocalMobCapCalculator) instance;
-
-        if (cubicLocalMobCapCalculator.isCubic()) {
-            cubicLocalMobCapCalculator.addMob(new CubePos(mob.blockPosition()), mobCategory);
+        if (instance.isCubic()) {
+            instance.addMob(new CubePos(mob.blockPosition()), mobCategory);
         } else {
             instance.addMob(chunkPos, mobCategory);
         }

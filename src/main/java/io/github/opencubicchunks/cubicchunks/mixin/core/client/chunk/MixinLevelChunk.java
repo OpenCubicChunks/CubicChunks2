@@ -53,13 +53,13 @@ public abstract class MixinLevelChunk extends ChunkAccess {
         at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
     private Object getBlockEntity(Map map, Object key) {
         if (map == this.blockEntities) {
-            if (!((CubicLevelHeightAccessor) this).isCubic()) {
+            if (!this.isCubic()) {
                 return map.get(key);
             }
             LevelCube cube = (LevelCube) ((ColumnCubeGetter) this).getCube(Coords.blockToSection(((BlockPos) key).getY()));
             return cube.getTileEntityMap().get(key);
         } else if (map == this.pendingBlockEntities) {
-            if (!((CubicLevelHeightAccessor) this).isCubic()) {
+            if (!this.isCubic()) {
                 return map.get(key);
             }
             LevelCube cube = (LevelCube) ((ColumnCubeGetter) this).getCube(Coords.blockToSection(((BlockPos) key).getY()));

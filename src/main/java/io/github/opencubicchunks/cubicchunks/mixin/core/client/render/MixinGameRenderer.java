@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.render;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
@@ -21,7 +20,7 @@ public class MixinGameRenderer {
 
     @Inject(method = "getDepthFar", at = @At("HEAD"), cancellable = true)
     private void getDepthFarWithVerticalViewDistance(CallbackInfoReturnable<Float> cir) {
-        if (!((CubicLevelHeightAccessor) this.minecraft.level).isCubic()) {
+        if (!this.minecraft.level.isCubic()) {
             return;
         }
         float horizontalRenderDistance = this.renderDistance * 4.0F;

@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.Consumer;
 
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.NaturalSpawnerAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
@@ -72,11 +73,13 @@ public class CubicNaturalSpawner {
     }
 
     @FunctionalInterface
+    @UsedFromASM
     public interface CubeGetter {
         void query(long pos, Consumer<CubeAccess> chunkConsumer);
     }
 
     public interface CubicSpawnState {
+        @UsedFromASM
         boolean canSpawnForCategory(MobCategory mobCategory, CubePos cubePos);
     }
 }

@@ -1,5 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.server.level;
 
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
 
@@ -86,6 +87,7 @@ public abstract class CubeTracker extends DynamicGraphMinFixedPoint {
 
     protected abstract int getLevelFromSource(long pos);
 
+    @UsedFromASM
     public void update(long pos, int level, boolean isDecreasing) {
         this.checkEdge(Long.MAX_VALUE, pos, level, isDecreasing);
     }

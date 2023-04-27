@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.optifine.client.vanilla;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.mixin.access.client.ViewAreaAccess;
 import net.minecraft.client.Camera;
@@ -63,7 +62,7 @@ public abstract class MixinWorldRenderer_Vanilla {
     private void getRelativeFrom(BlockPos playerPos, ChunkRenderDispatcher.RenderChunk renderChunkBase, Direction facing,
                                  CallbackInfoReturnable<ChunkRenderDispatcher.RenderChunk> cir) {
 
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
 

@@ -5,7 +5,6 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicHeightProvider;
 import net.minecraft.core.BlockPos;
@@ -26,7 +25,7 @@ public class MixinHeightRangePlacement {
     @Inject(method = "getPositions", at = @At("HEAD"), cancellable = true)
     private void handleCubicRangeDecorator(PlacementContext placementContext, Random random, BlockPos blockPos,
                                            CallbackInfoReturnable<Stream<BlockPos>> cir) {
-        if (!((CubicLevelHeightAccessor) placementContext.getLevel()).isCubic()) {
+        if (!placementContext.getLevel().isCubic()) {
             return;
         }
         CubeWorldGenRegion level = (CubeWorldGenRegion) placementContext.getLevel();

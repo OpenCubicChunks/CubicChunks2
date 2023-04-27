@@ -34,6 +34,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.datafixers.util.Either;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.ChunkIoMainThreadTaskUtils;
@@ -61,7 +62,6 @@ import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueue;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicDistanceManager;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType;
-import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.CubeProgressListener;
 import io.github.opencubicchunks.cubicchunks.utils.CubeCollectorFuture;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
@@ -74,8 +74,6 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.AsyncSave
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.CubicSectionStorage;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.LightSurfaceTrackerWrapper;
 import io.github.opencubicchunks.cubicchunks.world.level.levelgen.heightmap.surfacetrackertree.SurfaceTrackerWrapper;
-import io.github.opencubicchunks.cubicchunks.world.server.CubicServerLevel;
-import io.github.opencubicchunks.cubicchunks.world.server.CubicThreadedLevelLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.storage.CubeSerializer;
 import io.github.opencubicchunks.cubicchunks.world.storage.RegionCubeIO;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -171,25 +169,22 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Shadow @Final ServerLevel level;
     @Shadow int viewDistance;
 
-    final LongSet cubesToDrop = new LongOpenHashSet();
+    @UsedFromASM final LongSet cubesToDrop = new LongOpenHashSet();
 
-    private CubeTaskPriorityQueueSorter cubeQueueSorter;
+    @UsedFromASM private CubeTaskPriorityQueueSorter cubeQueueSorter;
 
-    private final Long2ObjectLinkedOpenHashMap<ChunkHolder> updatingCubeMap = new Long2ObjectLinkedOpenHashMap<>();
-    private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleCubeMap = this.updatingCubeMap.clone();
+    @UsedFromASM private final Long2ObjectLinkedOpenHashMap<ChunkHolder> updatingCubeMap = new Long2ObjectLinkedOpenHashMap<>();
+    @UsedFromASM private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleCubeMap = this.updatingCubeMap.clone();
 
-    // NOTE: used from ASM, don't rename
     private final LongSet cubeEntitiesInLevel = new LongOpenHashSet();
-    private final Long2ObjectLinkedOpenHashMap<ChunkHolder> pendingCubeUnloads = new Long2ObjectLinkedOpenHashMap<>();
+    @UsedFromASM private final Long2ObjectLinkedOpenHashMap<ChunkHolder> pendingCubeUnloads = new Long2ObjectLinkedOpenHashMap<>();
 
-    // worldgenMailbox
     private ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeWorldgenMailbox;
-    // mainThreadMailbox
     private ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeMainThreadMailbox;
 
     private final AtomicInteger tickingGeneratedCubes = new AtomicInteger();
 
-    private final Long2ByteMap cubeTypeCache = new Long2ByteOpenHashMap();
+    @UsedFromASM private final Long2ByteMap cubeTypeCache = new Long2ByteOpenHashMap();
     private final Queue<Runnable> cubeUnloadQueue = Queues.newConcurrentLinkedQueue();
 
     private ServerChunkCache serverChunkCache;
@@ -254,7 +249,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     private ChunkMap.DistanceManager setIsCubic(ChunkMap chunkMap, Executor executor, Executor executor2, ServerLevel levelArg) {
         ChunkMap.DistanceManager newDistanceManager = chunkMap.new DistanceManager(executor, executor2);
         //noinspection ConstantConditions
-        ((CubicDistanceManager) newDistanceManager).initCubic(((CubicLevelHeightAccessor) this.level).isCubic());
+        newDistanceManager.initCubic(this.level.isCubic());
         return newDistanceManager;
     }
 
@@ -264,7 +259,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                              ChunkStatusUpdateListener chunkStatusUpdateListener, Supplier<DimensionDataStorage> supplier, int i, boolean bl,
                              CallbackInfo ci, Path path, ProcessorMailbox<Runnable> worldgenMailbox, ProcessorHandle<Runnable> mainThreadProcessorHandle,
                              ProcessorMailbox<Runnable> lightMailbox) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
 
@@ -272,8 +267,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         this.cubeWorldgenMailbox = this.cubeQueueSorter.getProcessor(worldgenMailbox, false);
         this.cubeMainThreadMailbox = this.cubeQueueSorter.getProcessor(mainThreadProcessorHandle, false);
 
-        ((CubicThreadedLevelLightEngine) this.lightEngine).postConstructorSetup(this.cubeQueueSorter,
-            this.cubeQueueSorter.getProcessor(lightMailbox, false));
+        this.lightEngine.postConstructorSetup(this.cubeQueueSorter, this.cubeQueueSorter.getProcessor(lightMailbox, false));
 
         try {
             regionCubeIO = new RegionCubeIO(path.toFile(), "chunk", "cube");
@@ -285,7 +279,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Inject(method = "tick(Ljava/util/function/BooleanSupplier;)V",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;processUnloads(Ljava/util/function/BooleanSupplier;)V"))
     protected void onTickScheduleUnloads(BooleanSupplier hasMoreTime, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
         this.processCubeUnloads(hasMoreTime);
@@ -300,7 +294,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     @Inject(method = "saveAllChunks", at = @At("HEAD"))
     protected void save(boolean flush, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
 
@@ -314,17 +308,17 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             for (Map.Entry<Heightmap.Types, Heightmap> heightmapEntry : chunk.getHeightmaps()) {
                 Heightmap heightmap = heightmapEntry.getValue();
                 if (heightmap != null) {
-                    ((SurfaceTrackerWrapper) heightmap).saveAll(((CubicServerLevel) this.level).getHeightmapStorage());
+                    ((SurfaceTrackerWrapper) heightmap).saveAll(this.level.getHeightmapStorage());
                 }
             }
 
             LightSurfaceTrackerWrapper lightHeightmap = ((LightHeightmapGetter) chunk).getServerLightHeightmap();
             if (lightHeightmap != null) {
-                lightHeightmap.saveAll(((CubicServerLevel) this.level).getHeightmapStorage());
+                lightHeightmap.saveAll(this.level.getHeightmapStorage());
             }
         });
         try {
-            ((CubicServerLevel) this.level).getHeightmapStorage().flush();
+            this.level.getHeightmapStorage().flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -341,9 +335,9 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                 @SuppressWarnings("unchecked") final CompletableFuture<Boolean>[] saveFutures = list.stream().map((cubeHolder) -> {
                         CompletableFuture<CubeAccess> cubeFuture;
                         do {
-                            cubeFuture = ((CubeHolder) cubeHolder).getCubeToSave();
+                            cubeFuture = cubeHolder.getCubeToSave();
                             this.mainThreadExecutor.managedBlock(cubeFuture::isDone);
-                        } while (cubeFuture != ((CubeHolder) cubeHolder).getCubeToSave());
+                        } while (cubeFuture != cubeHolder.getCubeToSave());
 
                         return cubeFuture.join();
                     }).filter((cube) -> cube instanceof ImposterProtoCube || cube instanceof LevelCube)
@@ -378,7 +372,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     // save()
     private boolean cubeSave(CubeAccess cube) {
-        ((CubicSectionStorage) this.poiManager).flush(cube.getCubePos());
+        this.poiManager.flush(cube.getCubePos());
         if (!cube.isUnsaved()) {
             return false;
         } else {
@@ -422,7 +416,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     private CompletableFuture<Boolean> cubeSaveAsync(CubeAccess cube) {
-        ((CubicSectionStorage) this.poiManager).flush(cube.getCubePos());
+        this.poiManager.flush(cube.getCubePos());
         if (!cube.isUnsaved()) {
             return CompletableFuture.completedFuture(false);
         } else {
@@ -472,7 +466,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         cubeSavingFutures.entrySet().removeIf(entry -> entry.getValue().isDone());
     }
 
-    // Called from ASM
+    @UsedFromASM
     private CompoundTag readCubeNBT(CubePos cubePos) throws IOException {
         return regionCubeIO.loadCubeNBT(cubePos);
     }
@@ -500,9 +494,9 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     // scheduleUnload
     private void scheduleCubeUnload(long cubePos, ChunkHolder cubeHolder) {
-        CompletableFuture<CubeAccess> toSaveFuture = ((CubeHolder) cubeHolder).getCubeToSave();
+        CompletableFuture<CubeAccess> toSaveFuture = cubeHolder.getCubeToSave();
         toSaveFuture.thenAcceptAsync(cube -> {
-            CompletableFuture<CubeAccess> newToSaveFuture = ((CubeHolder) cubeHolder).getCubeToSave();
+            CompletableFuture<CubeAccess> newToSaveFuture = cubeHolder.getCubeToSave();
             if (newToSaveFuture != toSaveFuture) {
                 this.scheduleCubeUnload(cubePos, cubeHolder);
             } else {
@@ -519,10 +513,10 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                         this.cubeSave(cube);
                     }
                     if (this.cubeEntitiesInLevel.remove(cubePos) && cube instanceof LevelCube levelCube) {
-                        ((CubicServerLevel) this.level).onCubeUnloading(levelCube);
+                        this.level.onCubeUnloading(levelCube);
                     }
 
-                    ((CubicThreadedLevelLightEngine) this.lightEngine).setCubeStatusEmpty(cube.getCubePos());
+                    this.lightEngine.setCubeStatusEmpty(cube.getCubePos());
                     this.lightEngine.tryScheduleUpdate();
                     CubePos pos = CubePos.from(cubePos);
 
@@ -544,12 +538,12 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                         }
                     }
 
-                    cube.unloadSource(((CubicServerLevel) this.level).getHeightmapStorage());
+                    cube.unloadSource(this.level.getHeightmapStorage());
                 }
             }
         }, this.cubeUnloadQueue::add).whenComplete((v, throwable) -> {
             if (throwable != null) {
-                LOGGER.error("Failed to save cube " + ((CubeHolder) cubeHolder).getCubePos(), throwable);
+                LOGGER.error("Failed to save cube " + cubeHolder.getCubePos(), throwable);
             }
         });
     }
@@ -587,10 +581,10 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     )
     private void changeCubeStatus(ChunkHolder chunkHolderIn, ChunkStatus chunkStatusIn,
                                   CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
-        CubePos cubePos = ((CubeHolder) chunkHolderIn).getCubePos();
+        CubePos cubePos = chunkHolderIn.getCubePos();
         if (cubePos != null) {
             ((CubeProgressListener) progressListener).onCubeStatusChange(cubePos, chunkStatusIn);
         }
@@ -604,12 +598,11 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Group(name = "MixinChunkManager.onScheduleSaveStatusChange", min = 1, max = 1)
     private void onScheduleSaveStatusChange(ChunkHolder chunkHolderIn, CompletableFuture<?> completablefuture,
                                             long chunkPosIn, ChunkAccess chunk, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
-        if (((CubeHolder) chunkHolderIn).getCubePos() != null) {
-            ((CubeProgressListener) progressListener).onCubeStatusChange(
-                ((CubeHolder) chunkHolderIn).getCubePos(), null);
+        if (chunkHolderIn.getCubePos() != null) {
+            ((CubeProgressListener) progressListener).onCubeStatusChange(chunkHolderIn.getCubePos(), null);
         }
     }
 
@@ -627,9 +620,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;
         }
-        if (((CubeHolder) chunkHolderIn).getCubePos() != null) {
-            ((CubeProgressListener) progressListener).onCubeStatusChange(
-                ((CubeHolder) chunkHolderIn).getCubePos(), null);
+        if (chunkHolderIn.getCubePos() != null) {
+            ((CubeProgressListener) progressListener).onCubeStatusChange(chunkHolderIn.getCubePos(), null);
         }
     }
 
@@ -640,7 +632,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         )
     )
     private void promoteCubeMap(CallbackInfoReturnable<Boolean> cir) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
         this.visibleCubeMap = updatingCubeMap.clone();
@@ -653,7 +645,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     @Override
     public CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> scheduleCube(ChunkHolder cubeHolder, ChunkStatus chunkStatus) {
-        CubePos cubePos = ((CubeHolder) cubeHolder).getCubePos();
+        CubePos cubePos = cubeHolder.getCubePos();
         if (chunkStatus == ChunkStatus.EMPTY) {
             CompletableFuture<List<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> columnsFuture = scheduleColumnFutures(ChunkStatus.EMPTY, cubePos);
             return columnsFuture.thenComposeAsync(col -> this.scheduleCubeLoad(cubePos).thenApply(cubeEither -> {
@@ -716,7 +708,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     // scheduleChunkGeneration
     private CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> scheduleCubeGeneration(ChunkHolder cubeHolder, ChunkStatus chunkStatusIn,
                                                                                                           List<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> columns) {
-        CubePos cubePos = ((CubeHolder) cubeHolder).getCubePos();
+        CubePos cubePos = cubeHolder.getCubePos();
         CompletableFuture<Either<List<CubeAccess>, ChunkHolder.ChunkLoadingFailure>> future =
             this.getCubeRangeFuture(cubePos, CubeStatus.getCubeTaskRange(chunkStatusIn), (count) -> this.getCubeDependencyStatus(chunkStatusIn, count));
         this.level.getProfiler().incrementCounter(() -> "cubeGenerate " + chunkStatusIn.getName());
@@ -759,7 +751,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             for (int localX = 0; localX < CubicConstants.DIAMETER_IN_SECTIONS; localX++) {
                 for (int localZ = 0; localZ < CubicConstants.DIAMETER_IN_SECTIONS; localZ++) {
                     ChunkPos chunkPos = cubePos.asChunkPos(localX, localZ);
-                    columnFutures.add(((ServerCubeCache) serverChunkCache).getColumnFutureForCube(cubePos, chunkPos.x, chunkPos.z, targetStatus, true));
+                    columnFutures.add(serverChunkCache.getColumnFutureForCube(cubePos, chunkPos.x, chunkPos.z, targetStatus, true));
                 }
             }
             return Util.sequence(columnFutures);
@@ -792,7 +784,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     long posLong = cubePos.asLong();
 
                     // get the required cube's chunk holder
-                    CubeHolder chunkholder = (CubeHolder) this.getUpdatingCubeIfPresent(posLong);
+                    CubeHolder chunkholder = this.getUpdatingCubeIfPresent(posLong);
                     if (chunkholder == null) {
                         //noinspection MixinInnerClass
                         return CompletableFuture.completedFuture(Either.right(new ChunkHolder.ChunkLoadingFailure() {
@@ -867,7 +859,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         return fullFuture.thenApplyAsync((sectionOrError) -> {
             ChunkStatus chunkstatus = CubeHolder.getCubeStatusFromLevel(holder.getTicketLevel());
             return !chunkstatus.isOrAfter(ChunkStatus.FULL) ? CubeHolder.UNLOADED_CUBE : sectionOrError.mapLeft((prevCube) -> {
-                CubePos cubePos = ((CubeHolder) holder).getCubePos();
+                CubePos cubePos = holder.getCubePos();
                 LevelCube cube;
                 if (prevCube instanceof ImposterProtoCube) {
                     cube = ((ImposterProtoCube) prevCube).getWrapped();
@@ -876,7 +868,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     cube = new LevelCube(this.level, (ProtoCube) prevCube, (bigCube) -> {
                         postLoadProtoChunk(this.level, ((ProtoCube) prevCube).getEntities());
                     });
-                    ((CubeHolder) holder).replaceProtoCube(new ImposterProtoCube(cube, false));
+                    holder.replaceProtoCube(new ImposterProtoCube(cube, false));
                 }
 
                 cube.setFullStatus(() -> ChunkHolder.getFullChunkStatus(holder.getTicketLevel()));
@@ -890,7 +882,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             });
         }, (runnable) -> {
             this.cubeMainThreadMailbox.tell(CubeTaskPriorityQueueSorter.message(
-                runnable, ((CubeHolder) holder).getCubePos().asLong(), holder::getTicketLevel));
+                runnable, holder.getCubePos().asLong(), holder::getTicketLevel));
         });
     }
 
@@ -905,7 +897,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     @Override
     public CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareTickingCube(ChunkHolder chunkHolder) {
-        CubePos cubePos = ((CubeHolder) chunkHolder).getCubePos();
+        CubePos cubePos = chunkHolder.getCubePos();
         CompletableFuture<Either<List<CubeAccess>, ChunkHolder.ChunkLoadingFailure>> tickingFuture = this.getCubeRangeFuture(cubePos, 1,
             (i) -> {
                 return ChunkStatus.FULL;
@@ -945,7 +937,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     @Redirect(method = "save", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;write(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/nbt/CompoundTag;)V"))
     private void writeColumn(ChunkMap chunkManager, ChunkPos chunkPos, CompoundTag chunkNBT) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             chunkManager.write(chunkPos, chunkNBT);
             return;
         }
@@ -956,7 +948,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Redirect(method = "lambda$scheduleChunkLoad$16(Lnet/minecraft/world/level/ChunkPos;)Lcom/mojang/datafixers/util/Either;",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;readChunk(Lnet/minecraft/world/level/ChunkPos;)Lnet/minecraft/nbt/CompoundTag;"))
     private CompoundTag readColumn(ChunkMap chunkManager, ChunkPos chunkPos) throws IOException {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return this.readChunk(chunkPos);
         }
         return regionCubeIO.loadChunkNBT(chunkPos);
@@ -983,7 +975,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     if (flag) {
                         ChunkIoMainThreadTaskUtils.executeMain(() -> {
                             if (poiNBT != null) {
-                                ((CubicSectionStorage) this.poiManager).updateCube(cubePos, poiNBT);
+                                this.poiManager.updateCube(cubePos, poiNBT);
                             }
                         });
                         return CubeSerializer.read(this.level, this.structureManager, poiManager, cubePos, cubeNBT);
@@ -1027,7 +1019,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
      */
     @Inject(method = "updatePlayerStatus", at = @At("HEAD"), cancellable = true)
     void updatePlayerStatus(ServerPlayer player, boolean track, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
         ci.cancel();
@@ -1082,7 +1074,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
      */
     @Inject(method = "move", at = @At("HEAD"), cancellable = true)
     public void move(ServerPlayer player, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
         ci.cancel();
@@ -1228,7 +1220,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     // this needs to be at HEAD, otherwise we are not going to see the view distance being different. Should not set view distance. Should NOT BE CANCELLED
     @Inject(method = "setViewDistance", at = @At("HEAD"))
     protected void setVerticalViewDistance(int horizontalDistance, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
 
@@ -1245,7 +1237,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             this.viewDistance = hViewDistanceSections;
             this.verticalViewDistance = vViewDistanceSections;
 
-            ((CubicDistanceManager) this.distanceManager).updatePlayerCubeTickets(hViewDistanceSections, vViewDistanceSections);
+            this.distanceManager.updatePlayerCubeTickets(hViewDistanceSections, vViewDistanceSections);
 
             for (ChunkHolder chunkholder : this.updatingCubeMap.values()) {
                 CubePos cubePos = ((CubeHolder) chunkholder).getCubePos();
@@ -1281,7 +1273,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             //TODO: reimplement forge event
             //net.minecraftforge.event.ForgeEventFactory.fireChunkWatch(wasLoaded, load, player, cubePosIn, this.world);
             if (load && !wasLoaded) {
-                ChunkHolder chunkholder = ((CubeMap) this).getVisibleCubeIfPresent(cubePosIn.asLong());
+                ChunkHolder chunkholder = this.getVisibleCubeIfPresent(cubePosIn.asLong());
                 if (chunkholder != null) {
                     LevelCube cube = ((CubeHolder) chunkholder).getTickingCube();
                     if (cube != null) {
@@ -1331,7 +1323,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Redirect(method = "playerLoadedChunk", at = @At(value = "NEW", target = "(Lnet/minecraft/world/level/chunk/LevelChunk;Lnet/minecraft/world/level/lighting/LevelLightEngine;"
         + "Ljava/util/BitSet;Ljava/util/BitSet;Z)Lnet/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket;"))
     private ClientboundLevelChunkWithLightPacket onVanillaLightPacketConstruct(LevelChunk levelChunk, LevelLightEngine levelLightEngine, BitSet bitSet, BitSet bitSet2, boolean bl) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return new ClientboundLevelChunkWithLightPacket(levelChunk, levelLightEngine, bitSet, bitSet2, bl);
         }
 
@@ -1382,7 +1374,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Override
     public boolean noPlayersCloseForSpawning(CubePos cubePos) {
         long cubePosAsLong = cubePos.asLong();
-        return !((CubicDistanceManager) this.distanceManager).hasPlayersNearbyCube(cubePosAsLong) || this.playerMap.getPlayers(cubePosAsLong).stream().noneMatch(
+        return !this.distanceManager.hasPlayersNearbyCube(cubePosAsLong) || this.playerMap.getPlayers(cubePosAsLong).stream().noneMatch(
             (serverPlayer) -> !serverPlayer.isSpectator() && euclideanDistanceSquared(cubePos, serverPlayer) < (TICK_UPDATE_DISTANCE * TICK_UPDATE_DISTANCE));
     }
 
@@ -1466,7 +1458,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     @Inject(method = "close", at = @At("HEAD"), remap = false)
     public void closeCubeIO(CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
         regionCubeIO.flush();

@@ -52,8 +52,8 @@ public abstract class MixinPlayerList implements VerticalViewDistanceListener {
 
         for (ServerLevel serverLevel : this.server.getAllLevels()) {
             if (serverLevel != null) {
-                if (((CubicLevelHeightAccessor) serverLevel).isCubic()) {
-                    ((VerticalViewDistanceListener) serverLevel.getChunkSource()).setIncomingVerticalViewDistance(this.verticalViewDistance);
+                if (serverLevel.isCubic()) {
+                    serverLevel.getChunkSource().setIncomingVerticalViewDistance(this.verticalViewDistance);
                 }
             }
         }

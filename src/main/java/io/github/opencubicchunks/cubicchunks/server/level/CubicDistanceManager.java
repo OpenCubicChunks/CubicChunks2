@@ -5,6 +5,7 @@ import java.util.concurrent.Executor;
 
 import javax.annotation.Nullable;
 
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeStatus;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -27,8 +28,7 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 public interface CubicDistanceManager {
     int PLAYER_CUBE_TICKET_LEVEL = 33 + CubeStatus.getDistance(ChunkStatus.FULL) - 2;
 
-    // implemented by ASM unless specified otherwise
-    void purgeStaleCubeTickets();
+    @UsedFromASM void purgeStaleCubeTickets();
 
     // isChunkToRemove
     boolean isCubeToRemove(long sectionPos);
@@ -39,41 +39,40 @@ public interface CubicDistanceManager {
     @Nullable
     ChunkHolder updateCubeScheduling(long cubePosIn, int newLevel, @Nullable ChunkHolder holder, int oldLevel);
 
-    boolean runAllUpdatesCubic(ChunkMap chunkManager);
+    @UsedFromASM boolean runAllUpdatesCubic(ChunkMap chunkManager);
 
-    void addCubeTicket(long chunkPosIn, Ticket<?> ticketIn);
+    @UsedFromASM void addCubeTicket(long chunkPosIn, Ticket<?> ticketIn);
 
-    void removeCubeTicket(long chunkPosIn, Ticket<?> ticketIn);
+    @UsedFromASM void removeCubeTicket(long chunkPosIn, Ticket<?> ticketIn);
 
-    <T> void addCubeTicket(TicketType<T> type, CubePos pos, int level, T value);
+    @UsedFromASM <T> void addCubeTicket(TicketType<T> type, CubePos pos, int level, T value);
 
-    <T> void removeCubeTicket(TicketType<T> type, CubePos pos, int level, T value);
+    @UsedFromASM <T> void removeCubeTicket(TicketType<T> type, CubePos pos, int level, T value);
 
-    <T> void addCubeRegionTicket(TicketType<T> type, CubePos pos, int distance, T value);
+    @UsedFromASM <T> void addCubeRegionTicket(TicketType<T> type, CubePos pos, int distance, T value);
 
-    <T> void removeCubeRegionTicket(TicketType<T> type, CubePos pos, int distance, T value);
+    @UsedFromASM <T> void removeCubeRegionTicket(TicketType<T> type, CubePos pos, int distance, T value);
 
-    SortedArraySet<Ticket<?>> getCubeTickets(long cubePosLong);
+    @UsedFromASM SortedArraySet<Ticket<?>> getCubeTickets(long cubePosLong);
 
-    void updateCubeForced(CubePos pos, boolean add);
+    @UsedFromASM void updateCubeForced(CubePos pos, boolean add);
 
-    void addCubePlayer(SectionPos sectionPos, ServerPlayer player);
+    @UsedFromASM void addCubePlayer(SectionPos sectionPos, ServerPlayer player);
 
-    void removeCubePlayer(SectionPos sectionPos, ServerPlayer player);
+    @UsedFromASM void removeCubePlayer(SectionPos sectionPos, ServerPlayer player);
 
-    boolean isEntityTickingRangeCube(long cubePos);
+    @UsedFromASM boolean isEntityTickingRangeCube(long cubePos);
 
-    boolean isBlockTickingRangeCube(long cubePos);
+    @UsedFromASM boolean isBlockTickingRangeCube(long cubePos);
 
     // updatePlayerTickets, implemented manually - horizontal+vertical distance
     void updatePlayerCubeTickets(int horizontalViewDistance, int verticalViewDistance);
 
-    int getNaturalSpawnCubeCount();
+    @UsedFromASM int getNaturalSpawnCubeCount();
 
-    boolean hasPlayersNearbyCube(long cubePosIn);
+    @UsedFromASM boolean hasPlayersNearbyCube(long cubePosIn);
 
-    void removeCubeTicketsOnClosing();
-
+    @UsedFromASM void removeCubeTicketsOnClosing();
 
     // accessors implemented manually
 

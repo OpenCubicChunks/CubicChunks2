@@ -48,7 +48,7 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onConstruct(ClientLevel clientWorldIn, int viewDistance, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) clientWorldIn).isCubic()) {
+        if (!clientWorldIn.isCubic()) {
             return;
         }
 
@@ -176,7 +176,7 @@ public abstract class MixinClientChunkCache implements ClientCubeCache {
      */
     @Inject(method = "gatherStats", at = @At("HEAD"), cancellable = true)
     public void gatherStats(CallbackInfoReturnable<String> cir) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+        if (!this.level.isCubic()) {
             return;
         }
 

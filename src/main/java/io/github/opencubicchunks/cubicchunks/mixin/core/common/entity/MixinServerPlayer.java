@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.entity;
 
 import com.mojang.authlib.GameProfile;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.network.PacketCCLevelInfo;
 import io.github.opencubicchunks.cubicchunks.network.PacketDispatcher;
 import net.minecraft.core.BlockPos;
@@ -36,11 +35,11 @@ public abstract class MixinServerPlayer extends Player {
     // ClientboundRespawnPacket instantiates the ClientLevel on the client, so we send our packet just before that
     @Inject(method = "changeDimension", at = @At(value = "NEW", target = "net/minecraft/network/protocol/game/ClientboundRespawnPacket"))
     private void onChangeDimension(ServerLevel serverLevel, CallbackInfoReturnable<Entity> cir) {
-        PacketDispatcher.sendTo(new PacketCCLevelInfo(((CubicLevelHeightAccessor) serverLevel).worldStyle()), (ServerPlayer) (Object) this);
+        PacketDispatcher.sendTo(new PacketCCLevelInfo(serverLevel.worldStyle()), (ServerPlayer) (Object) this);
     }
 
     @Inject(method = "teleportTo(Lnet/minecraft/server/level/ServerLevel;DDDFF)V", at = @At(value = "NEW", target = "net/minecraft/network/protocol/game/ClientboundRespawnPacket"))
     private void onTeleportTo(ServerLevel serverLevel, double d, double e, double f, float g, float h, CallbackInfo ci) {
-        PacketDispatcher.sendTo(new PacketCCLevelInfo(((CubicLevelHeightAccessor) serverLevel).worldStyle()), (ServerPlayer) (Object) this);
+        PacketDispatcher.sendTo(new PacketCCLevelInfo(serverLevel.worldStyle()), (ServerPlayer) (Object) this);
     }
 }

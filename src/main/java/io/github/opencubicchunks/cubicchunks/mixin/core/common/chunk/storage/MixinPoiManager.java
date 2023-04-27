@@ -13,7 +13,6 @@ import com.mojang.datafixers.DataFixer;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import io.github.opencubicchunks.cc_core.api.CubePos;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.PoiSectionAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.PoiDeserializationContext;
@@ -60,7 +59,7 @@ public abstract class MixinPoiManager extends SectionStorage<PoiSection> impleme
 
     @Inject(method = "getInSquare", at = @At("HEAD"), cancellable = true)
     private void getInSquare(Predicate<PoiType> typePredicate, BlockPos pos, int radius, PoiManager.Occupancy occupancy, CallbackInfoReturnable<Stream<PoiRecord>> cir) {
-        if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
+        if (!this.levelHeightAccessor.isCubic()) {
             return;
         }
 
@@ -95,7 +94,7 @@ public abstract class MixinPoiManager extends SectionStorage<PoiSection> impleme
 
     @Inject(method = "ensureLoadedAndValid", at = @At("HEAD"), cancellable = true)
     private void ensureCubeLoadedAndValid(LevelReader level, BlockPos pos, int radius, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) level).isCubic()) {
+        if (!level.isCubic()) {
             return;
         }
         ci.cancel();

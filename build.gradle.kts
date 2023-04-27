@@ -18,6 +18,7 @@ plugins {
     id("io.github.opencubicchunks.gradle.mcGitVersion")
     id("io.github.opencubicchunks.gradle.mixingen")
     id("io.github.opencubicchunks.gradle.dasm")
+    id("io.github.opencubicchunks.stirrin").version("1.3.4")
 }
 
 val minecraftVersion: String by project
@@ -27,6 +28,20 @@ val lwjglVersion: String by project
 val lwjglNatives: String by project
 val modId: String by project
 val debugArtifactTransforms: String by project
+
+stirrin {
+    setAcceptedJars(".*minecraft.*")
+    setConfigs(setOf(
+            "cubicchunks.mixins.access.json",
+            "cubicchunks.mixins.asm.json",
+            "cubicchunks.mixins.asmfixes.json",
+            "cubicchunks.mixins.core.json",
+            "cubicchunks.mixins.debug.json",
+            "cubicchunks.mixins.levelgen.json",
+            "cubicchunks.mixins.optifine.json"
+    ))
+    setDebug(debugArtifactTransforms.toBoolean())
+}
 
 javaHeaders {
     setAcceptedJars(".*CubicChunksCore.*")
@@ -235,6 +250,8 @@ when (OperatingSystem.current()) {
 }
 
 dependencies {
+    stirrin.addDependency("net.fabricmc:sponge-mixin:0.11.4+mixin.0.8.5")
+
     minecraft("com.mojang:minecraft:${minecraftVersion}")
     mappings(loom.layered {
         officialMojangMappings {
@@ -256,17 +273,26 @@ dependencies {
 //    }
 
     // we shade the core classes directly into CC, so it gets remapped
-    shade(implementation(project(":CubicChunksCore")) {
+    shade(implementation(stirrin.addDependency(project(":CubicChunksCore"))) {
         attributes {
             attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements::class, LibraryElements.JAR))
         }
         isTransitive = false
     })
 
+    // To work around an Intellij bug where compile and runtime dependencies of a project differ, causing artifact transforms to run twice on a dependency
+    // which then creates two jars in the same dependency, resulting in Intellij failing to resolve the classes.
+    {
+        stirrin.addDependency("org.jetbrains:annotations:24.0.0") // core dependency
+
+        implementation("com.google.guava:guava:31.1-jre")
+        implementation("com.google.code.gson:gson:2.9.0")
+    }
+
     debugCompile("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
     debugRuntime("org.lwjgl:lwjgl::$lwjglNatives")
 
-    include(implementation("com.github.OpenCubicChunks:dasm:81e0a37")!!)
+    include(implementation("com.github.OpenCubicChunks:dasm:2895c9ccc8")!!)
     include(implementation("io.github.opencubicchunks:regionlib:0.63.0-SNAPSHOT")!!)
     include(implementation("org.spongepowered:noise:2.0.0-SNAPSHOT")!!)
 

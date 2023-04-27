@@ -17,6 +17,7 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.Maps;
 import com.mojang.datafixers.util.Either;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapSource;
@@ -86,6 +87,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Fea
         this.cubeHeightmaps = Maps.newEnumMap(Heightmap.Types.class);
     }
 
+    @UsedFromASM
     public CubePos getCubePos() {
         return cubePos;
     }

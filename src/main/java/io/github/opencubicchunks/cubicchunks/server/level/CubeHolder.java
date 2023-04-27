@@ -9,6 +9,7 @@ import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
 
 import com.mojang.datafixers.util.Either;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkHolderAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
@@ -38,6 +39,7 @@ public interface CubeHolder {
     @Nullable
     LevelCube getTickingCube();
 
+    @UsedFromASM
     CubePos getCubePos();
 
     // getOrScheduleFuture
@@ -65,6 +67,7 @@ public interface CubeHolder {
     // added with ASM, can't be shadow because mixin validates shadows before preApply runs
     void updateCubeFutures(ChunkMap chunkManagerIn, Executor executor);
 
+    @UsedFromASM
     class CubeLoadingError implements ChunkHolder.ChunkLoadingFailure {
         private final ChunkHolder holder;
 

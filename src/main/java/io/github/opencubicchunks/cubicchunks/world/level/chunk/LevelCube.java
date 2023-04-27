@@ -25,11 +25,11 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.MathUtil;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cc_core.world.heightmap.HeightmapStorage;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerLeaf;
 import io.github.opencubicchunks.cc_core.world.heightmap.surfacetrackertree.SurfaceTrackerNode;
@@ -76,6 +76,7 @@ import net.minecraft.world.ticks.TickContainerAccess;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+@UsedFromASM
 public class LevelCube extends CubeAccess {
     private static final TickingBlockEntity NULL_TICKER = new TickingBlockEntity() {
         public void tick() {
@@ -115,7 +116,7 @@ public class LevelCube extends CubeAccess {
                      @Nullable LevelChunkSection[] sections, @Nullable BlendingData blendingData, @Nullable Consumer<LevelCube> postLoad) {
         super(
             cubePos,
-            ((CubicLevelHeightAccessor) level),
+            level,
             upgradeData,
             new ProtoCube.FakeSectionCount(cubePos.getY(), level, CubicConstants.SECTION_COUNT),
             level.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY),

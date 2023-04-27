@@ -3,7 +3,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
@@ -37,7 +36,7 @@ public abstract class MixinNaturalSpawner {
     @Inject(method = "spawnForChunk", at = @At("HEAD"), cancellable = true)
     private static void cancelSpawnForChunk(ServerLevel serverLevel, LevelChunk levelChunk, NaturalSpawner.SpawnState spawnState, boolean bl,
                                             boolean bl2, boolean bl3, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) serverLevel).isCubic()) {
+        if (!serverLevel.isCubic()) {
             return;
         }
         ci.cancel();
@@ -46,7 +45,7 @@ public abstract class MixinNaturalSpawner {
     @Inject(method = "isSpawnPositionOk", at = @At(value = "HEAD"), cancellable = true)
     private static void isSpawnPositionOkForCubeWorldGenRegion(SpawnPlacements.Type location, LevelReader reader, BlockPos pos, @Nullable EntityType<?> entityType,
                                                                CallbackInfoReturnable<Boolean> cir) {
-        if (!((CubicLevelHeightAccessor) reader).isCubic()) {
+        if (!reader.isCubic()) {
             return;
         }
         if (reader instanceof CubeWorldGenRegion) {
@@ -61,7 +60,7 @@ public abstract class MixinNaturalSpawner {
 
     @Inject(method = "getTopNonCollidingPos", at = @At("HEAD"), cancellable = true)
     private static void returnOnBrokenPosition(LevelReader reader, EntityType<?> entityType, int x, int z, CallbackInfoReturnable<BlockPos> cir) {
-        if (!((CubicLevelHeightAccessor) reader).isCubic()) {
+        if (!reader.isCubic()) {
             return;
         }
         if (reader instanceof CubeWorldGenRegion) {
@@ -109,7 +108,7 @@ public abstract class MixinNaturalSpawner {
 
     @Redirect(method = "getTopNonCollidingPos", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/dimension/DimensionType;hasCeiling()Z"))
     private static boolean useOverWorldLogic(DimensionType dimensionType, LevelReader level, EntityType<?> entityType, int x, int z) {
-        if (!((CubicLevelHeightAccessor) level).isCubic()) {
+        if (!level.isCubic()) {
             return dimensionType.hasCeiling();
         }
         return false;
@@ -139,7 +138,7 @@ public abstract class MixinNaturalSpawner {
 
     @Inject(method = "isRightDistanceToPlayerAndSpawnPoint", at = @At("HEAD"), cancellable = true)
     private static void useCubePos(ServerLevel level, ChunkAccess chunk, BlockPos.MutableBlockPos pos, double squaredDistance, CallbackInfoReturnable<Boolean> cir) {
-        if (!((CubicLevelHeightAccessor) level).isCubic()) {
+        if (!level.isCubic()) {
             return;
         }
         cir.setReturnValue(CubicNaturalSpawner.isRightDistanceToPlayerAndSpawnPoint(level, chunk, pos, squaredDistance));

@@ -5,7 +5,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.ColumnCubeGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import net.fabricmc.api.EnvType;
@@ -51,13 +50,13 @@ public abstract class MixinLevelChunk extends ChunkAccess {
         at = @At(value = "INVOKE", target = "Ljava/util/Map;get(Ljava/lang/Object;)Ljava/lang/Object;"))
     private Object getTileEntity(Map map, Object key) {
         if (map == this.blockEntities) {
-            if (!((CubicLevelHeightAccessor) this).isCubic()) {
+            if (!this.isCubic()) {
                 return map.get(key);
             }
             LevelCube cube = (LevelCube) ((ColumnCubeGetter) this).getCube(Coords.blockToSection(((BlockPos) key).getY()));
             return cube.getTileEntityMap().get(key);
         } else if (map == this.pendingBlockEntities) {
-            if (!((CubicLevelHeightAccessor) this).isCubic()) {
+            if (!this.isCubic()) {
                 return map.get(key);
             }
             LevelCube cube = (LevelCube) ((ColumnCubeGetter) this).getCube(Coords.blockToSection(((BlockPos) key).getY()));
@@ -76,7 +75,7 @@ public abstract class MixinLevelChunk extends ChunkAccess {
         // to respect our priority over theirs.
 
         if (map == this.blockEntities) {
-            if (!((CubicLevelHeightAccessor) this).isCubic()) {
+            if (!this.isCubic()) {
                 @Nullable
                 Object removed = map.remove(key);
 
@@ -95,7 +94,7 @@ public abstract class MixinLevelChunk extends ChunkAccess {
             }
             return removed;
         } else if (map == this.pendingBlockEntities) {
-            if (!((CubicLevelHeightAccessor) this).isCubic()) {
+            if (!this.isCubic()) {
                 return map.remove(key);
             }
             LevelCube cube = (LevelCube) ((ColumnCubeGetter) this).getCube(Coords.blockToSection(((BlockPos) key).getY()));
@@ -114,13 +113,13 @@ public abstract class MixinLevelChunk extends ChunkAccess {
                 ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.invoker().onLoad((BlockEntity) value, (ServerLevel) this.getLevel());
             }
 
-            if (!((CubicLevelHeightAccessor) this).isCubic()) {
+            if (!this.isCubic()) {
                 return map.put(key, value);
             }
             LevelCube cube = (LevelCube) ((ColumnCubeGetter) this).getCube(Coords.blockToSection(((BlockPos) key).getY()));
             return cube.getTileEntityMap().put((BlockPos) key, (BlockEntity) value);
         } else if (map == this.pendingBlockEntities) {
-            if (!((CubicLevelHeightAccessor) this).isCubic()) {
+            if (!this.isCubic()) {
                 return map.put(key, value);
             }
             LevelCube cube = (LevelCube) ((ColumnCubeGetter) this).getCube(Coords.blockToSection(((BlockPos) key).getY()));

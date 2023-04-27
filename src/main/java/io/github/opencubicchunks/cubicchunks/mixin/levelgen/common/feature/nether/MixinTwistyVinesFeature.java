@@ -1,6 +1,5 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.feature.nether;
 
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelAccessor;
@@ -14,7 +13,7 @@ public class MixinTwistyVinesFeature {
 
     @Redirect(method = "findFirstAirBlockAboveGround", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/LevelAccessor;isOutsideBuildHeight(Lnet/minecraft/core/BlockPos;)Z"))
     private static boolean isOutsideCubeY(LevelAccessor levelAccessor, BlockPos blockPos) {
-        if (!((CubicLevelHeightAccessor) levelAccessor).isCubic()) {
+        if (!levelAccessor.isCubic()) {
             return levelAccessor.isOutsideBuildHeight(blockPos);
         }
         return !((CubeWorldGenRegion) levelAccessor).insideCubeHeight(blockPos.getY());

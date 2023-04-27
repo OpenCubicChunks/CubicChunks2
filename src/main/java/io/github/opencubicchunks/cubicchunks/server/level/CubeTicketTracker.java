@@ -1,11 +1,13 @@
 package io.github.opencubicchunks.cubicchunks.server.level;
 
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.Ticket;
 import net.minecraft.util.SortedArraySet;
 
 // TODO: DASM, have to duplicate whole class
+@UsedFromASM
 public class CubeTicketTracker extends CubeTracker {
     private final CubicDistanceManager cubicDistanceManager;
 
@@ -47,7 +49,7 @@ public class CubeTicketTracker extends CubeTracker {
         }
     }
 
-    // Used from ASM
+    @UsedFromASM
     public int runDistanceUpdates(int distance) {
         return this.runUpdates(distance);
     }

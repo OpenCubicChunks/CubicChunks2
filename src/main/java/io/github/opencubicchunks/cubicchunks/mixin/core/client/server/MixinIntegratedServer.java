@@ -27,7 +27,7 @@ public class MixinIntegratedServer {
 
         if (verticalViewDistance != currentVerticalViewDistance1) {
             CubicChunks.LOGGER.info("Changing vertical view distance to {}, from {}", verticalViewDistance, currentVerticalViewDistance1);
-            ((VerticalViewDistanceListener) ((IntegratedServer) (Object) this).getPlayerList()).setIncomingVerticalViewDistance(verticalViewDistance);
+            ((IntegratedServer) (Object) this).getPlayerList().setIncomingVerticalViewDistance(verticalViewDistance);
             ((IntegratedServer) (Object) this).getPlayerList().setViewDistance(horizontalViewDistance);
         }
     }

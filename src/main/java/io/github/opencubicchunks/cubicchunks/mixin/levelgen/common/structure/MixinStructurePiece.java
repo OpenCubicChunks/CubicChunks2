@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.structure;
 
 import io.github.opencubicchunks.cc_core.utils.Coords;
-import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.world.level.CubicLevelAccessor;
 import net.minecraft.core.BlockPos;
@@ -18,7 +17,7 @@ public class MixinStructurePiece {
     @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/WorldGenLevel;getChunk(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/chunk/ChunkAccess;"),
         method = "placeBlock")
     private ChunkAccess getCube(WorldGenLevel worldGenLevel, BlockPos blockPos) {
-        if (((CubicLevelHeightAccessor) worldGenLevel).generates2DChunks()) {
+        if (worldGenLevel.generates2DChunks()) {
             return worldGenLevel.getChunk(blockPos);
         }
         return ((CubicLevelAccessor) worldGenLevel).getCube(blockPos);
@@ -26,7 +25,7 @@ public class MixinStructurePiece {
 
     @Redirect(method = "fillColumnDown", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/WorldGenLevel;getMinBuildHeight()I"))
     private int fillToRegionBottom(WorldGenLevel level) {
-        if (!((CubicLevelHeightAccessor) level).isCubic()) {
+        if (!level.isCubic()) {
             return level.getMinBuildHeight();
         }
         return Coords.cubeToMinBlock(((CubeWorldGenRegion) level).getMinCubeY());
