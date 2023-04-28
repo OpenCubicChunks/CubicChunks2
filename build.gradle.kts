@@ -121,6 +121,12 @@ base {
     archivesName.set("CubicChunks")
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("net.fabricmc:fabric-loader:${loaderVersion}")
+    }
+}
+
 val debugCompile: Configuration by configurations.creating
 val debugRuntime: Configuration by configurations.creating {
     extendsFrom(debugCompile)
