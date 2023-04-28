@@ -30,6 +30,8 @@ val lwjglNatives: String by project
 val modId: String by project
 val debugArtifactTransforms: String by project
 
+val disableNetworkingInIntegrationTest: String? by project
+
 javaHeaders {
     setAcceptedJars(".*CubicChunksCore.*")
     setConfig(file("javaHeaders.json"))
@@ -396,6 +398,7 @@ val runIntegrationTests by tasks.creating(JavaExec::class) {
         jvmArgs(
                 "-Dfabric.addMods=${(tasks["remapJar"] as AbstractArchiveTask).archiveFile.get().asFile.absolutePath}${File.pathSeparator}${remapIntegrationTestJar.archiveFile.get()
                         .asFile.absolutePath}${File.pathSeparator}${mods}",
+                "-Dcubicchunks.test.disableNetwork=${disableNetworkingInIntegrationTest}"
         )
 
         args("nogui")

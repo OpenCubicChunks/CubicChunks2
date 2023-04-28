@@ -11,6 +11,7 @@
         "conformVisibility": true
     },
     "mixins": [
+        "MixinDedicatedServer",
         "MixinMinecraftServerTestRunner",
         "MixinServerLevelTestRunner"
     ]

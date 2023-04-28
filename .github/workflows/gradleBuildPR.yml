@@ -27,4 +27,4 @@ jobs:
         run: |
           ./gradlew test
           ./gradlew agreeToMinecraftEula
-          ./gradlew runIntegrationTests
+          ./gradlew runIntegrationTests -PdisableNetworkingInIntegrationTest=true

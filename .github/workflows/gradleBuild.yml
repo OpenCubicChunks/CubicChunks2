@@ -31,7 +31,7 @@ jobs:
         run: |
           ./gradlew test
           ./gradlew agreeToMinecraftEula
-          ./gradlew runIntegrationTests
+          ./gradlew runIntegrationTests -PdisableNetworkingInIntegrationTest=true
 
       - uses: actions/upload-artifact@v2
         with:

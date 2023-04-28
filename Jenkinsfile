@@ -51,7 +51,7 @@ pipeline {
             steps {
                 sh "./gradlew test"
                 sh "./gradlew agreeToMinecraftEula"
-                sh "./gradlew runIntegrationTests"
+                sh "./gradlew runIntegrationTests -PdisableNetworkingInIntegrationTest=true"
             }
             post {
                 success {
