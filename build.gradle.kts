@@ -178,6 +178,7 @@ loom {
     val mixinFile = dependency.resolve().iterator().next().toString()
 
     val args = listOf(
+            "-XX:+IgnoreUnrecognizedVMOptions",
             "-XX:+UnlockExperimentalVMOptions",
             "-XX:+AllowEnhancedClassRedefinition",
             "-XX:-OmitStackTraceInFastThrow",
