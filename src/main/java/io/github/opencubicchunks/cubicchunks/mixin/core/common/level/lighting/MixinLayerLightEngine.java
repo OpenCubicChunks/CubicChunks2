@@ -2,6 +2,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level.lighting;
 
 import javax.annotation.Nullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
@@ -123,5 +124,14 @@ public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S 
         if (this.isCubic) {
             throw new UnsupportedOperationException("Trying to get chunks in a cubic context! Use \"getCubeReader\" instead!");
         }
+    }
+
+    /**
+     * Only for use in testing.
+     * This should be set automatically in the constructor in a non-test environment
+     */
+    @VisibleForTesting
+    public void setCubic() {
+        this.isCubic = true;
     }
 }

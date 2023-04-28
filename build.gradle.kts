@@ -46,6 +46,7 @@ generatePackageInfo.apply {
     group = "filegen"
     doFirst {
         GeneratePackageInfo.generateFiles(project.sourceSets["main"])
+        GeneratePackageInfo.generateFiles(project.sourceSets["test"])
     }
 }
 
@@ -107,11 +108,24 @@ mixinGen {
         injectorsDefaultRequire = 0
         configurationPlugin = "io.github.opencubicchunks.cubicchunks.mixin.DebugMixinConfig"
     }
+
+    config("test") {
+        required = true
+        conformVisibility = true
+        injectorsDefaultRequire = 1
+        configurationPlugin = "io.github.opencubicchunks.cubicchunks.mixin.TestMixinConfig"
+    }
 }
 
 group = "io.github.opencubicchunks" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 base {
     archivesName.set("CubicChunks")
+}
+
+configurations.all {
+    resolutionStrategy {
+        force("net.fabricmc:fabric-loader:${loaderVersion}")
+    }
 }
 
 val debugCompile: Configuration by configurations.creating
@@ -155,6 +169,8 @@ repositories {
 }
 
 loom {
+    createRemapConfigurations(sourceSets.test.get())
+
     accessWidenerPath.set(file("src/main/resources/cubicchunks.accesswidener"))
     // intermediaryUrl = { "http://localhost:9000/intermediary-20w49a-v2.jar" }
 
@@ -163,6 +179,7 @@ loom {
     val mixinFile = dependency.resolve().iterator().next().toString()
 
     val args = listOf(
+            "-XX:+IgnoreUnrecognizedVMOptions",
             "-XX:+UnlockExperimentalVMOptions",
             "-XX:+AllowEnhancedClassRedefinition",
             "-XX:-OmitStackTraceInFastThrow",
@@ -284,6 +301,12 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
+    testImplementation("net.fabricmc:fabric-loader-junit:${loaderVersion}") // required for bootstrapping in unit tests
+
+    testImplementation("org.mockito:mockito-core:5.3.0")
+
+    // added at runtime, and fails to compile if used normally
+    "modTestRuntimeOnly"("supercoder79:databreaker:0.2.9")
 
     testImplementation("org.hamcrest:hamcrest-junit:2.0.0.0")
     testImplementation("org.hamcrest:hamcrest:2.2")
@@ -297,6 +320,10 @@ jar.apply {
             project.configurations["shade"].map { if (it.isDirectory) it else zipTree(it) }.toList()
         })
     }
+}
+
+if (project.tasks.findByName("ideaSyncTask") != null) {
+    project.tasks.findByName("ideaSyncTask")!!.dependsOn("CubicChunksCore:assemble")
 }
 
 // unzipping subproject (CubicChunksCore) tests
@@ -319,6 +346,9 @@ tasks["checkstyleTest"].dependsOn(unzipTests)
 
 val test: Test by tasks
 test.apply {
+    minHeapSize = "512M"
+    maxHeapSize = "2048M"
+
     dependsOn(unzipTests)
     useJUnitPlatform()
 

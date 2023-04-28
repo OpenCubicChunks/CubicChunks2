@@ -48,6 +48,12 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     private final MappingsProvider mappings;
 
     public ASMConfigPlugin() {
+        boolean developmentEnvironment = true;
+        try {
+            FabricLoader.getInstance().isDevelopmentEnvironment();
+        } catch (NullPointerException ignored) { // isDevelopmentEnvironment can throw from a test environment as it has no launcher instance
+        }
+
         this.transformer = new Transformer(
             MappingsProvider.IDENTITY,
             TestMappingUtils.isDev()
