@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 public class TestMixinConfig implements IMixinConfigPlugin {
-    public static final boolean IS_UNIT_TEST = System.getProperty("fabric.unitTest").equals("true");
+    public static final boolean IS_UNIT_TEST = System.getProperty("fabric.unitTest", "false").equals("true");
 
 
     @Override public void onLoad(String mixinPackage) {

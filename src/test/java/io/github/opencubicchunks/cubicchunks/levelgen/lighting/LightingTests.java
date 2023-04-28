@@ -49,6 +49,7 @@ public class LightingTests {
     public static void setup() {
         SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
+        SharedConstants.IS_RUNNING_IN_IDE = true;
     }
 
     /**
