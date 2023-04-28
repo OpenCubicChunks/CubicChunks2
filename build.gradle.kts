@@ -46,6 +46,8 @@ generatePackageInfo.apply {
     doFirst {
         GeneratePackageInfo.generateFiles(project.sourceSets["main"])
         GeneratePackageInfo.generateFiles(project.sourceSets["test"])
+        GeneratePackageInfo.generateFiles(project.sourceSets["debug"])
+        GeneratePackageInfo.generateFiles(project.sourceSets["integrationTest"])
     }
 }
 
