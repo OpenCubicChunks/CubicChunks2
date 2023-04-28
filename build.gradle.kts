@@ -143,6 +143,14 @@ sourceSets {
         runtimeClasspath += configurations.runtimeClasspath.get()
         runtimeClasspath += sourceSets.main.get().output
     }
+    create("integrationTest") {
+        compileClasspath += configurations.compileClasspath.get()
+        compileClasspath += configurations.testCompileClasspath.get()
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += configurations.runtimeClasspath.get()
+        runtimeClasspath += configurations.testRuntimeClasspath.get()
+        runtimeClasspath += sourceSets.main.get().output
+    }
 }
 
 repositories {
@@ -169,6 +177,7 @@ repositories {
 
 loom {
     createRemapConfigurations(sourceSets.test.get())
+    createRemapConfigurations(sourceSets["integrationTest"])
 
     accessWidenerPath.set(file("src/main/resources/cubicchunks.accesswidener"))
     // intermediaryUrl = { "http://localhost:9000/intermediary-20w49a-v2.jar" }
@@ -221,6 +230,11 @@ loom {
         }
         create("server4g").apply {
             server()
+            vmArgs("-Xmx4G")
+        }
+        create(" ").apply {
+            server()
+            source(project.sourceSets["integrationTest"])
             vmArgs("-Xmx4G")
         }
     }
@@ -309,6 +323,8 @@ dependencies {
 
     testImplementation("org.hamcrest:hamcrest-junit:2.0.0.0")
     testImplementation("org.hamcrest:hamcrest:2.2")
+
+    "modIntegrationTestImplementation"(fabricApi.module("fabric-gametest-api-v1", fabricVersion))
 }
 
 val jar: Jar by tasks
