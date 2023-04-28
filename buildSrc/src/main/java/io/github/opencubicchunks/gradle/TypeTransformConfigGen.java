@@ -24,7 +24,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonWriter;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.mappings.MappingsProviderImpl;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MappingTreeView;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
@@ -59,9 +58,9 @@ public class TypeTransformConfigGen {
 
     private final Map<String, ClassNode> classCache = new HashMap<>();
 
-    private TypeTransformConfigGen(Project project, MappingsProviderImpl mappingsProvider, String content) throws IOException {
+    public TypeTransformConfigGen(Project project, MappingTree mappings, String content) throws IOException {
         this.config = GSON.fromJson(content, JsonElement.class);
-        this.mappings = mappingsProvider.getMappings();
+        this.mappings = mappings;
         this.project = project;
 
         this.fromIdx = this.mappings.getDstNamespaces().indexOf(MAP_FROM);
@@ -91,7 +90,7 @@ public class TypeTransformConfigGen {
         }
     }
 
-    private String generate() {
+    public String generate() {
         JsonObject root = config.getAsJsonObject();
         this.generateTypeInfo(root);
 
@@ -380,7 +379,7 @@ public class TypeTransformConfigGen {
         }
     }
 
-    public static String apply(Project project, String content) throws IOException {
+    /*public static String apply(Project project, String content) throws IOException {
         System.out.println("Amending type transform config");
         LoomGradleExtension loom = (LoomGradleExtension) project.getExtensions().getByName("loom");
 
@@ -394,5 +393,5 @@ public class TypeTransformConfigGen {
         TypeTransformConfigGen gen = new TypeTransformConfigGen(project, mappingsProvider, content);
 
         return gen.generate();
-    }
+    }*/
 }

@@ -19,6 +19,7 @@ plugins {
     id("io.github.opencubicchunks.gradle.mcGitVersion")
     id("io.github.opencubicchunks.gradle.mixingen")
     id("io.github.opencubicchunks.gradle.dasm")
+    id("io.github.opencubicchunks.gradle.tt")
 }
 
 val minecraftVersion: String by project
@@ -367,15 +368,6 @@ processResources.apply {
 
     filesMatching("fabric.mod.json") {
         expand("version" to project.version)
-    }
-
-    doLast {
-        fileTree(outputs.files.asPath).matching{
-            include("**/type-transform.json")
-        }.forEach {
-            val content = it.readText()
-            it.writeText(TypeTransformConfigGen.apply(project, content))
-        }
     }
 }
 
