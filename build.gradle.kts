@@ -1,6 +1,7 @@
 @file:Suppress("INACCESSIBLE_TYPE", "UnstableApiUsage")
 
 import io.github.opencubicchunks.gradle.GeneratePackageInfo
+import net.fabricmc.loom.task.RemapJarTask
 import org.gradle.internal.os.OperatingSystem
 import java.util.*
 
@@ -23,6 +24,7 @@ plugins {
 val minecraftVersion: String by project
 val loaderVersion: String by project
 val fabricVersion: String by project
+val installerVersion: String by project
 val lwjglVersion: String by project
 val lwjglNatives: String by project
 val modId: String by project
@@ -135,6 +137,9 @@ val debugRuntime: Configuration by configurations.creating {
 }
 val extraTests: Configuration by configurations.creating
 val shade: Configuration by configurations.creating
+
+val productionRuntimeServer: Configuration by configurations.creating
+val productionRuntimeMods: Configuration by configurations.creating
 
 sourceSets {
     create("debug") {
@@ -327,7 +332,11 @@ dependencies {
     testImplementation("org.hamcrest:hamcrest:2.2")
 
     "modIntegrationTestImplementation"(fabricApi.module("fabric-gametest-api-v1", fabricVersion))
-}
+
+    productionRuntimeServer("net.fabricmc:fabric-installer:${installerVersion}:server")
+    listOf("fabric-api-base", "fabric-command-api-v1", "fabric-networking-v0", "fabric-lifecycle-events-v1", "fabric-resource-loader-v0").forEach {
+        productionRuntimeMods(fabricApi.module(it, fabricVersion))
+    }}
 
 val jar: Jar by tasks
 jar.apply {
@@ -341,6 +350,56 @@ jar.apply {
 
 if (project.tasks.findByName("ideaSyncTask") != null) {
     project.tasks.findByName("ideaSyncTask")!!.dependsOn("CubicChunksCore:assemble")
+}
+
+val integrationTestJar by tasks.creating(Jar::class) {
+    from(sourceSets["integrationTest"].output)
+    destinationDirectory.set(File(project.buildDir, "devlibs"))
+    archiveClassifier.set("testmod")
+}
+
+val remapIntegrationTestJar by tasks.creating(RemapJarTask::class) {
+    dependsOn(integrationTestJar)
+    input.set(integrationTestJar.archiveFile)
+    archiveClassifier.set("integrationTest")
+    addNestedDependencies.set(false)
+}
+
+val serverPropertiesJar by tasks.creating(Jar::class) {
+    val propsFile = file("build/tmp/install.properties")
+
+    doFirst {
+        propsFile.writeText("fabric-loader-version=${loaderVersion}\ngame-version=${minecraftVersion}")
+    }
+
+    archiveFileName.set("test-server-properties.jar")
+    destinationDirectory.set(file("build/tmp"))
+    from(propsFile)
+}
+
+val agreeToMinecraftEula: Task by tasks.creating {
+    mkdir("run")
+    file("run/eula.txt").writeText("eula=true")
+}
+
+val runIntegrationTests by tasks.creating(JavaExec::class) {
+    dependsOn(tasks["remapJar"], remapIntegrationTestJar, serverPropertiesJar)
+    classpath(productionRuntimeServer, serverPropertiesJar)
+    mainClass.set("net.fabricmc.installer.ServerLauncher")
+    workingDir(file("run"))
+
+    doFirst {
+        workingDir.mkdirs()
+
+        val mods = productionRuntimeMods.files.joinToString(separator = File.pathSeparator) { it.absolutePath }
+
+        jvmArgs(
+                "-Dfabric.addMods=${(tasks["remapJar"] as AbstractArchiveTask).archiveFile.get().asFile.absolutePath}${File.pathSeparator}${remapIntegrationTestJar.archiveFile.get()
+                        .asFile.absolutePath}${File.pathSeparator}${mods}",
+        )
+
+        args("nogui")
+    }
 }
 
 // unzipping subproject (CubicChunksCore) tests

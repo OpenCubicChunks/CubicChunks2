@@ -26,7 +26,13 @@ jobs:
         with:
           java-version: 17
       - name: Build with Gradle
-        run: ./gradlew build
+        run: ./gradlew build -x test
+      - name: Run tests
+        run: |
+          ./gradlew test
+          ./gradlew agreeToMinecraftEula
+          ./gradlew runIntegrationTests
+
       - uses: actions/upload-artifact@v2
         with:
           name: Compiled jars
