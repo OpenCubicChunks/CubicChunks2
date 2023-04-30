@@ -120,6 +120,15 @@ mixinGen {
         injectorsDefaultRequire = 1
         configurationPlugin = "io.github.opencubicchunks.cubicchunks.mixin.TestMixinConfig"
     }
+
+    config("integration_test") {
+        required = true
+        conformVisibility = true
+        injectorsDefaultRequire = 1
+        sourceSet = "integrationTest"
+        refmap = "integrationTest-CubicChunks-refmap.json"
+        packageName = "io.github.opencubicchunks.cubicchunks.test.mixin"
+    }
 }
 
 group = "io.github.opencubicchunks" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
@@ -244,7 +253,8 @@ loom {
         create(" ").apply {
             server()
             source(project.sourceSets["integrationTest"])
-            vmArgs("-Xmx4G")
+            vmArgs("-Xmx4G", "-Dcubicchunks.test.freezeFailingWorlds=true")
+            runDir("runIntegrationTests")
         }
     }
     runConfigs.configureEach {
