@@ -125,6 +125,11 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
                 return;
             }
 
+            // TODO: why this doesnt work?
+            if (targetClassName.equals("net.minecraft.server.level.DistanceManager")) {
+                targetClass.nestMembers.add("net/minecraft/server/level/DistanceManager$CubeTicketTracker");
+            }
+
             //TODO: untangle the mess of some methods accepting the/class/name, and others accepting the.class.name
             //Ideally the input json would all have the same, and we'd just figure it out here
             RedirectsParser.ClassTarget target = classTargetByName.get(targetClassName);
@@ -191,7 +196,6 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     }
 
     @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-
     }
 
     private JsonElement parseFileAsJson(String fileName) {

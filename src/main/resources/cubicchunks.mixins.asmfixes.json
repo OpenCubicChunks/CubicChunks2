@@ -9,6 +9,7 @@
     },
     "mixins": [
         "common.level.NaturalSpawnerFixes",
+        "common.ticket.CubeTickingTrackerFixes",
         "common.ticket.DistanceManagerFixes"
     ],
     "client": [],

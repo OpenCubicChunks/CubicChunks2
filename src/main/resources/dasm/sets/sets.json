@@ -3,10 +3,12 @@
         "java.lang.Object",
         "java.lang.Runnable",
         "java.lang.String",
+        "java.util.List",
         "java.util.Set",
         "java.util.concurrent.CompletableFuture",
         "java.util.function.Function",
         "java.util.function.IntConsumer",
+        "java.util.function.IntFunction",
         "java.util.function.IntSupplier",
         "it.unimi.dsi.fastutil.longs.Long2ByteMap",
         "it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap",
@@ -22,10 +24,12 @@
         "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter$Message",
         "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter$Release",
         "io.github.opencubicchunks.cubicchunks.server.level.CubeTickingTracker",
+        "io.github.opencubicchunks.cubicchunks.server.level.CubeTracker",
         "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder$CubeLoadingError",
         "io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner$CubeGetter",
         "io.github.opencubicchunks.cubicchunks.world.level.chunk.ImposterProtoCube",
         "io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube",
+        "io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube",
         "net.minecraft.core.BlockPos",
         "net.minecraft.core.SectionPos",
         "net.minecraft.nbt.CompoundTag",
@@ -80,7 +84,8 @@
                 "ChunkTaskPriorityQueueSorter$Message": "CubeTaskPriorityQueueSorter$Message",
                 "ChunkTaskPriorityQueueSorter$Release": "CubeTaskPriorityQueueSorter$Release",
                 "TickingTracker": "CubeTickingTracker",
-                "ChunkHolder$1": "CubeHolder$CubeLoadingError"
+                "ChunkHolder$1": "CubeHolder$CubeLoadingError",
+                "ChunkTracker": "CubeTracker"
             },
             "fieldRedirects": {
                 "ChunkMap | ProcessorHandle mainThreadMailbox": "cubeMainThreadMailbox",
@@ -119,7 +124,6 @@
                     "newName": "getCubePos",
                     "mappingsOwner": "ChunkAccess"
                 },
-
                 "ChunkAccess | ChunkPos getPos()": "getCubePos",
 
                 "ChunkPos | long toLong()": "asLong",
@@ -159,6 +163,9 @@
                 "DistanceManager | boolean hasPlayersNearby(long)": "hasPlayersNearbyCube",
                 "DistanceManager | void removeTicketsOnClosing()": "removeCubeTicketsOnClosing",
                 "DistanceManager | int getTicketLevelAt(SortedArraySet)": "getCubeTicketLevelAt",
+                "DistanceManager | boolean isChunkToRemove(long)": "isCubeToRemove",
+                "DistanceManager | ChunkHolder getChunk(long)": "getCube",
+                "DistanceManager | ChunkHolder updateChunkScheduling(long, int, ChunkHolder, int)": "updateCubeScheduling",
 
                 "DistanceManager$ChunkTicketTracker | int runDistanceUpdates(int)": "runDistanceUpdates",
                 "DistanceManager$ChunkTicketTracker | void update(long, int, boolean)": {
@@ -180,6 +187,7 @@
                     "newName": "update",
                     "mappingsOwner": "ChunkTracker"
                 },
+
                 "TickingTracker | SortedArraySet getTickets(long)": "getTickets",
                 "TickingTracker | void addTicket(long, Ticket)": "addTicket",
                 "TickingTracker | void addTicket(TicketType, ChunkPos, int, Object)": "addTicket",
@@ -201,7 +209,7 @@
                 "ChunkHolder | ChunkPos getPos()": "getCubePos",
                 "ChunkHolder$LevelChangeListener | void onLevelChange(ChunkPos, IntSupplier, int, IntConsumer)": "onCubeLevelChange",
 
-                "net.minecraft.world.level.chunk.ChunkStatus | net.minecraft.world.level.chunk.ChunkStatus getStatusAroundFullChunk(int)": "getStatusAroundFullCube"
+                "ChunkStatus | ChunkStatus getStatusAroundFullChunk(int)": "getStatusAroundFullCube"
             }
         },
         "chunkMapSet": {

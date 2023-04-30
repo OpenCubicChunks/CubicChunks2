@@ -54,16 +54,16 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
     // fields below used from ASM
     final Long2ObjectMap<ObjectSet<ServerPlayer>> playersPerCube = new Long2ObjectOpenHashMap<>();
     final Long2ObjectOpenHashMap<SortedArraySet<Ticket<?>>> cubeTickets = new Long2ObjectOpenHashMap<>();
-    private final CubeTicketTracker cubeTicketTracker = new CubeTicketTracker(this);
+    private final CubeTicketTracker cubeTicketTracker = new CubeTicketTracker((DistanceManager) (Object) this);
 
     private final FixedPlayerDistanceCubeTracker naturalSpawnCubeCounter = new FixedPlayerDistanceCubeTracker(this, 8 / CubicConstants.DIAMETER_IN_SECTIONS);
     private final CubeTickingTracker tickingCubeTicketsTracker = new CubeTickingTracker();
     private final CubicPlayerTicketTracker cubicPlayerTicketManager = new CubicPlayerTicketTracker(this, MathUtil.ceilDiv(33, CubicConstants.DIAMETER_IN_SECTIONS));
-    final Set<ChunkHolder> cubesToUpdateFutures = Sets.newHashSet();
-    CubeTaskPriorityQueueSorter cubeTicketThrottler;
-    ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeTicketThrottlerInput;
-    ProcessorHandle<CubeTaskPriorityQueueSorter.Release> cubeTicketThrottlerReleaser;
-    final LongSet cubeTicketsToRelease = new LongOpenHashSet();
+    public final Set<ChunkHolder> cubesToUpdateFutures = Sets.newHashSet();
+    public CubeTaskPriorityQueueSorter cubeTicketThrottler;
+    public ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeTicketThrottlerInput;
+    public ProcessorHandle<CubeTaskPriorityQueueSorter.Release> cubeTicketThrottlerReleaser;
+    public final LongSet cubeTicketsToRelease = new LongOpenHashSet();
 
     private long cubeTicketTickCounter;
 

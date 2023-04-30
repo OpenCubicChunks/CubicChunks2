@@ -16,10 +16,12 @@
         "net.minecraft.server.level.ChunkTaskPriorityQueue",
         "net.minecraft.server.level.ChunkTaskPriorityQueueSorter",
         "net.minecraft.server.level.DistanceManager",
+        "net.minecraft.server.level.DistanceManager$ChunkTicketTracker",
         "net.minecraft.server.level.ServerLevel",
         "net.minecraft.server.level.ServerPlayer",
         "net.minecraft.server.level.Ticket",
         "net.minecraft.server.level.TicketType",
+        "net.minecraft.server.level.TickingTracker",
         "net.minecraft.util.SortedArraySet",
         "net.minecraft.world.entity.MobCategory",
         "net.minecraft.world.level.ChunkPos",
@@ -41,6 +43,10 @@
         "ChunkTaskPriorityQueue": {
         },
         "ChunkTaskPriorityQueueSorter": {
+        },
+        "DistanceManager$ChunkTicketTracker": {
+        },
+        "TickingTracker": {
         },
         "ChunkStatus": {
             "targetMethods": {
