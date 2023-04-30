@@ -1,6 +1,9 @@
 package io.github.opencubicchunks.cubicchunks.test.mixin.server;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -37,6 +40,7 @@ import net.minecraft.world.level.storage.DerivedLevelData;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.ServerLevelData;
 import net.minecraft.world.level.storage.WorldData;
+import org.apache.commons.io.file.PathUtils;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -81,6 +85,16 @@ public abstract class MixinMinecraftServer_TestRunner implements ServerTestRunne
             Holder<DimensionType> dimensionTypeHolder = this.registryAccess().registryOrThrow(Registry.DIMENSION_TYPE_REGISTRY).getOrCreateHolder(DimensionType.OVERWORLD_LOCATION);
             ChunkGenerator chunkGenerator2 = WorldGenSettings.makeDefaultOverworld(this.registryAccess(), test.seed);
             DerivedLevelData derivedLevelData = new DerivedLevelData(this.worldData, this.worldData.overworldData());
+
+            Path dimensionPath = this.storageSource.getDimensionPath(levelResourceKey);
+            try {
+                if (Files.exists(dimensionPath)) {
+                    PathUtils.deleteDirectory(dimensionPath);
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to delete test dimension directory", e);
+            }
+
             ServerLevel level = new ServerLevel(
                 (MinecraftServer) (Object) this, this.executor, this.storageSource,
                 derivedLevelData, levelResourceKey, dimensionTypeHolder, chunkProgressListener,
