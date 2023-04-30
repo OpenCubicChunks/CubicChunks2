@@ -117,10 +117,16 @@
                 "ChunkTaskPriorityQueueSorter$Release | long pos": "pos",
                 "ChunkTaskPriorityQueueSorter$Release | boolean clearQueue": "clearQueue",
 
-                "ChunkHolder | ChunkPos pos": "cubePos"
-            },
-            "methodRedirects": {
-                "LevelChunk | ChunkPos getPos()": {
+                "ChunkHolder | ChunkPos pos": "cubePos",
+
+                "TicketType | TicketType PLAYER": "PLAYER_CC_TO_REDIRECT",
+                "TicketType | TicketType FORCED": "FORCED_CC_TO_REDIRECT",
+                "TicketType | TicketType LIGHT": "LIGHT_CC_TO_REDIRECT",
+                "TicketType | TicketType UNKNOWN": "UNKNOWN_CC_TO_REDIRECT",
+
+        },
+        "methodRedirects": {
+            "LevelChunk | ChunkPos getPos()": {
                     "newName": "getCubePos",
                     "mappingsOwner": "ChunkAccess"
                 },

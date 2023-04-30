@@ -137,15 +137,6 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
         this.cubicPlayerTicketManager.updateCubeViewDistance(Coords.sectionToCubeRenderDistance(horizontalDistance), Coords.sectionToCubeRenderDistance(verticalDistance));
     }
 
-    @Dynamic
-    @Redirect(method = {
-        "Lnet/minecraft/server/level/DistanceManager;addCubePlayer(Lnet/minecraft/core/SectionPos;Lnet/minecraft/server/level/ServerPlayer;)V",
-        "Lnet/minecraft/server/level/DistanceManager;removeCubePlayer(Lnet/minecraft/core/SectionPos;Lnet/minecraft/server/level/ServerPlayer;)V"
-    }, at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;PLAYER:Lnet/minecraft/server/level/TicketType;"))
-    private TicketType<?> getPlayerCubicTicketType() {
-        return CubicTicketType.PLAYER;
-    }
-
     // COLUMN tickets shouldn't be removed, as they are removed only on cube unload
     @Redirect(method = "removeTicketsOnClosing", at = @At(value = "INVOKE", target = "Lcom/google/common/collect/ImmutableSet;of(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)"
         + "Lcom/google/common/collect/ImmutableSet;"))

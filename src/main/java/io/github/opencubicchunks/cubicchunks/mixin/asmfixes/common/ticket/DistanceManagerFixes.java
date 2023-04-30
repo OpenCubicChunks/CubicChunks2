@@ -19,11 +19,20 @@ public class DistanceManagerFixes {
     }
 
     @Dynamic @Redirect(
-        method = { "dasm$redirect$lambda$runAllUpdates$1", "dasm$redirect$method_14040" },
-        at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;PLAYER:Lnet/minecraft/server/level/TicketType;"),
+        method = {  },
+        at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;PLAYER_CC_TO_REDIRECT:Lnet/minecraft/server/level/TicketType;"),
         require = 1
     )
     private static TicketType<?> getPlayerTicketTypeCC() {
+        return CubicTicketType.PLAYER;
+    }
+
+    @Dynamic
+    @Redirect(method = {
+        "Lnet/minecraft/server/level/DistanceManager;addCubePlayer(Lnet/minecraft/core/SectionPos;Lnet/minecraft/server/level/ServerPlayer;)V",
+        "Lnet/minecraft/server/level/DistanceManager;removeCubePlayer(Lnet/minecraft/core/SectionPos;Lnet/minecraft/server/level/ServerPlayer;)V"
+    }, at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;PLAYER_CC_TO_REDIRECT:Lnet/minecraft/server/level/TicketType;"))
+    private TicketType<?> getPlayerCubicTicketType() {
         return CubicTicketType.PLAYER;
     }
 }
