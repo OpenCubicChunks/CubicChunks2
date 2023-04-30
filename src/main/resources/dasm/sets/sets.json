@@ -24,6 +24,7 @@
         "io.github.opencubicchunks.cubicchunks.server.level.CubeTickingTracker",
         "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder$CubeLoadingError",
         "io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner$CubeGetter",
+        "io.github.opencubicchunks.cubicchunks.world.level.chunk.ImposterProtoCube",
         "io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube",
         "net.minecraft.core.BlockPos",
         "net.minecraft.core.SectionPos",
@@ -60,13 +61,17 @@
         "net.minecraft.world.level.chunk.ChunkAccess",
         "net.minecraft.world.level.chunk.ChunkStatus",
         "net.minecraft.world.level.chunk.ChunkStatus$ChunkType",
-        "net.minecraft.world.level.chunk.LevelChunk"
+        "net.minecraft.world.level.chunk.ImposterProtoChunk",
+        "net.minecraft.world.level.chunk.LevelChunk",
+        "net.minecraft.world.level.chunk.ProtoChunk"
     ],
     "sets": {
         "general": {
             "typeRedirects": {
                 "ChunkPos": "CubePos",
                 "LevelChunk": "LevelCube",
+                "ProtoChunk": "ProtoCube",
+                "ImposterProtoChunk": "ImposterProtoCube",
                 "DistanceManager$ChunkTicketTracker": "CubeTicketTracker",
                 "DistanceManager$FixedPlayerDistanceChunkTracker": "FixedPlayerDistanceCubeTracker",
                 "DistanceManager$PlayerTicketTracker": "CubicPlayerTicketTracker",
@@ -78,6 +83,7 @@
                 "ChunkHolder$1": "CubeHolder$CubeLoadingError"
             },
             "fieldRedirects": {
+                "ChunkMap | ProcessorHandle mainThreadMailbox": "cubeMainThreadMailbox",
                 "ChunkMap | LongSet toDrop": "cubesToDrop",
                 "ChunkMap | int MAX_CHUNK_DISTANCE": "MAX_CUBE_DISTANCE",
 
@@ -107,23 +113,33 @@
                 "ChunkTaskPriorityQueueSorter$Release | boolean clearQueue": "clearQueue",
 
                 "ChunkHolder | ChunkPos pos": "cubePos"
-
             },
             "methodRedirects": {
                 "LevelChunk | ChunkPos getPos()": {
                     "newName": "getCubePos",
                     "mappingsOwner": "ChunkAccess"
                 },
+
                 "ChunkAccess | ChunkPos getPos()": "getCubePos",
+
                 "ChunkPos | long toLong()": "asLong",
                 "ChunkPos | long asLong(int, int)": "asLong",
                 "ChunkPos | long asLong(BlockPos)": "asLong",
+
                 "SectionPos | ChunkPos chunk()": "cube__ReplaceWithMixin",
-                "ChunkMap | ChunkHolder updateChunkScheduling(long, int, ChunkHolder, int)": "updateCubeScheduling",
+
+                "ChunkMap | boolean anyPlayerCloseEnoughForSpawning(ChunkPos)": "anyPlayerCloseEnoughForSpawning",
+                "ChunkMap | double euclideanDistanceSquared(ChunkPos, ServerPlayer)": "euclideanDistanceSquared",
+                "ChunkMap | CompletableFuture getChunkRangeFuture(ChunkPos, int, IntFunction)": "getCubeRangeFuture",
+                "ChunkMap | IntSupplier getChunkQueueLevel(long)": "getCubeQueueLevel",
+                "ChunkMap | List getPlayersCloseForSpawning(ChunkPos)": "getPlayersCloseForSpawning",
                 "ChunkMap | ChunkHolder getUpdatingChunkIfPresent(long)": "getUpdatingCubeIfPresent",
+                "ChunkMap | ChunkHolder getVisibleChunkIfPresent(long)": "getVisibleCubeIfPresent",
+                "ChunkMap | boolean playerIsCloseEnoughForSpawning(ServerPlayer, ChunkPos)": "playerIsCloseEnoughForSpawning",
                 "ChunkMap | CompletableFuture prepareAccessibleChunk(ChunkHolder)": "prepareAccessibleCube",
                 "ChunkMap | CompletableFuture prepareTickingChunk(ChunkHolder)": "prepareTickingCube",
                 "ChunkMap | CompletableFuture prepareEntityTickingChunk(ChunkPos)": "prepareEntityTickingCube",
+                "ChunkMap | ChunkHolder updateChunkScheduling(long, int, ChunkHolder, int)": "updateCubeScheduling",
 
                 "DistanceManager | void purgeStaleTickets()": "purgeStaleCubeTickets",
                 "DistanceManager | boolean runAllUpdates(ChunkMap)": "runAllUpdatesCubic",
@@ -145,7 +161,6 @@
                 "DistanceManager | int getTicketLevelAt(SortedArraySet)": "getCubeTicketLevelAt",
 
                 "DistanceManager$ChunkTicketTracker | int runDistanceUpdates(int)": "runDistanceUpdates",
-
                 "DistanceManager$ChunkTicketTracker | void update(long, int, boolean)": {
                     "newName": "update",
                     "mappingsOwner": "ChunkTracker"
@@ -165,7 +180,6 @@
                     "newName": "update",
                     "mappingsOwner": "ChunkTracker"
                 },
-
                 "TickingTracker | SortedArraySet getTickets(long)": "getTickets",
                 "TickingTracker | void addTicket(long, Ticket)": "addTicket",
                 "TickingTracker | void addTicket(TicketType, ChunkPos, int, Object)": "addTicket",
@@ -185,7 +199,9 @@
 
                 "ChunkHolder | ChunkStatus getStatus(int)": "getCubeStatus",
                 "ChunkHolder | ChunkPos getPos()": "getCubePos",
-                "ChunkHolder$LevelChangeListener | void onLevelChange(ChunkPos, IntSupplier, int, IntConsumer)": "onCubeLevelChange"
+                "ChunkHolder$LevelChangeListener | void onLevelChange(ChunkPos, IntSupplier, int, IntConsumer)": "onCubeLevelChange",
+
+                "net.minecraft.world.level.chunk.ChunkStatus | net.minecraft.world.level.chunk.ChunkStatus getStatusAroundFullChunk(int)": "getStatusAroundFullCube"
             }
         },
         "chunkMapSet": {

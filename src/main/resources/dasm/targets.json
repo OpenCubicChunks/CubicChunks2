@@ -1,8 +1,11 @@
 {
     "imports": [
         "java.lang.Iterable",
+        "java.util.List",
         "java.lang.Object",
+        "java.util.concurrent.CompletableFuture",
         "java.util.concurrent.Executor",
+        "java.util.function.IntSupplier",
         "net.minecraft.core.BlockPos$MutableBlockPos",
         "net.minecraft.core.SectionPos",
         "net.minecraft.server.level.ChunkHolder",
@@ -28,6 +31,8 @@
         "net.minecraft.world.level.NaturalSpawner$SpawnPredicate",
         "net.minecraft.world.level.NaturalSpawner$SpawnState",
         "net.minecraft.world.level.chunk.ChunkAccess",
+        "net.minecraft.world.level.chunk.ChunkStatus",
+        "net.minecraft.world.level.chunk.ImposterProtoChunk",
         "net.minecraft.world.level.chunk.LevelChunk",
         "net.minecraft.world.level.lighting.LevelLightEngine"
     ],
@@ -36,6 +41,13 @@
         "ChunkTaskPriorityQueue": {
         },
         "ChunkTaskPriorityQueueSorter": {
+        },
+        "ChunkStatus": {
+            "targetMethods": {
+                "ChunkStatus getStatusAroundFullChunk(int)": "getStatusAroundFullCube"
+            },
+            "useSets": [
+            ]
         },
         "ChunkMap$DistanceManager": {
             "targetMethods": {
@@ -55,11 +67,17 @@
         },
         "ChunkMap": {
             "targetMethods": {
+                "boolean anyPlayerCloseEnoughForSpawning(ChunkPos)": "anyPlayerCloseEnoughForSpawning",
+                "List getPlayersCloseForSpawning(ChunkPos)": "getPlayersCloseForSpawning",
+                "IntSupplier getChunkQueueLevel(long)": "getCubeQueueLevel",
+                "boolean isExistingChunkFull(ChunkPos)": "isExistingCubeFull",
+                "boolean playerIsCloseEnoughForSpawning(ServerPlayer, ChunkPos)": "playerIsCloseEnoughForSpawning",
+                "CompletableFuture prepareAccessibleChunk(ChunkHolder)": "prepareAccessibleCube",
+                "CompletableFuture prepareEntityTickingChunk(ChunkPos)": "prepareEntityTickingCube",
                 "ChunkHolder updateChunkScheduling(long, int, ChunkHolder, int)": {
                     "newName": "updateCubeScheduling",
                     "makeSyntheticAccessor": true
-                },
-                "boolean isExistingChunkFull(ChunkPos)": "isExistingCubeFull"
+                }
             },
             "useSets": [
                 "general",
@@ -81,6 +99,11 @@
         "ChunkHolder": {
             "targetMethods": {
                 "void <init>(ChunkPos, int, LevelHeightAccessor, LevelLightEngine, ChunkHolder$LevelChangeListener, ChunkHolder$PlayerProvider)": "\u003cinit\u003e",
+                "CompletableFuture getEntityTickingChunkFuture()": "getCubeEntityTickingFuture",
+                "CompletableFuture getFutureIfPresentUnchecked(ChunkStatus)": "getCubeFutureIfPresentUnchecked",
+                "CompletableFuture getFutureIfPresent(ChunkStatus)": "getCubeFutureIfPresent",
+                "LevelChunk getTickingChunk()": "getTickingCube",
+                "void replaceProtoChunk(ImposterProtoChunk)": "replaceProtoCube",
                 "void updateFutures(ChunkMap, Executor)": "updateCubeFutures"
             },
             "useSets": [

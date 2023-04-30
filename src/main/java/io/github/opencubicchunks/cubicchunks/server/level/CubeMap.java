@@ -56,7 +56,7 @@ public interface CubeMap {
     CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> scheduleCube(ChunkHolder chunkHolderIn,
                                                                                         ChunkStatus chunkStatusIn);
 
-    // prepareAccessibleChunk
+    // prepareAccessibleChunk, implemented by ASM
     CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareAccessibleCube(ChunkHolder chunkHolder);
 
     // prepareTickingChunk
@@ -66,7 +66,7 @@ public interface CubeMap {
     CompletableFuture<Either<List<CubeAccess>, ChunkHolder.ChunkLoadingFailure>> getCubeRangeFuture(CubePos pos, int radius,
                                                                                                     IntFunction<ChunkStatus> getParentStatus);
 
-    // prepareEntityTickingChunk
+    // prepareEntityTickingChunk, implemented by ASM
     CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareEntityTickingCube(CubePos pos);
 
     // getChunks
@@ -133,15 +133,16 @@ public interface CubeMap {
         return Math.max(Math.abs(dX), Math.abs(dZ));
     }
 
-    // getChunkQueueLevel
+    // getChunkQueueLevel, implemented by ASM
     IntSupplier getCubeQueueLevel(long cubePosIn);
 
     // releaseLightTicket
     void releaseCubeLightTicket(CubePos cubePos);
 
-    // noPlayersCloseForSpawning
-    boolean noPlayersCloseForSpawning(CubePos cubePos);
+    // anyPlayerCloseEnoughForSpawning, implemented by ASM
+    boolean anyPlayerCloseEnoughForSpawning(CubePos cubePos);
 
+    // getPlayersCloseForSpawning, implemented by ASM
     List<ServerPlayer> getPlayersCloseForSpawning(CubePos cubePos);
 
     Long2ObjectLinkedOpenHashMap<ChunkHolder> getUpdatingCubeMap();

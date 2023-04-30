@@ -113,6 +113,16 @@ public class CubeStatus {
         return CUBE_TASK_RANGE_XZ.getInt(chunkStatusIn);
     }
 
+    public static ChunkStatus getStatusAroundFullCube(int radius) {
+        if (radius >= STATUS_BY_RANGE.size()) {
+            return ChunkStatus.EMPTY;
+        }
+        if (radius < 0) {
+            return ChunkStatus.FULL;
+        }
+        return STATUS_BY_RANGE.get(radius);
+    }
+
     public static int cubeToChunkLevel(int cubeLevel) {
         return cubeLevel < 33 ? cubeLevel : ChunkStatus.getDistance(CubeStatus.getStatus(cubeLevel - 33)) + 33;
     }

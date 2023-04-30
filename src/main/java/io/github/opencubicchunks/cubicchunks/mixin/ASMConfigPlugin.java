@@ -142,8 +142,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             this.transformer.transformClass(targetClass, target, redirectSetsByClassTarget.get(target));
             try {
                 // ugly hack to add class metadata to mixin
-                // based on https://github.com/Chocohead/OptiFabric/blob/54fc2ef7533e43d1982e14bc3302bcf156f590d8/src/main/java/me/modmuss50/optifabric/compat/fabricrendererapi
-                // /RendererMixinPlugin.java#L25:L44
+                // based on https://github.com/Chocohead/OptiFabric/blob/54fc2ef7533e43d1982e14bc3302bcf156f590d8/src/main/java/me/modmuss50/optifabric/compat/fabricrendererapi/RendererMixinPlugin.java#L25:L44
                 Method addMethod = ClassInfo.class.getDeclaredMethod("addMethod", MethodNode.class, boolean.class);
                 addMethod.setAccessible(true);
 

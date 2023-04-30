@@ -8,9 +8,11 @@ import net.minecraft.server.level.ChunkTaskPriorityQueue;
 import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
 import net.minecraft.server.level.DistanceManager;
 import net.minecraft.world.level.NaturalSpawner;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import org.spongepowered.asm.mixin.Mixin;
 
-@Mixin({
+@Mixin(value = {
+    ChunkStatus.class,
     ChunkMap.DistanceManager.class,
     ChunkMap.class,
     ChunkHolder.class,

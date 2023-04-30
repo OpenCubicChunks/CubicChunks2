@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -21,7 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -34,6 +32,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.mojang.datafixers.DataFixer;
 import com.mojang.datafixers.util.Either;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.ChunkIoMainThreadTaskUtils;
@@ -57,7 +56,6 @@ import io.github.opencubicchunks.cubicchunks.server.level.CubeHolder;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeHolderPlayerProvider;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMapInternal;
-import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueue;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicDistanceManager;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType;
@@ -243,8 +241,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Shadow public static boolean isChunkInRange(int i, int j, int k, int l, int m) {
         throw new Error("Mixin didn't apply");
     }
-
-    @Shadow protected abstract boolean playerIsCloseEnoughForSpawning(ServerPlayer serverPlayer, ChunkPos chunkPos);
 
     @Shadow protected abstract CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> scheduleChunkLoad(ChunkPos chunkPos);
 
@@ -713,7 +709,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         return parent;
     }
 
-    // scheduleChunkGeneration
+    // scheduleChunkGeneration, TODO: can we make DASM handle adding a parameter?
     private CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> scheduleCubeGeneration(ChunkHolder cubeHolder, ChunkStatus chunkStatusIn,
                                                                                                           List<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> columns) {
         CubePos cubePos = ((CubeHolder) cubeHolder).getCubePos();
@@ -894,14 +890,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         });
     }
 
-    @Override
-    public CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareAccessibleCube(ChunkHolder chunkHolder) {
-        return ((CubeHolder) chunkHolder).getOrScheduleCubeFuture(ChunkStatus.FULL, (ChunkMap) (Object) this).thenApplyAsync((o) -> {
-            return o.mapLeft((cubeAccess) -> (LevelCube) cubeAccess);
-        }, (runnable) -> {
-            this.cubeMainThreadMailbox.tell(CubeTaskPriorityQueueSorter.message(chunkHolder, runnable));
-        });
-    }
 
     @Override
     public CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareTickingCube(ChunkHolder chunkHolder) {
@@ -1310,17 +1298,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     // checkerboardDistance is in ICubeManager now
     // getChunkDistance is in ICubeManager now
 
-    @Override
-    public CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareEntityTickingCube(CubePos pos) {
-        return this.getCubeRangeFuture(pos, 2, (index) -> {
-            return ChunkStatus.FULL;
-        }).thenApplyAsync((eitherSectionError) -> {
-            return eitherSectionError.mapLeft((cubes) -> {
-                return (LevelCube) cubes.get(cubes.size() / 2);
-            });
-        }, this.mainThreadExecutor);
-    }
-
     private void untrackPlayerChunk(ServerPlayer player, CubePos cubePosIn) {
         if (player.isAlive()) {
             PacketDispatcher.sendTo(new PacketUnloadCube(cubePosIn), player);
@@ -1380,48 +1357,12 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     @Override
-    public boolean noPlayersCloseForSpawning(CubePos cubePos) {
-        long cubePosAsLong = cubePos.asLong();
-        return !((CubicDistanceManager) this.distanceManager).hasPlayersNearbyCube(cubePosAsLong) || this.playerMap.getPlayers(cubePosAsLong).stream().noneMatch(
-            (serverPlayer) -> !serverPlayer.isSpectator() && euclideanDistanceSquared(cubePos, serverPlayer) < (TICK_UPDATE_DISTANCE * TICK_UPDATE_DISTANCE));
-    }
-
-    @Override
-    public List<ServerPlayer> getPlayersCloseForSpawning(CubePos cubePos) {
-        Set<ServerPlayer> players = this.playerMap.getPlayers(cubePos.asLong());
-
-        if (players.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        return players.stream()
-            .filter(player -> this.playerIsCloseEnoughForSpawning(player, cubePos))
-            .toList();
-    }
-
-    private boolean playerIsCloseEnoughForSpawning(ServerPlayer player, CubePos cube) {
-        if (player.isSpectator()) {
-            return false;
-        } else {
-            double cubeX = Coords.cubeToCenterBlock(cube.getX());
-            double cubeY = Coords.cubeToCenterBlock(cube.getY());
-            double cubeZ = Coords.cubeToCenterBlock(cube.getZ());
-
-            double distance =
-                  (player.getX() - cubeX) * (player.getX() - cubeX)
-                + (player.getY() - cubeY) * (player.getY() - cubeY)
-                + (player.getZ() - cubeZ) * (player.getZ() - cubeZ);
-
-            return distance < 16384;
-        }
-    }
-
-    @Override
     public Long2ObjectLinkedOpenHashMap<ChunkHolder> getUpdatingCubeMap() {
         return this.updatingCubeMap;
     }
 
     // euclideanDistanceSquared
+    @UsedFromASM
     private static double euclideanDistanceSquared(CubePos cubePos, Entity entity) {
         double x = Coords.cubeToCenterBlock(cubePos.getX());
         double y = Coords.cubeToCenterBlock(cubePos.getY());
@@ -1453,15 +1394,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Override
     public int sizeCubes() {
         return this.visibleCubeMap.size();
-    }
-
-    @Override
-    public IntSupplier getCubeQueueLevel(long cubePosIn) {
-        return () -> {
-            ChunkHolder chunkholder = this.getVisibleCubeIfPresent(cubePosIn);
-            return chunkholder == null ? CubeTaskPriorityQueue.LEVEL_COUNT - 1 : Math.min(chunkholder.getQueueLevel(),
-                CubeTaskPriorityQueue.LEVEL_COUNT - 1);
-        };
     }
 
     @Inject(method = "close", at = @At("HEAD"), remap = false)

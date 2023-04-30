@@ -290,33 +290,9 @@ public abstract class MixinChunkHolder implements CubeHolder {
         return cubePos;
     }
 
-    @Nullable
-    @Override
-    public LevelCube getTickingCube() {
-        CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> completablefuture = this.tickingChunkFuture;
-        Either<LevelCube, ChunkHolder.ChunkLoadingFailure> either = completablefuture.getNow(null);
-        return either == null ? null : either.left().orElse(null);
-    }
-
-    @Override
-    public CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> getCubeEntityTickingFuture() {
-        return this.entityTickingChunkFuture;
-    }
-
-    @Override
-    public CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> getCubeFutureIfPresentUnchecked(ChunkStatus chunkStatus) {
-        return unsafeCast(getFutureIfPresentUnchecked(chunkStatus));
-    }
-
     @Override
     public CompletableFuture<CubeAccess> getCubeToSave() {
         return chunkToSave;
-    }
-
-    @Override public CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> getCubeFutureIfPresent(ChunkStatus chunkStatus) {
-        return CubeHolder.getCubeStatusFromLevel(this.ticketLevel).isOrAfter(chunkStatus) ?
-            unsafeCast(this.getFutureIfPresentUnchecked(chunkStatus)) : // getFutureIfPresentUnchecked = getFutureByCubeStatus
-            UNLOADED_CUBE_FUTURE;
     }
 
     @Redirect(method = "*", at = @At(
@@ -557,19 +533,5 @@ public abstract class MixinChunkHolder implements CubeHolder {
     private void sendToTrackingColumn(Object packetIn, boolean boundaryOnly) {
         this.playerProvider.getPlayers(this.pos, boundaryOnly)
             .forEach(player -> PacketDispatcher.sendTo(packetIn, player));
-    }
-
-    @Override
-    public void replaceProtoCube(ImposterProtoCube primer) {
-        for (int i = 0; i < this.futures.length(); ++i) {
-            CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> future = this.futures.get(i);
-            if (future != null) {
-                Optional<CubeAccess> optional = future.getNow(UNLOADED_CUBE).left();
-                if (optional.isPresent() && optional.get() instanceof ProtoCube) {
-                    this.futures.set(i, CompletableFuture.completedFuture(Either.left(primer)));
-                }
-            }
-        }
-        this.updateChunkToSave(unsafeCast(CompletableFuture.completedFuture(Either.left((CubeAccess) primer.getWrapped()))), "replaceProtoCube");
     }
 }

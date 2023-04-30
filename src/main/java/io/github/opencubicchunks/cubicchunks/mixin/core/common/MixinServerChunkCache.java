@@ -359,7 +359,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
                 ((CubeHolder) cubeHolder).broadcastChanges(cube);
                 this.level.getProfiler().pop();
 
-                if (!((CubeMap) this.chunkMap).noPlayersCloseForSpawning(cube.getCubePos())) {
+                if (((CubeMap) this.chunkMap).anyPlayerCloseEnoughForSpawning(cube.getCubePos())) {
                     // TODO probably want to make sure column-based inhabited time works too
                     cube.setInhabitedTime(cube.getInhabitedTime() + timeSinceUpdate);
 
