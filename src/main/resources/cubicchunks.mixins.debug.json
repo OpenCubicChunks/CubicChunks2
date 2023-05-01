@@ -12,7 +12,8 @@
         "conformVisibility": true
     },
     "mixins": [
-        "common.MixinDistanceManager",
+        "common.MixinDistanceManager_LoadOrder",
+        "common.MixinDistanceManager_VerifyTicketTypes",
         "common.MixinMinecraftServer",
         "common.MixinPlayerRespawnLogic",
         "common.MixinServerLevel"

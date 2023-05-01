@@ -144,11 +144,6 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
         return ImmutableSet.of(t1, t2, t3, CubicTicketType.COLUMN);
     }
 
-    @Dynamic @Redirect(method = "removeCubeTicketsOnClosing()V",
-        at = @At(value = "INVOKE", target = "Lcom/google/common/collect/ImmutableSet;of(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableSet;"))
-    private ImmutableSet<?> modifyTicketTypesToIgnoreCC(Object t1, Object t2, Object t3) {
-        return ImmutableSet.of(CubicTicketType.LIGHT, CubicTicketType.UNKNOWN, t1, t2, t3);
-    }
 
     @Inject(method = "removeTicketsOnClosing", at = @At("HEAD"))
     private void onRemoveTicketsOnClosing(CallbackInfo ci) {
