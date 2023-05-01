@@ -5,7 +5,6 @@ import static io.github.opencubicchunks.cc_core.utils.Utils.unsafeCast;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -27,10 +26,8 @@ import io.github.opencubicchunks.cubicchunks.server.level.CubeHolderPlayerProvid
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import io.github.opencubicchunks.cubicchunks.world.ImposterChunkPos;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.ImposterProtoCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 import it.unimi.dsi.fastutil.shorts.ShortArraySet;
 import net.minecraft.core.BlockPos;
@@ -62,14 +59,6 @@ public abstract class MixinChunkHolder implements CubeHolder {
 
     @Mutable @Final @Shadow ChunkPos pos;
 
-    @Shadow private int ticketLevel;
-
-    // these are using java type erasure as a feature - because the generic type information
-    // doesn't exist at runtime, we can shadow those fields with different generic types
-    // and as long as we are consistent, we can use them with different types than the declaration in the original class
-    @Shadow @Final private AtomicReferenceArray<CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>>> futures;
-    @Shadow private volatile CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> tickingChunkFuture;
-    @Shadow private volatile CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> entityTickingChunkFuture;
     @Shadow private CompletableFuture<CubeAccess> chunkToSave;
 
     @Shadow @Final private BitSet skyChangedLightSectionFilter;
@@ -89,14 +78,9 @@ public abstract class MixinChunkHolder implements CubeHolder {
     @SuppressWarnings("LineLengthCode") private final AtomicReferenceArray<ArrayList<BiConsumer<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>, Throwable>>> listenerLists = new AtomicReferenceArray<>(ChunkStatus.getStatusList().size());
     //@formatter:on
 
-    @Shadow protected abstract void updateChunkToSave(
-        CompletableFuture<? extends Either<? extends ChunkAccess, ChunkHolder.ChunkLoadingFailure>> eitherChunk, String string);
-
     @Shadow public static ChunkStatus getStatus(int level) {
         throw new Error("Mixin failed to apply");
     }
-
-    @Shadow public abstract CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> getFutureIfPresentUnchecked(ChunkStatus status);
 
     @Shadow public abstract CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> getOrScheduleFuture(ChunkStatus chunkStatus, ChunkMap chunkManager);
 

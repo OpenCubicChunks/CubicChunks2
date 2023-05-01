@@ -161,7 +161,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             return 0;
         }
     };
-    private static final double TICK_UPDATE_DISTANCE = 128.0;
     private static final boolean USE_ASYNC_SERIALIZATION = true;
 
     private static final Executor COLUMN_LOADING_EXECUTOR = Executors.newSingleThreadExecutor();
@@ -241,8 +240,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     @Shadow public static boolean isChunkInRange(int i, int j, int k, int l, int m) {
         throw new Error("Mixin didn't apply");
     }
-
-    @Shadow protected abstract CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> scheduleChunkLoad(ChunkPos chunkPos);
 
     @SuppressWarnings({ "UnresolvedMixinReference", "MixinAnnotationTarget", "InvalidInjectorMethodSignature" })
     @Redirect(method = "<init>", at = @At(value = "NEW", target = "(Lnet/minecraft/server/level/ChunkMap;Ljava/util/concurrent/Executor;Ljava/util/concurrent/Executor;)"
@@ -468,8 +465,9 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         cubeSavingFutures.entrySet().removeIf(entry -> entry.getValue().isDone());
     }
 
+    // readChunk
     // Called from ASM
-    private CompoundTag readCubeNBT(CubePos cubePos) throws IOException {
+    private CompoundTag readCube(CubePos cubePos) throws IOException {
         return regionCubeIO.loadCubeNBT(cubePos);
     }
 
@@ -704,7 +702,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         if (distance == 0) {
             parent = status.getParent();
         } else {
-            parent = CubeStatus.getStatus(CubeStatus.getDistance(status) + distance);
+            parent = CubeStatus.getStatusAroundFullCube(CubeStatus.getDistance(status) + distance);
         }
         return parent;
     }
@@ -948,13 +946,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             return this.readChunk(chunkPos);
         }
         return regionCubeIO.loadChunkNBT(chunkPos);
-    }
-
-    // readChunk
-    @Nullable
-    private CompoundTag readCube(CubePos cubePos) throws IOException {
-        return this.regionCubeIO.loadCubeNBT(cubePos);
-//        return partialCubeData == null ? null : partialCubeData.getNbt(); // == null ? null : this.upgradeChunkTag(this.level.dimension(), this.overworldDataStorage, compoundnbt);
     }
 
     // scheduleChunkLoad

@@ -122,7 +122,7 @@
                 "TicketType | TicketType PLAYER": "PLAYER_CC_TO_REDIRECT",
                 "TicketType | TicketType FORCED": "FORCED_CC_TO_REDIRECT",
                 "TicketType | TicketType LIGHT": "LIGHT_CC_TO_REDIRECT",
-                "TicketType | TicketType UNKNOWN": "UNKNOWN_CC_TO_REDIRECT",
+                "TicketType | TicketType UNKNOWN": "UNKNOWN_CC_TO_REDIRECT"
 
         },
         "methodRedirects": {
@@ -228,7 +228,7 @@
                 "ChunkMap | Long2ByteMap chunkTypeCache": "cubeTypeCache"
             },
             "methodRedirects": {
-                "ChunkMap | CompoundTag readChunk(ChunkPos)": "readCubeNBT",
+                "ChunkMap | CompoundTag readChunk(ChunkPos)": "readCube",
                 "ChunkMap | void markPositionReplaceable(ChunkPos)": "markCubePositionReplaceable",
                 "ChunkMap | byte markPosition(ChunkPos, ChunkStatus$ChunkType)": "markCubePosition"
             }
