@@ -53,7 +53,7 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
 
     // fields below used from ASM
     final Long2ObjectMap<ObjectSet<ServerPlayer>> playersPerCube = new Long2ObjectOpenHashMap<>();
-    final Long2ObjectOpenHashMap<SortedArraySet<Ticket<?>>> cubeTickets = new Long2ObjectOpenHashMap<>();
+    public final Long2ObjectOpenHashMap<SortedArraySet<Ticket<?>>> cubeTickets = new Long2ObjectOpenHashMap<>();
     private final CubeTicketTracker cubeTicketTracker = new CubeTicketTracker((DistanceManager) (Object) this);
 
     private final FixedPlayerDistanceCubeTracker naturalSpawnCubeCounter = new FixedPlayerDistanceCubeTracker(this, 8 / CubicConstants.DIAMETER_IN_SECTIONS);
