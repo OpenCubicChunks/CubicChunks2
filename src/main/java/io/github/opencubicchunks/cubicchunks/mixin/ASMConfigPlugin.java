@@ -8,6 +8,7 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,7 +17,9 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.opencubicchunks.dasm.MappingsProvider;
 import io.github.opencubicchunks.dasm.RedirectsParseException;
@@ -211,7 +214,18 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     private List<RedirectsParser.RedirectSet> loadSetsFile(String fileName) throws RedirectsParseException {
         RedirectsParser redirectsParser = new RedirectsParser();
 
-        JsonElement setsJson = parseFileAsJson(fileName);
-        return redirectsParser.parseRedirectSet(setsJson.getAsJsonObject());
+        JsonObject setsJson = parseFileAsJson(fileName).getAsJsonObject();
+        JsonElement sets = setsJson.get("sets");
+        JsonArray imports = setsJson.get("imports").getAsJsonArray();
+
+        Set<String> globalImports = new HashSet<>();
+        for (JsonElement anImport : imports) {
+            if (!anImport.isJsonPrimitive() || !anImport.getAsJsonPrimitive().isString()) {
+                throw new RedirectsParseException(String.format("Invalid global import, expected string found: %s", anImport));
+            }
+            globalImports.add(anImport.getAsString());
+        }
+
+        return redirectsParser.parseRedirectSet(sets.getAsJsonObject(), globalImports);
     }
 }

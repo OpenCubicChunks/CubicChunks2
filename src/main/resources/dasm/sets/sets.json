@@ -1,154 +1,219 @@
 {
-    "general": {
-        "typeRedirects": {
-            "net.minecraft.world.level.ChunkPos": "io.github.opencubicchunks.cc_core.api.CubePos",
-            "net.minecraft.world.level.chunk.LevelChunk": "io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube",
-            "net.minecraft.server.level.DistanceManager$ChunkTicketTracker": "io.github.opencubicchunks.cubicchunks.server.level.CubeTicketTracker",
-            "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker": "io.github.opencubicchunks.cubicchunks.server.level.FixedPlayerDistanceCubeTracker",
-            "net.minecraft.server.level.DistanceManager$PlayerTicketTracker": "io.github.opencubicchunks.cubicchunks.server.level.CubicPlayerTicketTracker",
-            "net.minecraft.server.level.ChunkTaskPriorityQueue": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueue",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter$Message",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Release": "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter$Release",
-            "net.minecraft.server.level.TickingTracker": "io.github.opencubicchunks.cubicchunks.server.level.CubeTickingTracker",
-            "net.minecraft.server.level.ChunkHolder$1": "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder$CubeLoadingError"
-        },
-        "fieldRedirects": {
-            "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.LongSet toDrop": "cubesToDrop",
-            "net.minecraft.server.level.ChunkMap | int MAX_CHUNK_DISTANCE": "MAX_CUBE_DISTANCE",
-
-            "net.minecraft.server.level.DistanceManager | it.unimi.dsi.fastutil.longs.Long2ObjectMap playersPerChunk": "playersPerCube",
-            "net.minecraft.server.level.DistanceManager | it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap tickets": "cubeTickets",
-            "net.minecraft.server.level.DistanceManager | net.minecraft.server.level.DistanceManager$ChunkTicketTracker ticketTracker": "cubeTicketTracker",
-            "net.minecraft.server.level.DistanceManager | net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker naturalSpawnChunkCounter": "naturalSpawnCubeCounter",
-            "net.minecraft.server.level.DistanceManager | net.minecraft.server.level.TickingTracker tickingTicketsTracker": "tickingCubeTicketsTracker",
-            "net.minecraft.server.level.DistanceManager | net.minecraft.server.level.DistanceManager$PlayerTicketTracker playerTicketManager": "cubicPlayerTicketManager",
-            "net.minecraft.server.level.DistanceManager | java.util.Set chunksToUpdateFutures": "cubesToUpdateFutures",
-            "net.minecraft.server.level.DistanceManager | net.minecraft.server.level.ChunkTaskPriorityQueueSorter ticketThrottler": "cubeTicketThrottler",
-            "net.minecraft.server.level.DistanceManager | net.minecraft.util.thread.ProcessorHandle ticketThrottlerInput": "cubeTicketThrottlerInput",
-            "net.minecraft.server.level.DistanceManager | net.minecraft.util.thread.ProcessorHandle ticketThrottlerReleaser": "cubeTicketThrottlerReleaser",
-            "net.minecraft.server.level.DistanceManager | it.unimi.dsi.fastutil.longs.LongSet ticketsToRelease": "cubeTicketsToRelease",
-            "net.minecraft.server.level.DistanceManager | long ticketTickCounter": "cubeTicketTickCounter",
-
-            "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker | it.unimi.dsi.fastutil.longs.Long2ByteMap chunks": "cubes",
-
-            "net.minecraft.server.level.ChunkTaskPriorityQueue | int PRIORITY_LEVEL_COUNT": "LEVEL_COUNT",
-
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message | java.util.function.Function task": "task",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message | long pos": "pos",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message | java.util.function.IntSupplier level": "level",
-
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Release | java.lang.Runnable task": "task",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Release | long pos": "pos",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Release | boolean clearQueue": "clearQueue",
-
-            "net.minecraft.server.level.ChunkHolder | net.minecraft.world.level.ChunkPos pos": "cubePos"
-
-        },
-        "methodRedirects": {
-            "net.minecraft.world.level.chunk.LevelChunk | net.minecraft.world.level.ChunkPos getPos()": {
-                "newName": "getCubePos",
-                "mappingsOwner": "net.minecraft.world.level.chunk.ChunkAccess"
+    "imports": [
+        "java.lang.Object",
+        "java.lang.Runnable",
+        "java.lang.String",
+        "java.util.Set",
+        "java.util.concurrent.CompletableFuture",
+        "java.util.function.Function",
+        "java.util.function.IntConsumer",
+        "java.util.function.IntSupplier",
+        "it.unimi.dsi.fastutil.longs.Long2ByteMap",
+        "it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap",
+        "it.unimi.dsi.fastutil.longs.Long2ObjectMap",
+        "it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap",
+        "it.unimi.dsi.fastutil.longs.LongSet",
+        "io.github.opencubicchunks.cc_core.api.CubePos",
+        "io.github.opencubicchunks.cubicchunks.server.level.CubeTicketTracker",
+        "io.github.opencubicchunks.cubicchunks.server.level.FixedPlayerDistanceCubeTracker",
+        "io.github.opencubicchunks.cubicchunks.server.level.CubicPlayerTicketTracker",
+        "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueue",
+        "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter",
+        "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter$Message",
+        "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter$Release",
+        "io.github.opencubicchunks.cubicchunks.server.level.CubeTickingTracker",
+        "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder$CubeLoadingError",
+        "io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner$CubeGetter",
+        "io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube",
+        "net.minecraft.core.BlockPos",
+        "net.minecraft.core.SectionPos",
+        "net.minecraft.nbt.CompoundTag",
+        "net.minecraft.server.level.ChunkHolder",
+        "net.minecraft.server.level.ChunkHolder$1",
+        "net.minecraft.server.level.ChunkHolder$LevelChangeListener",
+        "net.minecraft.server.level.ChunkMap",
+        "net.minecraft.server.level.ChunkTaskPriorityQueue",
+        "net.minecraft.server.level.ChunkTaskPriorityQueueSorter",
+        "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message",
+        "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Release",
+        "net.minecraft.server.level.ChunkTracker",
+        "net.minecraft.server.level.DistanceManager",
+        "net.minecraft.server.level.DistanceManager$ChunkTicketTracker",
+        "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker",
+        "net.minecraft.server.level.DistanceManager$PlayerTicketTracker",
+        "net.minecraft.server.level.Ticket",
+        "net.minecraft.server.level.TicketType",
+        "net.minecraft.server.level.TickingTracker",
+        "net.minecraft.server.level.ServerLevel",
+        "net.minecraft.server.level.ServerPlayer",
+        "net.minecraft.util.SortedArraySet",
+        "net.minecraft.util.thread.ProcessorHandle",
+        "net.minecraft.world.entity.MobCategory",
+        "net.minecraft.world.level.ChunkPos",
+        "net.minecraft.world.level.Level",
+        "net.minecraft.world.level.LocalMobCapCalculator",
+        "net.minecraft.world.level.NaturalSpawner",
+        "net.minecraft.world.level.NaturalSpawner$ChunkGetter",
+        "net.minecraft.world.level.NaturalSpawner$SpawnPredicate",
+        "net.minecraft.world.level.NaturalSpawner$AfterSpawnCallback",
+        "net.minecraft.world.level.NaturalSpawner$SpawnState",
+        "net.minecraft.world.level.chunk.ChunkAccess",
+        "net.minecraft.world.level.chunk.ChunkStatus",
+        "net.minecraft.world.level.chunk.ChunkStatus$ChunkType",
+        "net.minecraft.world.level.chunk.LevelChunk"
+    ],
+    "sets": {
+        "general": {
+            "typeRedirects": {
+                "ChunkPos": "CubePos",
+                "LevelChunk": "LevelCube",
+                "DistanceManager$ChunkTicketTracker": "CubeTicketTracker",
+                "DistanceManager$FixedPlayerDistanceChunkTracker": "FixedPlayerDistanceCubeTracker",
+                "DistanceManager$PlayerTicketTracker": "CubicPlayerTicketTracker",
+                "ChunkTaskPriorityQueue": "CubeTaskPriorityQueue",
+                "ChunkTaskPriorityQueueSorter": "CubeTaskPriorityQueueSorter",
+                "ChunkTaskPriorityQueueSorter$Message": "CubeTaskPriorityQueueSorter$Message",
+                "ChunkTaskPriorityQueueSorter$Release": "CubeTaskPriorityQueueSorter$Release",
+                "TickingTracker": "CubeTickingTracker",
+                "ChunkHolder$1": "CubeHolder$CubeLoadingError"
             },
-            "net.minecraft.world.level.chunk.ChunkAccess | net.minecraft.world.level.ChunkPos getPos()": "getCubePos",
-            "net.minecraft.world.level.ChunkPos | long toLong()": "asLong",
-            "net.minecraft.world.level.ChunkPos | long asLong(int, int)": "asLong",
-            "net.minecraft.world.level.ChunkPos | long asLong(net.minecraft.core.BlockPos)": "asLong",
-            "net.minecraft.core.SectionPos | net.minecraft.world.level.ChunkPos chunk()": "cube__ReplaceWithMixin",
-            "net.minecraft.server.level.ChunkMap | net.minecraft.server.level.ChunkHolder updateChunkScheduling(long, int, net.minecraft.server.level.ChunkHolder, int)": "updateCubeScheduling",
-            "net.minecraft.server.level.ChunkMap | net.minecraft.server.level.ChunkHolder getUpdatingChunkIfPresent(long)": "getUpdatingCubeIfPresent",
-            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareAccessibleChunk(net.minecraft.server.level.ChunkHolder)": "prepareAccessibleCube",
-            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareTickingChunk(net.minecraft.server.level.ChunkHolder)": "prepareTickingCube",
-            "net.minecraft.server.level.ChunkMap | java.util.concurrent.CompletableFuture prepareEntityTickingChunk(net.minecraft.world.level.ChunkPos)": "prepareEntityTickingCube",
+            "fieldRedirects": {
+                "ChunkMap | LongSet toDrop": "cubesToDrop",
+                "ChunkMap | int MAX_CHUNK_DISTANCE": "MAX_CUBE_DISTANCE",
 
-            "net.minecraft.server.level.DistanceManager | void purgeStaleTickets()": "purgeStaleCubeTickets",
-            "net.minecraft.server.level.DistanceManager | boolean runAllUpdates(net.minecraft.server.level.ChunkMap)": "runAllUpdatesCubic",
-            "net.minecraft.server.level.DistanceManager | void addTicket(long, net.minecraft.server.level.Ticket)": "addCubeTicket",
-            "net.minecraft.server.level.DistanceManager | void removeTicket(long, net.minecraft.server.level.Ticket)": "removeCubeTicket",
-            "net.minecraft.server.level.DistanceManager | void addTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "addCubeTicket",
-            "net.minecraft.server.level.DistanceManager | void removeTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "removeCubeTicket",
-            "net.minecraft.server.level.DistanceManager | void addRegionTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "addCubeRegionTicket",
-            "net.minecraft.server.level.DistanceManager | void removeRegionTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "removeCubeRegionTicket",
-            "net.minecraft.server.level.DistanceManager | net.minecraft.util.SortedArraySet getTickets(long)": "getCubeTickets",
-            "net.minecraft.server.level.DistanceManager | void updateChunkForced(net.minecraft.world.level.ChunkPos, boolean)": "updateCubeForced",
-            "net.minecraft.server.level.DistanceManager | void addPlayer(net.minecraft.core.SectionPos, net.minecraft.server.level.ServerPlayer)": "addCubePlayer",
-            "net.minecraft.server.level.DistanceManager | void removePlayer(net.minecraft.core.SectionPos, net.minecraft.server.level.ServerPlayer)": "removeCubePlayer",
-            "net.minecraft.server.level.DistanceManager | boolean inEntityTickingRange(long)": "isEntityTickingRangeCube",
-            "net.minecraft.server.level.DistanceManager | boolean inBlockTickingRange(long)": "inBlockTickingRangeCube",
-            "net.minecraft.server.level.DistanceManager | int getNaturalSpawnChunkCount()": "getNaturalSpawnCubeCount",
-            "net.minecraft.server.level.DistanceManager | boolean hasPlayersNearby(long)": "hasPlayersNearbyCube",
-            "net.minecraft.server.level.DistanceManager | void removeTicketsOnClosing()": "removeCubeTicketsOnClosing",
-            "net.minecraft.server.level.DistanceManager | int getTicketLevelAt(net.minecraft.util.SortedArraySet)": "getCubeTicketLevelAt",
+                "DistanceManager | Long2ObjectMap playersPerChunk": "playersPerCube",
+                "DistanceManager | Long2ObjectOpenHashMap tickets": "cubeTickets",
+                "DistanceManager | DistanceManager$ChunkTicketTracker ticketTracker": "cubeTicketTracker",
+                "DistanceManager | DistanceManager$FixedPlayerDistanceChunkTracker naturalSpawnChunkCounter": "naturalSpawnCubeCounter",
+                "DistanceManager | TickingTracker tickingTicketsTracker": "tickingCubeTicketsTracker",
+                "DistanceManager | DistanceManager$PlayerTicketTracker playerTicketManager": "cubicPlayerTicketManager",
+                "DistanceManager | Set chunksToUpdateFutures": "cubesToUpdateFutures",
+                "DistanceManager | ChunkTaskPriorityQueueSorter ticketThrottler": "cubeTicketThrottler",
+                "DistanceManager | ProcessorHandle ticketThrottlerInput": "cubeTicketThrottlerInput",
+                "DistanceManager | ProcessorHandle ticketThrottlerReleaser": "cubeTicketThrottlerReleaser",
+                "DistanceManager | LongSet ticketsToRelease": "cubeTicketsToRelease",
+                "DistanceManager | long ticketTickCounter": "cubeTicketTickCounter",
 
-            "net.minecraft.server.level.DistanceManager$ChunkTicketTracker | int runDistanceUpdates(int)": "runDistanceUpdates",
+                "DistanceManager$FixedPlayerDistanceChunkTracker | Long2ByteMap chunks": "cubes",
 
-            "net.minecraft.server.level.DistanceManager$ChunkTicketTracker | void update(long, int, boolean)": {
-                "newName": "update",
-                "mappingsOwner": "net.minecraft.server.level.ChunkTracker"
+                "ChunkTaskPriorityQueue | int PRIORITY_LEVEL_COUNT": "LEVEL_COUNT",
+
+                "ChunkTaskPriorityQueueSorter$Message | Function task": "task",
+                "ChunkTaskPriorityQueueSorter$Message | long pos": "pos",
+                "ChunkTaskPriorityQueueSorter$Message | IntSupplier level": "level",
+
+                "ChunkTaskPriorityQueueSorter$Release | Runnable task": "task",
+                "ChunkTaskPriorityQueueSorter$Release | long pos": "pos",
+                "ChunkTaskPriorityQueueSorter$Release | boolean clearQueue": "clearQueue",
+
+                "ChunkHolder | ChunkPos pos": "cubePos"
+
             },
+            "methodRedirects": {
+                "LevelChunk | ChunkPos getPos()": {
+                    "newName": "getCubePos",
+                    "mappingsOwner": "ChunkAccess"
+                },
+                "ChunkAccess | ChunkPos getPos()": "getCubePos",
+                "ChunkPos | long toLong()": "asLong",
+                "ChunkPos | long asLong(int, int)": "asLong",
+                "ChunkPos | long asLong(BlockPos)": "asLong",
+                "SectionPos | ChunkPos chunk()": "cube__ReplaceWithMixin",
+                "ChunkMap | ChunkHolder updateChunkScheduling(long, int, ChunkHolder, int)": "updateCubeScheduling",
+                "ChunkMap | ChunkHolder getUpdatingChunkIfPresent(long)": "getUpdatingCubeIfPresent",
+                "ChunkMap | CompletableFuture prepareAccessibleChunk(ChunkHolder)": "prepareAccessibleCube",
+                "ChunkMap | CompletableFuture prepareTickingChunk(ChunkHolder)": "prepareTickingCube",
+                "ChunkMap | CompletableFuture prepareEntityTickingChunk(ChunkPos)": "prepareEntityTickingCube",
 
-            "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker | void runAllUpdates()": "runAllUpdates",
-            "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker | void update(long, int, boolean)": {
-                "newName": "update",
-                "mappingsOwner": "net.minecraft.server.level.ChunkTracker"
-            },
+                "DistanceManager | void purgeStaleTickets()": "purgeStaleCubeTickets",
+                "DistanceManager | boolean runAllUpdates(ChunkMap)": "runAllUpdatesCubic",
+                "DistanceManager | void addTicket(long, Ticket)": "addCubeTicket",
+                "DistanceManager | void removeTicket(long, Ticket)": "removeCubeTicket",
+                "DistanceManager | void addTicket(TicketType, ChunkPos, int, Object)": "addCubeTicket",
+                "DistanceManager | void removeTicket(TicketType, ChunkPos, int, Object)": "removeCubeTicket",
+                "DistanceManager | void addRegionTicket(TicketType, ChunkPos, int, Object)": "addCubeRegionTicket",
+                "DistanceManager | void removeRegionTicket(TicketType, ChunkPos, int, Object)": "removeCubeRegionTicket",
+                "DistanceManager | SortedArraySet getTickets(long)": "getCubeTickets",
+                "DistanceManager | void updateChunkForced(ChunkPos, boolean)": "updateCubeForced",
+                "DistanceManager | void addPlayer(SectionPos, ServerPlayer)": "addCubePlayer",
+                "DistanceManager | void removePlayer(SectionPos, ServerPlayer)": "removeCubePlayer",
+                "DistanceManager | boolean inEntityTickingRange(long)": "isEntityTickingRangeCube",
+                "DistanceManager | boolean inBlockTickingRange(long)": "inBlockTickingRangeCube",
+                "DistanceManager | int getNaturalSpawnChunkCount()": "getNaturalSpawnCubeCount",
+                "DistanceManager | boolean hasPlayersNearby(long)": "hasPlayersNearbyCube",
+                "DistanceManager | void removeTicketsOnClosing()": "removeCubeTicketsOnClosing",
+                "DistanceManager | int getTicketLevelAt(SortedArraySet)": "getCubeTicketLevelAt",
 
-            "net.minecraft.server.level.DistanceManager$PlayerTicketTracker | void runAllUpdates()": {
-                "newName": "runAllUpdates",
-                "mappingsOwner": "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker"
-            },
-            "net.minecraft.server.level.DistanceManager$PlayerTicketTracker | void update(long, int, boolean)": {
-                "newName": "update",
-                "mappingsOwner": "net.minecraft.server.level.ChunkTracker"
-            },
+                "DistanceManager$ChunkTicketTracker | int runDistanceUpdates(int)": "runDistanceUpdates",
 
-            "net.minecraft.server.level.TickingTracker | net.minecraft.util.SortedArraySet getTickets(long)": "getTickets",
-            "net.minecraft.server.level.TickingTracker | void addTicket(long, net.minecraft.server.level.Ticket)": "addTicket",
-            "net.minecraft.server.level.TickingTracker | void addTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "addTicket",
-            "net.minecraft.server.level.TickingTracker | void removeTicket(long, net.minecraft.server.level.Ticket)": "removeTicket",
-            "net.minecraft.server.level.TickingTracker | void removeTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "removeTicket",
-            "net.minecraft.server.level.TickingTracker | void replacePlayerTicketsLevel(int)": "replacePlayerTicketsLevel",
-            "net.minecraft.server.level.TickingTracker | int getLevel(net.minecraft.world.level.ChunkPos)": "getLevel",
-            "net.minecraft.server.level.TickingTracker | void runAllUpdates()": "runAllUpdates",
-            "net.minecraft.server.level.TickingTracker | java.lang.String getTicketDebugString(long)": "getTicketDebugString",
+                "DistanceManager$ChunkTicketTracker | void update(long, int, boolean)": {
+                    "newName": "update",
+                    "mappingsOwner": "ChunkTracker"
+                },
 
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message message(java.lang.Runnable, long, java.util.function.IntSupplier)": "message",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message message(net.minecraft.server.level.ChunkHolder, java.lang.Runnable)": "message",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Release release(java.lang.Runnable, long, boolean)": "release",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | net.minecraft.util.thread.ProcessorHandle getProcessor(net.minecraft.util.thread.ProcessorHandle, boolean)": "getProcessor",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | net.minecraft.util.thread.ProcessorHandle getReleaseProcessor(net.minecraft.util.thread.ProcessorHandle)": "getReleaseProcessor",
-            "net.minecraft.server.level.ChunkTaskPriorityQueueSorter | void onLevelChange(net.minecraft.world.level.ChunkPos, java.util.function.IntSupplier, int, java.util.function.IntConsumer)": "onCubeLevelChange",
+                "DistanceManager$FixedPlayerDistanceChunkTracker | void runAllUpdates()": "runAllUpdates",
+                "DistanceManager$FixedPlayerDistanceChunkTracker | void update(long, int, boolean)": {
+                    "newName": "update",
+                    "mappingsOwner": "ChunkTracker"
+                },
 
-            "net.minecraft.server.level.ChunkHolder | net.minecraft.world.level.chunk.ChunkStatus getStatus(int)": "getCubeStatus",
-            "net.minecraft.server.level.ChunkHolder | net.minecraft.world.level.ChunkPos getPos()": "getCubePos",
-            "net.minecraft.server.level.ChunkHolder$LevelChangeListener | void onLevelChange(net.minecraft.world.level.ChunkPos, java.util.function.IntSupplier, int, java.util.function.IntConsumer)": "onCubeLevelChange"
-        }
-    },
-    "chunkMapSet": {
-        "typeRedirects": {
+                "DistanceManager$PlayerTicketTracker | void runAllUpdates()": {
+                    "newName": "runAllUpdates",
+                    "mappingsOwner": "DistanceManager$FixedPlayerDistanceChunkTracker"
+                },
+                "DistanceManager$PlayerTicketTracker | void update(long, int, boolean)": {
+                    "newName": "update",
+                    "mappingsOwner": "ChunkTracker"
+                },
+
+                "TickingTracker | SortedArraySet getTickets(long)": "getTickets",
+                "TickingTracker | void addTicket(long, Ticket)": "addTicket",
+                "TickingTracker | void addTicket(TicketType, ChunkPos, int, Object)": "addTicket",
+                "TickingTracker | void removeTicket(long, Ticket)": "removeTicket",
+                "TickingTracker | void removeTicket(TicketType, ChunkPos, int, Object)": "removeTicket",
+                "TickingTracker | void replacePlayerTicketsLevel(int)": "replacePlayerTicketsLevel",
+                "TickingTracker | int getLevel(ChunkPos)": "getLevel",
+                "TickingTracker | void runAllUpdates()": "runAllUpdates",
+                "TickingTracker | String getTicketDebugString(long)": "getTicketDebugString",
+
+                "ChunkTaskPriorityQueueSorter | ChunkTaskPriorityQueueSorter$Message message(Runnable, long, IntSupplier)": "message",
+                "ChunkTaskPriorityQueueSorter | ChunkTaskPriorityQueueSorter$Message message(ChunkHolder, Runnable)": "message",
+                "ChunkTaskPriorityQueueSorter | ChunkTaskPriorityQueueSorter$Release release(Runnable, long, boolean)": "release",
+                "ChunkTaskPriorityQueueSorter | ProcessorHandle getProcessor(ProcessorHandle, boolean)": "getProcessor",
+                "ChunkTaskPriorityQueueSorter | ProcessorHandle getReleaseProcessor(ProcessorHandle)": "getReleaseProcessor",
+                "ChunkTaskPriorityQueueSorter | void onLevelChange(ChunkPos, IntSupplier, int, IntConsumer)": "onCubeLevelChange",
+
+                "ChunkHolder | ChunkStatus getStatus(int)": "getCubeStatus",
+                "ChunkHolder | ChunkPos getPos()": "getCubePos",
+                "ChunkHolder$LevelChangeListener | void onLevelChange(ChunkPos, IntSupplier, int, IntConsumer)": "onCubeLevelChange"
+            }
         },
-        "fieldRedirects": {
-            "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap pendingUnloads": "pendingCubeUnloads",
-            "net.minecraft.server.level.ChunkMap | net.minecraft.server.level.ChunkTaskPriorityQueueSorter queueSorter": "cubeQueueSorter",
-            "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap updatingChunkMap": "updatingCubeMap",
-            "net.minecraft.server.level.ChunkMap | it.unimi.dsi.fastutil.longs.Long2ByteMap chunkTypeCache": "cubeTypeCache"
+        "chunkMapSet": {
+            "typeRedirects": {
+            },
+            "fieldRedirects": {
+                "ChunkMap | Long2ObjectLinkedOpenHashMap pendingUnloads": "pendingCubeUnloads",
+                "ChunkMap | ChunkTaskPriorityQueueSorter queueSorter": "cubeQueueSorter",
+                "ChunkMap | Long2ObjectLinkedOpenHashMap updatingChunkMap": "updatingCubeMap",
+                "ChunkMap | Long2ByteMap chunkTypeCache": "cubeTypeCache"
+            },
+            "methodRedirects": {
+                "ChunkMap | CompoundTag readChunk(ChunkPos)": "readCubeNBT",
+                "ChunkMap | void markPositionReplaceable(ChunkPos)": "markCubePositionReplaceable",
+                "ChunkMap | byte markPosition(ChunkPos, ChunkStatus$ChunkType)": "markCubePosition"
+            }
         },
-        "methodRedirects": {
-            "net.minecraft.server.level.ChunkMap | net.minecraft.nbt.CompoundTag readChunk(net.minecraft.world.level.ChunkPos)": "readCubeNBT",
-            "net.minecraft.server.level.ChunkMap | void markPositionReplaceable(net.minecraft.world.level.ChunkPos)": "markCubePositionReplaceable",
-            "net.minecraft.server.level.ChunkMap | byte markPosition(net.minecraft.world.level.ChunkPos, net.minecraft.world.level.chunk.ChunkStatus$ChunkType)": "markCubePosition"
-        }
-    },
-    "naturalSpawnerSet": {
-        "typeRedirects": {
-            "net.minecraft.world.level.NaturalSpawner$ChunkGetter": "io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner$CubeGetter"
-        },
-        "fieldRedirects": {},
-        "methodRedirects": {
-            "net.minecraft.world.level.NaturalSpawner | void spawnCategoryForChunk(net.minecraft.world.entity.MobCategory, net.minecraft.server.level.ServerLevel, net.minecraft.world.level.chunk.LevelChunk, net.minecraft.world.level.NaturalSpawner$SpawnPredicate, net.minecraft.world.level.NaturalSpawner$AfterSpawnCallback)": "spawnCategoryForCube",
-            "net.minecraft.world.level.NaturalSpawner | net.minecraft.core.BlockPos getRandomPosWithin(net.minecraft.world.level.Level, net.minecraft.world.level.chunk.LevelChunk)": "getRandomPosWithinCube",
-            "net.minecraft.world.level.NaturalSpawner$SpawnState | boolean canSpawnForCategory(net.minecraft.world.entity.MobCategory, net.minecraft.world.level.ChunkPos)": "canSpawnForCategory",
-            "net.minecraft.world.level.LocalMobCapCalculator | void addMob(net.minecraft.world.level.ChunkPos, net.minecraft.world.entity.MobCategory)": "addMob"
+        "naturalSpawnerSet": {
+            "typeRedirects": {
+                "NaturalSpawner$ChunkGetter": "CubicNaturalSpawner$CubeGetter"
+            },
+            "fieldRedirects": {},
+            "methodRedirects": {
+                "NaturalSpawner | void spawnCategoryForChunk(MobCategory, ServerLevel, LevelChunk, NaturalSpawner$SpawnPredicate, NaturalSpawner$AfterSpawnCallback)": "spawnCategoryForCube",
+                "NaturalSpawner | BlockPos getRandomPosWithin(Level, LevelChunk)": "getRandomPosWithinCube",
+                "NaturalSpawner$SpawnState | boolean canSpawnForCategory(MobCategory, ChunkPos)": "canSpawnForCategory",
+                "LocalMobCapCalculator | void addMob(ChunkPos, MobCategory)": "addMob"
+            }
         }
     }
 }
