@@ -112,4 +112,8 @@ public class CubeStatus {
     public static int getCubeTaskRange(ChunkStatus chunkStatusIn) {
         return CUBE_TASK_RANGE_XZ.getInt(chunkStatusIn);
     }
+
+    public static int cubeToChunkLevel(int cubeLevel) {
+        return cubeLevel < 33 ? cubeLevel : ChunkStatus.getDistance(CubeStatus.getStatus(cubeLevel - 33)) + 33;
+    }
 }
