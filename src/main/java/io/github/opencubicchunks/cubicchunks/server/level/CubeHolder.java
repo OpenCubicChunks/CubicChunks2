@@ -31,7 +31,7 @@ public interface CubeHolder {
     CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> UNLOADED_LEVEL_CUBE_FUTURE = unsafeCast(ChunkHolderAccess.getUnloadedLevelChunkFuture());
 
     static ChunkStatus getCubeStatusFromLevel(int cubeLevel) {
-        return cubeLevel < 33 ? ChunkStatus.FULL : CubeStatus.getStatus(cubeLevel - 33);
+        return cubeLevel < 33 ? ChunkStatus.FULL : CubeStatus.getStatusAroundFullCube(cubeLevel - 33);
     }
 
     // getTickingChunk

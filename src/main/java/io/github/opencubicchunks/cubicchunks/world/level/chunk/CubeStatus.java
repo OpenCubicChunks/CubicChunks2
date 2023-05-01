@@ -93,14 +93,6 @@ public class CubeStatus {
         }
     }
 
-    public static ChunkStatus getStatus(int distance) {
-        if (distance >= STATUS_BY_RANGE.size()) {
-            return ChunkStatus.EMPTY;
-        } else {
-            return distance < 0 ? ChunkStatus.FULL : STATUS_BY_RANGE.get(distance);
-        }
-    }
-
     public static int maxDistance() {
         return STATUS_BY_RANGE.size();
     }
@@ -124,6 +116,6 @@ public class CubeStatus {
     }
 
     public static int cubeToChunkLevel(int cubeLevel) {
-        return cubeLevel < 33 ? cubeLevel : ChunkStatus.getDistance(CubeStatus.getStatus(cubeLevel - 33)) + 33;
+        return cubeLevel < 33 ? cubeLevel : ChunkStatus.getDistance(CubeStatus.getStatusAroundFullCube(cubeLevel - 33)) + 33;
     }
 }

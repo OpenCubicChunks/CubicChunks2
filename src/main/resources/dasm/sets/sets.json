@@ -124,9 +124,9 @@
                 "TicketType | TicketType LIGHT": "LIGHT_CC_TO_REDIRECT",
                 "TicketType | TicketType UNKNOWN": "UNKNOWN_CC_TO_REDIRECT"
 
-        },
-        "methodRedirects": {
-            "LevelChunk | ChunkPos getPos()": {
+            },
+            "methodRedirects": {
+                "LevelChunk | ChunkPos getPos()": {
                     "newName": "getCubePos",
                     "mappingsOwner": "ChunkAccess"
                 },
@@ -215,14 +215,17 @@
                 "ChunkHolder | ChunkPos getPos()": "getCubePos",
                 "ChunkHolder$LevelChangeListener | void onLevelChange(ChunkPos, IntSupplier, int, IntConsumer)": "onCubeLevelChange",
 
-                "ChunkStatus | ChunkStatus getStatusAroundFullChunk(int)": "getStatusAroundFullCube"
-            }
+                "ChunkStatus | ChunkStatus getStatusAroundFullChunk(int)": "getStatusAroundFullCube",
+                "ChunkStatus | int getRange()": "getCubeRange_redirectWithMixin",
+                "ChunkStatus | int maxDistance()": "maxCubeDistance_redirectWithMixin",
+                "ChunkStatus | int getDistance(ChunkStatus)": "getCubeDistance_redirectWithMixin"
+        }
+    },
+    "chunkMapSet": {
+        "typeRedirects": {
         },
-        "chunkMapSet": {
-            "typeRedirects": {
-            },
-            "fieldRedirects": {
-                "ChunkMap | Long2ObjectLinkedOpenHashMap pendingUnloads": "pendingCubeUnloads",
+        "fieldRedirects": {
+            "ChunkMap | Long2ObjectLinkedOpenHashMap pendingUnloads": "pendingCubeUnloads",
                 "ChunkMap | ChunkTaskPriorityQueueSorter queueSorter": "cubeQueueSorter",
                 "ChunkMap | Long2ObjectLinkedOpenHashMap updatingChunkMap": "updatingCubeMap",
                 "ChunkMap | Long2ByteMap chunkTypeCache": "cubeTypeCache"
