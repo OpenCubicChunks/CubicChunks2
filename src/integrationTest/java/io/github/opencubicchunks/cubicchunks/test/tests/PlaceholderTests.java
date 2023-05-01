@@ -7,7 +7,6 @@ import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicDistanceManager;
 import io.github.opencubicchunks.cubicchunks.test.IntegrationTests.LightingIntegrationTest;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeStatus;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.util.Unit;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -46,8 +45,7 @@ public class PlaceholderTests {
             context -> {
                 System.out.println("Test 1 tick");
                 if (ticksPassed.getAndIncrement() == 30) {
-                    context.fail();
-                    context.setFailurePos(new BlockPos(50, 50, 50));
+                    context.pass();
                 }
             },
             context -> {

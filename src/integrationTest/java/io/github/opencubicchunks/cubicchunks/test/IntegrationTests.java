@@ -41,6 +41,7 @@ public class IntegrationTests {
         private TestState state = TestState.NONE;
         private boolean finished = false;
         private BlockPos failurePos = null;
+        private Throwable throwable = null;
 
         public LightingIntegrationTest(
             String testName, long seed,
@@ -67,6 +68,10 @@ public class IntegrationTests {
             return Optional.ofNullable(this.failurePos);
         }
 
+        public Optional<Throwable> getThrown() {
+            return Optional.ofNullable(this.throwable);
+        }
+
         @Override
         public String toString() {
             return "LightingIntegrationTest[" +
@@ -82,11 +87,10 @@ public class IntegrationTests {
                 this.level = level;
             }
 
-            public void fail() {
-                if (!finished) {
-                    finished = true;
-                    state = TestState.FAIL;
-                }
+            public void fail(Throwable t) {
+                finished = true;
+                state = TestState.FAIL;
+                throwable = t;
             }
 
             public void pass() {

@@ -23,7 +23,11 @@ public class MixinServerLevel_TestRunner implements LevelTestRunner {
         this.context = integrationTest.new TestContext((ServerLevel) (Object) this);
         this.testStarted = true;
 
-        this.test.setup.accept(this.context);
+        try {
+            this.test.setup.accept(this.context);
+        } catch (Throwable t) {
+            this.context.fail(t);
+        }
     }
 
     @Override public boolean testFinished() {
@@ -49,7 +53,11 @@ public class MixinServerLevel_TestRunner implements LevelTestRunner {
         }
 
         if (this.test != null && !this.test.isFinished()) {
-            this.test.tick.accept(this.context);
+            try {
+                this.test.tick.accept(this.context);
+            } catch (Throwable t) {
+                this.context.fail(t);
+            }
         }
     }
 
@@ -58,7 +66,11 @@ public class MixinServerLevel_TestRunner implements LevelTestRunner {
         if (this.test != null) {
             if (!this.teardownComplete && this.test.isFinished() && this.test.getState() != IntegrationTests.TestState.FAIL) {
                 this.teardownComplete = true;
-                this.test.teardown.accept(this.context);
+                try {
+                    this.test.teardown.accept(this.context);
+                } catch (Throwable t) {
+                    this.context.fail(t);
+                }
             }
         }
     }

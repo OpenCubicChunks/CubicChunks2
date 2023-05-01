@@ -1,6 +1,8 @@
 package io.github.opencubicchunks.cubicchunks.test.mixin.server;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,10 +20,9 @@ import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.test.IntegrationTests;
 import io.github.opencubicchunks.cubicchunks.test.LevelTestRunner;
 import io.github.opencubicchunks.cubicchunks.test.ServerTestRunner;
+import io.github.opencubicchunks.cubicchunks.test.util.IndentingStringBuilder;
 import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.objects.ObjectObjectImmutablePair;
-import net.minecraft.CrashReport;
-import net.minecraft.ReportedException;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -145,23 +146,44 @@ public abstract class MixinMinecraftServer_TestRunner implements ServerTestRunne
         }
 
         if (this.incompleteTests.isEmpty()) {
-            if (IntegrationTests.FREEZE_FAILING_WORLDS && !failedTests.isEmpty()) {
+            if (IntegrationTests.FREEZE_FAILING_WORLDS && !this.failedTests.isEmpty()) {
                 if (!this.isFrozen) {
                     this.isFrozen = true;
                     CubicChunks.LOGGER.info("Tests complete! Holding failing worlds open");
                 }
             } else {
                 CubicChunks.LOGGER.info("Tests complete! Exiting...");
-                if (!failedTests.isEmpty()) {
-                    CrashReport crashReport = new CrashReport("Failed tests!", new Exception("Some exception"));
-                    throw new ReportedException(crashReport);
+                this.halt(false);
+                if (!this.failedTests.isEmpty()) {
+                    CubicChunks.LOGGER.warn(testFailureInformation(this.failedTests));
+                    System.exit(-1);
                 } else {
                     CubicChunks.LOGGER.info("No failed tests!");
+                    System.exit(0);
                 }
-
-                this.halt(false);
             }
         }
+    }
+
+    private static String testFailureInformation(Collection<IntegrationTests.LightingIntegrationTest> failedTests) {
+        IndentingStringBuilder s = new IndentingStringBuilder(4)
+            .append("Failed Tests: ").append(failedTests.size()).appendNewLine().appendNewLine();
+
+        for (IntegrationTests.LightingIntegrationTest test : failedTests) {
+            s.append("Failure: ").append(test.testName).appendNewLine().indent();
+
+            Optional<Throwable> thrown = test.getThrown();
+            thrown.ifPresent(throwable -> {
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                throwable.printStackTrace(pw);
+
+                s.append(sw)
+                    .unIndent().appendNewLine();
+            });
+        }
+
+        return s.toString();
     }
 
     /**
