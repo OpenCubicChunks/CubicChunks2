@@ -56,28 +56,28 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             //TODO: add easy use of multiple set and target json files
             redirectSets = loadSetsFile("dasm/sets/sets.json");
             targetClasses = loadTargetsFile("dasm/targets.json");
+
+            Map<String, RedirectsParser.RedirectSet> redirectSetByName = new HashMap<>();
+
+            for (RedirectsParser.RedirectSet redirectSet : redirectSets) {
+                redirectSetByName.put(redirectSet.getName(), redirectSet);
+            }
+            for (RedirectsParser.ClassTarget target : targetClasses) {
+                classTargetByName.put(target.getClassName(), target);
+                List<RedirectsParser.RedirectSet> sets = new ArrayList<>();
+                for (String set : target.getSets()) {
+                    sets.add(redirectSetByName.get(set));
+                }
+                redirectSetsByClassTarget.put(target, sets);
+                if (target.isWholeClass()) {
+                    classDuplicationDummyTargets.put(findWholeClassTypeRedirectFor(target, redirectSetByName), target.getClassName());
+                }
+            }
         } catch (RedirectsParseException e) {
             constructException = e; // Annoying because mixin catches Throwable for creating a config plugin >:(
             return;
         }
         constructException = null;
-
-        Map<String, RedirectsParser.RedirectSet> redirectSetByName = new HashMap<>();
-
-        for (RedirectsParser.RedirectSet redirectSet : redirectSets) {
-            redirectSetByName.put(redirectSet.getName(), redirectSet);
-        }
-        for (RedirectsParser.ClassTarget target : targetClasses) {
-            classTargetByName.put(target.getClassName(), target);
-            List<RedirectsParser.RedirectSet> sets = new ArrayList<>();
-            for (String set : target.getSets()) {
-                sets.add(redirectSetByName.get(set));
-            }
-            redirectSetsByClassTarget.put(target, sets);
-            if (target.isWholeClass()) {
-                classDuplicationDummyTargets.put(findWholeClassTypeRedirectFor(target, redirectSetByName), target.getClassName());
-            }
-        }
     }
 
     private String findWholeClassTypeRedirectFor(RedirectsParser.ClassTarget target, Map<String, RedirectsParser.RedirectSet> redirects) {
