@@ -18,7 +18,8 @@ public class MixinDistanceManager_VerifyTicketTypes {
         "addCubeRegionTicket"
     }, at = @At("HEAD"))
     private void checkAddingTicketTypes(TicketType<?> type, CubePos pos, int level, Object value, CallbackInfo ci) {
-        if (type != CubicTicketType.PLAYER && type != CubicTicketType.LIGHT && type != CubicTicketType.COLUMN && type != CubicTicketType.UNKNOWN && type != CubicTicketType.FORCED && type != TicketType.START) {
+        if (type != CubicTicketType.PLAYER && type != CubicTicketType.LIGHT && type != CubicTicketType.COLUMN
+            && type != CubicTicketType.UNKNOWN && type != CubicTicketType.FORCED && type != TicketType.START) {
             throw new IllegalArgumentException("Invalid ticket type " + type);
         }
     }
@@ -26,7 +27,8 @@ public class MixinDistanceManager_VerifyTicketTypes {
     @Dynamic @Inject(method = "addCubeTicket(JLnet/minecraft/server/level/Ticket;)V", at = @At("HEAD"))
     private void checkAddingTicketTypes2(long chunkPosIn, Ticket<?> ticketIn, CallbackInfo ci) {
         TicketType<?> type = ticketIn.getType();
-        if (type != CubicTicketType.PLAYER && type != CubicTicketType.LIGHT && type != CubicTicketType.COLUMN && type != CubicTicketType.UNKNOWN && type != CubicTicketType.FORCED && type != TicketType.START) {
+        if (type != CubicTicketType.PLAYER && type != CubicTicketType.LIGHT && type != CubicTicketType.COLUMN
+            && type != CubicTicketType.UNKNOWN && type != CubicTicketType.FORCED && type != TicketType.START) {
             throw new IllegalArgumentException("Invalid ticket type " + type);
         }
     }

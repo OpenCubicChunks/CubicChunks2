@@ -10,7 +10,9 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(CubeTickingTracker.class)
 public class CubeTickingTrackerFixes {
-    @Dynamic @Redirect(method = "replacePlayerTicketsLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;PLAYER_CC_TO_REDIRECT:Lnet/minecraft/server/level/TicketType;"))
+    @Dynamic @Redirect(method = "replacePlayerTicketsLevel",
+        at = @At(value = "FIELD",
+            target = "Lnet/minecraft/server/level/TicketType;PLAYER_CC_TO_REDIRECT:Lnet/minecraft/server/level/TicketType;"))
     private TicketType<?> cubicPlayerTicket() {
         return CubicTicketType.PLAYER;
     }

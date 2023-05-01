@@ -37,24 +37,28 @@ public class DistanceManagerFixes {
         return CubicTicketType.PLAYER;
     }
 
-    @Dynamic @Redirect(method = "removeCubeTicketsOnClosing", at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;LIGHT_CC_TO_REDIRECT:Lnet/minecraft/server/level/TicketType;"))
+    @Dynamic @Redirect(method = "removeCubeTicketsOnClosing",
+        at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;LIGHT_CC_TO_REDIRECT:Lnet/minecraft/server/level/TicketType;"))
     private TicketType<?> ticketsToRemove1() {
         return CubicTicketType.LIGHT;
     }
 
     // TODO: we never actually add cubic post-teleport tickets
-    //@Dynamic @Redirect(method = "removeCubeTicketsOnClosing", at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;POST_TELEPORT_CC_TO_REDIRECT:Lnet/minecraft/server/level/TicketType;"))
+    //@Dynamic @Redirect(method = "removeCubeTicketsOnClosing",
+    //  at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;POST_TELEPORT_CC_TO_REDIRECT:Lnet/minecraft/server/level/TicketType;"))
     //private TicketType<?> ticketsToRemove2() {
     //    return CubicTicketType.POST_TELEPORT;
     //}
 
-    @Dynamic @Redirect(method = "removeCubeTicketsOnClosing", at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;UNKNOWN_CC_TO_REDIRECT:Lnet/minecraft/server/level/TicketType;"))
+    @Dynamic @Redirect(method = "removeCubeTicketsOnClosing",
+        at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;UNKNOWN_CC_TO_REDIRECT:Lnet/minecraft/server/level/TicketType;"))
     private TicketType<?> ticketsToRemove3() {
         return CubicTicketType.UNKNOWN;
     }
 
     @Dynamic @Redirect(method = "removeCubeTicketsOnClosing()V",
-        at = @At(value = "INVOKE", target = "Lcom/google/common/collect/ImmutableSet;of(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableSet;"))
+        at = @At(value = "INVOKE",
+            target = "Lcom/google/common/collect/ImmutableSet;of(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Lcom/google/common/collect/ImmutableSet;"))
     private ImmutableSet<?> modifyTicketTypesToIgnoreCC(Object t1, Object t2, Object t3) {
         return ImmutableSet.of(CubicTicketType.LIGHT, CubicTicketType.UNKNOWN);
     }
