@@ -7,11 +7,7 @@
     "injectors": {
         "defaultRequire": 1
     },
-    "mixins": [
-        "common.level.NaturalSpawnerFixes",
-        "common.ticket.CubeTickingTrackerFixes",
-        "common.ticket.DistanceManagerFixes"
-    ],
+    "mixins": [],
     "client": [],
     "server": []
 }

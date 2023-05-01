@@ -1,5 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level;
 
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
@@ -115,7 +116,7 @@ public abstract class MixinNaturalSpawner {
         return false;
     }
 
-    //Called from ASM
+    @UsedFromASM
     private static BlockPos getRandomPosWithinCube(Level level, LevelCube cubeAccess) {
         CubePos pos = cubeAccess.getCubePos();
         int blockX = pos.minCubeX() + level.random.nextInt(CubicConstants.DIAMETER_IN_BLOCKS);

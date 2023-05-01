@@ -17,6 +17,7 @@
         "it.unimi.dsi.fastutil.longs.LongSet",
         "io.github.opencubicchunks.cc_core.api.CubePos",
         "io.github.opencubicchunks.cubicchunks.server.level.CubeTicketTracker",
+        "io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType",
         "io.github.opencubicchunks.cubicchunks.server.level.FixedPlayerDistanceCubeTracker",
         "io.github.opencubicchunks.cubicchunks.server.level.CubicPlayerTicketTracker",
         "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueue",
@@ -27,6 +28,8 @@
         "io.github.opencubicchunks.cubicchunks.server.level.CubeTracker",
         "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder$CubeLoadingError",
         "io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner$CubeGetter",
+        "io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess",
+        "io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeStatus",
         "io.github.opencubicchunks.cubicchunks.world.level.chunk.ImposterProtoCube",
         "io.github.opencubicchunks.cubicchunks.world.level.chunk.LevelCube",
         "io.github.opencubicchunks.cubicchunks.world.level.chunk.ProtoCube",
@@ -119,10 +122,11 @@
 
                 "ChunkHolder | ChunkPos pos": "cubePos",
 
-                "TicketType | TicketType PLAYER": "PLAYER_CC_TO_REDIRECT",
-                "TicketType | TicketType FORCED": "FORCED_CC_TO_REDIRECT",
-                "TicketType | TicketType LIGHT": "LIGHT_CC_TO_REDIRECT",
-                "TicketType | TicketType UNKNOWN": "UNKNOWN_CC_TO_REDIRECT"
+                "TicketType | TicketType PLAYER": "CubicTicketType.PLAYER",
+                "TicketType | TicketType FORCED": "CubicTicketType.FORCED",
+                "TicketType | TicketType LIGHT": "CubicTicketType.LIGHT",
+                "TicketType | TicketType UNKNOWN": "CubicTicketType.UNKNOWN",
+                "TicketType | TicketType POST_TELEPORT": "CubicTicketType.POST_TELEPORT"
 
             },
             "methodRedirects": {
@@ -130,13 +134,13 @@
                     "newName": "getCubePos",
                     "mappingsOwner": "ChunkAccess"
                 },
-                "ChunkAccess | ChunkPos getPos()": "getCubePos",
+                "ChunkAccess | ChunkPos getPos()": "CubeAccess.getCubePosFromChunkAccess",
 
                 "ChunkPos | long toLong()": "asLong",
                 "ChunkPos | long asLong(int, int)": "asLong",
                 "ChunkPos | long asLong(BlockPos)": "asLong",
 
-                "SectionPos | ChunkPos chunk()": "cube__ReplaceWithMixin",
+                "SectionPos | ChunkPos chunk()": "CubePos.from",
 
                 "ChunkMap | boolean anyPlayerCloseEnoughForSpawning(ChunkPos)": "anyPlayerCloseEnoughForSpawning",
                 "ChunkMap | double euclideanDistanceSquared(ChunkPos, ServerPlayer)": "euclideanDistanceSquared",
@@ -219,13 +223,13 @@
                 "ChunkStatus | int getRange()": "getCubeRange_redirectWithMixin",
                 "ChunkStatus | int maxDistance()": "maxCubeDistance_redirectWithMixin",
                 "ChunkStatus | int getDistance(ChunkStatus)": "getCubeDistance_redirectWithMixin"
-        }
-    },
-    "chunkMapSet": {
-        "typeRedirects": {
+            }
         },
-        "fieldRedirects": {
-            "ChunkMap | Long2ObjectLinkedOpenHashMap pendingUnloads": "pendingCubeUnloads",
+        "chunkMapSet": {
+            "typeRedirects": {
+            },
+            "fieldRedirects": {
+                "ChunkMap | Long2ObjectLinkedOpenHashMap pendingUnloads": "pendingCubeUnloads",
                 "ChunkMap | ChunkTaskPriorityQueueSorter queueSorter": "cubeQueueSorter",
                 "ChunkMap | Long2ObjectLinkedOpenHashMap updatingChunkMap": "updatingCubeMap",
                 "ChunkMap | Long2ByteMap chunkTypeCache": "cubeTypeCache"
