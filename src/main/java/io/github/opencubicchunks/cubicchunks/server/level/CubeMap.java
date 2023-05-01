@@ -8,6 +8,7 @@ import java.util.function.IntSupplier;
 import javax.annotation.Nullable;
 
 import com.mojang.datafixers.util.Either;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
@@ -22,7 +23,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.chunk.ChunkStatus;
 
 public interface CubeMap {
-    int MAX_CUBE_DISTANCE = 33 + CubeStatus.maxDistance();
+    @UsedFromASM int MAX_CUBE_DISTANCE = 33 + CubeStatus.maxDistance();
 
     // getTickingGenerated
     int getTickingGeneratedCubes();
