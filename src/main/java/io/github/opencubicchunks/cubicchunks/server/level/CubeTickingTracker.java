@@ -8,6 +8,7 @@ public class CubeTickingTracker extends CubeTracker {
 
     public CubeTickingTracker() {
         super(0, 0, 0);
+        throw new Error("ASM didn't apply");
     }
 
     public void addTicket(long l, Ticket<?> ticket) {
