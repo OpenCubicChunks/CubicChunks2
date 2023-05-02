@@ -25,6 +25,7 @@ import io.github.opencubicchunks.dasm.MappingsProvider;
 import io.github.opencubicchunks.dasm.RedirectsParseException;
 import io.github.opencubicchunks.dasm.RedirectsParser;
 import io.github.opencubicchunks.dasm.Transformer;
+import io.github.opencubicchunks.dasm.TypeRedirect;
 import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -83,7 +84,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     private String findWholeClassTypeRedirectFor(RedirectsParser.ClassTarget target, Map<String, RedirectsParser.RedirectSet> redirects) {
         List<String> sets = target.getSets();
         for (String set : sets) {
-            for (RedirectsParser.RedirectSet.TypeRedirect typeRedirect : redirects.get(set).getTypeRedirects()) {
+            for (TypeRedirect typeRedirect : redirects.get(set).getTypeRedirects()) {
                 if (typeRedirect.srcClassName().equals(target.getClassName())) {
                     return typeRedirect.dstClassName();
                 }

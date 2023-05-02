@@ -17,6 +17,7 @@
         "net.minecraft.server.level.ChunkTaskPriorityQueueSorter",
         "net.minecraft.server.level.DistanceManager",
         "net.minecraft.server.level.DistanceManager$ChunkTicketTracker",
+        "net.minecraft.server.level.DistanceManager$FixedPlayerDistanceChunkTracker",
         "net.minecraft.server.level.ServerLevel",
         "net.minecraft.server.level.ServerPlayer",
         "net.minecraft.server.level.Ticket",
@@ -34,6 +35,7 @@
         "net.minecraft.world.level.NaturalSpawner$SpawnState",
         "net.minecraft.world.level.chunk.ChunkAccess",
         "net.minecraft.world.level.chunk.ChunkStatus",
+        "net.minecraft.world.level.chunk.ChunkStatus$ChunkType",
         "net.minecraft.world.level.chunk.ImposterProtoChunk",
         "net.minecraft.world.level.chunk.LevelChunk",
         "net.minecraft.world.level.lighting.LevelLightEngine"
@@ -47,6 +49,8 @@
         "DistanceManager$ChunkTicketTracker": {
         },
         "TickingTracker": {
+        },
+        "DistanceManager$FixedPlayerDistanceChunkTracker": {
         },
         "ChunkStatus": {
             "targetMethods": {
@@ -76,10 +80,17 @@
                 "boolean anyPlayerCloseEnoughForSpawning(ChunkPos)": "anyPlayerCloseEnoughForSpawning",
                 "List getPlayersCloseForSpawning(ChunkPos)": "getPlayersCloseForSpawning",
                 "IntSupplier getChunkQueueLevel(long)": "getCubeQueueLevel",
+                "Iterable getChunks()": "getCubes",
+                "ChunkStatus getDependencyStatus(ChunkStatus, int)" : "getCubeDependencyStatus",
+                "ChunkHolder getUpdatingChunkIfPresent(long)": "getUpdatingCubeIfPresent",
+                "ChunkHolder getVisibleChunkIfPresent(long)": "getVisibleCubeIfPresent",
                 "boolean isExistingChunkFull(ChunkPos)": "isExistingCubeFull",
+                "byte markPosition(ChunkPos, ChunkStatus$ChunkType)": "markCubePosition",
+                "void markPositionReplaceable(ChunkPos)": "markCubePositionReplaceable",
                 "boolean playerIsCloseEnoughForSpawning(ServerPlayer, ChunkPos)": "playerIsCloseEnoughForSpawning",
                 "CompletableFuture prepareAccessibleChunk(ChunkHolder)": "prepareAccessibleCube",
                 "CompletableFuture prepareEntityTickingChunk(ChunkPos)": "prepareEntityTickingCube",
+                "void releaseLightTicket(ChunkPos)": "releaseCubeLightTicket",
                 "ChunkHolder updateChunkScheduling(long, int, ChunkHolder, int)": {
                     "newName": "updateCubeScheduling",
                     "makeSyntheticAccessor": true

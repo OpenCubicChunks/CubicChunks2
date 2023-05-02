@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.mojang.datafixers.DataFixer;
@@ -186,7 +185,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     private final AtomicInteger tickingGeneratedCubes = new AtomicInteger();
 
-    private final Long2ByteMap cubeTypeCache = new Long2ByteOpenHashMap();
+    @UsedFromASM private final Long2ByteMap cubeTypeCache = new Long2ByteOpenHashMap();
     private final Queue<Runnable> cubeUnloadQueue = Queues.newConcurrentLinkedQueue();
 
     private ServerChunkCache serverChunkCache;
@@ -466,7 +465,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     // readChunk
-    // Called from ASM
+    @UsedFromASM
     private CompoundTag readCube(CubePos cubePos) throws IOException {
         return regionCubeIO.loadCubeNBT(cubePos);
     }
@@ -548,32 +547,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         });
     }
 
-    // markPositionReplaceable
-    @Override public void markCubePositionReplaceable(CubePos cubePos) {
-        this.cubeTypeCache.put(cubePos.asLong(), (byte) -1);
-    }
-
-    // markPosition
-    @Override public byte markCubePosition(CubePos cubePos, ChunkStatus.ChunkType status) {
-        return this.cubeTypeCache.put(cubePos.asLong(), (byte) (status == ChunkStatus.ChunkType.PROTOCHUNK ? -1 : 1));
-    }
-
-    @Override
-    public LongSet getCubesToDrop() {
-        return this.cubesToDrop;
-    }
-
-    @Override
-    @Nullable
-    public ChunkHolder getUpdatingCubeIfPresent(long cubePosIn) {
-        return updatingCubeMap.get(cubePosIn);
-    }
-
-    @Override
-    public ChunkHolder getVisibleCubeIfPresent(long cubePosIn) {
-        return this.visibleCubeMap.get(cubePosIn);
-    }
-
     // TODO: remove when cubic chunks versions are done
     @Inject(method = "schedule", at = @At(
         value = "INVOKE",
@@ -641,11 +614,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     @Override
-    public Iterable<ChunkHolder> getCubes() {
-        return Iterables.unmodifiableIterable(this.visibleCubeMap.values());
-    }
-
-    @Override
     public CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> scheduleCube(ChunkHolder cubeHolder, ChunkStatus chunkStatus) {
         CubePos cubePos = ((CubeHolder) cubeHolder).getCubePos();
         if (chunkStatus == ChunkStatus.EMPTY) {
@@ -694,17 +662,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     }, this.mainThreadExecutor);
                 }, this.mainThreadExecutor);
         }
-    }
-
-    // getDependencyStatus
-    private ChunkStatus getCubeDependencyStatus(ChunkStatus status, int distance) {
-        ChunkStatus parent;
-        if (distance == 0) {
-            parent = status.getParent();
-        } else {
-            parent = CubeStatus.getStatusAroundFullCube(CubeStatus.getDistance(status) + distance);
-        }
-        return parent;
     }
 
     // scheduleChunkGeneration, TODO: can we make DASM handle adding a parameter?
@@ -841,16 +798,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
             return Either.left(returnFutures);
         });
-    }
-
-    @Override
-    public void releaseCubeLightTicket(CubePos cubePos) {
-        this.mainThreadExecutor.tell(Util.name(() -> {
-            ((CubicDistanceManager) this.distanceManager).removeCubeTicket(CubicTicketType.LIGHT,
-                cubePos, 33 + CubeStatus.getDistance(ChunkStatus.LIGHT), cubePos);
-        }, () -> {
-            return "release light ticket " + cubePos;
-        }));
     }
 
     // protoChunkToFullChunk

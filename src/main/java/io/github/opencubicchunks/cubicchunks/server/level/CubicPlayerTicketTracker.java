@@ -13,7 +13,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.server.level.Ticket;
 
-public class CubicPlayerTicketTracker extends FixedPlayerDistanceCubeTracker {
+public class CubicPlayerTicketTracker {
     private int horizontalViewDistance;
     private int verticalViewDistance;
 
@@ -26,7 +26,6 @@ public class CubicPlayerTicketTracker extends FixedPlayerDistanceCubeTracker {
 
     public CubicPlayerTicketTracker(CubicDistanceManager cubicDistanceManager, int i) {
         //possibly make this a constant - there is only ever one playercubeticketracker at a time, so this should be fine.
-        super(cubicDistanceManager, (32 / CubicConstants.DIAMETER_IN_SECTIONS) + 1);
         horizontalGraphGroup = new HorizontalGraphGroup(cubicDistanceManager, (32 / CubicConstants.DIAMETER_IN_SECTIONS) + 1, this);
         verticalGraphGroup = new VerticalGraphGroup(cubicDistanceManager, (32 / CubicConstants.DIAMETER_IN_SECTIONS) + 1, this);
         this.cubicDistanceManager = cubicDistanceManager;

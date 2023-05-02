@@ -4,6 +4,7 @@ import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueue;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTicketTracker;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTickingTracker;
+import io.github.opencubicchunks.cubicchunks.server.level.FixedPlayerDistanceCubeTracker;
 import net.minecraft.server.level.ChunkTaskPriorityQueue;
 import net.minecraft.server.level.ChunkTaskPriorityQueueSorter;
 import net.minecraft.server.level.DistanceManager;
@@ -23,7 +24,10 @@ public class ClassDuplicator {
             CubeTicketTracker.class,
 
             TickingTracker.class,
-            CubeTickingTracker.class
+            CubeTickingTracker.class,
+
+            DistanceManager.FixedPlayerDistanceChunkTracker.class,
+            FixedPlayerDistanceCubeTracker.class
         );
     }
 

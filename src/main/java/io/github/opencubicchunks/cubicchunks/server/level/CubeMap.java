@@ -37,19 +37,17 @@ public interface CubeMap {
 
     void setServerChunkCache(ServerChunkCache cache);
 
-    // used from ASM
+    // implemented by ASM
     void markCubePositionReplaceable(CubePos cubePos);
 
-    // used from ASM
+    // implemented by ASM
     byte markCubePosition(CubePos cubePos, ChunkStatus.ChunkType status);
 
-    LongSet getCubesToDrop();
-
-    // getUpdatingChunkIfPresent
+    // getUpdatingChunkIfPresent, implemented by ASM
     @Nullable
     ChunkHolder getUpdatingCubeIfPresent(long cubePosIn);
 
-    // getVisibleChunkIfPresent
+    // getVisibleChunkIfPresent, implemented by ASM
     @Nullable
     ChunkHolder getVisibleCubeIfPresent(long cubePosIn);
 
@@ -70,7 +68,7 @@ public interface CubeMap {
     // prepareEntityTickingChunk, implemented by ASM
     CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> prepareEntityTickingCube(CubePos pos);
 
-    // getChunks
+    // getChunks, implemented by ASM
     Iterable<ChunkHolder> getCubes();
 
     // checkerboardDistance
@@ -137,7 +135,7 @@ public interface CubeMap {
     // getChunkQueueLevel, implemented by ASM
     IntSupplier getCubeQueueLevel(long cubePosIn);
 
-    // releaseLightTicket
+    // releaseLightTicket, implemented by ASM
     void releaseCubeLightTicket(CubePos cubePos);
 
     // anyPlayerCloseEnoughForSpawning, implemented by ASM

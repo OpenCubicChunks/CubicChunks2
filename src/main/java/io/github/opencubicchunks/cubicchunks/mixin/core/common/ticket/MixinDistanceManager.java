@@ -6,6 +6,7 @@ import java.util.concurrent.Executor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
@@ -51,11 +52,11 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
     private boolean isCubic;
 
     // fields below used from ASM
-    final Long2ObjectMap<ObjectSet<ServerPlayer>> playersPerCube = new Long2ObjectOpenHashMap<>();
+    @UsedFromASM public final Long2ObjectMap<ObjectSet<ServerPlayer>> playersPerCube = new Long2ObjectOpenHashMap<>();
     public final Long2ObjectOpenHashMap<SortedArraySet<Ticket<?>>> cubeTickets = new Long2ObjectOpenHashMap<>();
     private final CubeTicketTracker cubeTicketTracker = new CubeTicketTracker((DistanceManager) (Object) this);
 
-    private final FixedPlayerDistanceCubeTracker naturalSpawnCubeCounter = new FixedPlayerDistanceCubeTracker(this, 8 / CubicConstants.DIAMETER_IN_SECTIONS);
+    private final FixedPlayerDistanceCubeTracker naturalSpawnCubeCounter = new FixedPlayerDistanceCubeTracker((DistanceManager) (Object) this, 8 / CubicConstants.DIAMETER_IN_SECTIONS);
     private final CubeTickingTracker tickingCubeTicketsTracker = new CubeTickingTracker();
     private final CubicPlayerTicketTracker cubicPlayerTicketManager = new CubicPlayerTicketTracker(this, MathUtil.ceilDiv(33, CubicConstants.DIAMETER_IN_SECTIONS));
     public final Set<ChunkHolder> cubesToUpdateFutures = Sets.newHashSet();
@@ -67,8 +68,6 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
     private long cubeTicketTickCounter;
 
     @Shadow abstract void addTicket(long position, Ticket<?> ticket);
-
-    @Shadow @Final private Long2ObjectOpenHashMap<SortedArraySet<Ticket<?>>> tickets;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     public void init(Executor backgroundExecutor, Executor mainThreadExecutor_, CallbackInfo ci) {

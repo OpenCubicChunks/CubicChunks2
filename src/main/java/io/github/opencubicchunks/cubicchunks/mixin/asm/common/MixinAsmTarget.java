@@ -4,6 +4,7 @@ import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueue;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTicketTracker;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeTickingTracker;
+import io.github.opencubicchunks.cubicchunks.server.level.FixedPlayerDistanceCubeTracker;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ChunkTaskPriorityQueue;
@@ -29,7 +30,9 @@ import org.spongepowered.asm.mixin.Mixin;
     DistanceManager.ChunkTicketTracker.class,
     CubeTicketTracker.class,
     TickingTracker.class,
-    CubeTickingTracker.class
+    CubeTickingTracker.class,
+    DistanceManager.FixedPlayerDistanceChunkTracker.class,
+    FixedPlayerDistanceCubeTracker.class
 })
 public class MixinAsmTarget {
     // intentionally empty

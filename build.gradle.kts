@@ -282,7 +282,7 @@ dependencies {
 
     debugCompile("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
     debugRuntime("org.lwjgl:lwjgl::$lwjglNatives")
-    include(implementation("com.github.OpenCubicChunks:dasm:b82fa65a73")!!)
+    include(implementation("com.github.OpenCubicChunks:dasm:bab25f0e60")!!)
     include(implementation("io.github.opencubicchunks:regionlib:0.63.0-SNAPSHOT")!!)
     include(implementation("org.spongepowered:noise:2.0.0-SNAPSHOT")!!)
 

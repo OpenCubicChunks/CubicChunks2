@@ -26,6 +26,7 @@
         "io.github.opencubicchunks.cubicchunks.server.level.CubeTaskPriorityQueueSorter$Release",
         "io.github.opencubicchunks.cubicchunks.server.level.CubeTickingTracker",
         "io.github.opencubicchunks.cubicchunks.server.level.CubeTracker",
+        "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder",
         "io.github.opencubicchunks.cubicchunks.server.level.CubeHolder$CubeLoadingError",
         "io.github.opencubicchunks.cubicchunks.world.CubicNaturalSpawner$CubeGetter",
         "io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess",
@@ -40,6 +41,7 @@
         "net.minecraft.server.level.ChunkHolder$1",
         "net.minecraft.server.level.ChunkHolder$LevelChangeListener",
         "net.minecraft.server.level.ChunkMap",
+        "net.minecraft.server.level.ChunkMap$DistanceManager",
         "net.minecraft.server.level.ChunkTaskPriorityQueue",
         "net.minecraft.server.level.ChunkTaskPriorityQueueSorter",
         "net.minecraft.server.level.ChunkTaskPriorityQueueSorter$Message",
@@ -92,8 +94,13 @@
             },
             "fieldRedirects": {
                 "ChunkMap | ProcessorHandle mainThreadMailbox": "cubeMainThreadMailbox",
+                "ChunkMap | ChunkTaskPriorityQueueSorter queueSorter": "cubeQueueSorter",
                 "ChunkMap | LongSet toDrop": "cubesToDrop",
+                "ChunkMap | Long2ByteMap chunkTypeCache": "cubeTypeCache",
                 "ChunkMap | int MAX_CHUNK_DISTANCE": "MAX_CUBE_DISTANCE",
+                "ChunkMap | Long2ObjectLinkedOpenHashMap pendingUnloads": "pendingCubeUnloads",
+                "ChunkMap | Long2ObjectLinkedOpenHashMap updatingChunkMap": "updatingCubeMap",
+                "ChunkMap | Long2ObjectLinkedOpenHashMap visibleChunkMap": "visibleCubeMap",
 
                 "DistanceManager | Long2ObjectMap playersPerChunk": "playersPerCube",
                 "DistanceManager | Long2ObjectOpenHashMap tickets": "cubeTickets",
@@ -177,6 +184,8 @@
                 "DistanceManager | ChunkHolder getChunk(long)": "getCube",
                 "DistanceManager | ChunkHolder updateChunkScheduling(long, int, ChunkHolder, int)": "updateCubeScheduling",
 
+                "ChunkMap$DistanceManager | void removeTicket(TicketType, ChunkPos, int, Object)": "removeCubeTicket",
+
                 "DistanceManager$ChunkTicketTracker | int runDistanceUpdates(int)": "runDistanceUpdates",
                 "DistanceManager$ChunkTicketTracker | void update(long, int, boolean)": {
                     "newName": "update",
@@ -215,24 +224,23 @@
                 "ChunkTaskPriorityQueueSorter | ProcessorHandle getReleaseProcessor(ProcessorHandle)": "getReleaseProcessor",
                 "ChunkTaskPriorityQueueSorter | void onLevelChange(ChunkPos, IntSupplier, int, IntConsumer)": "onCubeLevelChange",
 
-                "ChunkHolder | ChunkStatus getStatus(int)": "getCubeStatus",
+                "ChunkHolder | ChunkStatus getStatus(int)": {
+                    "newName": "CubeHolder.getCubeStatusFromLevel",
+                    "isDstInterface": true
+                },
                 "ChunkHolder | ChunkPos getPos()": "getCubePos",
                 "ChunkHolder$LevelChangeListener | void onLevelChange(ChunkPos, IntSupplier, int, IntConsumer)": "onCubeLevelChange",
 
-                "ChunkStatus | ChunkStatus getStatusAroundFullChunk(int)": "getStatusAroundFullCube",
-                "ChunkStatus | int getRange()": "getCubeRange_redirectWithMixin",
-                "ChunkStatus | int maxDistance()": "maxCubeDistance_redirectWithMixin",
-                "ChunkStatus | int getDistance(ChunkStatus)": "getCubeDistance_redirectWithMixin"
+                "ChunkStatus | ChunkStatus getStatusAroundFullChunk(int)": "CubeStatus.getStatusAroundFullCube",
+                "ChunkStatus | int getRange()": "CubeStatus.getCubeTaskRange",
+                "ChunkStatus | int maxDistance()": "CubeStatus.maxDistance",
+                "ChunkStatus | int getDistance(ChunkStatus)": "CubeStatus.getDistance"
             }
         },
         "chunkMapSet": {
             "typeRedirects": {
             },
             "fieldRedirects": {
-                "ChunkMap | Long2ObjectLinkedOpenHashMap pendingUnloads": "pendingCubeUnloads",
-                "ChunkMap | ChunkTaskPriorityQueueSorter queueSorter": "cubeQueueSorter",
-                "ChunkMap | Long2ObjectLinkedOpenHashMap updatingChunkMap": "updatingCubeMap",
-                "ChunkMap | Long2ByteMap chunkTypeCache": "cubeTypeCache"
             },
             "methodRedirects": {
                 "ChunkMap | CompoundTag readChunk(ChunkPos)": "readCube",

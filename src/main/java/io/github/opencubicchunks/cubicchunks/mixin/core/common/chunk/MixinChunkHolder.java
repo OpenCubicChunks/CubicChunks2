@@ -133,11 +133,6 @@ public abstract class MixinChunkHolder implements CubeHolder {
         this.pos = newCubePos.asChunkPos();
     }
 
-    // used from ASM
-    private static ChunkStatus getCubeStatus(int cubeLevel) {
-        return CubeHolder.getCubeStatusFromLevel(cubeLevel);
-    }
-
     @Inject(method = "updateFutures", at = @At("HEAD"), cancellable = true)
     void updateFutures(ChunkMap chunkMap, Executor executor, CallbackInfo ci) {
 

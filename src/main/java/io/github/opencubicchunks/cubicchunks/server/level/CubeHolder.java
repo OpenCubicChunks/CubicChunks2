@@ -9,6 +9,7 @@ import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
 
 import com.mojang.datafixers.util.Either;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.ChunkHolderAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
@@ -30,7 +31,7 @@ public interface CubeHolder {
     @Deprecated
     CompletableFuture<Either<LevelCube, ChunkHolder.ChunkLoadingFailure>> UNLOADED_LEVEL_CUBE_FUTURE = unsafeCast(ChunkHolderAccess.getUnloadedLevelChunkFuture());
 
-    static ChunkStatus getCubeStatusFromLevel(int cubeLevel) {
+    @UsedFromASM static ChunkStatus getCubeStatusFromLevel(int cubeLevel) {
         return cubeLevel < 33 ? ChunkStatus.FULL : CubeStatus.getStatusAroundFullCube(cubeLevel - 33);
     }
 

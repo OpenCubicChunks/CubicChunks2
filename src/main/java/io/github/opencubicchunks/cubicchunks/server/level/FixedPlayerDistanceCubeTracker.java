@@ -1,50 +1,23 @@
 package io.github.opencubicchunks.cubicchunks.server.level;
 
-import it.unimi.dsi.fastutil.longs.Long2ByteMap;
-import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.DistanceManager;
 
 public class FixedPlayerDistanceCubeTracker extends CubeTracker {
-    public final Long2ByteMap cubes = new Long2ByteOpenHashMap();
-    protected final int range;
-    private final CubicDistanceManager cubicDistanceManager; // this$0
 
-    public FixedPlayerDistanceCubeTracker(CubicDistanceManager cubicDistanceManager, int i) {
-        super(i + 2, 16, 256);
-        this.range = i;
-        this.cubes.defaultReturnValue((byte) (i + 2));
-        this.cubicDistanceManager = cubicDistanceManager;
+    public FixedPlayerDistanceCubeTracker(DistanceManager cubicDistanceManager, int i) {
+        super(0, 0, 0);
+        throw new Error("ASM didn't apply");
     }
 
-    protected int getLevel(long cubePosIn) {
-        return this.cubes.get(cubePosIn);
+    @Override protected int getLevelFromSource(long pos) {
+        throw new Error("ASM didn't apply");
     }
 
-    protected void setLevel(long cubePosIn, int level) {
-        byte b0;
-        if (level > this.range) {
-            b0 = this.cubes.remove(cubePosIn);
-        } else {
-            b0 = this.cubes.put(cubePosIn, (byte) level);
-        }
-        this.chunkLevelChanged(cubePosIn, b0, level);
+    @Override protected int getLevel(long sectionPos) {
+        throw new Error("ASM didn't apply");
     }
 
-    protected void chunkLevelChanged(long cubePosIn, int oldLevel, int newLevel) {
-    }
-
-    protected int getLevelFromSource(long pos) {
-        return this.hasPlayerInChunk(pos) ? 0 : Integer.MAX_VALUE;
-    }
-
-    private boolean hasPlayerInChunk(long cubePosIn) {
-        ObjectSet<ServerPlayer> cubePlayers = cubicDistanceManager.getPlayersPerCube().get(cubePosIn);
-        return cubePlayers != null && !cubePlayers.isEmpty();
-    }
-
-    // used from ASM
-    public void runAllUpdates() {
-        this.runUpdates(Integer.MAX_VALUE);
+    @Override protected void setLevel(long sectionPos, int level) {
+        throw new Error("ASM didn't apply");
     }
 }
