@@ -1,24 +1,29 @@
 package io.github.opencubicchunks.gradle;
 
+import static io.github.opencubicchunks.dasm.util.ResolutionUtils.applyImportsToMethodSignature;
+import static io.github.opencubicchunks.dasm.util.ResolutionUtils.resolveType;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import io.github.opencubicchunks.dasm.RedirectsParseException;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
 import net.fabricmc.loom.util.service.ScopedSharedServiceManager;
@@ -27,6 +32,7 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.language.jvm.tasks.ProcessResources;
+import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Method;
 
@@ -54,39 +60,64 @@ public class DasmPlugin implements Plugin<Project> {
     private void processFile(File file, File output, MemoryMappingTree mappings) {
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
 
-            JsonElement parsed = new JsonParser().parse(bufferedReader);
+            JsonObject parsed = new JsonParser().parse(bufferedReader).getAsJsonObject();
             if (file.getName().equals("targets.json")) {
                 parsed = processTargets(parsed, mappings);
             } else {
                 parsed = processSets(parsed, mappings);
             }
             Files.createDirectories(output.toPath().getParent());
-            Files.write(output.toPath(), new GsonBuilder().setPrettyPrinting().create().toJson(parsed).getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
+            Files.writeString(output.toPath(), new GsonBuilder().setPrettyPrinting().create().toJson(parsed), StandardOpenOption.CREATE);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    private JsonElement processSets(JsonElement parsed, MemoryMappingTree mappings) {
+    private JsonObject processSets(JsonObject parsed, MemoryMappingTree mappings) throws RedirectsParseException {
         int intermediary = mappings.getDstNamespaces().indexOf("intermediary");
         int named = mappings.getDstNamespaces().indexOf("named");
 
         JsonObject output = new JsonObject();
-        for (Map.Entry<String, JsonElement> set : parsed.getAsJsonObject().entrySet()) {
-            output.add(set.getKey(), remapSet(mappings, intermediary, named, set.getValue().getAsJsonObject()));
+
+        Map<String, String> globalImports = parseImports(parsed.get("imports").getAsJsonArray());
+
+        JsonObject outputSets = new JsonObject();
+        JsonElement sets = parsed.getAsJsonObject().get("sets");
+        for (Map.Entry<String, JsonElement> set : sets.getAsJsonObject().entrySet()) {
+            HashMap<String, String> globalImportsCopy = new HashMap<>(globalImports); // copied as local imports may modify it
+
+            outputSets.add(set.getKey(), remapSet(mappings, intermediary, named, set.getValue().getAsJsonObject(), globalImportsCopy));
         }
+        output.add("sets", outputSets);
+
         return output;
     }
 
-    private JsonObject remapSet(MemoryMappingTree mappings, int intermediary, int named, JsonObject value) {
+    @NotNull private Map<String, String> parseImports(JsonArray imports) {
+        Map<String, String> outputImports = new HashMap<>();
+        for (JsonElement importElement : imports) {
+            String importString = importElement.getAsString();
+            int lastDot = importString.lastIndexOf('.');
+
+            outputImports.put(importString.substring(lastDot + 1), importString);
+        }
+        return outputImports;
+    }
+
+    private JsonObject remapSet(MemoryMappingTree mappings, int intermediary, int named, JsonObject value, Map<String, String> imports) throws RedirectsParseException {
+        if (value.has("imports") && value.get("imports").isJsonArray()) {
+            JsonArray localImports = value.get("imports").getAsJsonArray();
+            imports.putAll(parseImports(localImports));
+        }
+
         JsonObject output = new JsonObject();
         for (Map.Entry<String, JsonElement> setPart : value.entrySet()) {
             if (setPart.getKey().equals("typeRedirects")) {
-                output.add(setPart.getKey(), remapTypeRedirects(mappings, intermediary, named, setPart.getValue().getAsJsonObject()));
+                output.add(setPart.getKey(), remapTypeRedirects(mappings, intermediary, named, setPart.getValue().getAsJsonObject(), imports));
             } else if (setPart.getKey().equals("fieldRedirects")) {
-                output.add(setPart.getKey(), remapFieldRedirects(mappings, intermediary, named, setPart.getValue().getAsJsonObject()));
+                output.add(setPart.getKey(), remapFieldRedirects(mappings, intermediary, named, setPart.getValue().getAsJsonObject(), imports));
             } else if (setPart.getKey().equals("methodRedirects")) {
-                output.add(setPart.getKey(), remapMethodRedirects(mappings, intermediary, named, setPart.getValue().getAsJsonObject()));
+                output.add(setPart.getKey(), remapMethodRedirects(mappings, intermediary, named, setPart.getValue().getAsJsonObject(), imports));
             } else {
                 output.add(setPart.getKey(), setPart.getValue());
             }
@@ -94,28 +125,32 @@ public class DasmPlugin implements Plugin<Project> {
         return output;
     }
 
-    private JsonObject remapTypeRedirects(MemoryMappingTree mappings, int intermediary, int named, JsonObject redirects) {
+    private JsonObject remapTypeRedirects(MemoryMappingTree mappings, int intermediary, int named, JsonObject redirects, Map<String, String> imports) throws RedirectsParseException {
         JsonObject output = new JsonObject();
         for (Map.Entry<String, JsonElement> typeEntry : redirects.entrySet()) {
-            output.add(remapClassName(mappings, intermediary, named, typeEntry.getKey()), typeEntry.getValue());
+            String srcTypeName = resolveType(typeEntry.getKey(), imports);
+            String dstTypeName = resolveType(typeEntry.getValue().getAsString(), imports);
+
+            output.add(remapClassName(mappings, intermediary, named, srcTypeName), new JsonPrimitive(dstTypeName));
         }
         return output;
     }
 
-    private JsonObject remapFieldRedirects(MemoryMappingTree mappings, int intermediary, int named, JsonObject redirects) {
+    private JsonObject remapFieldRedirects(MemoryMappingTree mappings, int intermediary, int named, JsonObject redirects, Map<String, String> imports) throws RedirectsParseException {
         JsonObject output = new JsonObject();
         for (Map.Entry<String, JsonElement> fieldJsonEntry : redirects.entrySet()) {
             String key = fieldJsonEntry.getKey();
             JsonElement fieldVal = fieldJsonEntry.getValue();
             String[] parts = key.split("\s*\\|\s*");
-            String rawOwner = parts[0];
+            String rawOwner = resolveType(parts[0], imports);
             String mappingsOwner = rawOwner;
             if (fieldJsonEntry.getValue().isJsonObject() && fieldJsonEntry.getValue().getAsJsonObject().get("mappingsOwner") != null) {
-                mappingsOwner = fieldJsonEntry.getValue().getAsJsonObject().get("mappingsOwner").getAsString();
+                mappingsOwner = resolveType(fieldJsonEntry.getValue().getAsJsonObject().get("mappingsOwner").getAsString(), imports);
                 String newMappingsOwner = remapClassName(mappings, intermediary, named, mappingsOwner);
                 fieldVal.getAsJsonObject().add("mappingsOwner", new JsonPrimitive(newMappingsOwner));
             }
-            String fieldDecl = parts[1];
+            String[] fieldParts = parts[1].split("\s+");
+            String fieldDecl = resolveType(fieldParts[0], imports) + " " + fieldParts[1];
             Method fakeMethod = Method.getMethod(fieldDecl + "()");
             Type type = fakeMethod.getReturnType();
             String name = fakeMethod.getName();
@@ -131,20 +166,20 @@ public class DasmPlugin implements Plugin<Project> {
         return output;
     }
 
-    private JsonObject remapMethodRedirects(MemoryMappingTree mappings, int intermediary, int named, JsonObject redirects) {
+    private JsonObject remapMethodRedirects(MemoryMappingTree mappings, int intermediary, int named, JsonObject redirects, Map<String, String> imports) throws RedirectsParseException {
         JsonObject output = new JsonObject();
         for (Map.Entry<String, JsonElement> methodJsonEntry : redirects.entrySet()) {
             String key = methodJsonEntry.getKey();
             JsonElement methodVal = methodJsonEntry.getValue();
             String[] parts = key.split("\s*\\|\s*");
-            String rawOwner = parts[0];
+            String rawOwner = resolveType(parts[0], imports);
             String mappingsOwner = rawOwner;
             if (methodJsonEntry.getValue().isJsonObject() && methodJsonEntry.getValue().getAsJsonObject().get("mappingsOwner") != null) {
-                mappingsOwner = methodJsonEntry.getValue().getAsJsonObject().get("mappingsOwner").getAsString();
+                mappingsOwner = resolveType(methodJsonEntry.getValue().getAsJsonObject().get("mappingsOwner").getAsString(), imports);
                 String newMappingsOwner = remapClassName(mappings, intermediary, named, mappingsOwner);
                 methodVal.getAsJsonObject().add("mappingsOwner", new JsonPrimitive(newMappingsOwner));
             }
-            String methodDecl = parts[1];
+            String methodDecl = applyImportsToMethodSignature(parts[1], imports);
             Method asmMethod = Method.getMethod(methodDecl);
             Type returnType = asmMethod.getReturnType();
             Type[] argumentTypes = asmMethod.getArgumentTypes();
@@ -169,12 +204,19 @@ public class DasmPlugin implements Plugin<Project> {
         return output;
     }
 
-    private JsonElement processTargets(JsonElement parsed, MemoryMappingTree mappings) throws IOException {
+    private JsonObject processTargets(JsonElement parsed, MemoryMappingTree mappings) throws RedirectsParseException {
         int intermediary = mappings.getDstNamespaces().indexOf("intermediary");
         int named = mappings.getDstNamespaces().indexOf("named");
 
         JsonObject out = new JsonObject();
         JsonObject json = parsed.getAsJsonObject();
+
+        Map<String, String> imports;
+        if (json.has("imports") && json.get("imports").isJsonArray()) {
+            imports = parseImports(json.get("imports").getAsJsonArray());
+        } else {
+            imports = new HashMap<>();
+        }
 
         JsonElement targets = json.get("targets");
         JsonObject targetsOutput = new JsonObject();
@@ -182,10 +224,10 @@ public class DasmPlugin implements Plugin<Project> {
 
         // remap targets object
         for (Map.Entry<String, JsonElement> targetEntry : targetEntries) {
-            String className = targetEntry.getKey();
+            String className = resolveType(targetEntry.getKey(), imports);
             String dstName = remapClassName(mappings, intermediary, named, className);
 
-            JsonObject newClassEntry = remapClassValue(className, mappings, intermediary, named, targetEntry);
+            JsonObject newClassEntry = remapClassValue(className, mappings, intermediary, named, targetEntry, imports);
             targetsOutput.add(dstName, newClassEntry);
         }
 
@@ -200,7 +242,8 @@ public class DasmPlugin implements Plugin<Project> {
         return out;
     }
 
-    private static JsonObject remapClassValue(String ownerName, MemoryMappingTree mappings, int intermediary, int named, Map.Entry<String, JsonElement> jsonEntry) {
+    private static JsonObject remapClassValue(String ownerName, MemoryMappingTree mappings, int intermediary, int named, Map.Entry<String, JsonElement> jsonEntry, Map<String, String> imports)
+        throws RedirectsParseException {
         JsonObject classEntry = jsonEntry.getValue().getAsJsonObject();
         JsonObject newClassEntry = new JsonObject();
         for (Map.Entry<String, JsonElement> classEntryJsonEntry : classEntry.entrySet()) {
@@ -210,14 +253,14 @@ public class DasmPlugin implements Plugin<Project> {
                     JsonElement methodVal = methodJsonEntry.getValue();
                     String methodOwner;
                     if (methodVal.isJsonObject() && methodVal.getAsJsonObject().get("mappingsOwner") != null) {
-                        String mappingsOwner = methodVal.getAsJsonObject().get("mappingsOwner").getAsString();
+                        String mappingsOwner = resolveType(methodVal.getAsJsonObject().get("mappingsOwner").getAsString(), imports);
                         String newMappingsOwner = remapClassName(mappings, intermediary, named, mappingsOwner);
                         methodVal.getAsJsonObject().add("mappingsOwner", new JsonPrimitive(newMappingsOwner));
                         methodOwner = mappingsOwner;
                     } else {
-                        methodOwner = ownerName;
+                        methodOwner = resolveType(ownerName, imports);
                     }
-                    String methodKey = methodJsonEntry.getKey();
+                    String methodKey = applyImportsToMethodSignature(methodJsonEntry.getKey(), imports);
                     Method asmMethod = Method.getMethod(methodKey);
                     Type returnType = asmMethod.getReturnType();
                     Type newReturnType = remapType(mappings, intermediary, named, returnType);

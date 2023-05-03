@@ -8,7 +8,6 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,7 +16,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -25,6 +23,7 @@ import io.github.opencubicchunks.dasm.MappingsProvider;
 import io.github.opencubicchunks.dasm.RedirectsParseException;
 import io.github.opencubicchunks.dasm.RedirectsParser;
 import io.github.opencubicchunks.dasm.Transformer;
+import io.github.opencubicchunks.dasm.TypeRedirect;
 import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -45,7 +44,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     public ASMConfigPlugin() {
         boolean developmentEnvironment = true;
         try {
-            FabricLoader.getInstance().isDevelopmentEnvironment();
+            developmentEnvironment = FabricLoader.getInstance().isDevelopmentEnvironment();
         } catch (NullPointerException ignored) { // isDevelopmentEnvironment can throw from a test environment as it has no launcher instance
         }
         this.transformer = new Transformer(MappingsProvider.IDENTITY, developmentEnvironment);
@@ -73,7 +72,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
                     classDuplicationDummyTargets.put(findWholeClassTypeRedirectFor(target, redirectSetByName), target.getClassName());
                 }
             }
-        } catch (RedirectsParseException e) {
+        } catch (Throwable e) {
             constructException = e; // Annoying because mixin catches Throwable for creating a config plugin >:(
             return;
         }
@@ -83,7 +82,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     private String findWholeClassTypeRedirectFor(RedirectsParser.ClassTarget target, Map<String, RedirectsParser.RedirectSet> redirects) {
         List<String> sets = target.getSets();
         for (String set : sets) {
-            for (RedirectsParser.RedirectSet.TypeRedirect typeRedirect : redirects.get(set).getTypeRedirects()) {
+            for (TypeRedirect typeRedirect : redirects.get(set).getTypeRedirects()) {
                 if (typeRedirect.srcClassName().equals(target.getClassName())) {
                     return typeRedirect.dstClassName();
                 }
@@ -216,16 +215,12 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
 
         JsonObject setsJson = parseFileAsJson(fileName).getAsJsonObject();
         JsonElement sets = setsJson.get("sets");
-        JsonArray imports = setsJson.get("imports").getAsJsonArray();
+        JsonElement globalImports = setsJson.get("imports");
 
-        Set<String> globalImports = new HashSet<>();
-        for (JsonElement anImport : imports) {
-            if (!anImport.isJsonPrimitive() || !anImport.getAsJsonPrimitive().isString()) {
-                throw new RedirectsParseException(String.format("Invalid global import, expected string found: %s", anImport));
-            }
-            globalImports.add(anImport.getAsString());
+        if (globalImports == null) {
+            return redirectsParser.parseRedirectSet(sets.getAsJsonObject());
+        } else {
+            return redirectsParser.parseRedirectSet(sets.getAsJsonObject(), globalImports);
         }
-
-        return redirectsParser.parseRedirectSet(sets.getAsJsonObject(), globalImports);
     }
 }
