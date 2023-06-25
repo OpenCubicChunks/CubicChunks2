@@ -49,8 +49,6 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
 
     private final Transformer transformer;
 
-    private final MappingsProvider mappings;
-
     public ASMConfigPlugin() {
         boolean developmentEnvironment = true;
         try {
@@ -156,7 +154,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             //Ideally the input json would all have the same, and we'd just figure it out here
             RedirectsParser.ClassTarget target = classTargetByName.get(targetClassName);
             if (target == null) {
-                throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
+                return; //throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
             }
             if (target.isWholeClass()) {
                 ClassNode duplicate = new ClassNode();

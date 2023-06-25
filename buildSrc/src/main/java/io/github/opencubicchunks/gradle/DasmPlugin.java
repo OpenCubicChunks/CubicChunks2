@@ -62,9 +62,9 @@ public class DasmPlugin implements Plugin<Project> {
 
             JsonObject parsed = new JsonParser().parse(bufferedReader).getAsJsonObject();
             if (file.getName().equals("targets.json")) {
-                //parsed = processTargets(parsed, mappings);
+                parsed = processTargets(parsed, mappings);
             } else {
-                //parsed = processSets(parsed, mappings);
+                parsed = processSets(parsed, mappings);
             }
             Files.createDirectories(output.toPath().getParent());
             Files.writeString(output.toPath(), new GsonBuilder().setPrettyPrinting().create().toJson(parsed), StandardOpenOption.CREATE);
