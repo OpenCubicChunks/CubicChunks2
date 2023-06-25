@@ -35,10 +35,9 @@ public class ConfigLoader {
 
         TypeInfo hierarchy = loadHierarchy(root.getAsJsonArray("type_info"), map);
 
-        Map<String, MethodID> methodIDMap = loadMethodDefinitions(root.get("method_definitions"), map);
-        Map<String, TransformType> transformTypeMap = loadTransformTypes(root.get("types"), map, methodIDMap);
-        AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo = loadMethodParameterInfo(root.get("methods"), map, methodIDMap, transformTypeMap, hierarchy);
-        Map<Type, ClassTransformInfo> classes = loadClassInfo(root.get("classes"), map, methodIDMap, transformTypeMap, hierarchy);
+        Map<String, TransformType> transformTypeMap = loadTransformTypes(root.get("types"), map);
+        AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo = loadMethodParameterInfo(root.get("methods"), map, transformTypeMap, hierarchy);
+        Map<Type, ClassTransformInfo> classes = loadClassInfo(root.get("classes"), map, transformTypeMap, hierarchy);
         Map<Type, InvokerInfo> invokers = loadInvokers(root.get("invokers"), map, transformTypeMap);
 
         for (TransformType type : transformTypeMap.values()) {
@@ -114,7 +113,7 @@ public class ConfigLoader {
         return interfaces;
     }
 
-    private static Map<Type, ClassTransformInfo> loadClassInfo(JsonElement classes, MappingResolver map, Map<String, MethodID> methodIDMap, Map<String, TransformType> transformTypeMap,
+    private static Map<Type, ClassTransformInfo> loadClassInfo(JsonElement classes, MappingResolver map, Map<String, TransformType> transformTypeMap,
                                                                TypeInfo hierarchy) {
         JsonArray arr = classes.getAsJsonArray();
         Map<Type, ClassTransformInfo> classInfo = new HashMap<>();
@@ -127,7 +126,7 @@ public class ConfigLoader {
             if (typeHintsElem != null) {
                 JsonArray typeHintsArr = typeHintsElem.getAsJsonArray();
                 for (JsonElement typeHint : typeHintsArr) {
-                    MethodID method = loadMethodIDFromLookup(typeHint.getAsJsonObject().get("method"), map, methodIDMap);
+                    MethodID method = loadMethodID(typeHint.getAsJsonObject().get("method"), map, null);
                     Map<Integer, TransformType> paramTypes = new HashMap<>();
                     JsonArray paramTypesArr = typeHint.getAsJsonObject().get("types").getAsJsonArray();
                     for (int i = 0; i < paramTypesArr.size(); i++) {
@@ -179,7 +178,7 @@ public class ConfigLoader {
         return new TypeInfo(data, t -> remapType(t, map));
     }
 
-    private static AncestorHashMap<MethodID, List<MethodParameterInfo>> loadMethodParameterInfo(JsonElement methods, MappingResolver map, Map<String, MethodID> methodIDMap,
+    private static AncestorHashMap<MethodID, List<MethodParameterInfo>> loadMethodParameterInfo(JsonElement methods, MappingResolver map,
                                                                                                 Map<String, TransformType> transformTypes, TypeInfo hierarchy) {
         final AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo = new AncestorHashMap<>(hierarchy);
 
@@ -192,7 +191,7 @@ public class ConfigLoader {
 
         for (JsonElement method : methods.getAsJsonArray()) {
             JsonObject obj = method.getAsJsonObject();
-            MethodID methodID = loadMethodIDFromLookup(obj.get("method"), map, methodIDMap);
+            MethodID methodID = loadMethodID(obj.get("method"), map, null);
             List<MethodParameterInfo> paramInfo = new ArrayList<>();
             JsonArray possibilites = obj.get("possibilities").getAsJsonArray();
             for (JsonElement possibilityElement : possibilites) {
@@ -228,7 +227,7 @@ public class ConfigLoader {
                 }
 
                 MethodReplacement mr =
-                    getMethodReplacement(map, methodIDMap, possibility, params, expansionsNeeded, indices, replacementJsonArray);
+                    getMethodReplacement(map, possibility, params, expansionsNeeded, indices, replacementJsonArray);
 
                 JsonElement minimumsJson = possibility.get("minimums");
                 MethodTransformChecker.Minimum[] minimums = getMinimums(methodID, transformTypes, minimumsJson);
@@ -360,7 +359,7 @@ public class ConfigLoader {
     }
 
     @Nullable
-    private static MethodReplacement getMethodReplacement(MappingResolver map, Map<String, MethodID> methodIDMap, JsonObject possibility, TransformSubtype[] params, int expansionsNeeded,
+    private static MethodReplacement getMethodReplacement(MappingResolver map, JsonObject possibility, TransformSubtype[] params, int expansionsNeeded,
                                                           List<Integer>[][] indices, JsonArray replacementJsonArray) {
         MethodReplacement mr;
         if (replacementJsonArray == null) {
@@ -368,7 +367,7 @@ public class ConfigLoader {
         } else {
             BytecodeFactory[] factories = new BytecodeFactory[expansionsNeeded];
             for (int i = 0; i < expansionsNeeded; i++) {
-                factories[i] = new JSONBytecodeFactory(replacementJsonArray.get(i).getAsJsonArray(), map, methodIDMap);
+                factories[i] = new JSONBytecodeFactory(replacementJsonArray.get(i).getAsJsonArray(), map);
             }
 
             JsonElement finalizerJson = possibility.get("finalizer");
@@ -377,7 +376,7 @@ public class ConfigLoader {
 
             if (finalizerJson != null) {
                 JsonArray finalizerJsonArray = finalizerJson.getAsJsonArray();
-                finalizer = new JSONBytecodeFactory(finalizerJsonArray, map, methodIDMap);
+                finalizer = new JSONBytecodeFactory(finalizerJsonArray, map);
 
                 finalizerIndices = new List[params.length];
                 JsonElement finalizerIndicesJson = possibility.get("finalizerIndices");
@@ -410,17 +409,7 @@ public class ConfigLoader {
         return mr;
     }
 
-    private static MethodID loadMethodIDFromLookup(JsonElement method, MappingResolver map, Map<String, MethodID> methodIDMap) {
-        if (method.isJsonPrimitive()) {
-            if (methodIDMap.containsKey(method.getAsString())) {
-                return methodIDMap.get(method.getAsString());
-            }
-        }
-
-        return loadMethodID(method, map, null);
-    }
-
-    private static Map<String, TransformType> loadTransformTypes(JsonElement typeJson, MappingResolver map, Map<String, MethodID> methodIDMap) {
+    private static Map<String, TransformType> loadTransformTypes(JsonElement typeJson, MappingResolver map) {
         Map<String, TransformType> types = new HashMap<>();
 
         JsonArray typeArray = typeJson.getAsJsonArray();
@@ -440,12 +429,12 @@ public class ConfigLoader {
             }
 
             JsonElement fromOriginalJson = obj.get("from_original");
-            MethodID[] fromOriginal = loadFromOriginalTransform(map, methodIDMap, transformedTypes, fromOriginalJson);
+            MethodID[] fromOriginal = loadFromOriginalTransform(map, transformedTypes, fromOriginalJson);
 
             MethodID toOriginal = null;
             JsonElement toOriginalJson = obj.get("to_original");
             if (toOriginalJson != null) {
-                toOriginal = loadMethodIDFromLookup(obj.get("to_original"), map, methodIDMap);
+                toOriginal = loadMethodID(obj.get("to_original"), map, null);
             }
 
             Type originalPredicateType = loadObjectType(obj, "original_predicate", map);
@@ -459,7 +448,7 @@ public class ConfigLoader {
             String[] postfix = loadPostfix(obj, id, transformedTypes);
 
             Map<Object, BytecodeFactory[]> constantReplacements =
-                loadConstantReplacements(map, methodIDMap, obj, original, transformedTypes);
+                loadConstantReplacements(map, obj, original, transformedTypes);
 
 
             TransformType transformType =
@@ -471,8 +460,9 @@ public class ConfigLoader {
         return types;
     }
 
-    @Nullable private static MethodID[] loadFromOriginalTransform(MappingResolver map, Map<String, MethodID> methodIDMap, Type[] transformedTypes, JsonElement fromOriginalJson) {
+    @Nullable private static MethodID[] loadFromOriginalTransform(MappingResolver map, Type[] transformedTypes, JsonElement fromOriginalJson) {
         MethodID[] fromOriginal = null;
+
         if (fromOriginalJson != null) {
             JsonArray fromOriginalArray = fromOriginalJson.getAsJsonArray();
             fromOriginal = new MethodID[fromOriginalArray.size()];
@@ -481,15 +471,10 @@ public class ConfigLoader {
             }
             for (int i = 0; i < fromOriginalArray.size(); i++) {
                 JsonElement fromOriginalElement = fromOriginalArray.get(i);
-                if (fromOriginalElement.isJsonPrimitive()) {
-                    fromOriginal[i] = methodIDMap.get(fromOriginalElement.getAsString());
-                }
-
-                if (fromOriginal[i] == null) {
-                    fromOriginal[i] = loadMethodID(fromOriginalArray.get(i), map, null);
-                }
+                fromOriginal[i] = loadMethodID(fromOriginalElement, map, null);
             }
         }
+
         return fromOriginal;
     }
 
@@ -521,7 +506,7 @@ public class ConfigLoader {
     }
 
     @NotNull
-    private static Map<Object, BytecodeFactory[]> loadConstantReplacements(MappingResolver map, Map<String, MethodID> methodIDMap, JsonObject obj, Type original, Type[] transformedTypes) {
+    private static Map<Object, BytecodeFactory[]> loadConstantReplacements(MappingResolver map, JsonObject obj, Type original, Type[] transformedTypes) {
         Map<Object, BytecodeFactory[]> constantReplacements = new HashMap<>();
         JsonElement constantReplacementsJson = obj.get("constant_replacements");
         if (constantReplacementsJson != null) {
@@ -552,7 +537,7 @@ public class ConfigLoader {
                             to[j] = new ConstantFactory(constant);
                         }
                     } else {
-                        to[j] = new JSONBytecodeFactory(toElement.getAsJsonArray(), map, methodIDMap);
+                        to[j] = new JSONBytecodeFactory(toElement.getAsJsonArray(), map);
                     }
                 }
 
@@ -577,27 +562,6 @@ public class ConfigLoader {
                 return Integer.parseInt(s);
             }
         }
-    }
-
-    private static Map<String, MethodID> loadMethodDefinitions(JsonElement methodMap, MappingResolver map) {
-        Map<String, MethodID> methodIDMap = new HashMap<>();
-
-        if (methodMap == null) return methodIDMap;
-
-        if (!methodMap.isJsonArray()) {
-            System.err.println("Method ID map is not an array. Cannot read it");
-            return methodIDMap;
-        }
-
-        for (JsonElement method : methodMap.getAsJsonArray()) {
-            JsonObject obj = method.getAsJsonObject();
-            String id = obj.get("id").getAsString();
-            MethodID methodID = loadMethodID(obj.get("method"), map, null);
-
-            methodIDMap.put(id, methodID);
-        }
-
-        return methodIDMap;
     }
 
     public static MethodID loadMethodID(JsonElement method, @Nullable MappingResolver map, @Nullable MethodID.CallType defaultCallType) {

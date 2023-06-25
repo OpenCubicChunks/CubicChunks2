@@ -51,9 +51,8 @@ public class JSONBytecodeFactory implements BytecodeFactory {
      * @param data A JSONArray where each element corresponds to an instruction. Simple instructions are represented by a single string, while
      *             instructions that have parameters are represented by a JSONObject.
      * @param mappings The mappings used to remap types to their current names
-     * @param methodIDMap A map of method names to their MethodID (method definitions)
      */
-    public JSONBytecodeFactory(JsonArray data, MappingResolver mappings, Map<String, MethodID> methodIDMap) {
+    public JSONBytecodeFactory(JsonArray data, MappingResolver mappings) {
         //Find all variable names
         Map<String, Integer> varNames = new HashMap<>();
 
@@ -99,16 +98,16 @@ public class JSONBytecodeFactory implements BytecodeFactory {
                 instructionGenerators.add(createInstructionFactoryFromName(element.getAsString(), varNames));
             } else {
                 //It is a complex instruction
-                instructionGenerators.add(createInstructionFactoryFromObject(element.getAsJsonObject(), mappings, methodIDMap));
+                instructionGenerators.add(createInstructionFactoryFromObject(element.getAsJsonObject(), mappings));
             }
         }
     }
 
-    private BiConsumer<InsnList, int[]> createInstructionFactoryFromObject(JsonObject object, MappingResolver mappings, Map<String, MethodID> methodIDMap) {
+    private BiConsumer<InsnList, int[]> createInstructionFactoryFromObject(JsonObject object, MappingResolver mappings) {
         String type = object.get("type").getAsString();
 
         if (type.equals("INVOKEVIRTUAL") || type.equals("INVOKESTATIC") || type.equals("INVOKESPECIAL") || type.equals("INVOKEINTERFACE")) {
-            return generateMethodCall(object, mappings, methodIDMap, type);
+            return generateMethodCall(object, mappings, type);
         } else if (type.equals("LDC")) {
             return generateConstantInsn(object);
         } else if (type.equals("NEW") || type.equals("ANEWARRAY") || type.equals("CHECKCAST") || type.equals("INSTANCEOF")) {
@@ -118,28 +117,20 @@ public class JSONBytecodeFactory implements BytecodeFactory {
         throw new IllegalArgumentException("Unknown instruction type: " + type);
     }
 
-    private BiConsumer<InsnList, int[]> generateMethodCall(JsonObject object, MappingResolver mappings, Map<String, MethodID> methodIDMap, String type) {
+    private BiConsumer<InsnList, int[]> generateMethodCall(JsonObject object, MappingResolver mappings, String type) {
         JsonElement method = object.get("method");
-        MethodID methodID = null;
+        //Get the call type
+        MethodID.CallType callType = switch (type) {
+            case "INVOKEVIRTUAL" -> MethodID.CallType.VIRTUAL;
+            case "INVOKESTATIC" -> MethodID.CallType.STATIC;
+            case "INVOKESPECIAL" -> MethodID.CallType.SPECIAL;
+            case "INVOKEINTERFACE" -> MethodID.CallType.INTERFACE;
 
-        if (method.isJsonPrimitive()) {
-            //Check if method is in method definitions
-            methodID = methodIDMap.get(method.getAsString());
-        }
+            default -> throw new IllegalArgumentException("Invalid call type: " + type); //This will never be reached but the compiler gets angry if it isn't here
+        };
 
-        if (methodID == null) {
-            //If we haven't found it, we get the call type
-            MethodID.CallType callType = switch (type) {
-                case "INVOKEVIRTUAL" -> MethodID.CallType.VIRTUAL;
-                case "INVOKESTATIC" -> MethodID.CallType.STATIC;
-                case "INVOKESPECIAL" -> MethodID.CallType.SPECIAL;
-                case "INVOKEINTERFACE" -> MethodID.CallType.INTERFACE;
+        MethodID methodID = ConfigLoader.loadMethodID(method, mappings, callType);
 
-                default -> throw new IllegalArgumentException("Invalid call type: " + type); //This will never be reached but the compiler gets angry if it isn't here
-            };
-
-            methodID = ConfigLoader.loadMethodID(method, mappings, callType);
-        }
 
         MethodID finalMethodID = methodID;
         return (insnList, __) -> insnList.add(finalMethodID.callNode());
