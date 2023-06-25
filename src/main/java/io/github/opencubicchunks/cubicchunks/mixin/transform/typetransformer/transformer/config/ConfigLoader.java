@@ -379,7 +379,7 @@ public class ConfigLoader {
                 finalizer = new JSONBytecodeFactory(finalizerJsonArray, map);
 
                 finalizerIndices = new List[params.length];
-                JsonElement finalizerIndicesJson = possibility.get("finalizerIndices");
+                JsonElement finalizerIndicesJson = possibility.get("finalizer_indices");
                 if (finalizerIndicesJson != null) {
                     JsonArray finalizerIndicesJsonArray = finalizerIndicesJson.getAsJsonArray();
                     for (int i = 0; i < finalizerIndicesJsonArray.size(); i++) {

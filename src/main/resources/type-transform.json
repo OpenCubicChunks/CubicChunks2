@@ -561,7 +561,6 @@
     },
     {
       "method": "s net/minecraft/core/BlockPos#getFlatIndex (J)J",
-      "mappedName": "getFlatIndex",
       "possibilities": [
         {
           "parameters": [
@@ -585,7 +584,6 @@
     },
     {
       "method": "s net/minecraft/core/BlockPos#offset (JIII)J",
-      "mappedName": "offset",
       "possibilities": [
         {
           "parameters": [
@@ -633,7 +631,6 @@
     },
     {
       "method": "s net/minecraft/core/BlockPos#of (J)Lnet/minecraft/core/BlockPos;",
-      "mappedName": "BlockPos.of",
       "possibilities": [
         {
           "parameters": [
@@ -794,7 +791,6 @@
     },
     {
       "class": "net/minecraft/world/level/lighting/LayerLightSectionStorage",
-      "mappedName": "LayerLightSectionStorage",
       "type_hints": [
         {
           "method": "v net/minecraft/world/level/lighting/LayerLightSectionStorage#getLightValue (J)I",
@@ -843,6 +839,16 @@
     }
   ],
 
+  "suffixed_methods": [
+    "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint",
+    "net/minecraft/world/level/lighting/LayerLightEngine",
+    "net/minecraft/world/level/lighting/LayerLightSectionStorage",
+    "net/minecraft/world/level/lighting/BlockLightEngine",
+    "net/minecraft/world/level/lighting/SkyLightEngine",
+    "net/minecraft/world/level/lighting/BlockLightSectionStorage",
+    "net/minecraft/world/level/lighting/SkyLightSectionStorage"
+  ],
+
   "type_meta_info": {
     "inspect": [
       "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint",
@@ -854,15 +860,5 @@
       "net/minecraft/world/level/lighting/SkyLightSectionStorage",
       "net/minecraft/world/level/levelgen/Aquifer$NoiseBasedAquifer"
     ]
-  },
-
-  "suffixed_methods": [
-    "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint",
-    "net/minecraft/world/level/lighting/LayerLightEngine",
-    "net/minecraft/world/level/lighting/LayerLightSectionStorage",
-    "net/minecraft/world/level/lighting/BlockLightEngine",
-    "net/minecraft/world/level/lighting/SkyLightEngine",
-    "net/minecraft/world/level/lighting/BlockLightSectionStorage",
-    "net/minecraft/world/level/lighting/SkyLightSectionStorage"
-  ]
+  }
 }
