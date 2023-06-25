@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.FabricMappingsProvider;
@@ -27,6 +28,7 @@ import io.github.opencubicchunks.dasm.MappingsProvider;
 import io.github.opencubicchunks.dasm.RedirectsParseException;
 import io.github.opencubicchunks.dasm.RedirectsParser;
 import io.github.opencubicchunks.dasm.Transformer;
+import io.github.opencubicchunks.dasm.TypeRedirect;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.ClassWriter;

@@ -19,6 +19,7 @@ import io.github.opencubicchunks.cubicchunks.server.level.CubicDistanceManager;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicPlayerTicketTracker;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType;
 import io.github.opencubicchunks.cubicchunks.server.level.FixedPlayerDistanceCubeTracker;
+import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeStatus;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -68,6 +69,8 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
 
     @Shadow abstract void addTicket(long position, Ticket<?> ticket);
 
+    @Shadow @Final private Long2ObjectOpenHashMap<SortedArraySet<Ticket<?>>> tickets;
+
     @Inject(method = "<init>", at = @At("RETURN"))
     public void init(Executor backgroundExecutor, Executor mainThreadExecutor_, CallbackInfo ci) {
         ProcessorHandle<Runnable> mainThreadHandle = ProcessorHandle.of("player ticket throttler", mainThreadExecutor_::execute);
@@ -102,10 +105,11 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
     private void onCubeTicketAdded(long cubePosIn, Ticket<?> ticketIn, CallbackInfo ci) {
         // force a ticket on the cube's columns
         CubePos cubePos = CubePos.from(cubePosIn);
+        int chunkTicketLevel = CubeStatus.cubeToChunkLevel(ticketIn.getTicketLevel());
         for (int localX = 0; localX < CubicConstants.DIAMETER_IN_SECTIONS; localX++) {
             for (int localZ = 0; localZ < CubicConstants.DIAMETER_IN_SECTIONS; localZ++) {
                 //do not need to handle region tickets due to the additional CCColumn tickets added in cube generation stages
-                addTicket(CubePos.asChunkPosLong(cubePosIn, localX, localZ), TicketAccess.createNew(CubicTicketType.COLUMN, ticketIn.getTicketLevel(), cubePos));
+                addTicket(CubePos.asChunkPosLong(cubePosIn, localX, localZ), TicketAccess.createNew(CubicTicketType.COLUMN, chunkTicketLevel, cubePos));
             }
         }
     }

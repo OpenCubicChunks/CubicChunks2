@@ -1,80 +1,112 @@
 {
+    "imports": [
+        "java.lang.Iterable",
+        "java.lang.Object",
+        "java.util.concurrent.Executor",
+        "net.minecraft.core.BlockPos$MutableBlockPos",
+        "net.minecraft.core.SectionPos",
+        "net.minecraft.server.level.ChunkHolder",
+        "net.minecraft.server.level.ChunkHolder$LevelChangeListener",
+        "net.minecraft.server.level.ChunkHolder$PlayerProvider",
+        "net.minecraft.server.level.ChunkMap",
+        "net.minecraft.server.level.ChunkMap$DistanceManager",
+        "net.minecraft.server.level.ChunkTaskPriorityQueue",
+        "net.minecraft.server.level.ChunkTaskPriorityQueueSorter",
+        "net.minecraft.server.level.DistanceManager",
+        "net.minecraft.server.level.ServerLevel",
+        "net.minecraft.server.level.ServerPlayer",
+        "net.minecraft.server.level.Ticket",
+        "net.minecraft.server.level.TicketType",
+        "net.minecraft.util.SortedArraySet",
+        "net.minecraft.world.entity.MobCategory",
+        "net.minecraft.world.level.ChunkPos",
+        "net.minecraft.world.level.LevelHeightAccessor",
+        "net.minecraft.world.level.LocalMobCapCalculator",
+        "net.minecraft.world.level.NaturalSpawner",
+        "net.minecraft.world.level.NaturalSpawner$AfterSpawnCallback",
+        "net.minecraft.world.level.NaturalSpawner$ChunkGetter",
+        "net.minecraft.world.level.NaturalSpawner$SpawnPredicate",
+        "net.minecraft.world.level.NaturalSpawner$SpawnState",
+        "net.minecraft.world.level.chunk.ChunkAccess",
+        "net.minecraft.world.level.chunk.LevelChunk",
+        "net.minecraft.world.level.lighting.LevelLightEngine"
+    ],
     "defaultSets": [ "general" ],
     "targets": {
-        "net.minecraft.server.level.ChunkTaskPriorityQueue": {
+        "ChunkTaskPriorityQueue": {
         },
-        "net.minecraft.server.level.ChunkTaskPriorityQueueSorter": {
+        "ChunkTaskPriorityQueueSorter": {
         },
-        "net.minecraft.server.level.ChunkMap$DistanceManager": {
+        "ChunkMap$DistanceManager": {
             "targetMethods": {
-                "net.minecraft.server.level.ChunkHolder updateChunkScheduling(long, int, net.minecraft.server.level.ChunkHolder, int)": {
+                "ChunkHolder updateChunkScheduling(long, int, ChunkHolder, int)": {
                     "newName": "updateCubeScheduling",
-                    "mappingsOwner": "net.minecraft.server.level.DistanceManager"
+                    "mappingsOwner": "DistanceManager"
                 },
                 "boolean isChunkToRemove(long)": {
                     "newName": "isCubeToRemove",
-                    "mappingsOwner": "net.minecraft.server.level.DistanceManager"
+                    "mappingsOwner": "DistanceManager"
                 },
-                "net.minecraft.server.level.ChunkHolder getChunk(long)": {
+                "ChunkHolder getChunk(long)": {
                     "newName": "getCube",
-                    "mappingsOwner": "net.minecraft.server.level.DistanceManager"
+                    "mappingsOwner": "DistanceManager"
                 }
             }
         },
-        "net.minecraft.server.level.ChunkMap": {
+        "ChunkMap": {
             "targetMethods": {
-                "net.minecraft.server.level.ChunkHolder updateChunkScheduling(long, int, net.minecraft.server.level.ChunkHolder, int)": {
+                "ChunkHolder updateChunkScheduling(long, int, ChunkHolder, int)": {
                     "newName": "updateCubeScheduling",
                     "makeSyntheticAccessor": true
                 },
-                "boolean isExistingChunkFull(net.minecraft.world.level.ChunkPos)": "isExistingCubeFull"
+                "boolean isExistingChunkFull(ChunkPos)": "isExistingCubeFull"
             },
             "useSets": [
                 "general",
                 "chunkMapSet"
             ]
         },
-        "net.minecraft.world.level.NaturalSpawner": {
+        "NaturalSpawner": {
             "targetMethods": {
-                "void spawnForChunk(net.minecraft.server.level.ServerLevel, net.minecraft.world.level.chunk.LevelChunk, net.minecraft.world.level.NaturalSpawner$SpawnState, boolean, boolean, boolean)": "spawnForCube",
-                "void spawnCategoryForChunk(net.minecraft.world.entity.MobCategory, net.minecraft.server.level.ServerLevel, net.minecraft.world.level.chunk.LevelChunk, net.minecraft.world.level.NaturalSpawner$SpawnPredicate, net.minecraft.world.level.NaturalSpawner$AfterSpawnCallback)": "spawnCategoryForCube",
-                "boolean isRightDistanceToPlayerAndSpawnPoint(net.minecraft.server.level.ServerLevel, net.minecraft.world.level.chunk.ChunkAccess, net.minecraft.core.BlockPos$MutableBlockPos, double)": "isRightDistanceToPlayerAndSpawnPointForCube",
-                "net.minecraft.world.level.NaturalSpawner$SpawnState createState(int, java.lang.Iterable, net.minecraft.world.level.NaturalSpawner$ChunkGetter, net.minecraft.world.level.LocalMobCapCalculator)": "createCubicState"
+                "void spawnForChunk(ServerLevel, LevelChunk, NaturalSpawner$SpawnState, boolean, boolean, boolean)": "spawnForCube",
+                "void spawnCategoryForChunk(MobCategory, ServerLevel, LevelChunk, NaturalSpawner$SpawnPredicate, NaturalSpawner$AfterSpawnCallback)": "spawnCategoryForCube",
+                "boolean isRightDistanceToPlayerAndSpawnPoint(ServerLevel, ChunkAccess, BlockPos$MutableBlockPos, double)": "isRightDistanceToPlayerAndSpawnPointForCube",
+                "NaturalSpawner$SpawnState createState(int, Iterable, NaturalSpawner$ChunkGetter, LocalMobCapCalculator)": "createCubicState"
             },
             "useSets": [
                 "general",
                 "naturalSpawnerSet"
             ]
         },
-        "net.minecraft.server.level.ChunkHolder": {
+        "ChunkHolder": {
             "targetMethods": {
-                "void <init>(net.minecraft.world.level.ChunkPos, int, net.minecraft.world.level.LevelHeightAccessor, net.minecraft.world.level.lighting.LevelLightEngine, net.minecraft.server.level.ChunkHolder$LevelChangeListener, net.minecraft.server.level.ChunkHolder$PlayerProvider)": "\u003cinit\u003e",
-                "void updateFutures(net.minecraft.server.level.ChunkMap, java.util.concurrent.Executor)": "updateCubeFutures"
+                "void <init>(ChunkPos, int, LevelHeightAccessor, LevelLightEngine, ChunkHolder$LevelChangeListener, ChunkHolder$PlayerProvider)": "\u003cinit\u003e",
+                "void updateFutures(ChunkMap, Executor)": "updateCubeFutures"
             },
             "useSets": [
                 "general"
             ]
         },
-        "net.minecraft.server.level.DistanceManager": {
+        "DistanceManager": {
             "targetMethods": {
                 "void purgeStaleTickets()": "purgeStaleCubeTickets",
-                "boolean runAllUpdates(net.minecraft.server.level.ChunkMap)": "runAllUpdatesCubic",
-                "void addTicket(long, net.minecraft.server.level.Ticket)": "addCubeTicket",
-                "void removeTicket(long, net.minecraft.server.level.Ticket)": "removeCubeTicket",
-                "void addTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "addCubeTicket",
-                "void removeTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "removeCubeTicket",
-                "void addRegionTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "addCubeRegionTicket",
-                "void removeRegionTicket(net.minecraft.server.level.TicketType, net.minecraft.world.level.ChunkPos, int, java.lang.Object)": "removeCubeRegionTicket",
-                "net.minecraft.util.SortedArraySet getTickets(long)": "getCubeTickets",
-                "void updateChunkForced(net.minecraft.world.level.ChunkPos, boolean)": "updateCubeForced",
-                "void addPlayer(net.minecraft.core.SectionPos, net.minecraft.server.level.ServerPlayer)": "addCubePlayer",
-                "void removePlayer(net.minecraft.core.SectionPos, net.minecraft.server.level.ServerPlayer)": "removeCubePlayer",
+                "boolean runAllUpdates(ChunkMap)": "runAllUpdatesCubic",
+                "void addTicket(long, Ticket)": "addCubeTicket",
+                "void removeTicket(long, Ticket)": "removeCubeTicket",
+                "void addTicket(TicketType, ChunkPos, int, Object)": "addCubeTicket",
+                "void removeTicket(TicketType, ChunkPos, int, Object)": "removeCubeTicket",
+                "void addRegionTicket(TicketType, ChunkPos, int, Object)": "addCubeRegionTicket",
+                "void removeRegionTicket(TicketType, ChunkPos, int, Object)": "removeCubeRegionTicket",
+                "SortedArraySet getTickets(long)": "getCubeTickets",
+                "void updateChunkForced(ChunkPos, boolean)": "updateCubeForced",
+                "void addPlayer(SectionPos, ServerPlayer)": "addCubePlayer",
+                "void removePlayer(SectionPos, ServerPlayer)": "removeCubePlayer",
                 "boolean inEntityTickingRange(long)": "isEntityTickingRangeCube",
                 "boolean inBlockTickingRange(long)": "inBlockTickingRangeCube",
                 "int getNaturalSpawnChunkCount()": "getNaturalSpawnCubeCount",
                 "boolean hasPlayersNearby(long)": "hasPlayersNearbyCube",
                 "void removeTicketsOnClosing()": "removeCubeTicketsOnClosing",
-                "int getTicketLevelAt(net.minecraft.util.SortedArraySet)": "getCubeTicketLevelAt"
+                "int getTicketLevelAt(SortedArraySet)": "getCubeTicketLevelAt"
             }
         }
     }
