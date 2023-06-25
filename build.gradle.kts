@@ -14,7 +14,7 @@ plugins {
     id("maven-publish")
     id("checkstyle")
     id("io.github.juuxel.loom-quiltflower").version("1.7.2")
-    id("io.github.opencubicchunks.javaheaders").version("1.2.6")
+    id("io.github.opencubicchunks.javaheaders").version("1.2.7")
     id("io.github.opencubicchunks.gradle.mcGitVersion")
     id("io.github.opencubicchunks.gradle.mixingen")
     id("io.github.opencubicchunks.gradle.dasm")
@@ -283,7 +283,7 @@ dependencies {
     debugCompile("org.lwjgl:lwjgl-vulkan:$lwjglVersion")
     debugRuntime("org.lwjgl:lwjgl::$lwjglNatives")
 
-    include(implementation("com.github.OpenCubicChunks:dasm:83a8175258")!!)
+    include(implementation("com.github.OpenCubicChunks:dasm:9709b98")!!)
     include(implementation("io.github.opencubicchunks:regionlib:0.63.0-SNAPSHOT")!!)
     include(implementation("org.spongepowered:noise:2.0.0-SNAPSHOT")!!)
 
