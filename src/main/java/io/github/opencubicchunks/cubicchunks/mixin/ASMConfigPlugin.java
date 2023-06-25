@@ -30,6 +30,7 @@ import io.github.opencubicchunks.dasm.Transformer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.ClassWriter;
+import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -51,19 +52,26 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     public ASMConfigPlugin() {
         boolean developmentEnvironment = true;
         try {
-            FabricLoader.getInstance().isDevelopmentEnvironment();
+            developmentEnvironment = FabricLoader.getInstance().isDevelopmentEnvironment();
         } catch (NullPointerException ignored) { // isDevelopmentEnvironment can throw from a test environment as it has no launcher instance
         }
+        MappingsProvider mappings = new MappingsProvider() {
+            final MappingResolver mappingsResolver = FabricLoader.getInstance().getMappingResolver();
 
-        this.transformer = new Transformer(
-            MappingsProvider.IDENTITY,
-            TestMappingUtils.isDev()
-        );
+            @Override public String mapFieldName(String owner, String fieldName, String descriptor) {
+                return mappingsResolver.mapFieldName("intermediary",
+                    owner, fieldName, descriptor);
+            }
 
-        this.mappings = new FabricMappingsProvider(
-            TestMappingUtils.getMappingResolver(),
-            "intermediary"
-        );
+            @Override public String mapMethodName(String owner, String methodName, String descriptor) {
+                return mappingsResolver.mapMethodName("intermediary", owner, methodName, descriptor);            }
+
+            @Override public String mapClassName(String className) {
+                return mappingsResolver.mapClassName("intermediary", className);
+            }
+        };
+
+        this.transformer = new Transformer(mappings, developmentEnvironment);
 
         List<RedirectsParser.RedirectSet> redirectSets;
         List<RedirectsParser.ClassTarget> targetClasses;
@@ -71,34 +79,36 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             //TODO: add easy use of multiple set and target json files
             redirectSets = loadSetsFile("dasm/sets/sets.json");
             targetClasses = loadTargetsFile("dasm/targets.json");
-        } catch (RedirectsParseException e) {
+
+            Map<String, RedirectsParser.RedirectSet> redirectSetByName = new HashMap<>();
+
+            for (RedirectsParser.RedirectSet redirectSet : redirectSets) {
+                redirectSetByName.put(redirectSet.getName(), redirectSet);
+            }
+            for (RedirectsParser.ClassTarget target : targetClasses) {
+                classTargetByName.put(mappings.mapClassName(target.getClassName()), target);
+                List<RedirectsParser.RedirectSet> sets = new ArrayList<>();
+                for (String set : target.getSets()) {
+                    sets.add(redirectSetByName.get(set));
+                }
+                redirectSetsByClassTarget.put(target, sets);
+                if (target.isWholeClass()) {
+                    classDuplicationDummyTargets.put(
+                        mappings.mapClassName(findWholeClassTypeRedirectFor(target, redirectSetByName)),
+                        target.getClassName());
+                }
+            }
+        } catch (Throwable e) {
             constructException = e; // Annoying because mixin catches Throwable for creating a config plugin >:(
             return;
         }
         constructException = null;
-
-        Map<String, RedirectsParser.RedirectSet> redirectSetByName = new HashMap<>();
-
-        for (RedirectsParser.RedirectSet redirectSet : redirectSets) {
-            redirectSetByName.put(redirectSet.getName(), redirectSet);
-        }
-        for (RedirectsParser.ClassTarget target : targetClasses) {
-            classTargetByName.put(target.getClassName(), target);
-            List<RedirectsParser.RedirectSet> sets = new ArrayList<>();
-            for (String set : target.getSets()) {
-                sets.add(redirectSetByName.get(set));
-            }
-            redirectSetsByClassTarget.put(target, sets);
-            if (target.isWholeClass()) {
-                classDuplicationDummyTargets.put(findWholeClassTypeRedirectFor(target, redirectSetByName), target.getClassName());
-            }
-        }
     }
 
     private String findWholeClassTypeRedirectFor(RedirectsParser.ClassTarget target, Map<String, RedirectsParser.RedirectSet> redirects) {
         List<String> sets = target.getSets();
         for (String set : sets) {
-            for (RedirectsParser.RedirectSet.TypeRedirect typeRedirect : redirects.get(set).getTypeRedirects()) {
+            for (TypeRedirect typeRedirect : redirects.get(set).getTypeRedirects()) {
                 if (typeRedirect.srcClassName().equals(target.getClassName())) {
                     return typeRedirect.dstClassName();
                 }
@@ -144,7 +154,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             //Ideally the input json would all have the same, and we'd just figure it out here
             RedirectsParser.ClassTarget target = classTargetByName.get(targetClassName);
             if (target == null) {
-                return; //Class is transformed by MainTransformer
+                throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
             }
             if (target.isWholeClass()) {
                 ClassNode duplicate = new ClassNode();
@@ -275,7 +285,14 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     private List<RedirectsParser.RedirectSet> loadSetsFile(String fileName) throws RedirectsParseException {
         RedirectsParser redirectsParser = new RedirectsParser();
 
-        JsonElement setsJson = parseFileAsJson(fileName);
-        return redirectsParser.parseRedirectSet(setsJson.getAsJsonObject());
+        JsonObject setsJson = parseFileAsJson(fileName).getAsJsonObject();
+        JsonElement sets = setsJson.get("sets");
+        JsonElement globalImports = setsJson.get("imports");
+
+        if (globalImports == null) {
+            return redirectsParser.parseRedirectSet(sets.getAsJsonObject());
+        } else {
+            return redirectsParser.parseRedirectSet(sets.getAsJsonObject(), globalImports);
+        }
     }
 }
