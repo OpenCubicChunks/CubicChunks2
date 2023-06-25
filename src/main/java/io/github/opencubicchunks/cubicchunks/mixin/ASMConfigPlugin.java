@@ -25,6 +25,7 @@ import io.github.opencubicchunks.dasm.RedirectsParser;
 import io.github.opencubicchunks.dasm.Transformer;
 import io.github.opencubicchunks.dasm.TypeRedirect;
 import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -47,7 +48,23 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             developmentEnvironment = FabricLoader.getInstance().isDevelopmentEnvironment();
         } catch (NullPointerException ignored) { // isDevelopmentEnvironment can throw from a test environment as it has no launcher instance
         }
-        this.transformer = new Transformer(MappingsProvider.IDENTITY, developmentEnvironment);
+        MappingsProvider mappings = new MappingsProvider() {
+            final MappingResolver mappingsResolver = FabricLoader.getInstance().getMappingResolver();
+
+            @Override public String mapFieldName(String owner, String fieldName, String descriptor) {
+                return mappingsResolver.mapFieldName("intermediary",
+                    owner, fieldName, descriptor);
+            }
+
+            @Override public String mapMethodName(String owner, String methodName, String descriptor) {
+                return mappingsResolver.mapMethodName("intermediary", owner, methodName, descriptor);            }
+
+            @Override public String mapClassName(String className) {
+                return mappingsResolver.mapClassName("intermediary", className);
+            }
+        };
+
+        this.transformer = new Transformer(mappings, developmentEnvironment);
 
         List<RedirectsParser.RedirectSet> redirectSets;
         List<RedirectsParser.ClassTarget> targetClasses;
@@ -62,14 +79,16 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
                 redirectSetByName.put(redirectSet.getName(), redirectSet);
             }
             for (RedirectsParser.ClassTarget target : targetClasses) {
-                classTargetByName.put(target.getClassName(), target);
+                classTargetByName.put(mappings.mapClassName(target.getClassName()), target);
                 List<RedirectsParser.RedirectSet> sets = new ArrayList<>();
                 for (String set : target.getSets()) {
                     sets.add(redirectSetByName.get(set));
                 }
                 redirectSetsByClassTarget.put(target, sets);
                 if (target.isWholeClass()) {
-                    classDuplicationDummyTargets.put(findWholeClassTypeRedirectFor(target, redirectSetByName), target.getClassName());
+                    classDuplicationDummyTargets.put(
+                        mappings.mapClassName(findWholeClassTypeRedirectFor(target, redirectSetByName)),
+                        target.getClassName());
                 }
             }
         } catch (Throwable e) {
