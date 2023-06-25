@@ -52,12 +52,12 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             final MappingResolver mappingsResolver = FabricLoader.getInstance().getMappingResolver();
 
             @Override public String mapFieldName(String owner, String fieldName, String descriptor) {
-                return mappingsResolver.mapFieldName("intermediary",
-                    owner, fieldName, descriptor);
+                return mappingsResolver.mapFieldName("intermediary", owner, fieldName, descriptor);
             }
 
             @Override public String mapMethodName(String owner, String methodName, String descriptor) {
-                return mappingsResolver.mapMethodName("intermediary", owner, methodName, descriptor);            }
+                return mappingsResolver.mapMethodName("intermediary", owner, methodName, descriptor);
+            }
 
             @Override public String mapClassName(String className) {
                 return mappingsResolver.mapClassName("intermediary", className);
