@@ -213,7 +213,7 @@ public class TypeTransformer {
         MethodID methodID = MethodID.of(classNode, methodNode);
 
         //Get any type hints for this method
-        Map<Integer, TransformType> typeHints;
+        List<TransformType> typeHints;
         if (transformInfo != null) {
             typeHints = transformInfo.getTypeHints().get(methodID);
         } else {
@@ -222,7 +222,7 @@ public class TypeTransformer {
 
         if (typeHints != null) {
             //Set the type hints
-            config.getInterpreter().setLocalVarOverrides(typeHints);
+            config.getInterpreter().setLocalVarOverrides(methodID, typeHints);
         }
 
         try {
@@ -256,7 +256,7 @@ public class TypeTransformer {
         for (int i = 0; i < args.length; i++) {
             argTypes[i] = TransformSubtype.createDefault(args[i]);
 
-            if (typeHints != null && typeHints.containsKey(index)) {
+            if (typeHints != null && typeHints.size() > index && typeHints.get(index) != null) {
                 argTypes[i] = TransformSubtype.of(typeHints.get(index));
             }
 

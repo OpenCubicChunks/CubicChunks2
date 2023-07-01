@@ -490,9 +490,26 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         return value1.merge(value2);
     }
 
-    public void setLocalVarOverrides(Map<Integer, TransformType> localVarOverrides) {
+    public void setLocalVarOverrides(MethodID id, List<@Nullable TransformType> parameterOverrides) {
         this.parameterOverrides.clear();
-        this.parameterOverrides.putAll(localVarOverrides);
+
+        if (parameterOverrides.isEmpty()) return;
+
+        int localVarIdx = 0;
+        int parameterIdx = 0;
+
+        if (!id.isStatic()) {
+            this.parameterOverrides.put(localVarIdx++, parameterOverrides.get(parameterIdx++));
+        }
+
+        Type[] argumentTypes = id.getDescriptor().getArgumentTypes();
+        int typeIdx = 0;
+
+        for(; localVarIdx < parameterOverrides.size(); parameterIdx++) {
+            this.parameterOverrides.put(localVarIdx, parameterOverrides.get(parameterIdx));
+
+            localVarIdx += argumentTypes[typeIdx++].getSize();
+        }
     }
 
     public static void bindValuesToMethod(AnalysisResults methodResults, int parameterOffset, TransformTrackingValue... parameters) {

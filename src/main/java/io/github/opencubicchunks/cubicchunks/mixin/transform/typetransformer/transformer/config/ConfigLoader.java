@@ -122,17 +122,19 @@ public class ConfigLoader {
             Type type = remapType(Type.getObjectType(obj.get("class").getAsString()), map);
 
             JsonElement typeHintsElem = obj.get("type_hints");
-            Map<MethodID, Map<Integer, TransformType>> typeHints = new AncestorHashMap<>(hierarchy);
+            Map<MethodID, List<TransformType>> typeHints = new AncestorHashMap<>(hierarchy);
             if (typeHintsElem != null) {
                 JsonArray typeHintsArr = typeHintsElem.getAsJsonArray();
                 for (JsonElement typeHint : typeHintsArr) {
                     MethodID method = loadMethodID(typeHint.getAsJsonObject().get("method"), map, null);
-                    Map<Integer, TransformType> paramTypes = new HashMap<>();
+                    List<TransformType> paramTypes = new ArrayList<>();
                     JsonArray paramTypesArr = typeHint.getAsJsonObject().get("types").getAsJsonArray();
                     for (int i = 0; i < paramTypesArr.size(); i++) {
                         JsonElement paramType = paramTypesArr.get(i);
                         if (!paramType.isJsonNull()) {
-                            paramTypes.put(i, transformTypeMap.get(paramType.getAsString()));
+                            paramTypes.add(transformTypeMap.get(paramType.getAsString()));
+                        } else {
+                            paramTypes.add(null);
                         }
                     }
                     typeHints.put(method, paramTypes);
