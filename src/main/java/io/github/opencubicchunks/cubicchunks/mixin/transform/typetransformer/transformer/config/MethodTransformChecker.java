@@ -6,11 +6,11 @@ import org.jetbrains.annotations.Nullable;
 
 public class MethodTransformChecker {
     private final MethodParameterInfo target;
-    private final @Nullable Minimum[] minimums;
+    private final @Nullable MinimumConditions[] minimumConditions;
 
-    public MethodTransformChecker(MethodParameterInfo target, @Nullable Minimum[] minimums) {
+    public MethodTransformChecker(MethodParameterInfo target, @Nullable MinimumConditions[] minimumConditions) {
         this.target = target;
-        this.minimums = minimums;
+        this.minimumConditions = minimumConditions;
     }
 
     /**
@@ -36,10 +36,10 @@ public class MethodTransformChecker {
             }
         }
 
-        if (minimums != null) {
+        if (minimumConditions != null) {
             //Check if any minimums are met
-            for (Minimum minimum : minimums) {
-                if (minimum.isMet(returnValue, parameters)) {
+            for (MinimumConditions conditions : this.minimumConditions) {
+                if (conditions.isMet(returnValue, parameters)) {
                     return 1;
                 }
             }
@@ -68,7 +68,7 @@ public class MethodTransformChecker {
         return current.equals(target);
     }
 
-    public static record Minimum(TransformSubtype returnType, TransformSubtype... parameterTypes) {
+    public static record MinimumConditions(TransformSubtype returnType, TransformSubtype... parameterTypes) {
         public boolean isMet(TransformTrackingValue returnValue, TransformTrackingValue[] parameters) {
             if (returnType.getTransformType() != null) {
                 if (!returnValue.getTransform().equals(returnType)) {

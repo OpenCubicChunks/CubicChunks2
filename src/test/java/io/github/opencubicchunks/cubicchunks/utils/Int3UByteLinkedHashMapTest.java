@@ -247,17 +247,4 @@ public class Int3UByteLinkedHashMapTest {
             this.ensureEqual(Object2IntMaps.emptyMap(), test);
         }
     }
-
-    @Test
-    public void testIterators() {
-        /*try(Int3UByteLinkedHashMap map = new Int3UByteLinkedHashMap()){
-            map.put(0, 0, 1, 5);
-            map.put(0, 0, 2, 4);
-            map.put(2, 1, 2, 2);
-            map.put(5, 11, 3, 1);
-            map.put(10, 15, -4, 11);
-
-            map.keySet().forEach((LongConsumer) (l) -> {});
-        }*/
-    }
 }

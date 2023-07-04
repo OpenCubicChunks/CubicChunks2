@@ -39,7 +39,7 @@ import org.objectweb.asm.tree.analysis.Interpreter;
  */
 public class TransformTrackingInterpreter extends Interpreter<TransformTrackingValue> {
     private final Config config;
-    private final Map<Integer, TransformType> parameterOverrides = new HashMap<>();
+    private final Map<Integer, TransformType> localVarOverrides = new HashMap<>();
 
     private Map<MethodID, AnalysisResults> resultLookup = new HashMap<>();
     private Map<MethodID, List<FutureMethodBinding>> futureMethodBindings;
@@ -58,7 +58,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     public void reset() {
-        parameterOverrides.clear();
+        localVarOverrides.clear();
     }
 
     @Override
@@ -76,8 +76,8 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         //Use parameter overrides to try to get the types
         if (subType == Type.VOID_TYPE) return null;
         TransformTrackingValue value = new TransformTrackingValue(subType, fieldBindings, config);
-        if (parameterOverrides.containsKey(local)) {
-            value.setTransformType(parameterOverrides.get(local));
+        if (localVarOverrides.containsKey(local)) {
+            value.setTransformType(localVarOverrides.get(local));
         }
         return value;
     }
@@ -125,7 +125,6 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     @Override
-    //Because of the custom Frame (defined in Config$DuplicatorFrame) this method may be called multiple times for the same instruction-value pair
     public TransformTrackingValue copyOperation(AbstractInsnNode insn, TransformTrackingValue value) {
         TransformTrackingValue result = new TransformTrackingValue(value.getType(), value.getTransform(), fieldBindings, config);
         TransformTrackingValue.setSameType(result, value);
@@ -491,7 +490,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     public void setLocalVarOverrides(MethodID id, List<@Nullable TransformType> parameterOverrides) {
-        this.parameterOverrides.clear();
+        this.localVarOverrides.clear();
 
         if (parameterOverrides.isEmpty()) return;
 
@@ -499,14 +498,14 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         int parameterIdx = 0;
 
         if (!id.isStatic()) {
-            this.parameterOverrides.put(localVarIdx++, parameterOverrides.get(parameterIdx++));
+            this.localVarOverrides.put(localVarIdx++, parameterOverrides.get(parameterIdx++));
         }
 
         Type[] argumentTypes = id.getDescriptor().getArgumentTypes();
         int typeIdx = 0;
 
-        for(; localVarIdx < parameterOverrides.size(); parameterIdx++) {
-            this.parameterOverrides.put(localVarIdx, parameterOverrides.get(parameterIdx));
+        for (; parameterIdx < parameterOverrides.size(); parameterIdx++) {
+            this.localVarOverrides.put(localVarIdx, parameterOverrides.get(parameterIdx));
 
             localVarIdx += argumentTypes[typeIdx++].getSize();
         }

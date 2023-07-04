@@ -232,9 +232,9 @@ public class ConfigLoader {
                     getMethodReplacement(map, possibility, params, expansionsNeeded, indices, replacementJsonArray);
 
                 JsonElement minimumsJson = possibility.get("minimums");
-                MethodTransformChecker.Minimum[] minimums = getMinimums(methodID, transformTypes, minimumsJson);
+                MethodTransformChecker.MinimumConditions[] minimumConditions = getMinimums(methodID, transformTypes, minimumsJson);
 
-                MethodParameterInfo info = new MethodParameterInfo(methodID, returnType, params, minimums, mr);
+                MethodParameterInfo info = new MethodParameterInfo(methodID, returnType, params, minimumConditions, mr);
                 paramInfo.add(info);
             }
             parameterInfo.put(methodID, paramInfo);
@@ -284,9 +284,7 @@ public class ConfigLoader {
                     }
                 }
             } else {
-                for (int j = 0; j < expansionsNeeded; j++) {
-                    indices[j][i] = Collections.singletonList(indices1.getAsInt());
-                }
+                throw new IllegalArgumentException("Indices must be an array of arrays");
             }
         }
     }
@@ -324,13 +322,13 @@ public class ConfigLoader {
         }
     }
 
-    @Nullable private static MethodTransformChecker.Minimum[] getMinimums(MethodID method, Map<String, TransformType> transformTypes, JsonElement minimumsJson) {
-        MethodTransformChecker.Minimum[] minimums = null;
+    @Nullable private static MethodTransformChecker.MinimumConditions[] getMinimums(MethodID method, Map<String, TransformType> transformTypes, JsonElement minimumsJson) {
+        MethodTransformChecker.MinimumConditions[] minimumConditions = null;
         if (minimumsJson != null) {
             if (!minimumsJson.isJsonArray()) {
                 throw new RuntimeException("Minimums are not an array. Cannot read them");
             }
-            minimums = new MethodTransformChecker.Minimum[minimumsJson.getAsJsonArray().size()];
+            minimumConditions = new MethodTransformChecker.MinimumConditions[minimumsJson.getAsJsonArray().size()];
             for (int i = 0; i < minimumsJson.getAsJsonArray().size(); i++) {
                 JsonObject minimum = minimumsJson.getAsJsonArray().get(i).getAsJsonObject();
 
@@ -354,10 +352,10 @@ public class ConfigLoader {
                     }
                 }
 
-                minimums[i] = new MethodTransformChecker.Minimum(minimumReturnType, argTypes);
+                minimumConditions[i] = new MethodTransformChecker.MinimumConditions(minimumReturnType, argTypes);
             }
         }
-        return minimums;
+        return minimumConditions;
     }
 
     @Nullable
@@ -566,6 +564,13 @@ public class ConfigLoader {
         }
     }
 
+    /**
+     * Parses a method ID from a JSON object or the string
+     * @param method The JSON object or string
+     * @param map The mapping resolver
+     * @param defaultCallType The default call type to use if the json doesn't specify it. Used when the call type can be inferred from context.
+     * @return
+     */
     public static MethodID loadMethodID(JsonElement method, @Nullable MappingResolver map, @Nullable MethodID.CallType defaultCallType) {
         MethodID methodID;
         if (method.isJsonPrimitive()) {
@@ -591,13 +596,14 @@ public class ConfigLoader {
                 nameIndex = 1;
                 descIndex = 2;
             } else {
-                callType = MethodID.CallType.VIRTUAL;
+                if (defaultCallType == null) {
+                    throw new IllegalArgumentException("Invalid method ID: " + id);
+                }
+
+                callType = defaultCallType;
+
                 nameIndex = 0;
                 descIndex = 1;
-            }
-
-            if (defaultCallType != null) {
-                callType = defaultCallType;
             }
 
             String desc = parts[descIndex];
@@ -611,9 +617,20 @@ public class ConfigLoader {
             String owner = method.getAsJsonObject().get("owner").getAsString();
             String name = method.getAsJsonObject().get("name").getAsString();
             String desc = method.getAsJsonObject().get("desc").getAsString();
-            String callTypeStr = method.getAsJsonObject().get("call_type").getAsString();
 
-            MethodID.CallType callType = MethodID.CallType.valueOf(callTypeStr.toUpperCase());
+            MethodID.CallType callType;
+            JsonElement callTypeElement = method.getAsJsonObject().get("call_type");
+
+            if (callTypeElement == null) {
+                if (defaultCallType == null) {
+                    throw new IllegalArgumentException("Invalid method ID: " + method);
+                }
+
+                callType = defaultCallType;
+            } else {
+                String callTypeStr = callTypeElement.getAsString();
+                callType = MethodID.CallType.valueOf(callTypeStr.toUpperCase());
+            }
 
             methodID = new MethodID(Type.getObjectType(owner), name, Type.getMethodType(desc), callType);
         }

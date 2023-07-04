@@ -28,13 +28,7 @@ public class TransformTrackingValue implements Value {
     private final Config config;
 
     public TransformTrackingValue(@Nullable Type type, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues, Config config) {
-        this.type = type;
-        this.pseudoValues = fieldPseudoValues;
-        this.transform = TransformSubtype.createDefault(type);
-        this.config = config;
-
-        this.transform.getTransformTypePtr().addTrackingValue(this);
-        this.transform.setSubType(TransformSubtype.getSubType(type, config));
+        this(type, TransformSubtype.createDefault(type), fieldPseudoValues, config);
     }
 
     public TransformTrackingValue(@Nullable Type type, TransformSubtype transform, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues, Config config) {
@@ -82,7 +76,7 @@ public class TransformTrackingValue implements Value {
         this.transform.getTransformTypePtr().setValue(transformType);
     }
 
-    public void updateType(@Nullable TransformType oldType, TransformType newType) {
+    public void updateType(TransformType newType) {
         //Set appropriate array dimensions
         Set<TransformTrackingValue> copy = new HashSet<>(valuesWithSameType);
         valuesWithSameType.clear(); //To prevent infinite recursion
@@ -119,12 +113,6 @@ public class TransformTrackingValue implements Value {
 
     @Override public int hashCode() {
         return Objects.hash(type, transform);
-    }
-
-    public static <T> Set<T> union(Set<T> first, Set<T> second) {
-        Set<T> union = new HashSet<>(first);
-        union.addAll(second);
-        return union;
     }
 
     public @Nullable Type getType() {

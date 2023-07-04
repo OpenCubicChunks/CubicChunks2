@@ -71,6 +71,10 @@ public class LinkedInt3HashSet implements AutoCloseable {
     protected long first = 0;
     protected long last = 0;
 
+    //Cached index of the first set bit in the first bucket
+    //This is mainly used in getFirstX(), getFirstY(), and getFirstX()
+    private int cachedIndex = -1;
+
     //Used in DynamicGraphMinFixedPoint transform constructor
     public LinkedInt3HashSet(DynamicGraphMinFixedPoint $1, int $2, float $3, int $4) {
         this();
@@ -159,7 +163,7 @@ public class LinkedInt3HashSet implements AutoCloseable {
                             first = bucketAddr;
                         }
 
-                        //If last is set, set the the last value's pointer to point here and set this pointer to last
+                        //If last is set, set the last value's pointer to point here and set this pointer to last
                         if (last != 0) {
                             PlatformDependent.putLong(last + NEXT_VALUE_OFFSET, bucketAddr);
                             PlatformDependent.putLong(bucketAddr + PREV_VALUE_OFFSET, last);
@@ -466,9 +470,7 @@ public class LinkedInt3HashSet implements AutoCloseable {
         this.last = 0L;
     }
 
-    //Cached index of value
-    int cachedIndex = -1;
-
+    //Called from ASM
     public int getFirstX() {
         if (size == 0) {
             throw new NoSuchElementException();
@@ -484,6 +486,7 @@ public class LinkedInt3HashSet implements AutoCloseable {
         return (x << BUCKET_AXIS_BITS) + dx;
     }
 
+    //Called from ASM
     public int getFirstY() {
         if (size == 0) {
             throw new NoSuchElementException();
@@ -499,6 +502,7 @@ public class LinkedInt3HashSet implements AutoCloseable {
         return (y << BUCKET_AXIS_BITS) + dy;
     }
 
+    //Called from ASM
     public int getFirstZ() {
         if (size == 0) {
             throw new NoSuchElementException();
@@ -514,6 +518,7 @@ public class LinkedInt3HashSet implements AutoCloseable {
         return (z << BUCKET_AXIS_BITS) + dz;
     }
 
+    //Called from ASM
     public void removeFirstValue() {
         if (size == 0) {
             throw new NoSuchElementException();
@@ -537,15 +542,11 @@ public class LinkedInt3HashSet implements AutoCloseable {
             cachedIndex = -1;
         } else {
             PlatformDependent.putLong(first + BUCKET_VALUE_OFFSET, value);
-            getFirstSetBitInFirstBucket(cachedIndex);
+            getFirstSetBitInFirstBucket();
         }
     }
 
     protected void getFirstSetBitInFirstBucket() {
-        getFirstSetBitInFirstBucket(0);
-    }
-
-    protected void getFirstSetBitInFirstBucket(int start) {
         long value = PlatformDependent.getLong(first + BUCKET_VALUE_OFFSET);
 
         cachedIndex = Long.numberOfTrailingZeros(value);

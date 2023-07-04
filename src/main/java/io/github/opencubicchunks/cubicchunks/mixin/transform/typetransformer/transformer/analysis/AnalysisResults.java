@@ -51,8 +51,9 @@ public record AnalysisResults(MethodNode methodNode, Frame<TransformTrackingValu
         TransformSubtype[] argTypes = new TransformSubtype[args.length + offset];
 
         int idx = 0;
-        for (int i = 0; idx < argTypes.length; i += frames[0].getLocal(i).getSize()) {
-            argTypes[idx++] = frames[0].getLocal(i).getTransform();
+        for (int i = 0; idx < argTypes.length; idx++) {
+            argTypes[idx] = frames[0].getLocal(i).getTransform();
+            i += frames[0].getLocal(i).getSize();
         }
 
         return argTypes;
@@ -67,7 +68,7 @@ public record AnalysisResults(MethodNode methodNode, Frame<TransformTrackingValu
         TransformSubtype[] types = argTypes;
         if (!ASMUtil.isStatic(methodNode)) {
             //If the method is not static then the first element of this.types is the 'this' argument.
-            //This argument is not shown is method descriptors, so we must exclude it
+            //This argument is not shown in method descriptors, so we must exclude it
             types = new TransformSubtype[types.length - 1];
             System.arraycopy(argTypes, 1, types, 0, types.length);
         }

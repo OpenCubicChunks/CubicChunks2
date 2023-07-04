@@ -320,7 +320,7 @@
       ]
     },
     {
-      "method": "i it/unimi/dsi/fastutil/longs/LongLost#forEach (Ljava/util/function/LongConsumer;)V",
+      "method": "i it/unimi/dsi/fastutil/longs/LongList#forEach (Ljava/util/function/LongConsumer;)V",
       "possibilities": [
         {
           "parameters": [
@@ -345,7 +345,7 @@
       ]
     },
     {
-      "method": "i it/unimi/dsi/fastutil/longs/LongLost#forEach (Lit/unimi/dsi/fastutil/longs/LongConsumer;)V",
+      "method": "i it/unimi/dsi/fastutil/longs/LongList#forEach (Lit/unimi/dsi/fastutil/longs/LongConsumer;)V",
       "possibilities": [
         {
           "parameters": [
@@ -749,7 +749,6 @@
           "types": [
             null,
             "blockpos",
-            null,
             "blockpos"
           ]
         },
@@ -775,7 +774,6 @@
           "types": [
             null,
             "blockpos",
-            null,
             "blockpos"
           ]
         },

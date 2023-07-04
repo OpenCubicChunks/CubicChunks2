@@ -63,7 +63,7 @@ public class InvokerInfo {
             System.arraycopy(argTypes, 0, newArgTypes, 1, argTypes.length);
 
             //Generate minimums
-            List<MethodTransformChecker.Minimum> minimums = new ArrayList<>();
+            List<MethodTransformChecker.MinimumConditions> minimumConditions = new ArrayList<>();
             Type[] args = methodID.getDescriptor().getArgumentTypes();
 
             for (int j = 0; j < argTypes.length; j++) {
@@ -78,7 +78,7 @@ public class InvokerInfo {
                         }
                     }
 
-                    minimums.add(new MethodTransformChecker.Minimum(TransformSubtype.createDefault(args[j]), min));
+                    minimumConditions.add(new MethodTransformChecker.MinimumConditions(TransformSubtype.createDefault(args[j]), min));
                 }
             }
 
@@ -86,7 +86,7 @@ public class InvokerInfo {
                 methodID,
                 TransformSubtype.createDefault(methodID.getDescriptor().getReturnType()),
                 newArgTypes,
-                minimums.toArray(new MethodTransformChecker.Minimum[0]),
+                minimumConditions.toArray(new MethodTransformChecker.MinimumConditions[0]),
                 new MethodReplacement(replacement, newArgTypes)
             );
 

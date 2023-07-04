@@ -157,20 +157,26 @@ public class TransformType {
             argTypes
         );
 
-        MethodTransformChecker.Minimum[] minimums = new MethodTransformChecker.Minimum[] {
-            new MethodTransformChecker.Minimum(
+        MethodTransformChecker.MinimumConditions[] minimumConditions = new MethodTransformChecker.MinimumConditions[] {
+            new MethodTransformChecker.MinimumConditions(
                 TransformSubtype.createDefault(returnType),
                 TransformSubtype.of(this, subType),
                 TransformSubtype.createDefault(this.from)
             ),
-            new MethodTransformChecker.Minimum(
+            new MethodTransformChecker.MinimumConditions(
                 TransformSubtype.createDefault(returnType),
                 TransformSubtype.createDefault(type),
                 TransformSubtype.of(this)
             )
         };
 
-        MethodParameterInfo info = new MethodParameterInfo(consumerID, TransformSubtype.createDefault(consumerID.getDescriptor().getReturnType()), argTypes, minimums, methodReplacement);
+        MethodParameterInfo info = new MethodParameterInfo(
+            consumerID,
+            TransformSubtype.createDefault(consumerID.getDescriptor().getReturnType()),
+            argTypes,
+            minimumConditions,
+            methodReplacement
+        );
         parameterInfo.computeIfAbsent(consumerID, k -> new ArrayList<>()).add(info);
     }
 

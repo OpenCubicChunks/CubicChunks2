@@ -24,7 +24,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class TransformSubtype {
-    //A reference to a TransformType. THis means when the transform type gets changed all referenced ones can get notified
+    //A reference to a TransformType. This means when the transform type gets changed all referenced ones can get notified
     private final TransformTypePtr transformType;
     //Array dimensionality of type. So an array of longs (with type long -> (int, int, int)) would have dimensionality 1
     private int arrayDimensionality;
@@ -180,7 +180,7 @@ public class TransformSubtype {
 
     /**
      * @return The single transformed type of this transform subtype.
-     * @throws IllegalStateException If this subtype is not NONE or there is not a single transformed type. To get all the types
+     * @throws IllegalStateException If this subtype is NONE and there are multiple transformed type. To get all the types
      * use {@link #resultingTypes()}
      */
     public Type getSingleType() {

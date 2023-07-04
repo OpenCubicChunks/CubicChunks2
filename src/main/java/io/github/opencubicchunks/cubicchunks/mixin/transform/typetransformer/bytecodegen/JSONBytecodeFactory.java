@@ -191,7 +191,7 @@ public class JSONBytecodeFactory implements BytecodeFactory {
 
         int opcode = opcodeFromName(insnName);
 
-        return (insnList, indexes) -> insnList.add(new InsnNode(opcode));
+        return (insnList, __) -> insnList.add(new InsnNode(opcode));
     }
 
     private int opcodeFromName(String name) {

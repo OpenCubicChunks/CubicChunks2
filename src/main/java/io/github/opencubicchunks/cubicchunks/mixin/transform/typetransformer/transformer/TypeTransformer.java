@@ -251,13 +251,13 @@ public class TypeTransformer {
 
         var typeHints = transformInfo.getTypeHints().get(methodID);
 
-        TransformSubtype[] argTypes = new TransformSubtype[args.length];
+        TransformSubtype[] argTransformKinds = new TransformSubtype[args.length];
         int index = 1; //Abstract methods can't be static, so they have the 'this' argument
         for (int i = 0; i < args.length; i++) {
-            argTypes[i] = TransformSubtype.createDefault(args[i]);
+            argTransformKinds[i] = TransformSubtype.createDefault(args[i]);
 
             if (typeHints != null && typeHints.size() > index && typeHints.get(index) != null) {
-                argTypes[i] = TransformSubtype.of(typeHints.get(index));
+                argTransformKinds[i] = TransformSubtype.of(typeHints.get(index));
             }
 
             index += args[i].getSize();
@@ -271,22 +271,20 @@ public class TypeTransformer {
         }
         frames[0] = new Frame<>(numLocals, 0);
 
-        int varIndex = 0;
-        if (!ASMUtil.isStatic(methodNode)) {
-            frames[0].setLocal(varIndex, new TransformTrackingValue(Type.getObjectType(classNode.name), fieldPseudoValues, config));
-            varIndex++;
-        }
+        frames[0].setLocal(0, new TransformTrackingValue(Type.getObjectType(classNode.name), fieldPseudoValues, config));
 
-        int i = 0;
-        for (Type argType : args) {
-            TransformSubtype copyFrom = argTypes[i];
+        int varIndex = 1;
+
+        for (int i = 0; i < args.length; i++) {
+            Type argType = args[i];
+
+            TransformSubtype copyFrom = argTransformKinds[i];
             TransformTrackingValue value = new TransformTrackingValue(argType, fieldPseudoValues, config);
             value.getTransform().setArrayDimensionality(copyFrom.getArrayDimensionality());
             value.getTransform().setSubType(copyFrom.getSubtype());
             value.setTransformType(copyFrom.getTransformType());
             frames[0].setLocal(varIndex, value);
             varIndex += argType.getSize();
-            i++;
         }
 
         AnalysisResults results = new AnalysisResults(methodNode, frames);
@@ -430,12 +428,11 @@ public class TypeTransformer {
 
         if ((newMethod.access & Opcodes.ACC_ABSTRACT) != 0) {
             transformAbstractMethod(newMethod, start, methodID, newMethod, context);
-            return;
+        } else {
+            generateTransformedMethod(methodNode, newMethod, context);
+
+            markSynthetic(newMethod, "AUTO-TRANSFORMED", methodNode.name + methodNode.desc, classNode.name);
         }
-
-        generateTransformedMethod(methodNode, newMethod, context);
-
-        markSynthetic(newMethod, "AUTO-TRANSFORMED", methodNode.name + methodNode.desc, classNode.name);
 
         System.out.println("Transformed method '" + methodID + "' in " + (System.currentTimeMillis() - start) + "ms");
     }
@@ -584,7 +581,7 @@ public class TypeTransformer {
      * Transform a method call whose replacement is given in the config
      *
      * @param context Transform context
-     * @param methodCall The actual method cal insn
+     * @param methodCall The actual method call insn
      * @param info The replacement to apply
      * @param args The arguments of the method call. This should include the instance ('this') if it is a non-static method
      */
@@ -611,13 +608,13 @@ public class TypeTransformer {
                 offsets[i][j] += totalSize;
             }
 
-            totalSize += transform.getTransformType() == null ? args[0].getSize() : transform.getTransformedSize();
+            totalSize += transform.getTransformType() == null ? args[i].getSize() : transform.getTransformedSize();
         }
 
         int baseIdx = context.variableAllocator.allocate(insnIndex, insnIndex + 1, totalSize);
 
-        for (int i = args.length; i > 0; i--) {
-            storeStackInLocals(args[i - 1].getTransform(), replacementInstructions, baseIdx + offsets[i - 1][0]);
+        for (int i = args.length - 1; i >= 0; i--) {
+            storeStackInLocals(args[i].getTransform(), replacementInstructions, baseIdx + offsets[i][0]);
         }
 
         for (int i = 0; i < replacement.getBytecodeFactories().length; i++) {
@@ -651,7 +648,7 @@ public class TypeTransformer {
      * @param returnValue The return value of the method call, if the method returns void this should be null
      * @param args The arguments of the method call. This should include the instance ('this') if it is a non-static method
      */
-    private void applyDefaultReplacement(TransformContext context, int i, MethodInsnNode methodCall, TransformTrackingValue returnValue, TransformTrackingValue[] args) {
+    private void applyDefaultReplacement(TransformContext context, int i, MethodInsnNode methodCall, @Nullable TransformTrackingValue returnValue, TransformTrackingValue[] args) {
         //Special case Arrays.fill
         if (methodCall.owner.equals("java/util/Arrays") && methodCall.name.equals("fill")) {
             transformArraysFill(context, i, methodCall, args);
@@ -708,11 +705,11 @@ public class TypeTransformer {
 
         TypeInfo hierarchy = config.getTypeInfo();
 
-        Type potentionalOwner = types.get(0);
+        Type potentioalOwner = types.get(0);
         if (methodCall.getOpcode() != Opcodes.INVOKESPECIAL) {
-            findOwnerNormal(methodCall, hierarchy, potentionalOwner);
+            findOwnerNormal(methodCall, hierarchy, potentioalOwner);
         } else {
-            findOwnerInvokeSpecial(methodCall, args, hierarchy, potentionalOwner);
+            findOwnerInvokeSpecial(methodCall, args, hierarchy, potentioalOwner);
         }
     }
 
@@ -754,44 +751,42 @@ public class TypeTransformer {
 
         context.target.instructions.insert(methodCall, replacement);
         context.target.instructions.remove(methodCall);
-
-        return;
     }
 
-    private void findOwnerNormal(MethodInsnNode methodCall, TypeInfo hierarchy, Type potentionalOwner) {
+    private void findOwnerNormal(MethodInsnNode methodCall, TypeInfo hierarchy, Type potentioalOwner) {
         int opcode = methodCall.getOpcode();
 
         if (opcode == Opcodes.INVOKEVIRTUAL || opcode == Opcodes.INVOKEINTERFACE) {
-            if (!potentionalOwner.equals(Type.getObjectType(methodCall.owner))) {
-                boolean isNewTypeInterface = hierarchy.recognisesInterface(potentionalOwner);
+            if (!potentioalOwner.equals(Type.getObjectType(methodCall.owner))) {
+                boolean isNewTypeInterface = hierarchy.recognisesInterface(potentioalOwner);
                 opcode = isNewTypeInterface ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL;
 
                 methodCall.itf = isNewTypeInterface;
             }
         }
 
-        methodCall.owner = potentionalOwner.getInternalName();
+        methodCall.owner = potentioalOwner.getInternalName();
         methodCall.setOpcode(opcode);
     }
 
-    private void findOwnerInvokeSpecial(MethodInsnNode methodCall, TransformTrackingValue[] args, TypeInfo hierarchy, Type potentionalOwner) {
+    private void findOwnerInvokeSpecial(MethodInsnNode methodCall, TransformTrackingValue[] args, TypeInfo hierarchy, Type potentioalOwner) {
         String currentOwner = methodCall.owner;
         TypeInfo.Node current = hierarchy.getNode(Type.getObjectType(currentOwner));
-        TypeInfo.Node potential = hierarchy.getNode(potentionalOwner);
+        TypeInfo.Node potential = hierarchy.getNode(potentioalOwner);
         TypeInfo.Node given = hierarchy.getNode(args[0].getType());
 
         if (given == null || current == null) {
             System.err.println("Don't have hierarchy for " + args[0].getType() + " or " + methodCall.owner);
-            methodCall.owner = potentionalOwner.getInternalName();
+            methodCall.owner = potentioalOwner.getInternalName();
         } else if (given.isDirectDescendantOf(current)) {
             if (potential == null || potential.getSuperclass() == null) {
-                throw new IllegalStateException("Cannot change owner of super call if hierarchy for " + potentionalOwner + " is not defined");
+                throw new IllegalStateException("Cannot change owner of super call if hierarchy for " + potentioalOwner + " is not defined");
             }
 
             Type newOwner = potential.getSuperclass().getValue();
             methodCall.owner = newOwner.getInternalName();
         } else {
-            methodCall.owner = potentionalOwner.getInternalName();
+            methodCall.owner = potentioalOwner.getInternalName();
         }
     }
 
@@ -1296,8 +1291,6 @@ public class TypeTransformer {
         if (methodNode.parameters != null) {
             this.modifyParameterTable(newMethod, context);
         }
-
-        System.out.println("Transformed method '" + methodID + "' in " + (System.currentTimeMillis() - start) + "ms");
     }
 
     /**

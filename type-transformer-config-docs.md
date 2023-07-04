@@ -90,12 +90,12 @@ the first element in the list specifies information about the `this`.
 #### `return_type` (optional)
 A string (or null, by default) which specifies what the method returns. This string is exactly the same as what is described above for `parameters`.
 
-#### `minimums` (optional)
-The `mininums` field specifies the minimum conditions that must be met to be sure that this possibility is what is actually being used.
+#### `minimumConditions` (optional)
+The `mininums` field specifies the minimumConditions conditions that must be met to be sure that this possibility is what is actually being used.
 If this field is omitted then this possibility will always be accepted. This field is a list of objects each with a `parameters` and (optionally)
 a `return` field. These fields are similar to the `parameters` and `return_type` fields above. The difference is that the `parameters` and `return` fields can have
-more nulls. A minimum is "accepted" if every non-null value in `parameters` and `return_type` match the known situation when inferring transform types. 
-A possibility is accepted if any of its minimums are accepted.
+more nulls. A minimumConditions is "accepted" if every non-null value in `parameters` and `return_type` match the known situation when inferring transform types. 
+A possibility is accepted if any of its minimumConditions are accepted.
 
 #### `replacement` (optional)
 This field allows you to override how the type transformer will transform a method call matching this possibility. This field is **required** if in the current possibility

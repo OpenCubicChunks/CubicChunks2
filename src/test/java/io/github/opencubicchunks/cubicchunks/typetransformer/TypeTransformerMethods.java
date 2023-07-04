@@ -47,24 +47,22 @@ public class TypeTransformerMethods {
     private static final Map<String, ClassNode> CACHED_CLASSES = new HashMap<>();
     private static IMixinTransformer transformer;
     private ASMConfigPlugin plugin = new ASMConfigPlugin();
+    private final MappingResolver map = TestMappingUtils.getMappingResolver();
+    private final Set<String> classNamesToTransform = Stream.of(
+        "net.minecraft.class_3554",             //DynamicGraphMixFixedPoint
+        "net.minecraft.class_3558", //LayerLightEngine
+        "net.minecraft.class_3560", //LayerLightSectionStorage
+        "net.minecraft.class_3547", //BlockLightSectionStorage
+        "net.minecraft.class_3569", //SkyLightSectionStorage
+        "net.minecraft.class_4076", //SectionPos
+        "net.minecraft.class_3552", //BlockLightEngine
+        "net.minecraft.class_3572", //SkyLightEngine
+        "net.minecraft.class_6350$class_5832" //Aquifer$NoiseBasedAquifer
+    ).map(name -> map.mapClassName("intermediary", name)).collect(Collectors.toSet());
 
     @Test
     public void transformAndTest() {
         System.out.println("Config: " + MainTransformer.TRANSFORM_CONFIG); //Load MainTransformer
-
-        MappingResolver map = TestMappingUtils.getMappingResolver();
-
-        final Set<String> classNamesToTransform = Stream.of(
-            "net.minecraft.class_3554", //DynamicGraphMixFixedPoint
-            "net.minecraft.class_3558", //LayerLightEngine
-            "net.minecraft.class_3560", //LayerLightSectionStorage
-            "net.minecraft.class_3547", //BlockLightSectionStorage
-            "net.minecraft.class_3569", //SkyLightSectionStorage
-            "net.minecraft.class_4076",
-            "net.minecraft.class_3552",
-            "net.minecraft.class_3572",
-            "net.minecraft.class_6350$class_5832"
-        ).map(name -> map.mapClassName("intermediary", name)).collect(Collectors.toSet());
 
         Set<MethodID> methodsUsed = new ObjectOpenCustomHashSet<>(MethodID.HASH_CALL_TYPE);
         Map<MethodID, List<String>> usages = new Object2ObjectOpenCustomHashMap<>(MethodID.HASH_CALL_TYPE);

@@ -14,11 +14,13 @@ public class MethodParameterInfo {
     private final MethodTransformChecker transformCondition;
     private final @Nullable MethodReplacement replacement;
 
-    public MethodParameterInfo(MethodID method, @NotNull TransformSubtype returnType, @NotNull TransformSubtype[] parameterTypes, MethodTransformChecker.Minimum[] minimums,
-                               @Nullable MethodReplacement replacement) {
+    public MethodParameterInfo(
+        MethodID method, @NotNull TransformSubtype returnType, @NotNull TransformSubtype[] parameterTypes,
+        MethodTransformChecker.MinimumConditions[] minimumConditions, @Nullable MethodReplacement replacement
+    ) {
         this.method = method;
         this.returnType = returnType;
-        this.transformCondition = new MethodTransformChecker(this, minimums);
+        this.transformCondition = new MethodTransformChecker(this, minimumConditions);
         this.replacement = replacement;
         this.parameterTypes = parameterTypes;
     }

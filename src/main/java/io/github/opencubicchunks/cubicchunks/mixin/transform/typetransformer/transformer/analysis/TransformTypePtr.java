@@ -25,7 +25,7 @@ public class TransformTypePtr {
         }
 
         for (TransformTrackingValue trackingValue : trackingValues) {
-            trackingValue.updateType(oldType, newType);
+            trackingValue.updateType(newType);
         }
     }
 

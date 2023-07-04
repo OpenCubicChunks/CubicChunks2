@@ -378,20 +378,4 @@ public class TypeTransformConfigGen {
             return element.getDstName(this.toIdx);
         }
     }
-
-    /*public static String apply(Project project, String content) throws IOException {
-        System.out.println("Amending type transform config");
-        LoomGradleExtension loom = (LoomGradleExtension) project.getExtensions().getByName("loom");
-
-        MappingsProviderImpl mappingsProvider = loom.getMappingsProvider();
-        System.out.println("mappingsProvider.getMappingsName() = " + mappingsProvider.mappingsIdentifier);
-        MemoryMappingTree mappings = mappingsProvider.getMappings();
-
-        System.out.println(mappings.getDstNamespaces());
-        System.out.println(mappings.getSrcNamespace());
-
-        TypeTransformConfigGen gen = new TypeTransformConfigGen(project, mappingsProvider, content);
-
-        return gen.generate();
-    }*/
 }
