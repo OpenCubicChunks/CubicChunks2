@@ -3,13 +3,21 @@ package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.tr
 import java.util.Set;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.TransformType;
+import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
-import net.minecraft.Util;
 import org.jetbrains.annotations.Nullable;
 
 public class TransformTypePtr {
     private @Nullable TransformType value;
-    private final Set<TransformTrackingValue> trackingValues = new ObjectOpenCustomHashSet<>(Util.identityStrategy());
+    private final Set<TransformTrackingValue> trackingValues = new ObjectOpenCustomHashSet<>(new Hash.Strategy<>() {
+        @Override public int hashCode(TransformTrackingValue transformTrackingValue) {
+            return System.identityHashCode(transformTrackingValue);
+        }
+
+        @Override public boolean equals(TransformTrackingValue transformTrackingValue, TransformTrackingValue k1) {
+            return transformTrackingValue == k1;
+        }
+    });
 
     public TransformTypePtr(@Nullable TransformType value) {
         this.value = value;
