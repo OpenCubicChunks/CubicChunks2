@@ -21,6 +21,7 @@
         "server.MixinMinecraftServer_TestRunner",
         "server.MixinPlayerLists_SetSpectatorOnJoin",
         "server.MixinPlayerLists_TestRenderDistance",
+        "server.MixinServerChunkCache_CubeLoadUnload",
         "server.MixinServerChunkCache_NoSave",
         "server.MixinServerGamePacketListenerImpl_NoChunkLoad",
         "server.MixinServerLevel_NoSave",

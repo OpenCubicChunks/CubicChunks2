@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.test.IntegrationTests;
 import io.github.opencubicchunks.cubicchunks.test.LevelTestRunner;
+import io.github.opencubicchunks.cubicchunks.test.LightingIntegrationTest;
 import io.github.opencubicchunks.cubicchunks.test.ServerTestRunner;
 import io.github.opencubicchunks.cubicchunks.test.util.IndentingStringBuilder;
 import it.unimi.dsi.fastutil.Pair;
@@ -59,8 +60,8 @@ public abstract class MixinMinecraftServer_TestRunner implements ServerTestRunne
 
     private boolean isFrozen = false;
 
-    private final Collection<IntegrationTests.LightingIntegrationTest> incompleteTests = IntegrationTests.getLightingTests();
-    private final Collection<IntegrationTests.LightingIntegrationTest> failedTests = new ArrayList<>();
+    private final Collection<LightingIntegrationTest> incompleteTests = IntegrationTests.getLightingTests();
+    private final Collection<LightingIntegrationTest> failedTests = new ArrayList<>();
 
     @Nullable private Pair<ServerLevel, Optional<BlockPos>> firstError = null;
 
@@ -120,7 +121,7 @@ public abstract class MixinMinecraftServer_TestRunner implements ServerTestRunne
             ServerLevel level = this.levels.get(levelResourceKey);
             LevelTestRunner levelTestRunner = (LevelTestRunner) level;
             if (levelTestRunner.testFinished()) {
-                IntegrationTests.LightingIntegrationTest test = levelTestRunner.getTest();
+                LightingIntegrationTest test = levelTestRunner.getTest();
                 incompleteTests.remove(test);
 
                 if (test.getState() == IntegrationTests.TestState.FAIL) {
@@ -165,11 +166,11 @@ public abstract class MixinMinecraftServer_TestRunner implements ServerTestRunne
         }
     }
 
-    private static String testFailureInformation(Collection<IntegrationTests.LightingIntegrationTest> failedTests) {
+    private static String testFailureInformation(Collection<LightingIntegrationTest> failedTests) {
         IndentingStringBuilder s = new IndentingStringBuilder(4)
             .append("Failed Tests: ").append(failedTests.size()).appendNewLine().appendNewLine();
 
-        for (IntegrationTests.LightingIntegrationTest test : failedTests) {
+        for (LightingIntegrationTest test : failedTests) {
             s.append("Failure: ").append(test.testName).appendNewLine().indent();
 
             Optional<Throwable> thrown = test.getThrown();

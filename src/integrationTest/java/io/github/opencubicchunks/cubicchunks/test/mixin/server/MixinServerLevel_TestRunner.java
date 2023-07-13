@@ -4,6 +4,7 @@ import java.util.function.BooleanSupplier;
 
 import io.github.opencubicchunks.cubicchunks.test.IntegrationTests;
 import io.github.opencubicchunks.cubicchunks.test.LevelTestRunner;
+import io.github.opencubicchunks.cubicchunks.test.LightingIntegrationTest;
 import net.minecraft.server.level.ServerLevel;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,12 +14,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ServerLevel.class)
 public class MixinServerLevel_TestRunner implements LevelTestRunner {
     private boolean testStarted = false;
-    private IntegrationTests.LightingIntegrationTest test;
-    private IntegrationTests.LightingIntegrationTest.TestContext context;
+    private LightingIntegrationTest test;
+    private LightingIntegrationTest.TestContext context;
 
     private boolean teardownComplete = false;
 
-    @Override public void startTestInLevel(IntegrationTests.LightingIntegrationTest integrationTest) {
+    @Override public void startTestInLevel(LightingIntegrationTest integrationTest) {
         this.test = integrationTest;
         this.context = integrationTest.new TestContext((ServerLevel) (Object) this);
         this.testStarted = true;
@@ -38,7 +39,7 @@ public class MixinServerLevel_TestRunner implements LevelTestRunner {
         return test.getState();
     }
 
-    @Override public IntegrationTests.LightingIntegrationTest getTest() {
+    @Override public LightingIntegrationTest getTest() {
         return this.test;
     }
 

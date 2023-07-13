@@ -1,11 +1,13 @@
 package io.github.opencubicchunks.cubicchunks.test.tests;
 
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
+import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicDistanceManager;
-import io.github.opencubicchunks.cubicchunks.test.IntegrationTests.LightingIntegrationTest;
+import io.github.opencubicchunks.cubicchunks.test.LightingIntegrationTest;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeStatus;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.util.Unit;
@@ -54,6 +56,36 @@ public class PlaceholderTests {
                     33 + CubeStatus.getDistance(ChunkStatus.FULL) - 5,
                     Unit.INSTANCE);
                 System.out.println("Test 1 end");
+            }
+        ));
+        var minPos = CubePos.of(-1, -1, -1);
+        var maxPos = CubePos.of(1, 1, 1);
+        var requiredLevel = ChunkStatus.LIGHT;
+        var unloading = new boolean[] {false};
+        CompletableFuture<?>[] future = new CompletableFuture[1];
+        lightingTests.add(new LightingIntegrationTest("test_2", 0,
+            context -> {
+                System.out.println("Test 2 start");
+                future[0] = context.getCubeLoadFuturesInVolume(minPos, maxPos, requiredLevel);
+            },
+            context -> {
+                System.out.println("Test 2 tick");
+                if (!future[0].isDone()) return;
+                if (!unloading[0]) {
+                    unloading[0] = true;
+                    future[0] = context.getCubeUnloadFuturesInVolume(minPos, maxPos, requiredLevel);
+                    return;
+                }
+                context.pass();
+            },
+            context -> {
+                ((CubeMap) context.level().getChunkSource().chunkMap).getUpdatingCubeMap().values().stream().filter(holder -> {
+                    var status = holder.getLastAvailableStatus();
+                    return status != null && status != ChunkStatus.EMPTY;
+                }).forEach(
+                    holder -> System.out.println(holder.getLastAvailableStatus())
+                );
+                System.out.println("Test 2 end");
             }
         ));
     }
