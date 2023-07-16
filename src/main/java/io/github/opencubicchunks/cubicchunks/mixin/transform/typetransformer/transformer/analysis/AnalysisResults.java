@@ -50,8 +50,8 @@ public record AnalysisResults(MethodNode methodNode, Frame<TransformTrackingValu
         Type[] args = Type.getArgumentTypes(methodNode.desc);
         DerivedTransformType[] argTypes = new DerivedTransformType[args.length + offset];
 
-        int idx = 0;
-        for (int i = 0; idx < argTypes.length; idx++) {
+        int i = 0;
+        for (int idx = 0; idx < argTypes.length; idx++) {
             argTypes[idx] = frames[0].getLocal(i).getTransform();
             i += frames[0].getLocal(i).getSize();
         }

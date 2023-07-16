@@ -568,7 +568,7 @@ public class ConfigLoader {
      * @param method The JSON object or string
      * @param map The mapping resolver
      * @param defaultCallType The default call type to use if the json doesn't specify it. Used when the call type can be inferred from context.
-     * @return
+     * @return The parsed method ID
      */
     public static MethodID loadMethodID(JsonElement method, @Nullable MappingResolver map, @Nullable MethodID.CallType defaultCallType) {
         MethodID methodID;

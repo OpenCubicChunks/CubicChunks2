@@ -68,7 +68,7 @@ public class MethodTransformChecker {
         return current.equals(target);
     }
 
-    public static record MinimumConditions(DerivedTransformType returnType, DerivedTransformType... parameterTypes) {
+    public record MinimumConditions(DerivedTransformType returnType, DerivedTransformType... parameterTypes) {
         public boolean isMet(TransformTrackingValue returnValue, TransformTrackingValue[] parameters) {
             if (returnType.getTransformType() != null) {
                 if (!returnValue.getTransform().equals(returnType)) {

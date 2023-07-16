@@ -1666,7 +1666,7 @@ public class TypeTransformer {
      * Adds the {@link CCSynthetic} annotation to the provided method
      *
      * @param methodNode The method to mark
-     * @param type The type of synthetic method this is
+     * @param type The type of synthetic method this is - either "AUTO-TRANSFORMED" or "CONSTRUCTOR"
      * @param original The original method this is a synthetic version of
      */
     private static void markSynthetic(MethodNode methodNode, String type, String original, String ownerName) {

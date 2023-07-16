@@ -363,7 +363,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     private TransformTrackingValue methodCallOperation(AbstractInsnNode insn, List<? extends TransformTrackingValue> values, int opcode) {
         //Create bindings to the method parameters
         MethodInsnNode methodCall = (MethodInsnNode) insn;
-        Type type = Type.getReturnType(methodCall.desc);
+        Type returnType = Type.getReturnType(methodCall.desc);
 
         MethodID methodID = new MethodID(methodCall.owner, methodCall.name, methodCall.desc, MethodID.CallType.fromOpcode(opcode));
 
@@ -374,8 +374,8 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         if (possibilities != null) {
             TransformTrackingValue returnValue = null;
 
-            if (type != null) {
-                returnValue = new TransformTrackingValue(type, fieldBindings, config);
+            if (returnType != null) {
+                returnValue = new TransformTrackingValue(returnType, fieldBindings, config);
             }
 
             for (MethodParameterInfo info : possibilities) {
@@ -412,17 +412,17 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             TransformTrackingValue.setSameType(array, value);
         }
 
-        if (type.getSort() == Type.VOID) return null;
+        if (returnType.getSort() == Type.VOID) return null;
 
-        return new TransformTrackingValue(type, fieldBindings, config);
+        return new TransformTrackingValue(returnType, fieldBindings, config);
     }
 
     @Nullable private TransformTrackingValue invokeDynamicOperation(AbstractInsnNode insn, List<? extends TransformTrackingValue> values) {
         //Bind the lambda captured parameters and lambda types
         InvokeDynamicInsnNode node = (InvokeDynamicInsnNode) insn;
-        Type type = Type.getReturnType(node.desc);
+        Type returnType = Type.getReturnType(node.desc);
 
-        TransformTrackingValue ret = new TransformTrackingValue(type, fieldBindings, config);
+        TransformTrackingValue ret = new TransformTrackingValue(returnType, fieldBindings, config);
 
         //Make sure this is LambdaMetafactory.metafactory
         if (node.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory") && node.bsm.getName().equals("metafactory")) {
@@ -442,7 +442,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             }
         }
 
-        if (type.getSort() == Type.VOID) return null;
+        if (returnType.getSort() == Type.VOID) return null;
 
         return ret;
     }
@@ -524,7 +524,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         Type[] argumentTypes = Type.getArgumentTypes(methodResults.methodNode().desc);
         Type[] allTypes;
         if (!ASMUtil.isStatic(methodResults.methodNode())) {
-            //Remove the first element because it represents 'this'
+            // Add the first element representing 'this'
             allTypes = new Type[argumentTypes.length + 1];
             allTypes[0] = Type.getObjectType("java/lang/Object"); //The actual type doesn't matter
             System.arraycopy(argumentTypes, 0, allTypes, 1, argumentTypes.length);
