@@ -55,7 +55,7 @@ public class Int3List implements AutoCloseable {
     }
 
     public void set(int index, int x, int y, int z) {
-        if (index >= this.size) {
+        if (index < 0 || index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
@@ -71,7 +71,7 @@ public class Int3List implements AutoCloseable {
     }
 
     public void insert(int index, int x, int y, int z) {
-        if (index > this.size) {
+        if (index < 0 || index > this.size) {
             throw new IndexOutOfBoundsException();
         }
 
@@ -98,7 +98,7 @@ public class Int3List implements AutoCloseable {
     }
 
     public void remove(int index) {
-        if (index >= this.size) {
+        if (index < 0 || index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
@@ -167,7 +167,7 @@ public class Int3List implements AutoCloseable {
     }
 
     public int getX(int index) {
-        if (index >= this.size) {
+        if (index < 0 || index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
@@ -179,7 +179,7 @@ public class Int3List implements AutoCloseable {
     }
 
     public int getY(int index) {
-        if (index >= this.size) {
+        if (index < 0 || index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
@@ -191,7 +191,7 @@ public class Int3List implements AutoCloseable {
     }
 
     public int getZ(int index) {
-        if (index >= this.size) {
+        if (index < 0 || index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
@@ -203,7 +203,7 @@ public class Int3List implements AutoCloseable {
     }
 
     public long getAsBlockPos(int index) {
-        if (index >= this.size) {
+        if (index < 0 || index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
@@ -219,7 +219,7 @@ public class Int3List implements AutoCloseable {
     }
 
     public Vec3i getVec3i(int index) {
-        if (index >= this.size) {
+        if (index < 0 || index >= this.size) {
             throw new IndexOutOfBoundsException();
         }
 
@@ -250,9 +250,9 @@ public class Int3List implements AutoCloseable {
         return size;
     }
 
-    private long resizeToFit(int capacity) {
+    private void resizeToFit(int capacity) {
         this.capacity = capacity;
-        return this.arrayAddr = PlatformDependent.reallocateMemory(this.arrayAddr, capacity * VALUE_SIZE);
+        this.arrayAddr = PlatformDependent.reallocateMemory(this.arrayAddr, capacity * VALUE_SIZE);
     }
 
     private void resizeAndInsert(int index, int x, int y, int z) {
@@ -298,7 +298,7 @@ public class Int3List implements AutoCloseable {
 
     @Override
     @SuppressWarnings("deprecation")
-    public void finalize() {
+    protected void finalize() {
         close();
     }
 
