@@ -1,6 +1,7 @@
 @file:Suppress("INACCESSIBLE_TYPE", "UnstableApiUsage")
 
 import io.github.opencubicchunks.gradle.GeneratePackageInfo
+import io.github.opencubicchunks.gradle.TypeTransformConfigGen
 import org.gradle.internal.os.OperatingSystem
 import java.util.*
 
@@ -18,6 +19,7 @@ plugins {
     id("io.github.opencubicchunks.gradle.mcGitVersion")
     id("io.github.opencubicchunks.gradle.mixingen")
     id("io.github.opencubicchunks.gradle.dasm")
+    id("io.github.opencubicchunks.gradle.tt")
 }
 
 val minecraftVersion: String by project

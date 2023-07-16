@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +21,8 @@ import javax.annotation.Nullable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
+import io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils;
 import io.github.opencubicchunks.dasm.MappingsProvider;
 import io.github.opencubicchunks.dasm.RedirectsParseException;
 import io.github.opencubicchunks.dasm.RedirectsParser;
@@ -26,6 +30,7 @@ import io.github.opencubicchunks.dasm.Transformer;
 import io.github.opencubicchunks.dasm.TypeRedirect;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
+import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -147,7 +152,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             //Ideally the input json would all have the same, and we'd just figure it out here
             RedirectsParser.ClassTarget target = classTargetByName.get(targetClassName);
             if (target == null) {
-                throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
+                return; //throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
             }
             if (target.isWholeClass()) {
                 ClassNode duplicate = new ClassNode();
@@ -210,7 +215,53 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     }
 
     @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        MappingResolver map = TestMappingUtils.getMappingResolver();
+        String dynamicGraphMinFixedPoint = map.mapClassName("intermediary", "net.minecraft.class_3554");
+        String layerLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3558");
+        String layerLightSectionStorage = map.mapClassName("intermediary", "net.minecraft.class_3560");
+        String blockLightSectionStorage = map.mapClassName("intermediary", "net.minecraft.class_3547");
+        String skyLightSectionStorage = map.mapClassName("intermediary", "net.minecraft.class_3569");
+        String sectionPos = map.mapClassName("intermediary", "net.minecraft.class_4076");
+        String blockLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3552");
+        String skyLightEngine = map.mapClassName("intermediary", "net.minecraft.class_3572");
+        String noiseBasedAquifer = map.mapClassName("intermediary", "net.minecraft.class_6350$class_5832");
 
+        Set<String> defaulted = Set.of(
+            blockLightSectionStorage,
+            skyLightSectionStorage,
+            blockLightEngine,
+            skyLightEngine
+        );
+
+        if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
+            MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
+        } else if (targetClassName.equals(layerLightEngine)) {
+            MainTransformer.transformLayerLightEngine(targetClass);
+        } else if (targetClassName.equals(layerLightSectionStorage)) {
+            MainTransformer.transformLayerLightSectionStorage(targetClass);
+        } else if (targetClassName.equals(sectionPos)) {
+            MainTransformer.transformSectionPos(targetClass);
+        } else if (targetClassName.equals(noiseBasedAquifer)) {
+            MainTransformer.transformNoiseBasedAquifer(targetClass);
+        } else if (defaulted.contains(targetClassName)) {
+            MainTransformer.defaultTransform(targetClass);
+        } else {
+            return;
+        }
+
+        //Save it without computing extra stuff (like maxs) which means that if the frames are wrong and mixin fails to save it, it will be saved elsewhere
+        Path savePath = TestMappingUtils.getGameDir().resolve("longpos-out").resolve(targetClassName.replace('.', '/') + ".class");
+        try {
+            Files.createDirectories(savePath.getParent());
+
+            ClassWriter writer = new ClassWriter(0);
+            targetClass.accept(writer);
+            byte[] bytes = writer.toByteArray();
+            Files.write(savePath, bytes);
+            System.out.println("Saved " + targetClassName + " to " + savePath);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private JsonElement parseFileAsJson(String fileName) {
