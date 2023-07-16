@@ -36,6 +36,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
@@ -177,11 +178,11 @@ public class CubeSerializer {
 
         if (chunkType == ChunkStatus.ChunkType.LEVELCHUNK) {
             LevelChunkTicks<Block> blockTicks = loadLevelCubeTicks(root.getList("block_ticks", 10), (id) -> {
-                return Registry.BLOCK.getOptional(ResourceLocation.tryParse(id));
+                return BuiltInRegistries.BLOCK.getOptional(ResourceLocation.tryParse(id));
             }, cubePos);
 
             LevelChunkTicks<Fluid> fluidTicks = loadLevelCubeTicks(root.getList("fluid_ticks", 10), (id) -> {
-                return Registry.FLUID.getOptional(ResourceLocation.tryParse(id));
+                return BuiltInRegistries.FLUID.getOptional(ResourceLocation.tryParse(id));
             }, cubePos);
 
             cube = new LevelCube(
@@ -200,11 +201,11 @@ public class CubeSerializer {
 //                if (level.contains("ForgeCaps")) ((LevelChunk)cube).readCapsFromNBT(level.getCompound("ForgeCaps"));
         } else {
             ProtoChunkTicks<Block> blockTicks = loadProtoCubeTicks(root.getList("block_ticks", 10), (id) -> {
-                return Registry.BLOCK.getOptional(ResourceLocation.tryParse(id));
+                return BuiltInRegistries.BLOCK.getOptional(ResourceLocation.tryParse(id));
             }, cubePos);
 
             ProtoChunkTicks<Fluid> fluidTicks = loadProtoCubeTicks(root.getList("fluid_ticks", 10), (id) -> {
-                return Registry.FLUID.getOptional(ResourceLocation.tryParse(id));
+                return BuiltInRegistries.FLUID.getOptional(ResourceLocation.tryParse(id));
             }, cubePos);
 
             ProtoCube protoCube = new ProtoCube(
@@ -459,11 +460,11 @@ public class CubeSerializer {
         long gameTime = serverLevel.getLevelData().getGameTime();
         root.put(
             "block_ticks",
-            cube.getTicksForSerialization().blocks().save(gameTime, (block) -> Registry.BLOCK.getKey(block).toString())
+            cube.getTicksForSerialization().blocks().save(gameTime, (block) -> BuiltInRegistries.BLOCK.getKey(block).toString())
         );
         root.put(
             "fluid_ticks",
-            cube.getTicksForSerialization().fluids().save(gameTime, (fluid) -> Registry.FLUID.getKey(fluid).toString())
+            cube.getTicksForSerialization().fluids().save(gameTime, (fluid) -> BuiltInRegistries.FLUID.getKey(fluid).toString())
         );
 
         root.put("PostProcessing", ChunkSerializer.packOffsets(cube.getPostProcessing()));

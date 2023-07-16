@@ -84,7 +84,7 @@ public class PacketDispatcher {
         encoder.accept(packet, buf);
 
         players.forEach(player -> {
-            if (((CubicLevelHeightAccessor) player.getLevel()).isCubic()) {
+            if (((CubicLevelHeightAccessor) player.level()).isCubic()) {
                 ServerPlayNetworking.send(player, packetId, buf);
             }
         });

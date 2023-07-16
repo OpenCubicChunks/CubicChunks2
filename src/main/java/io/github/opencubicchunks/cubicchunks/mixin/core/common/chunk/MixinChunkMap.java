@@ -1284,7 +1284,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     // updateChunkTracking
     protected void updateCubeTracking(ServerPlayer player, CubePos cubePosIn, Object[] packetCache, boolean wasLoaded, boolean load) {
-        if (player.level == this.level) {
+        if (player.level() == this.level) {
             //TODO: reimplement forge event
             //net.minecraftforge.event.ForgeEventFactory.fireChunkWatch(wasLoaded, load, player, cubePosIn, this.world);
             if (load && !wasLoaded) {

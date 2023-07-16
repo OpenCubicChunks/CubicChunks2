@@ -3,7 +3,7 @@ package io.github.opencubicchunks.cubicchunks.mixin.debug.client;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.math.Vector3f;
+import org.joml.Vector3f;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -37,7 +37,7 @@ public class MixinHeightMapRenderer {
     @ModifyVariable(method = "render", ordinal = 0, at = @At(value = "STORE", ordinal = 0), require = 1)
     private LevelAccessor useServerHeightMaps(LevelAccessor original) {
         if (!RENDER_SERVER_HEIGHTMAPS) {
-            return Minecraft.getInstance().getSingleplayerServer().getLevel(Minecraft.getInstance().player.level.dimension());
+            return Minecraft.getInstance().getSingleplayerServer().getLevel(Minecraft.getInstance().player.level().dimension());
         }
         return original;
     }

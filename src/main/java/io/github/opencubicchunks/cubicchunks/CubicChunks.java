@@ -14,6 +14,7 @@ import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ChunkMap;
 
@@ -51,7 +52,7 @@ public class CubicChunks extends CubicChunksBase implements ModInitializer {
     }
 
     public static void registerBiomeSources() {
-        Registry.register(Registry.BIOME_SOURCE, new ResourceLocation(MODID, "stripes"), StripedBiomeSource.CODEC);
+        Registry.register(BuiltInRegistries.BIOME_SOURCE, new ResourceLocation(MODID, "stripes"), StripedBiomeSource.CODEC);
     }
 
     public static void registerPlacementModifiers() {

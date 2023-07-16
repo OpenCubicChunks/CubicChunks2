@@ -28,7 +28,7 @@ public abstract class MixinServerPlayer extends Player {
     /*@Redirect(method = "trackChunk",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;send(Lnet/minecraft/network/protocol/Packet;)V", ordinal = 0))
     public void onSendChunkLoad(ServerGamePacketListenerImpl packetListener, Packet<?> packet) {
-        if (!((CubicLevelHeightAccessor) this.getLevel()).isCubic()) {
+        if (!((CubicLevelHeightAccessor) this.level()).isCubic()) {
             packetListener.send(packet);
         }
     }*/

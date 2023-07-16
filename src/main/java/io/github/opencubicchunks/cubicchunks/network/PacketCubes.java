@@ -20,6 +20,7 @@ import io.netty.buffer.Unpooled;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
@@ -169,7 +170,7 @@ public class PacketCubes {
             buf.writeVarInt(posX);
             buf.writeVarInt(posY);
             buf.writeVarInt(posZ);
-            buf.writeVarInt(Registry.BLOCK_ENTITY_TYPE.getId(type));
+            buf.writeVarInt(BuiltInRegistries.BLOCK_ENTITY_TYPE.getId(type));
             buf.writeNbt(tag);
         }
 
@@ -183,7 +184,7 @@ public class PacketCubes {
             int posX = buf.readVarInt();
             int posY = buf.readVarInt();
             int posZ = buf.readVarInt();
-            BlockEntityType<?> type = Registry.BLOCK_ENTITY_TYPE.byId(buf.readVarInt());
+            BlockEntityType<?> type = BuiltInRegistries.BLOCK_ENTITY_TYPE.byId(buf.readVarInt());
             CompoundTag tag = buf.readNbt();
             return new CubeBlockEntityInfo(posX, posY, posZ, type, tag);
         }

@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.access.common;
 
-import com.mojang.math.Matrix4f;
+import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 

@@ -43,7 +43,6 @@
     "client": [
         "client.ChunkRenderDispatcherAccess",
         "client.ClientChunkCacheStorageAccess",
-        "client.OptionAccess",
         "client.ViewAreaAccess"
     ],
     "server": []
