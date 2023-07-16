@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.chunk;
 
 import static io.github.opencubicchunks.cc_core.utils.Utils.unsafeCast;
-import static net.minecraft.core.Registry.BIOME_REGISTRY;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

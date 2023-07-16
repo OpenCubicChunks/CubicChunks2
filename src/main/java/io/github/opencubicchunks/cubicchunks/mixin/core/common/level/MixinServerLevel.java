@@ -26,6 +26,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -33,6 +34,7 @@ import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.RandomSequences;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -42,6 +44,7 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.dimension.DimensionType;
+import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.entity.PersistentEntitySectionManager;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.material.Fluid;
@@ -77,20 +80,14 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         at = @At(
             value = "INVOKE",
             shift = At.Shift.AFTER,
-            target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/core/Holder;"
-                + "Ljava/util/function/Supplier;ZZJ)V"
+            target = "Lnet/minecraft/world/level/Level;<init>(Lnet/minecraft/world/level/storage/WritableLevelData;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/core/RegistryAccess;"
+                + "Lnet/minecraft/core/Holder;Ljava/util/function/Supplier;ZZJI)V"
         )
     )
     private void initSetCubic(MinecraftServer minecraftServer, Executor executor, LevelStorageSource.LevelStorageAccess levelStorageAccess, ServerLevelData serverLevelData,
-                              ResourceKey<Level> levelKey, Holder<DimensionType> dimensionHolder, ChunkProgressListener chunkProgressListener, ChunkGenerator chunkGenerator, boolean bl,
-                              long l,
-                              List list,
-                              boolean bl2,
-                              CallbackInfo ci) {
+                              ResourceKey levelKey, LevelStem levelStem, ChunkProgressListener chunkProgressListener, boolean bl, long l, List list, boolean bl2,
+                              RandomSequences randomSequences, CallbackInfo ci) {
         var dataFixer = minecraftServer.getFixerUpper();
-
-        DimensionType dimension = dimensionHolder.value();
-        ResourceLocation dimensionKey = minecraftServer.registryAccess().registryOrThrow(Registry.DIMENSION_TYPE_REGISTRY).getKey(dimension);
 
         Path dimensionFolderPath = levelStorageAccess.getDimensionPath(levelKey);
         File dimensionFolder = dimensionFolderPath.toFile();
@@ -99,7 +96,7 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         this.heightmapStorage = new InterleavedHeightmapStorage(new File(dimensionFolder, "tempHeightmap"));
 
         if (config == null) {
-            CubicChunks.LOGGER.info("No cubic chunks config found; disabling CC for dimension " + dimensionKey);
+            CubicChunks.LOGGER.info("No cubic chunks config found; disabling CC for level " + levelKey);
             worldStyle = WorldStyle.CHUNK;
         } else {
             File file2 = new File(dimensionFolder, "data");
@@ -108,9 +105,9 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
             var tempDataStorage = new DimensionDataStorage(file2, dataFixer);
             var cubicChunksSavedData = tempDataStorage.get(CubicChunksSavedData::load, CubicChunksSavedData.FILE_ID);
             if (cubicChunksSavedData != null) {
-                CubicChunks.LOGGER.info("Loaded CC world style " + cubicChunksSavedData.worldStyle.name() + " for dimension " + dimensionKey);
+                CubicChunks.LOGGER.info("Loaded CC world style " + cubicChunksSavedData.worldStyle.name() + " for level " + levelKey);
             } else {
-                CubicChunks.LOGGER.info("CC data for dimension " + dimensionKey + " is null, generating it");
+                CubicChunks.LOGGER.info("CC data for level " + levelKey + " is null, generating it");
                 cubicChunksSavedData = tempDataStorage.computeIfAbsent(CubicChunksSavedData::load,
                         () -> new CubicChunksSavedData(config.getWorldStyle(levelKey)), CubicChunksSavedData.FILE_ID);
                 CubicChunks.LOGGER.info("Generated CC data. World style: " + cubicChunksSavedData.worldStyle.name());
@@ -123,8 +120,8 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
         isCubic = worldStyle.isCubic();
         generates2DChunks = worldStyle.generates2DChunks();
 
-        if (isCubic && (chunkGenerator instanceof NoiseBasedChunkGenerator)) {
-            ((CubicNoiseBasedChunkGenerator) chunkGenerator).setCubic();
+        if (isCubic && (levelStem.generator() instanceof NoiseBasedChunkGenerator)) {
+            ((CubicNoiseBasedChunkGenerator) levelStem.generator()).setCubic();
         }
     }
 
@@ -138,8 +135,8 @@ public abstract class MixinServerLevel extends MixinLevel implements CubicServer
 
     @Inject(method = "<init>", at = @At(value = "RETURN"))
     private void markCubic(MinecraftServer minecraftServer, Executor executor, LevelStorageSource.LevelStorageAccess levelStorageAccess, ServerLevelData serverLevelData,
-                           ResourceKey resourceKey, Holder holder, ChunkProgressListener chunkProgressListener, ChunkGenerator chunkGenerator, boolean bl, long l,
-                           List list, boolean bl2, CallbackInfo ci) {
+                           ResourceKey resourceKey, LevelStem levelStem, ChunkProgressListener chunkProgressListener, boolean bl, long l, List list, boolean bl2,
+                           RandomSequences randomSequences, CallbackInfo ci) {
         ((IsCubicEntityContext) this.entityManager).setIsCubic(((CubicLevelHeightAccessor) this).isCubic());
         if (this.fluidTicks instanceof CubicLevelTicks ticks) {
             ((ChunkEntityStateEventSource) this.entityManager).registerChunkEntityStateEventHandler(ticks);

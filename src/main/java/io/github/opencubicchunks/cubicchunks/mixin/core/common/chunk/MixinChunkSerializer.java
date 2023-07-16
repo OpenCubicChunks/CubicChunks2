@@ -8,6 +8,8 @@ import javax.annotation.Nullable;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
@@ -56,7 +58,7 @@ public abstract class MixinChunkSerializer {
         if (statusType == ChunkStatus.ChunkType.LEVELCHUNK) {
             newChunk = new LevelChunk(serverLevel.getLevel(), pos);
         } else {
-            ProtoChunk chunkprimer = new ProtoChunk(pos, UpgradeData.EMPTY, serverLevel, serverLevel.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY), null);
+            ProtoChunk chunkprimer = new ProtoChunk(pos, UpgradeData.EMPTY, serverLevel, serverLevel.registryAccess().registryOrThrow(Registries.BIOME), null);
 
             newChunk = chunkprimer;
             chunkprimer.setInhabitedTime(inhabitedTime);
@@ -104,7 +106,7 @@ public abstract class MixinChunkSerializer {
         compound.putInt("xPos", chunkpos.x);
         compound.putInt("zPos", chunkpos.z);
         compound.putLong("InhabitedTime", column.getInhabitedTime());
-        compound.putString("Status", column.getStatus().getName());
+        compound.putString("Status", BuiltInRegistries.CHUNK_STATUS.getKey(column.getStatus()).toString());
 
 //        CompoundTag heightmaps = new CompoundTag();
 //        for(Map.Entry<Heightmap.Types, Heightmap> entry : chunkIn.getHeightmaps()) {

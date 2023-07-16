@@ -1,12 +1,8 @@
 package io.github.opencubicchunks.cubicchunks.client.gui.screens;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -15,10 +11,8 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import org.joml.Matrix4f;
+import com.mojang.blaze3d.vertex.VertexSorting;
 import com.mojang.math.Transformation;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.CubicChunks;
@@ -29,11 +23,13 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMaps;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.progress.StoringChunkProgressListener;
 import net.minecraft.world.level.chunk.ChunkStatus;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 
 public class CubicLevelLoadingScreen {
     public static final Object2IntMap<ChunkStatus> STATUS_COLORS = Object2IntMaps.unmodifiable(getStatusColors());
@@ -43,7 +39,7 @@ public class CubicLevelLoadingScreen {
             .point(ChunkStatus.STRUCTURE_STARTS.getIndex(), 0.15f)
             .point(ChunkStatus.BIOMES.getIndex(), 0.28f)
             .point(ChunkStatus.CARVERS.getIndex(), 0.7f)
-            .point(ChunkStatus.LIQUID_CARVERS.getIndex(), 0.2f)
+            .point(ChunkStatus.INITIALIZE_LIGHT.getIndex(), 0.2f)
             .point(ChunkStatus.FULL.getIndex(), 1).build();
 
     public static Object2IntMap<ChunkStatus> getStatusColorMap() {
@@ -51,6 +47,7 @@ public class CubicLevelLoadingScreen {
     }
 
     @SuppressWarnings("unused") private static void unusedColors() {
+        // TODO update these to be accurate
         //@formatter:off
         /* MINECRAFT:EMPTY: */                  new java.awt.Color(0xFF00FF);
         /* MINECRAFT:STRUCTURE_STARTS: */       new java.awt.Color(0x444444);
@@ -138,7 +135,7 @@ public class CubicLevelLoadingScreen {
         int margin = 3;
 
         for (ChunkStatus status : ChunkStatus.getStatusList()) {
-            font.draw(poseStack, status.getName(), x + radius + margin, y + 2, 0xFFFFFFFF);
+//            font.draw(poseStack, BuiltInRegistries.CHUNK_STATUS.getKey(status).toString(), x + radius + margin, y + 2, 0xFFFFFFFF);
             RenderSystem.setShader(GameRenderer::getPositionColorShader);
             renderColorKeySquare(Transformation.identity().getMatrix(), x, y, x + radius, y + radius, 0xFF000000 | colors.getOrDefault(status, 0xFF00FF),
                     (int) (255 * STATUS_ALPHAS.getValue(status.getIndex())));
@@ -165,7 +162,7 @@ public class CubicLevelLoadingScreen {
 
         BufferBuilder buffer = Tesselator.getInstance().getBuilder();
         RenderSystem.enableBlend();
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
         buffer.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
         // Display one triangle with full alpha so it's easier to see
@@ -178,8 +175,8 @@ public class CubicLevelLoadingScreen {
         buffer.vertex(transform, x2, y2, 0.0F).color(red, green, blue, alpha).endVertex();
         buffer.end();
 
-        BufferUploader.end(buffer);
-        RenderSystem.enableTexture();
+        BufferUploader.draw(buffer.end());
+//        RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
 
@@ -190,25 +187,26 @@ public class CubicLevelLoadingScreen {
         float scaleWithCineSize = scale * CubicConstants.DIAMETER_IN_SECTIONS / 2.0f;
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        RenderSystem.disableTexture();
+//        RenderSystem.disableTexture();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
         Matrix4f previousP = RenderSystem.getProjectionMatrix();
-        RenderSystem.setProjectionMatrix(Matrix4f.perspective(60, aspectRatio, 0.01f, -10));
+        RenderSystem.setProjectionMatrix(new Matrix4f().perspective(60, aspectRatio, 0.01f, -10), VertexSorting.DISTANCE_TO_ORIGIN);
 
         Matrix4f modelViewMatrix = RenderSystem.getModelViewMatrix();
-        Matrix4f previousMV = modelViewMatrix.copy();
-        modelViewMatrix.setIdentity();
+        Matrix4f previousMV = new Matrix4f(modelViewMatrix);
+        modelViewMatrix.identity();
         modelViewMatrix.translate(new Vector3f(0, 0, -20));
-        modelViewMatrix.multiply(new Quaternion(30, (float) ((System.currentTimeMillis() * 0.04) % 360), 0, true));
+        // TODO loading screen rotation
+//        modelViewMatrix.multiply(new Quaternionf(30, (float) ((System.currentTimeMillis() * 0.04) % 360), 0, true));
 
         render3dDrawCubes(trackerParam, xBase, yBase, scaleWithCineSize, spacing, colors);
 
-        RenderSystem.setProjectionMatrix(previousP);
-        modelViewMatrix.load(previousMV);
+        RenderSystem.setProjectionMatrix(previousP, VertexSorting.DISTANCE_TO_ORIGIN);
+        modelViewMatrix.get(previousMV);
 
-        RenderSystem.enableTexture();
+//        RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
 
@@ -261,14 +259,13 @@ public class CubicLevelLoadingScreen {
             }
         }
 
-        Matrix4f m = RenderSystem.getModelViewMatrix().copy();
+        Matrix4f m = new Matrix4f(RenderSystem.getModelViewMatrix());
         m.invert();
         Vector4f vec = new Vector4f(0, 0, 0, 1);
-        vec.transform(m);
+        vec.mul(m);
 
-        buffer.setQuadSortOrigin(vec.x(), vec.y(), vec.z());
-        buffer.end();
-        BufferUploader.end(buffer);
+        buffer.setQuadSorting(VertexSorting.byDistance(vec.x, vec.y, vec.z));
+        BufferUploader.draw(buffer.end());
     }
 
     private static void drawCube(BufferBuilder buffer, int x, int y, int z, float scale, int color, EnumSet<Direction> renderFaces) {
@@ -347,108 +344,5 @@ public class CubicLevelLoadingScreen {
         float a = (color >>> 24) * scale;
 
         buffer.vertex(x, y, z).color(r, g, b, a).endVertex();
-    }
-
-
-    private static void render2d(PoseStack mStack, StoringChunkProgressListener trackerParam, int xBase, int yBase, int scale, int spacing,
-                                 Object2IntMap<ChunkStatus> colors) {
-        int squareScale = scale + spacing;
-        int loadDiameter = trackerParam.getFullDiameter();
-        int diameterPixels = loadDiameter * squareScale - spacing;
-        int totalDiameter = trackerParam.getDiameter();
-        int totalDiameterPixels = totalDiameter * squareScale - spacing;
-
-        int minX = xBase - totalDiameterPixels / 2;
-        int minZ = yBase - totalDiameterPixels / 2;
-
-        int radiusPixels = diameterPixels / 2 + 1;
-
-        int color = 0xff001ff;
-        if (spacing != 0) {
-            GuiComponent.fill(mStack, xBase - radiusPixels, yBase - radiusPixels, xBase - radiusPixels + 1, yBase + radiusPixels, color);
-            GuiComponent.fill(mStack, xBase + radiusPixels - 1, yBase - radiusPixels, xBase + radiusPixels, yBase + radiusPixels, color);
-            GuiComponent.fill(mStack, xBase - radiusPixels, yBase - radiusPixels, xBase + radiusPixels, yBase - radiusPixels + 1, color);
-            GuiComponent.fill(mStack, xBase - radiusPixels, yBase + radiusPixels - 1, xBase + radiusPixels, yBase + radiusPixels, color);
-        }
-
-        final List<ChunkStatus> statuses = ChunkStatus.getStatusList();
-        final List<ChunkStatus> statusesReverse = new ArrayList<>(statuses);
-        Collections.reverse(statusesReverse);
-
-        for (int dx = 0; dx < totalDiameter; ++dx) {
-            for (int dz = 0; dz < totalDiameter; ++dz) {
-                Map<ChunkStatus, Integer> statusCounts = new HashMap<>();
-                for (int dy = 0; dy < totalDiameter; dy++) {
-                    ChunkStatus chunkstatus = ((StoringCubeProgressListener) trackerParam).getStatus(dx, dy, dz);
-                    statusCounts.putIfAbsent(chunkstatus, 0);
-                    //noinspection ConstantConditions
-                    statusCounts.compute(chunkstatus, (status, count) -> count + 1);
-                }
-                Map<ChunkStatus, Float> squareSizes = new HashMap<>();
-
-                int count = 0;
-                final float centerX = minX + dx * squareScale + squareScale * 0.5f;
-                final float centerZ = minZ + dz * squareScale + squareScale * 0.5f;
-                for (ChunkStatus status : statuses) {
-                    if (!statusCounts.containsKey(status)) {
-                        continue;
-                    }
-                    count += statusCounts.get(status);
-                    float fraction = count / (float) loadDiameter;
-                    float radius = fraction * squareScale * 0.5f;
-                    squareSizes.put(status, radius);
-                }
-
-                fillFloat(Transformation.identity().getMatrix(),
-                    centerX, centerZ, centerX + squareScale, centerZ + squareScale, colors.getInt(null) | 0xff000000);
-
-                for (ChunkStatus status : statusesReverse) {
-                    if (!squareSizes.containsKey(status)) {
-                        continue;
-                    }
-                    float radius = squareSizes.get(status);
-
-                    float screenX = centerX - radius;
-                    float screenY = centerZ - radius;
-
-                    fillFloat(Transformation.identity().getMatrix(),
-                        screenX, screenY, screenX + radius * 2, screenY + radius * 2, colors.getInt(status) | 0xff000000);
-                }
-            }
-        }
-    }
-
-    private static void fillFloat(Matrix4f transform, float x1, float y1, float x2, float y2, int color) {
-        if (x1 < x2) {
-            float i = x1;
-            x1 = x2;
-            x2 = i;
-        }
-
-        if (y1 < y2) {
-            float j = y1;
-            y1 = y2;
-            y2 = j;
-        }
-
-        float alpha = (float) (color >> 24 & 255) / 255.0F;
-        float red = (float) (color >> 16 & 255) / 255.0F;
-        float green = (float) (color >> 8 & 255) / 255.0F;
-        float blue = (float) (color & 255) / 255.0F;
-
-        BufferBuilder buffer = Tesselator.getInstance().getBuilder();
-        RenderSystem.enableBlend();
-        RenderSystem.disableTexture();
-        RenderSystem.defaultBlendFunc();
-        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        buffer.vertex(transform, x1, y2, 0.0F).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(transform, x2, y2, 0.0F).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(transform, x2, y1, 0.0F).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(transform, x1, y1, 0.0F).color(red, green, blue, alpha).endVertex();
-        buffer.end();
-
-        BufferUploader.end(buffer);
-        RenderSystem.enableTexture();
-        RenderSystem.disableBlend();
     }
 }

@@ -69,7 +69,8 @@ public abstract class MixinMinecraftServer {
         BlockPos blockPos = serverLevel.getSharedSpawnPos();
         progressListener.updateSpawnPos(new ChunkPos(blockPos));
         ServerChunkCache serverChunkCache = serverLevel.getChunkSource();
-        serverChunkCache.getLightEngine().setTaskPerBatch(500);
+        // TODO replace if necessary
+//        serverChunkCache.getLightEngine().setTaskPerBatch(500);
         this.nextTickTime = Util.getMillis();
 
         ServerCubeCache prov = (ServerCubeCache) serverChunkCache;
@@ -108,7 +109,7 @@ public abstract class MixinMinecraftServer {
                     this.nextTickTime = Util.getMillis() + 10L;
                     this.waitUntilNextTick();
                     progressListener.stop();
-                    serverChunkCache.getLightEngine().setTaskPerBatch(5);
+//                    serverChunkCache.getLightEngine().setTaskPerBatch(5);
                     this.updateMobSpawningFlags();
                     return;
                 }

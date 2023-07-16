@@ -63,7 +63,7 @@ import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.chunk.storage.ChunkSerializer;
 import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.blending.BlendingData;
-import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
+import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceSerializationContext;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import net.minecraft.world.level.lighting.LevelLightEngine;
@@ -98,7 +98,7 @@ public class CubeSerializer {
             ((CubicLevelLightEngine) lightEngine).retainData(cubePos, true);
         }
 
-        Registry<Biome> biomeRegistry = serverLevel.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY);
+        Registry<Biome> biomeRegistry = serverLevel.registryAccess().registryOrThrow(Registries.BIOME);
         Codec<PalettedContainer<Holder<Biome>>> biomePaletteCodec = makeBiomePaletteCodec(biomeRegistry);
 
         for (int i = 0; i < sectionsData.size(); ++i) {
@@ -347,7 +347,7 @@ public class CubeSerializer {
         LevelChunkSection[] sections = cube.getSections();
         ListTag sectionsNBTList = new ListTag();
         LevelLightEngine lightEngine = serverLevel.getChunkSource().getLightEngine();
-        Registry<Biome> biomeRegistry = serverLevel.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY);
+        Registry<Biome> biomeRegistry = serverLevel.registryAccess().registryOrThrow(Registries.BIOME);
         Codec<PalettedContainer<Holder<Biome>>> palettedBiomeContainerCodec = makeBiomePaletteCodec(biomeRegistry);
         boolean cubeHasLight = cube.isLightCorrect();
 
@@ -524,10 +524,10 @@ public class CubeSerializer {
         }
     }
 
-    private static Map<ConfiguredStructureFeature<?, ?>, LongSet> unpackCubeStructureReferences(RegistryAccess registryAccess, ChunkPos pos, CompoundTag nbt) {
-        Map<ConfiguredStructureFeature<?, ?>, LongSet> map = Maps.newHashMap();
+    private static Map<Structure, LongSet> unpackCubeStructureReferences(RegistryAccess registryAccess, ChunkPos pos, CompoundTag nbt) {
+        Map<Structure, LongSet> map = Maps.newHashMap();
         CompoundTag compoundTag = nbt.getCompound("References");
-        Registry<ConfiguredStructureFeature<?, ?>> registry = registryAccess.registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
+        Registry<Structure> registry = registryAccess.registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
 
         for (String nbtKey : compoundTag.getAllKeys()) {
             ResourceLocation key = ResourceLocation.tryParse(nbtKey);

@@ -15,11 +15,9 @@ import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.config.ServerConfig;
-import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.BiomeGenerationSettingsAccess;
 import io.github.opencubicchunks.cubicchunks.server.level.ServerCubeCache;
 import io.github.opencubicchunks.cubicchunks.server.level.progress.CubeProgressListener;
-import io.github.opencubicchunks.cubicchunks.utils.MutableHolderSet;
 import io.github.opencubicchunks.cubicchunks.world.ForcedCubesSaveData;
 import io.github.opencubicchunks.cubicchunks.world.server.CubicMinecraftServer;
 import it.unimi.dsi.fastutil.longs.LongIterator;
@@ -81,41 +79,6 @@ public abstract class MixinMinecraftServer extends ReentrantBlockableEventLoop<T
 
     @Shadow protected abstract boolean haveTime();
 
-    @Inject(method = "<init>", at = @At("RETURN"))
-    private void injectFeatures(Thread thread, LevelStorageSource.LevelStorageAccess levelStorageAccess, PackRepository packRepository, WorldStem worldStem, Proxy proxy, DataFixer dataFixer,
-                                MinecraftSessionService minecraftSessionService, GameProfileRepository gameProfileRepository, GameProfileCache gameProfileCache,
-                                ChunkProgressListenerFactory chunkProgressListenerFactory, CallbackInfo ci) {
-        cubicChunksServerConfig = ServerConfig.getConfig(levelStorageAccess);
-        Registry<Biome> biomeRegistry = this.registryAccess().registry(Registry.BIOME_REGISTRY).get();
-
-        for (Holder<Biome> holder : biomeRegistry.getTag(BiomeTags.IS_NETHER).get()) {
-            addFeatureToBiome(holder.value(), GenerationStep.Decoration.RAW_GENERATION, CubicFeatures.LAVA_LEAK_FIX);
-        }
-    }
-
-    //Use this to add our features to vanilla's biomes.
-    private static void addFeatureToBiome(Biome biome, GenerationStep.Decoration stage, Holder<PlacedFeature> feature) {
-        convertImmutableFeatures(biome);
-        List<HolderSet<PlacedFeature>> features = ((BiomeGenerationSettingsAccess) biome.getGenerationSettings()).getFeatures();
-        while (features.size() <= stage.ordinal()) {
-            features.add(new MutableHolderSet<>());
-        }
-        ((MutableHolderSet) features.get(stage.ordinal())).add(feature);
-    }
-
-    private static void convertImmutableFeatures(Biome biome) {
-        BiomeGenerationSettingsAccess access = (BiomeGenerationSettingsAccess) biome.getGenerationSettings();
-
-        if (access.getFeatures() instanceof ImmutableList) {
-            access.setFeatures(access
-                .getFeatures()
-                .stream()
-                .map(MutableHolderSet::new)
-                .collect(Collectors.toList())
-            );
-        }
-    }
-
     /**
      * @author NotStirred
      * @reason Additional CC functionality and logging.
@@ -138,7 +101,8 @@ public abstract class MixinMinecraftServer extends ReentrantBlockableEventLoop<T
         ((CubeProgressListener) statusListener).startCubes(spawnPosCube);
 
         ServerChunkCache serverChunkCache = serverLevel.getChunkSource();
-        serverChunkCache.getLightEngine().setTaskPerBatch(500);
+        // TODO what replaces this method, if anything
+//        serverChunkCache.getLightEngine().setTaskPerBatch(500);
         this.nextTickTime = Util.getMillis();
         int radius = (int) Math.ceil(10 * (16 / (float) CubicConstants.DIAMETER_IN_BLOCKS)); //vanilla is 10, 32: 5, 64: 3
         int d = radius * 2 + 1;
@@ -174,7 +138,7 @@ public abstract class MixinMinecraftServer extends ReentrantBlockableEventLoop<T
         this.nextTickTime = Util.getMillis() + 10L;
         this.waitUntilNextTick();
         statusListener.stop();
-        serverChunkCache.getLightEngine().setTaskPerBatch(5);
+//        serverChunkCache.getLightEngine().setTaskPerBatch(5);
     }
 
     // Actually wait for all tasks when running pending tasks when stopping server, even if there is no tick time left. Makes quitting the world slightly faster

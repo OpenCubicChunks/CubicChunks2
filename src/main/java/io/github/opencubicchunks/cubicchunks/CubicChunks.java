@@ -6,8 +6,6 @@ import io.github.opencubicchunks.cc_core.CubicChunksBase;
 import io.github.opencubicchunks.cc_core.config.EarlyConfig;
 import io.github.opencubicchunks.cubicchunks.config.CommonConfig;
 import io.github.opencubicchunks.cubicchunks.levelgen.biome.StripedBiomeSource;
-import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
-import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicLakePlacementModifier;
 import io.github.opencubicchunks.cubicchunks.mixin.ClassDuplicator;
 import io.github.opencubicchunks.cubicchunks.network.PacketDispatcher;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
@@ -46,17 +44,10 @@ public class CubicChunks extends CubicChunksBase implements ModInitializer {
         PacketDispatcher.register();
 
 //        Registry.register(Registry.CHUNK_GENERATOR, new ResourceLocation(MODID, "generator"), CCNoiseBasedChunkGenerator.CODEC);
-
-        //Custom CC Features
-        CubicFeatures.init();
     }
 
     public static void registerBiomeSources() {
         Registry.register(BuiltInRegistries.BIOME_SOURCE, new ResourceLocation(MODID, "stripes"), StripedBiomeSource.CODEC);
-    }
-
-    public static void registerPlacementModifiers() {
-        CubicLakePlacementModifier.init();
     }
 
     public static CommonConfig config() {

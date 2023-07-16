@@ -13,9 +13,9 @@ import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightSectionStorage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.chunk.LightChunk;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.lighting.DataLayerStorageMap;
 import net.minecraft.world.level.lighting.LightEngine;
@@ -30,11 +30,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LightEngine.class)
-public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S extends LayerLightSectionStorage<M>> extends MixinDynamicGraphMinFixedPoint implements CubicLightEngine {
+public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S extends LayerLightSectionStorage<M>> implements CubicLightEngine {
 
     @Shadow @Final protected S storage;
-
-    @Shadow @Final protected BlockPos.MutableBlockPos pos;
 
     @Shadow @Final protected LightChunkGetter chunkSource;
 
@@ -42,12 +40,12 @@ public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S exten
 
     @Shadow @Final private long[] lastChunkPos;
 
-    @Shadow @Final private BlockGetter[] lastChunk;
+    @Shadow @Final private LightChunk[] lastChunk;
 
     @Shadow protected void checkNode(long id) {
     }
 
-    @Shadow @Nullable protected abstract BlockGetter getChunk(int chunkX, int chunkZ);
+    @Shadow @Nullable protected abstract LightChunk getChunk(int chunkX, int chunkZ);
 
     @Override
     public void retainCubeData(CubePos posIn, boolean retain) {
@@ -67,7 +65,7 @@ public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S exten
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void setCubic(LightChunkGetter lightChunkGetter, LightLayer lightLayer, S layerLightSectionStorage, CallbackInfo ci) {
+    private void setCubic(LightChunkGetter lightChunkGetter, LayerLightSectionStorage layerLightSectionStorage, CallbackInfo ci) {
         if (this.chunkSource.getLevel() == null) {
             // Special case for dummy light engine used in MixinChunkMap for serialization
             this.isCubic = true;
@@ -79,20 +77,22 @@ public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S exten
 //        this.worldStyle = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).worldStyle();
     }
 
-    @Redirect(method = "getStateAndOpacity",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/lighting/LightEngine;getChunk(II)Lnet/minecraft/world/level/BlockGetter;"))
-    private BlockGetter getCubeReader(LightEngine layerLightEngine, int chunkX, int chunkZ, long blockPos) {
+    @Redirect(method = "getState",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/lighting/LightEngine;getChunk(II)Lnet/minecraft/world/level/chunk/LightChunk;"))
+    private LightChunk getCubeReader(LightEngine layerLightEngine, int chunkX, int chunkZ, BlockPos blockPos) {
         if (!this.isCubic) {
             return this.getChunk(chunkX, chunkZ);
         }
-        int sectionX = SectionPos.blockToSectionCoord(BlockPos.getX(blockPos));
-        int sectionY = SectionPos.blockToSectionCoord(BlockPos.getY(blockPos));
-        int sectionZ = SectionPos.blockToSectionCoord(BlockPos.getZ(blockPos));
+        int sectionX = SectionPos.blockToSectionCoord(blockPos.getX());
+        int sectionY = SectionPos.blockToSectionCoord(blockPos.getY());
+        int sectionZ = SectionPos.blockToSectionCoord(blockPos.getZ());
         return this.getCubeReader(sectionX, sectionY, sectionZ);
     }
 
+    // TODO might need to modify getOpacity
+
     @Nullable
-    private BlockGetter getCubeReader(int sectionX, int sectionY, int sectionZ) {
+    private LightChunk getCubeReader(int sectionX, int sectionY, int sectionZ) {
         long i = SectionPos.asLong(sectionX, sectionY, sectionZ);
 
         for (int j = 0; j < 2; ++j) {
@@ -101,7 +101,7 @@ public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S exten
             }
         }
 
-        BlockGetter iblockreader = ((LightCubeGetter) this.chunkSource).getCubeForLighting(
+        LightChunk iblockreader = ((LightCubeGetter) this.chunkSource).getCubeForLighting(
             Coords.sectionToCube(sectionX),
             Coords.sectionToCube(sectionY),
             Coords.sectionToCube(sectionZ)
@@ -120,7 +120,7 @@ public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S exten
 
     //This is here to throw an actual exception as this method will cause incomplete cube loading when called in a cubic context
     @Inject(method = "getChunk", at = @At("HEAD"))
-    private void crashIfInCubicContext(int chunkX, int chunkZ, CallbackInfoReturnable<BlockGetter> cir) {
+    private void crashIfInCubicContext(int chunkX, int chunkZ, CallbackInfoReturnable<LightChunk> cir) {
         if (this.isCubic) {
             throw new UnsupportedOperationException("Trying to get chunks in a cubic context! Use \"getCubeReader\" instead!");
         }

@@ -1008,7 +1008,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     return Either.left(iBigCube);
                 }
                 this.markCubePositionReplaceable(cubePos);
-                return Either.left(new ProtoCube(cubePos, UpgradeData.EMPTY, level, this.level.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY), null));
+                return Either.left(new ProtoCube(cubePos, UpgradeData.EMPTY, level, this.level.registryAccess().registryOrThrow(Registries.BIOME), null));
             }, this.mainThreadExecutor);
         }, this.mainThreadExecutor);
     }

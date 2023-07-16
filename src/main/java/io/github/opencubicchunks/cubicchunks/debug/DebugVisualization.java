@@ -87,13 +87,13 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.datafixers.util.Either;
 import com.mojang.datafixers.util.Pair;
+import net.minecraft.server.level.ChunkLevel;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.client.gui.screens.CubicLevelLoadingScreen;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.Matrix4fAccess;
 import io.github.opencubicchunks.cubicchunks.server.level.CubeHolder;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType;
 import it.unimi.dsi.fastutil.longs.Long2ByteLinkedOpenHashMap;
@@ -408,19 +408,18 @@ public class DebugVisualization {
     private static void matrixSetup() {
         GL11.glViewport(0, 0, (int) screenWidth, (int) screenHeight);
 
-        mvpMatrix.setIdentity();
         // mvp = projection*view*model
         // projection
-        mvpMatrix.multiply(Matrix4f.perspective(60, screenWidth / screenHeight, 0.01f, 1000));
+        mvpMatrix.perspective(60, screenWidth / screenHeight, 0.01f, 1000);
         Matrix4f modelView = inverseMatrix;
-        modelView.setIdentity();
         // view
-        modelView.multiply(Matrix4f.createTranslateMatrix(0, 0, -500));
+        modelView.translation(0, 0, -500);
         // model
-        modelView.multiply(Vector3f.XP.rotationDegrees(30));
-        modelView.multiply(Vector3f.YP.rotationDegrees((float) ((System.currentTimeMillis() * 0.04) % 360)));
+        // TODO rotation
+//        modelView.multiply(new Vector3f(1, 0, 0).rotationDegrees(30));
+//        modelView.multiply(new Vector3f(0, 1, 0).rotationDegrees((float) ((System.currentTimeMillis() * 0.04) % 360)));
 
-        mvpMatrix.multiply(modelView);
+        mvpMatrix.mul(modelView);
         inverseMatrix.invert();
         timer().matrixSetup = System.nanoTime();
     }
@@ -532,7 +531,7 @@ public class DebugVisualization {
 
     private static void sortQuads() {
         Vector4f vec = new Vector4f(0, 0, 0, 1);
-        vec.transform(inverseMatrix);
+        vec.mul(inverseMatrix);
         //bufferBuilder.setQuadSortOrigin(vec.x(), vec.y(), vec.z());
 
         bufferBuilder.end();
@@ -540,11 +539,12 @@ public class DebugVisualization {
     }
 
     private static Pair<Integer, FloatBuffer> quadsToTriangles() {
-        Pair<BufferBuilder.DrawState, ByteBuffer> stateBuffer = bufferBuilder.popNextBuffer();
-        stateBuffer.getSecond().order(ByteOrder.nativeOrder());
-        Pair<Integer, FloatBuffer> integerFloatBufferPair = toTriangles(stateBuffer);
-        timer().toTriangles = System.nanoTime();
-        return integerFloatBufferPair;
+//        var stateBuffer = bufferBuilder.end();
+//        stateBuffer.getSecond().order(ByteOrder.nativeOrder());
+//        Pair<Integer, FloatBuffer> integerFloatBufferPair = toTriangles(stateBuffer);
+//        timer().toTriangles = System.nanoTime();
+//        return integerFloatBufferPair;
+        return Pair.of(0, FloatBuffer.allocate(0));
     }
 
     private static Pair<Integer, FloatBuffer> toTriangles(Pair<BufferBuilder.DrawState, ByteBuffer> stateBuffer) {
@@ -598,7 +598,7 @@ public class DebugVisualization {
     private static void shaderUniforms() {
         ByteBuffer byteBuffer = MemoryUtil.memAlignedAlloc(64, 64);
         FloatBuffer fb = byteBuffer.asFloatBuffer();
-        mvpMatrix.store(fb);
+        mvpMatrix.get(fb);
         glUniformMatrix4fv(matrixLocation, false, fb);
         MemoryUtil.memFree(byteBuffer);
     }
@@ -666,20 +666,20 @@ public class DebugVisualization {
         });
 
         FloatBuffer buffer = MemoryUtil.memAllocFloat(16);
-        ortho.store(buffer);
+        ortho.get(buffer);
         buffer.clear();
         glUniformMatrix4fv(matrixLocation, false, buffer);
         MemoryUtil.memFree(buffer);
 
 
-        Pair<BufferBuilder.DrawState, ByteBuffer> nextBuffer = perfGraphBuilder.popNextBuffer();
-        nextBuffer.getSecond().clear().order(ByteOrder.nativeOrder());
-        Pair<Integer, FloatBuffer> buf = toTriangles(nextBuffer);
-        buf.getSecond().clear();
-        glBufferData(GL_ARRAY_BUFFER, buf.getSecond(), GL_STREAM_DRAW);
-        preDrawSetup();
-        glDrawArrays(GL_TRIANGLES, 0, buf.getFirst());
-        MemoryUtil.memFree(buf.getSecond());
+//        Pair<BufferBuilder.DrawState, ByteBuffer> nextBuffer = perfGraphBuilder.popNextBuffer();
+//        nextBuffer.getSecond().clear().order(ByteOrder.nativeOrder());
+//        Pair<Integer, FloatBuffer> buf = toTriangles(nextBuffer);
+//        buf.getSecond().clear();
+//        glBufferData(GL_ARRAY_BUFFER, buf.getSecond(), GL_STREAM_DRAW);
+//        preDrawSetup();
+//        glDrawArrays(GL_TRIANGLES, 0, buf.getFirst());
+//        MemoryUtil.memFree(buf.getSecond());
     }
 
     private static void quad2d(BufferBuilder buf, float x1, float y1, float x2, float y2, int color) {
@@ -770,24 +770,7 @@ public class DebugVisualization {
     }
 
     @SuppressWarnings("ConstantConditions") public static Matrix4f createMatrix(float[] data) {
-        Matrix4fAccess m = (Matrix4fAccess) (Object) new Matrix4f();
-        m.setM00(data[0]);
-        m.setM01(data[1]);
-        m.setM02(data[2]);
-        m.setM03(data[3]);
-        m.setM10(data[4]);
-        m.setM11(data[5]);
-        m.setM12(data[6]);
-        m.setM13(data[7]);
-        m.setM20(data[8]);
-        m.setM21(data[9]);
-        m.setM22(data[10]);
-        m.setM23(data[11]);
-        m.setM30(data[12]);
-        m.setM31(data[13]);
-        m.setM32(data[14]);
-        m.setM33(data[15]);
-        return (Matrix4f) (Object) m;
+        return new Matrix4f().set(data);
     }
 
     static class Vertex {
@@ -993,12 +976,13 @@ public class DebugVisualization {
         enum Type {
             TICKET_LEVEL(chunkHolder -> {
                 if (((CubeHolder) chunkHolder).getCubePos() == null) {
-                    return ChunkHolder.getStatus(chunkHolder.getTicketLevel()).getIndex();
+                    var level = chunkHolder.getTicketLevel();
+                    return (level < 33 ? ChunkStatus.FULL : ChunkStatus.getStatusAroundFullChunk(level - 33)).getIndex();
                 } else {
                     return CubeHolder.getCubeStatusFromLevel(chunkHolder.getTicketLevel()).getIndex();
                 }
             }),
-            TICKET_LEVEL_FULL_CHUNK_STATUS(holder -> ChunkHolder.getFullChunkStatus(holder.getTicketLevel()).ordinal() + 128),
+            TICKET_LEVEL_FULL_CHUNK_STATUS(holder -> ChunkLevel.fullStatus(holder.getTicketLevel()).ordinal() + 128),
             TO_SAVE_LEVEL(holder -> {
                 ChunkAccess cube = holder.getChunkToSave().getNow(null);
                 return cube == null ? 255 : cube.getStatus().getIndex();

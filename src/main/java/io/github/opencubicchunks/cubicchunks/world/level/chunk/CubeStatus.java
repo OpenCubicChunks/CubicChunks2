@@ -23,8 +23,8 @@ public class CubeStatus {
 
     private static final List<ChunkStatus> STATUS_BY_RANGE_16 = ImmutableList.of(
         ChunkStatus.FULL,
-        ChunkStatus.FEATURES,
-        ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.INITIALIZE_LIGHT,
+        ChunkStatus.CARVERS,
         ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS,
@@ -38,8 +38,8 @@ public class CubeStatus {
 
     private static final List<ChunkStatus> STATUS_BY_RANGE_32 = ImmutableList.of(
         ChunkStatus.FULL,
-        ChunkStatus.FEATURES,
-        ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.INITIALIZE_LIGHT,
+        ChunkStatus.CARVERS,
         ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS,
@@ -49,8 +49,8 @@ public class CubeStatus {
 
     private static final List<ChunkStatus> STATUS_BY_RANGE_64 = ImmutableList.of(
         ChunkStatus.FULL,
-        ChunkStatus.FEATURES,
-        ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.INITIALIZE_LIGHT,
+        ChunkStatus.CARVERS,
         ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS,
         ChunkStatus.STRUCTURE_STARTS
@@ -58,8 +58,8 @@ public class CubeStatus {
 
     private static final List<ChunkStatus> STATUS_BY_RANGE_128 = ImmutableList.of(
         ChunkStatus.FULL,
-        ChunkStatus.FEATURES,
-        ChunkStatus.LIQUID_CARVERS,
+        ChunkStatus.INITIALIZE_LIGHT,
+        ChunkStatus.CARVERS,
         ChunkStatus.BIOMES,
         ChunkStatus.STRUCTURE_STARTS
     );

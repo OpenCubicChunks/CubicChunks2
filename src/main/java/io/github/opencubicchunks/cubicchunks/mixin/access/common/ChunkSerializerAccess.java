@@ -10,7 +10,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.chunk.storage.ChunkSerializer;
-import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
+import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceSerializationContext;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,19 +21,19 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 public interface ChunkSerializerAccess {
 
     @Invoker
-    static CompoundTag invokePackStructureData(StructurePieceSerializationContext context, ChunkPos chunkPos, Map<ConfiguredStructureFeature<?, ?>, StructureStart> structureStarts,
-                                               Map<ConfiguredStructureFeature<?, ?>, LongSet> structureReferences) {
+    static CompoundTag invokePackStructureData(StructurePieceSerializationContext context, ChunkPos chunkPos, Map<Structure, StructureStart> structureStarts,
+                                               Map<Structure, LongSet> structureReferences) {
         throw new Error("Mixin did not apply.");
     }
 
     @Invoker
-    static Map<ConfiguredStructureFeature<?, ?>, StructureStart> invokeUnpackStructureStart(StructurePieceSerializationContext context, CompoundTag nbt,
+    static Map<Structure, StructureStart> invokeUnpackStructureStart(StructurePieceSerializationContext context, CompoundTag nbt,
                                                                                long worldSeed) {
         throw new Error("Mixin did not apply.");
     }
 
     @Invoker
-    static Map<ConfiguredStructureFeature<?, ?>, LongSet> invokeUnpackStructureReferences(RegistryAccess registryAccess, ChunkPos chunkPos, CompoundTag nbt) {
+    static Map<Structure, LongSet> invokeUnpackStructureReferences(RegistryAccess registryAccess, ChunkPos chunkPos, CompoundTag nbt) {
         throw new Error("Mixin did not apply.");
     }
 

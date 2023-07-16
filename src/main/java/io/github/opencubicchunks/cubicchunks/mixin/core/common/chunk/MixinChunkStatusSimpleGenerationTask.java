@@ -30,9 +30,9 @@ public interface MixinChunkStatusSimpleGenerationTask {
      * @reason inject is not supported, SectionPrimer check
      */
     @Overwrite
-    default CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> doWork(
-        ChunkStatus status, Executor executor, ServerLevel level, ChunkGenerator generator, StructureTemplateManager structureManager, ThreadedLevelLightEngine threadedLevelLightEngine,
-        Function<ChunkAccess, CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> function, List<ChunkAccess> neighbors, ChunkAccess chunk, boolean bl) {
+    default CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> doWork(ChunkStatus status, Executor executor, ServerLevel level,
+        ChunkGenerator generator, StructureTemplateManager structureTemplateManager, ThreadedLevelLightEngine threadedLevelLightEngine, Function<ChunkAccess,
+        CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> function, List<ChunkAccess> neighbors, ChunkAccess chunk) {
 
         if (!((CubicLevelHeightAccessor) chunk).isCubic()) {
             if (!chunk.getStatus().isOrAfter(status)) {

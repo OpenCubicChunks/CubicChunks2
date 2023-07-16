@@ -60,17 +60,15 @@ import net.minecraft.world.level.levelgen.LegacyRandomSource;
 import net.minecraft.world.level.levelgen.RandomSupport;
 import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
-import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
-import net.minecraft.world.level.levelgen.feature.StructureFeature;
 import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureCheckResult;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.levelgen.structure.placement.ConcentricRingsStructurePlacement;
 import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadStructurePlacement;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -91,7 +89,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
 
     @Shadow public abstract Climate.Sampler climateSampler();
 
-    @Shadow protected abstract List<StructurePlacement> getPlacementsForFeature(Holder<ConfiguredStructureFeature<?, ?>> holder);
+    @Shadow protected abstract List<StructurePlacement> getPlacementsForStructure(Holder<Structure> holder);
 
     @Shadow @Nullable protected abstract BlockPos getNearestGeneratedStructure(BlockPos blockPos, ConcentricRingsStructurePlacement concentricRingsStructurePlacement);
 
@@ -195,7 +193,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
 
     private boolean tryGenerateCCStructure(StructureSet.StructureSelectionEntry structureSelectionEntry, StructureManager structureFeatureManager, RegistryAccess registryAccess,
                                         StructureManager structureManager, long seed, CubeAccess cube, CubePos cubePos) {
-        ConfiguredStructureFeature<?, ?> configuredStructureFeature = structureSelectionEntry.structure().value();
+        Structure configuredStructureFeature = structureSelectionEntry.structure().value();
 
         StructureStart baseStart = structureFeatureManager.getStartForFeature(null, configuredStructureFeature, cube);
         int numReferences = baseStart == null ? 0 : baseStart.getReferences();
@@ -266,12 +264,12 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         Biome biome = this.biomeSource.getPrimaryBiome(cube.getCubePos().asChunkPos());
         this.createCCStructure(StructureFeatures.STRONGHOLD, registry, featureManager, cube, manager, seed, cubePos, biome);
 
-        for (Supplier<ConfiguredStructureFeature<?, ?>> configuredStructureFeatureSupplier : biome.getGenerationSettings().structures()) {
+        for (Supplier<Structure> configuredStructureFeatureSupplier : biome.getGenerationSettings().structures()) {
             this.createCCStructure(configuredStructureFeatureSupplier.get(), registry, featureManager, cube, manager, seed, cubePos, biome);
         }
     }
 
-    private void createCCStructure(ConfiguredStructureFeature<?, ?> configuredStructureFeature, RegistryAccess registryAccess, StructureManager structureFeatureManager,
+    private void createCCStructure(Structure configuredStructureFeature, RegistryAccess registryAccess, StructureManager structureFeatureManager,
                                    CubeAccess cube, StructureManager structureManager, long seed, CubePos cubePos, Biome biome) {
         StructureStart<?> structureStart = structureFeatureManager
             .getStartForFeature(/*SectionPos.of(cube.getPos(), 0) We return null as a sectionPos Arg is not used in the method*//*null, configuredStructureFeature.feature, cube);
@@ -330,7 +328,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
                             CrashReport crashReport = CrashReport.forThrowable(e, "Generating structure reference");
                             CrashReportCategory crashReportCategory = crashReport.addCategory("Structure");
 
-                            Registry<ConfiguredStructureFeature<?, ?>> registry = worldGenLevel.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
+                            Registry<Structure> registry = worldGenLevel.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
 
                             crashReportCategory.setDetail("Id", () -> registry.getKey(structureStart.getFeature()).toString());
                             //crashReportCategory.setDetail("Name", () -> structureStart.getFeature().getFeatureName());
@@ -354,17 +352,17 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         locals = LocalCapture.CAPTURE_FAILHARD
     )
     //FIXME: Is this actually changing anything?
-    public void findNearestMapFeature3D(ServerLevel serverLevel, HolderSet<ConfiguredStructureFeature<?, ?>> structures, BlockPos center, int radius, boolean skipExistingChunks,
-                                        CallbackInfoReturnable<Pair<BlockPos, Holder<ConfiguredStructureFeature<?, ?>>>> cir, Set<Holder<Biome>> structureBiomes,
-                                        Set<Holder<Biome>> possibleBiomes, Pair<BlockPos, Holder<ConfiguredStructureFeature<?, ?>>> nearestStructure,
-                                        double nearestDistance, Map<StructurePlacement, Set<Holder<ConfiguredStructureFeature<?, ?>>>> structuresPerPlacement) {
+    public void findNearestMapFeature3D(ServerLevel serverLevel, HolderSet<Structure> structures, BlockPos center, int radius, boolean skipExistingChunks,
+                                        CallbackInfoReturnable<Pair<BlockPos, Holder<Structure>>> cir, Set<Holder<Biome>> structureBiomes,
+                                        Set<Holder<Biome>> possibleBiomes, Pair<BlockPos, Holder<Structure>> nearestStructure,
+                                        double nearestDistance, Map<StructurePlacement, Set<Holder<Structure>>> structuresPerPlacement) {
         if (((CubicLevelHeightAccessor) serverLevel).generates2DChunks()) {
             return;
         }
 
-        for (Holder<ConfiguredStructureFeature<?, ?>> structure : structures) {
+        for (Holder<Structure> structure : structures) {
             if (possibleBiomes.stream().anyMatch(structure.value().biomes()::contains)) {
-                for (StructurePlacement structurePlacement : this.getPlacementsForFeature(structure)) {
+                for (StructurePlacement structurePlacement : this.getPlacementsForStructure(structure)) {
                     structuresPerPlacement.computeIfAbsent(
                         structurePlacement,
                         (placement) -> new ObjectArraySet<>()
@@ -373,9 +371,9 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
             }
         }
 
-        List<Map.Entry<StructurePlacement, Set<Holder<ConfiguredStructureFeature<?, ?>>>>> randomSpreadEntries = new ArrayList<>(structuresPerPlacement.size());
+        List<Map.Entry<StructurePlacement, Set<Holder<Structure>>>> randomSpreadEntries = new ArrayList<>(structuresPerPlacement.size());
 
-        for (Map.Entry<StructurePlacement, Set<Holder<ConfiguredStructureFeature<?, ?>>>> structurePlacementSetEntry : structuresPerPlacement.entrySet()) {
+        for (Map.Entry<StructurePlacement, Set<Holder<Structure>>> structurePlacementSetEntry : structuresPerPlacement.entrySet()) {
             StructurePlacement structurePlacement = structurePlacementSetEntry.getKey();
             if (structurePlacement instanceof ConcentricRingsStructurePlacement concentricRingsStructurePlacement) {
                 BlockPos nearestRingPos = this.getNearestGeneratedStructure(center, concentricRingsStructurePlacement);
@@ -397,9 +395,9 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
             for (int distanceFromCenter = 0; distanceFromCenter <= radius; ++distanceFromCenter) {
                 boolean found = false;
 
-                for (Map.Entry<StructurePlacement, Set<Holder<ConfiguredStructureFeature<?, ?>>>> structurePlacementSetEntry : randomSpreadEntries) {
+                for (Map.Entry<StructurePlacement, Set<Holder<Structure>>> structurePlacementSetEntry : randomSpreadEntries) {
                     RandomSpreadStructurePlacement randomSpreadStructurePlacement = (RandomSpreadStructurePlacement) structurePlacementSetEntry.getKey();
-                    Pair<BlockPos, Holder<ConfiguredStructureFeature<?, ?>>> potentialNearest =
+                    Pair<BlockPos, Holder<Structure>> potentialNearest =
                         getNearestGeneratedStructure3D(
                             structurePlacementSetEntry.getValue(),
                             serverLevel,
@@ -433,8 +431,8 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
     }
 
     @Nullable
-    private Pair<BlockPos, Holder<ConfiguredStructureFeature<?, ?>>> getNearestGeneratedStructure3D(
-        Set<Holder<ConfiguredStructureFeature<?, ?>>> structures, ServerLevel serverLevel,
+    private Pair<BlockPos, Holder<Structure>> getNearestGeneratedStructure3D(
+        Set<Holder<Structure>> structures, ServerLevel serverLevel,
         StructureManager structureFeatureManager, int sectionX, int sectionY, int sectionZ,
         int distanceFromCenter, boolean skipExistingChunks, long seed,
         RandomSpreadStructurePlacement randomSpreadStructurePlacement
@@ -462,7 +460,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
 
                     CubePos potentialCube = this.getPotentialFeatureCube(randomSpreadStructurePlacement, seed, xPos, yPos, zPos);
 
-                    for (Holder<ConfiguredStructureFeature<?, ?>> structure : structures) {
+                    for (Holder<Structure> structure : structures) {
                         //TODO: Don't turn potentialCube into a ChunkPos as below. Instead the structure checks should run for the actual cube
                         StructureCheckResult result = structureFeatureManager.checkStructurePresence(potentialCube.asChunkPos(), structure.value(), skipExistingChunks);
 
@@ -544,8 +542,8 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         BlockPos blockPos = chunkPos.getBlockAt(0, cube.getCubePos().minCubeY(), 0);
         SectionPos sectionPos = SectionPos.of(chunkPos, cube.getCubePos().asSectionPos().y());
 
-        Registry<ConfiguredStructureFeature<?, ?>> structureFeatureRegistry = level.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
-        Map<Integer, List<ConfiguredStructureFeature<?, ?>>> featuresByStep = structureFeatureRegistry.stream()
+        Registry<Structure> structureFeatureRegistry = level.registryAccess().registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
+        Map<Integer, List<Structure>> featuresByStep = structureFeatureRegistry.stream()
             .collect(Collectors.groupingBy(configuredStructureFeature -> configuredStructureFeature.feature.step().ordinal()));
 
         List<BiomeSource.StepFeatureData> biomeSourceFeaturesPerStep = this.biomeSource.featuresPerStep();
@@ -562,7 +560,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
             for (int stepId = 0; stepId < stepCount; ++stepId) {
                 int m = 0;
                 if (structureFeatureManager.shouldGenerateFeatures()) {
-                    for (ConfiguredStructureFeature<?, ?> configuredStructureFeature : featuresByStep.getOrDefault(stepId, Collections.emptyList())) {
+                    for (Structure configuredStructureFeature : featuresByStep.getOrDefault(stepId, Collections.emptyList())) {
                         rand.setFeatureSeed(initSeed, m, stepId);
                         Supplier<String> getGeneratingResourceKeyFunc = () -> structureFeatureRegistry.getResourceKey(configuredStructureFeature)
                             .map(Object::toString)

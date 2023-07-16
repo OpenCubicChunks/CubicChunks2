@@ -20,6 +20,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.PoiDeseri
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
@@ -44,9 +45,9 @@ public abstract class MixinPoiManager extends SectionStorage<PoiSection> impleme
 
     @Shadow @Final private LongSet loadedChunks; // Loaded cubes
 
-    public MixinPoiManager(Path file, Function<Runnable, Codec<PoiSection>> function, Function<Runnable, PoiSection> function2, DataFixer dataFixer,
-                           DataFixTypes dataFixTypes, boolean bl, LevelHeightAccessor levelHeightAccessor) {
-        super(file, function, function2, dataFixer, dataFixTypes, bl, levelHeightAccessor);
+    public MixinPoiManager(Path path, Function<Runnable, Codec<PoiSection>> function, Function<Runnable, PoiSection> function2, DataFixer dataFixer, DataFixTypes dataFixTypes, boolean bl,
+                           RegistryAccess registryAccess, LevelHeightAccessor levelHeightAccessor) {
+        super(path, function, function2, dataFixer, dataFixTypes, bl, registryAccess, levelHeightAccessor);
     }
 
     @Shadow private static boolean mayHavePoi(LevelChunkSection levelChunkSection) {

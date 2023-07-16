@@ -149,7 +149,7 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
             int j = getVersion(dynamic);
             int k = SharedConstants.getCurrentVersion().getDataVersion().getVersion();
             boolean bl = j != k;
-            Dynamic<T> dynamic2 = this.fixerUpper.update(this.type.getType(), dynamic, j, k);
+            Dynamic<T> dynamic2 = this.type.update(this.fixerUpper, dynamic, j, k);
             OptionalDynamic<T> optionalDynamic = dynamic2.get("Sections");
 
             for (int l = 0; l < CubicConstants.SECTION_COUNT; ++l) {

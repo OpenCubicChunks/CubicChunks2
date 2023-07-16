@@ -9,6 +9,7 @@ import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.biome.Biome;
@@ -25,7 +26,6 @@ import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.blending.BlendingData;
-import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
@@ -46,7 +46,7 @@ public class ImposterProtoCube extends ProtoCube {
             new ProtoChunkTicks<>(),
             new ProtoChunkTicks<>(),
             cubeIn.getLevel(),
-            cubeIn.getLevel().registryAccess().registryOrThrow(Registry.BIOME_REGISTRY),
+            cubeIn.getLevel().registryAccess().registryOrThrow(Registries.BIOME),
             null
         );
 
@@ -156,43 +156,6 @@ public class ImposterProtoCube extends ProtoCube {
     @Override
     public Holder<Biome> getNoiseBiome(int i, int j, int k) {
         return this.wrapped.getNoiseBiome(i, j, k);
-    }
-
-    @Override
-    @Nullable
-    public StructureStart getStartForFeature(ConfiguredStructureFeature<?, ?> structure) {
-        return this.wrapped.getStartForFeature(structure);
-    }
-
-    @Override
-    public void setStartForFeature(ConfiguredStructureFeature<?, ?> structure, StructureStart start) {
-    }
-
-    @Override
-    public Map<ConfiguredStructureFeature<?, ?>, StructureStart> getAllStarts() {
-        return this.wrapped.getAllStarts();
-    }
-
-    @Override
-    public void setAllStarts(Map<ConfiguredStructureFeature<?, ?>, StructureStart> structureStarts) {
-    }
-
-    @Override
-    public LongSet getReferencesForFeature(ConfiguredStructureFeature<?, ?> structure) {
-        return this.wrapped.getReferencesForFeature(structure);
-    }
-
-    @Override
-    public void addReferenceForFeature(ConfiguredStructureFeature<?, ?> structure, long reference) {
-    }
-
-    @Override
-    public Map<ConfiguredStructureFeature<?, ?>, LongSet> getAllReferences() {
-        return this.wrapped.getAllReferences();
-    }
-
-    @Override
-    public void setAllReferences(Map<ConfiguredStructureFeature<?, ?>, LongSet> structureReferences) {
     }
 
     @Override

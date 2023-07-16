@@ -44,6 +44,7 @@ import net.minecraft.ReportedException;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
@@ -119,7 +120,7 @@ public class LevelCube extends CubeAccess {
             ((CubicLevelHeightAccessor) level),
             upgradeData,
             new ProtoCube.FakeSectionCount(cubePos.getY(), level, CubicConstants.SECTION_COUNT),
-            level.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY),
+            level.registryAccess().registryOrThrow(Registries.BIOME),
             inhabitedTime,
             sections,
             blendingData

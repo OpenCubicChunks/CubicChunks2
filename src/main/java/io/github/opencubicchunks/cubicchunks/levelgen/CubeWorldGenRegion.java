@@ -423,7 +423,7 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
 
         CubeAccess icube = this.getCube(pos);
 
-        if (!icube.getStatus().isOrAfter(ChunkStatus.LIQUID_CARVERS)) {
+        if (!icube.getStatus().isOrAfter(ChunkStatus.FEATURES)) {
             icube.setFeatureBlocks(pos, newState);
             return true;
         }

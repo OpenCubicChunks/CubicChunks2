@@ -51,7 +51,8 @@ public abstract class MixinSkyLightEngine extends MixinLightEngine<SkyLightSecti
 
     /** all parameters are global coordinates */
     @Override public void checkSkyLightColumn(ColumnCubeMapGetter chunk, int x, int z, int oldHeight, int newHeight) {
-        ((LayerLightSectionStorageAccess) this.storage).invokeRunAllUpdates();
+        // TODO do we need to replace this call?
+//        ((LayerLightSectionStorageAccess) this.storage).invokeRunAllUpdates();
         ColumnCubeMap columnCubeMap = chunk.getCubeMap();
         int oldHeightCube = Coords.blockToCube(oldHeight - 1);
         int newHeightCube = Coords.blockToCube(newHeight);
@@ -178,8 +179,8 @@ public abstract class MixinSkyLightEngine extends MixinLightEngine<SkyLightSecti
                             height = Math.max(height, minY);
                             for (int y = maxY; y >= height; y--) {
                                 long pos = new BlockPos((chunkPos.x + sectionX) * 16 + x, y, (chunkPos.z + sectionZ) * 16 + z).asLong();
-                                // Not sure if this is necessary
-                                ((LayerLightSectionStorageAccess) this.storage).invokeRunAllUpdates();
+                                // TODO Not sure if this is necessary
+//                                ((LayerLightSectionStorageAccess) this.storage).invokeRunAllUpdates();
 
                                 if (((LayerLightSectionStorageAccess) this.storage).invokeStoringLightForSection(SectionPos.blockToSection(pos))) {
                                     addEmissionAtPos(pos);

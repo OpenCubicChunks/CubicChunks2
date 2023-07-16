@@ -22,30 +22,24 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LayerLightSectionStorage.class)
-public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMap<M>> extends SectionTracker implements CubicLayerLightSectionStorage {
-    @Shadow @Final private static Direction[] DIRECTIONS;
-
+public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMap<M>> implements CubicLayerLightSectionStorage {
     @Shadow @Final protected Long2ObjectMap<DataLayer> queuedSections;
 
     @Shadow @Final protected M updatingSectionData;
 
     @Shadow @Final protected LongSet changedSections;
 
-    @Shadow protected volatile boolean hasToRemove;
+//    @Shadow protected volatile boolean hasToRemove;
 
     @Shadow @Final private LongSet toRemove;
 
     @Shadow @Final private LightChunkGetter chunkSource;
 
-    @Shadow @Final private LongSet untrustedSections;
+//    @Shadow @Final private LongSet untrustedSections;
 
     private final LongSet cubesToRetain = new LongOpenHashSet();
 
-    protected MixinLayerLightSectionStorage(int i, int j, int k) {
-        super(i, j, k);
-    }
-
-    @Shadow protected abstract void clearQueuedSectionBlocks(LightEngine<?, ?> engine, long sectionPosIn);
+//    @Shadow protected abstract void clearQueuedSectionBlocks(LightEngine<?, ?> engine, long sectionPosIn);
 
     @Shadow protected abstract void onNodeRemoved(long pos);
 
@@ -53,7 +47,7 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
 
     @Shadow protected abstract boolean hasInconsistencies();
 
-    @Shadow protected abstract void checkEdgesForSection(LightEngine<M, ?> layerLightEngine, long l);
+//    @Shadow protected abstract void checkEdgesForSection(LightEngine<M, ?> layerLightEngine, long l);
 
     @Override
     public void retainCubeData(long cubeSectionPos, boolean retain) {
@@ -68,8 +62,9 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
      * @author NotStirred
      * @reason entire method was chunk based
      */
-    @Inject(method = "markNewInconsistencies", at = @At("HEAD"), cancellable = true)
-    protected void markNewInconsistenciesForCube(LightEngine<M, ?> engine, boolean updateSkyLight, boolean updateBlockLight, CallbackInfo ci) {
+    // TODO reenable this method
+    /*@Inject(method = "markNewInconsistencies", at = @At("HEAD"), cancellable = true)
+    protected void markNewInconsistenciesForCube(LightEngine<M, ?> engine, CallbackInfo ci) {
         if (this.chunkSource.getLevel() == null || !((CubicLevelHeightAccessor) this.chunkSource.getLevel()).isCubic()) {
             return;
         }
@@ -110,7 +105,8 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
             });
 
             this.updatingSectionData.clearCache();
-            if (!updateBlockLight) {
+            // TODO this was `!updateBlockLight`
+            if (false) {
                 for (long newArray : this.queuedSections.keySet()) {
                     checkEdgesForSection(engine, newArray);
                 }
@@ -130,5 +126,5 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
                 }
             }
         }
-    }
+    }*/
 }

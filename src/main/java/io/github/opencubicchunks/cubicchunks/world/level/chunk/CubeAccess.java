@@ -290,7 +290,7 @@ public abstract class CubeAccess extends ChunkAccess implements BlockGetter, Str
                     int minZQuart = QuartPos.fromBlock(sectionToMinBlock(sectionZ));
 
                     LevelChunkSection section = this.sections[sectionToIndex(sectionX, sectionY, sectionZ)];
-                    section.fillBiomesFromNoise(biomeResolver, sampler, minXQuart, minZQuart);
+                    section.fillBiomesFromNoise(biomeResolver, sampler, minXQuart, QuartPos.fromSection(sectionY), minZQuart);
                 }
             }
         }
