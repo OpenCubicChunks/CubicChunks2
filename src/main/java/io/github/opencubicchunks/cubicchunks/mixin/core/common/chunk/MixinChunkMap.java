@@ -123,7 +123,7 @@ import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
@@ -208,7 +208,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     @Shadow @Final private ChunkMap.DistanceManager distanceManager;
 
-    @Shadow @Final private StructureManager structureManager;
+    @Shadow @Final private StructureTemplateManager structureTemplateManager;
 
     @Shadow @Final private BlockableEventLoop<Runnable> mainThreadExecutor;
 
@@ -261,7 +261,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     @Inject(method = "<init>", at = @At("RETURN"), locals = LocalCapture.CAPTURE_FAILHARD)
-    private void onConstruct(ServerLevel serverLevel, LevelStorageSource.LevelStorageAccess levelStorageAccess, DataFixer dataFixer, StructureManager structureManager_, Executor executor,
+    private void onConstruct(ServerLevel serverLevel, LevelStorageSource.LevelStorageAccess levelStorageAccess, DataFixer dataFixer, StructureTemplateManager StructureTemplateManager_, Executor executor,
                              BlockableEventLoop<Runnable> blockableEventLoop, LightChunkGetter lightChunkGetter, ChunkGenerator chunkGenerator, ChunkProgressListener chunkProgressListener,
                              ChunkStatusUpdateListener chunkStatusUpdateListener, Supplier<DimensionDataStorage> supplier, int i, boolean bl,
                              CallbackInfo ci, Path path, ProcessorMailbox<Runnable> worldgenMailbox, ProcessorHandle<Runnable> mainThreadProcessorHandle,
@@ -686,7 +686,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                         Optional<CubeAccess> optional = cubeColumnsPair.getA();
                         if (optional.isPresent() && optional.get().getStatus().isOrAfter(chunkStatus)) {
                             CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> completableFuture =
-                                unsafeCast(chunkStatus.load(this.level, this.structureManager, this.lightEngine, (cube) ->
+                                unsafeCast(chunkStatus.load(this.level, this.structureTemplateManager, this.lightEngine, (cube) ->
                                         unsafeCast(this.protoCubeToFullCube(cubeHolder, cubeColumnsPair.getB())),
                                     optional.get()
                                 ));
@@ -737,7 +737,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                         executor,
                         this.level,
                         this.generator,
-                        this.structureManager,
+                        this.structureTemplateManager,
                         this.lightEngine,
                         (chunk) -> unsafeCast(this.protoCubeToFullCube(cubeHolder, columns)),
                         unsafeCast(neighborSections),
@@ -993,7 +993,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                                 ((CubicSectionStorage) this.poiManager).updateCube(cubePos, poiNBT);
                             }
                         });
-                        return CubeSerializer.read(this.level, this.structureManager, poiManager, cubePos, cubeNBT);
+                        return CubeSerializer.read(this.level, this.structureTemplateManager, poiManager, cubePos, cubeNBT);
                     }
                     LOGGER.error("Cube file at {} is missing level data, skipping", cubePos);
                 }

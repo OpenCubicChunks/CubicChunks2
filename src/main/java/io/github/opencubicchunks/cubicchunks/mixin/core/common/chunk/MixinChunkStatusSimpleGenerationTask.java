@@ -15,7 +15,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.ProtoChunk;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,7 +31,7 @@ public interface MixinChunkStatusSimpleGenerationTask {
      */
     @Overwrite
     default CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> doWork(
-        ChunkStatus status, Executor executor, ServerLevel level, ChunkGenerator generator, StructureManager structureManager, ThreadedLevelLightEngine threadedLevelLightEngine,
+        ChunkStatus status, Executor executor, ServerLevel level, ChunkGenerator generator, StructureTemplateManager structureManager, ThreadedLevelLightEngine threadedLevelLightEngine,
         Function<ChunkAccess, CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> function, List<ChunkAccess> neighbors, ChunkAccess chunk, boolean bl) {
 
         if (!((CubicLevelHeightAccessor) chunk).isCubic()) {

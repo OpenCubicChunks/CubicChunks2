@@ -65,7 +65,7 @@ import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.blending.BlendingData;
 import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceSerializationContext;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.ticks.LevelChunkTicks;
@@ -76,7 +76,7 @@ import org.slf4j.Logger;
 public class CubeSerializer {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static ProtoCube read(ServerLevel serverLevel, StructureManager structureManager, PoiManager poiManager, CubePos expectedCubePos, CompoundTag root) {
+    public static ProtoCube read(ServerLevel serverLevel, StructureTemplateManager structureManager, PoiManager poiManager, CubePos expectedCubePos, CompoundTag root) {
         CubePos cubePos = CubePos.of(root.getInt("xPos"), root.getInt("yPos"), root.getInt("zPos"));
         if (!Objects.equals(cubePos, expectedCubePos)) {
             CubicChunks.LOGGER.error("LevelCube file at {} is in the wrong location; relocating. (Expected {}, got {})", cubePos, expectedCubePos, cubePos);
