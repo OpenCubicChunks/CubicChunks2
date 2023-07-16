@@ -11,10 +11,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.SortedArraySet;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.lighting.LayerLightEngine;
+import net.minecraft.world.level.lighting.LightEngine;
 
 public class LightTestUtil {
-    public static Result<Void, LightError> validateBlockLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter,
+    public static Result<Void, LightError> validateBlockLighting(LightEngine<?, ?> lightEngine, TestBlockGetter blockGetter,
                                              Set<SectionPos> sectionsPresent, Map<BlockPos, Integer> lights) throws AssertionError {
         for (SectionPos sectionPos : sectionsPresent) {
             BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos(0, 0, 0);
@@ -44,7 +44,7 @@ public class LightTestUtil {
         return Result.ok(null);
     }
 
-    public static Result<Void, LightError> validateSkyLighting(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent,
+    public static Result<Void, LightError> validateSkyLighting(LightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent,
                                            Map<ColumnPos, SortedArraySet<Integer>> heightMap) throws AssertionError {
         for (SectionPos sectionPos : sectionsPresent) {
             BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos(0, 0, 0);
@@ -80,7 +80,7 @@ public class LightTestUtil {
         return Result.ok(null);
     }
 
-    private static Result<Void, LightError> validateLight(LayerLightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent,
+    private static Result<Void, LightError> validateLight(LightEngine<?, ?> lightEngine, TestBlockGetter blockGetter, Set<SectionPos> sectionsPresent,
                                                           BlockPos.MutableBlockPos blockPos, int errorX, int errorY, int errorZ,
                                                           int xzRadius, int yMinOffset, int yMaxOffset, int light, int height) {
         // TODO: handle voxel shape occlusion
@@ -121,7 +121,7 @@ public class LightTestUtil {
     /**
      * @return An optional error message (if there was an error)
      */
-    private static Optional<String> validateNeighbors(LayerLightEngine<?, ?> lightEngine, Set<SectionPos> sectionsPresent, BlockPos.MutableBlockPos blockPos,
+    private static Optional<String> validateNeighbors(LightEngine<?, ?> lightEngine, Set<SectionPos> sectionsPresent, BlockPos.MutableBlockPos blockPos,
                                                       int x, int y, int z,
                                                       int light, int height) {
         blockPos.set(x, y + 1, z);

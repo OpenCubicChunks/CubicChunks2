@@ -48,6 +48,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkPacketData;
 import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.ClassInstanceMultiMap;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -105,7 +106,7 @@ public class LevelCube extends CubeAccess {
     private boolean loaded = false;
 
     @Nullable private Consumer<LevelCube> postLoad;
-    @Nullable private Supplier<ChunkHolder.FullChunkStatus> fullStatus;
+    @Nullable private Supplier<FullChunkStatus> fullStatus;
 
     public LevelCube(Level level, CubePos cubePos) {
         this(level, cubePos, UpgradeData.EMPTY, new LevelChunkTicks<>(), new LevelChunkTicks<>(), 0L, null, null, null);
@@ -206,11 +207,11 @@ public class LevelCube extends CubeAccess {
         return ChunkStatus.FULL;
     }
 
-    public ChunkHolder.FullChunkStatus getFullStatus() {
-        return this.fullStatus == null ? ChunkHolder.FullChunkStatus.BORDER : this.fullStatus.get();
+    public FullChunkStatus getFullStatus() {
+        return this.fullStatus == null ? FullChunkStatus.FULL : this.fullStatus.get();
     }
 
-    public void setFullStatus(Supplier<ChunkHolder.FullChunkStatus> supplier) {
+    public void setFullStatus(Supplier<FullChunkStatus> supplier) {
         this.fullStatus = supplier;
     }
 
@@ -513,7 +514,7 @@ public class LevelCube extends CubeAccess {
     }
 
     private boolean isTicking(BlockPos blockPos) {
-        return (this.level.isClientSide() || this.getFullStatus().isOrAfter(ChunkHolder.FullChunkStatus.TICKING)) && this.level.getWorldBorder().isWithinBounds(blockPos);
+        return (this.level.isClientSide() || this.getFullStatus().isOrAfter(FullChunkStatus.BLOCK_TICKING)) && this.level.getWorldBorder().isWithinBounds(blockPos);
     }
 
     public boolean isEmptyCube() {

@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @SuppressWarnings("rawtypes")
 @Mixin(BlockLightEngine.class)
-public abstract class MixinBlockLightEngine extends MixinLayerLightEngine {
+public abstract class MixinBlockLightEngine extends MixinLightEngine {
 
     /**
      * @author NotStirred

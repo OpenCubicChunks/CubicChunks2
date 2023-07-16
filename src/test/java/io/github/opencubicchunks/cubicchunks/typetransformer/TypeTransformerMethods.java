@@ -50,7 +50,7 @@ public class TypeTransformerMethods {
     private final MappingResolver map = TestMappingUtils.getMappingResolver();
     private final Set<String> classNamesToTransform = Stream.of(
         "net.minecraft.class_3554",             //DynamicGraphMixFixedPoint
-        "net.minecraft.class_3558", //LayerLightEngine
+        "net.minecraft.class_3558", //LightEngine
         "net.minecraft.class_3560", //LayerLightSectionStorage
         "net.minecraft.class_3547", //BlockLightSectionStorage
         "net.minecraft.class_3569", //SkyLightSectionStorage

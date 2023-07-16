@@ -37,6 +37,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelHeightAccessor;
@@ -232,7 +233,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
     private CompletableFuture<Void> onRunAsyncFullChunkStatusChange(CompletableFuture<?> completableFuture, Runnable action, Executor executor,
                                                                     ChunkMap chunkMap, CompletableFuture<Either<LevelChunk, ChunkHolder.ChunkLoadingFailure>> completableFutureParam,
                                                                     Executor executorParam,
-                                                                    ChunkHolder.FullChunkStatus fullChunkStatus) {
+                                                                    FullChunkStatus fullChunkStatus) {
 
         if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
             return completableFuture.thenRunAsync(action, executor);
@@ -278,8 +279,8 @@ public abstract class MixinChunkHolder implements CubeHolder {
 
     // TODO: is there a better way than redirect?
     @Redirect(method = "demoteFullChunk", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;onFullChunkStatusChange"
-        + "(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/server/level/ChunkHolder$FullChunkStatus;)V"))
-    private void handleDemoteCubes(ChunkMap chunkMap, ChunkPos chunkPos, ChunkHolder.FullChunkStatus fullChunkStatus) {
+        + "(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/server/level/FullChunkStatus;)V"))
+    private void handleDemoteCubes(ChunkMap chunkMap, ChunkPos chunkPos, FullChunkStatus fullChunkStatus) {
         if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic() || cubePos != null) {
             ((ChunkMapAccess) chunkMap).invokeOnFullChunkStatusChange(chunkPos, fullChunkStatus);
         }

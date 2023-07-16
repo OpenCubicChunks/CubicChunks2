@@ -45,7 +45,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.game.DebugPackets;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.StructureFeatureManager;
+import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
@@ -116,7 +116,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         at = @At("HEAD"),
         cancellable = true
     )
-    private void createCubicStructures(RegistryAccess registryAccess, StructureFeatureManager structureFeatureManager, ChunkAccess chunkAccess, StructureManager structureManager,
+    private void createCubicStructures(RegistryAccess registryAccess, StructureManager structureFeatureManager, ChunkAccess chunkAccess, StructureManager structureManager,
                                        long seed, CallbackInfo ci) {
         if (((CubicLevelHeightAccessor) chunkAccess).generates2DChunks()) {
             return;
@@ -193,7 +193,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         });
     }
 
-    private boolean tryGenerateCCStructure(StructureSet.StructureSelectionEntry structureSelectionEntry, StructureFeatureManager structureFeatureManager, RegistryAccess registryAccess,
+    private boolean tryGenerateCCStructure(StructureSet.StructureSelectionEntry structureSelectionEntry, StructureManager structureFeatureManager, RegistryAccess registryAccess,
                                         StructureManager structureManager, long seed, CubeAccess cube, CubePos cubePos) {
         ConfiguredStructureFeature<?, ?> configuredStructureFeature = structureSelectionEntry.structure().value();
 
@@ -251,7 +251,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
 
     // TODO: check which one is which
     /*@Inject(method = "createStructures", at = @At("HEAD"), cancellable = true)
-    public void onGenerateStructures(RegistryAccess registry, StructureFeatureManager featureManager, ChunkAccess chunkAccess, StructureManager manager, long seed, CallbackInfo ci) {
+    public void onGenerateStructures(RegistryAccess registry, StructureManager featureManager, ChunkAccess chunkAccess, StructureManager manager, long seed, CallbackInfo ci) {
         if (((CubicLevelHeightAccessor) chunkAccess).generates2DChunks()) {
             return;
         }
@@ -271,7 +271,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         }
     }
 
-    private void createCCStructure(ConfiguredStructureFeature<?, ?> configuredStructureFeature, RegistryAccess registryAccess, StructureFeatureManager structureFeatureManager,
+    private void createCCStructure(ConfiguredStructureFeature<?, ?> configuredStructureFeature, RegistryAccess registryAccess, StructureManager structureFeatureManager,
                                    CubeAccess cube, StructureManager structureManager, long seed, CubePos cubePos, Biome biome) {
         StructureStart<?> structureStart = structureFeatureManager
             .getStartForFeature(/*SectionPos.of(cube.getPos(), 0) We return null as a sectionPos Arg is not used in the method*//*null, configuredStructureFeature.feature, cube);
@@ -288,7 +288,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
     }*/
 
     @Inject(method = "createReferences", at = @At("HEAD"), cancellable = true)
-    public void createReferences(WorldGenLevel worldGenLevel, StructureFeatureManager featureManager, ChunkAccess chunkAccess, CallbackInfo ci) {
+    public void createReferences(WorldGenLevel worldGenLevel, StructureManager featureManager, ChunkAccess chunkAccess, CallbackInfo ci) {
         if (((CubicLevelHeightAccessor) chunkAccess).generates2DChunks()) {
             return;
         }
@@ -435,7 +435,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
     @Nullable
     private Pair<BlockPos, Holder<ConfiguredStructureFeature<?, ?>>> getNearestGeneratedStructure3D(
         Set<Holder<ConfiguredStructureFeature<?, ?>>> structures, ServerLevel serverLevel,
-        StructureFeatureManager structureFeatureManager, int sectionX, int sectionY, int sectionZ,
+        StructureManager structureFeatureManager, int sectionX, int sectionY, int sectionZ,
         int distanceFromCenter, boolean skipExistingChunks, long seed,
         RandomSpreadStructurePlacement randomSpreadStructurePlacement
     ) {
@@ -522,7 +522,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
     }
 
     @Override
-    public void decorate(CubeWorldGenRegion region, StructureFeatureManager structureManager, ProtoCube cube) {
+    public void decorate(CubeWorldGenRegion region, StructureManager structureManager, ProtoCube cube) {
         for (int columnX = 0; columnX < CubicConstants.DIAMETER_IN_SECTIONS; columnX++) {
             for (int columnZ = 0; columnZ < CubicConstants.DIAMETER_IN_SECTIONS; columnZ++) {
                 cube.moveColumns(columnX, columnZ);
@@ -531,7 +531,7 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         }
     }
 
-    private void generateForCubeColumn(CubeWorldGenRegion level, StructureFeatureManager structureFeatureManager, ProtoCube cube) {
+    private void generateForCubeColumn(CubeWorldGenRegion level, StructureManager structureFeatureManager, ProtoCube cube) {
 
         CubePos cubePos = cube.getCubePos();
         ChunkPos chunkPos = cube.getPos();

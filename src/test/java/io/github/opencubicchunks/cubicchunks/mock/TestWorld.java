@@ -18,7 +18,7 @@ import io.github.opencubicchunks.cc_core.world.ColumnCubeMap;
 import io.github.opencubicchunks.cubicchunks.mock.interfaces.BlockGetterLightHeightmapGetterColumnCubeMapGetter;
 import io.github.opencubicchunks.cubicchunks.testutils.ColumnPos;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightEngine;
+import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicSkyLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
 import net.minecraft.core.BlockPos;
@@ -45,7 +45,7 @@ public class TestWorld implements LightChunkGetter, LightCubeGetter {
     public TestWorld(TestBlockGetter level) {
         this.level = level;
         SkyLightEngine lightEngine = new SkyLightEngine(this);
-        ((CubicLayerLightEngine) (Object) lightEngine).setCubic();
+        ((CubicLightEngine) (Object) lightEngine).setCubic();
         this.skyLightEngine = lightEngine;
     }
 
@@ -75,7 +75,7 @@ public class TestWorld implements LightChunkGetter, LightCubeGetter {
             sections.forEach(sectionPos ->
                 skyLightEngine.updateSectionStatus(sectionPos, false)
             );
-            ((CubicLayerLightEngine) (Object) this.skyLightEngine).enableLightSources(cube.getCubePos(), true);
+            ((CubicLightEngine) (Object) this.skyLightEngine).enableLightSources(cube.getCubePos(), true);
             ((CubicSkyLightEngine) (Object) this.skyLightEngine).doSkyLightForCube(cube);
 
             for (int localChunkX = 0; localChunkX < CubicConstants.DIAMETER_IN_SECTIONS; localChunkX++) {

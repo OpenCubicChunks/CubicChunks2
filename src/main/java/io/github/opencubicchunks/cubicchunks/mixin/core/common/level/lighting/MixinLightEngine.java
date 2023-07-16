@@ -9,7 +9,7 @@ import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LayerLightSectionStorageAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightEngine;
+import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightSectionStorage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -18,7 +18,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.lighting.DataLayerStorageMap;
-import net.minecraft.world.level.lighting.LayerLightEngine;
+import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LayerLightSectionStorage;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,8 +29,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(LayerLightEngine.class)
-public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S extends LayerLightSectionStorage<M>> extends MixinDynamicGraphMinFixedPoint implements CubicLayerLightEngine {
+@Mixin(LightEngine.class)
+public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S extends LayerLightSectionStorage<M>> extends MixinDynamicGraphMinFixedPoint implements CubicLightEngine {
 
     @Shadow @Final protected S storage;
 
@@ -80,8 +80,8 @@ public abstract class MixinLayerLightEngine<M extends DataLayerStorageMap<M>, S 
     }
 
     @Redirect(method = "getStateAndOpacity",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/lighting/LayerLightEngine;getChunk(II)Lnet/minecraft/world/level/BlockGetter;"))
-    private BlockGetter getCubeReader(LayerLightEngine layerLightEngine, int chunkX, int chunkZ, long blockPos) {
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/lighting/LightEngine;getChunk(II)Lnet/minecraft/world/level/BlockGetter;"))
+    private BlockGetter getCubeReader(LightEngine layerLightEngine, int chunkX, int chunkZ, long blockPos) {
         if (!this.isCubic) {
             return this.getChunk(chunkX, chunkZ);
         }

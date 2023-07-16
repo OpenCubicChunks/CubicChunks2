@@ -236,7 +236,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
             MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
         } else if (targetClassName.equals(layerLightEngine)) {
-            MainTransformer.transformLayerLightEngine(targetClass);
+            MainTransformer.transformLightEngine(targetClass);
         } else if (targetClassName.equals(layerLightSectionStorage)) {
             MainTransformer.transformLayerLightSectionStorage(targetClass);
         } else if (targetClassName.equals(sectionPos)) {

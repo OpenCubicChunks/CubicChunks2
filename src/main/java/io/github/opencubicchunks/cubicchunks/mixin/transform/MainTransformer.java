@@ -35,7 +35,7 @@ public class MainTransformer {
         transformer.transformAllMethods();
     }
 
-    public static void transformLayerLightEngine(ClassNode targetClass) {
+    public static void transformLightEngine(ClassNode targetClass) {
         TypeTransformer transformer = new TypeTransformer(TRANSFORM_CONFIG, targetClass, true);
 
         transformer.analyzeAllMethods();

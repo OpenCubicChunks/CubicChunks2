@@ -34,7 +34,7 @@
         "common.SavedTickAccess",
         "common.SortedArraySetAccess",
         "common.SpawnStateAccess",
-        "common.StructureFeatureManagerAccess",
+        "common.StructureManagerAccess",
         "common.ThreadedLevelLightEngineAccess",
         "common.TicketAccess",
         "common.TicketTypeAccess",

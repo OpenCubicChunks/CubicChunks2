@@ -6,7 +6,7 @@ import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicLakePlacementModifier;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.UserFunction;
 import net.minecraft.core.Holder;
-import net.minecraft.data.BuiltinRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
@@ -101,11 +101,11 @@ public class CubicFeatures {
     public static <FC extends FeatureConfiguration, F extends Feature<FC>, CF extends ConfiguredFeature<FC, F>> Holder<ConfiguredFeature<?, ?>> createConfiguredFeature(String id,
                                                                                                                                                                    CF configuredFeature) {
         ResourceLocation resourceLocation = new ResourceLocation(CubicChunks.MODID, id);
-        if (BuiltinRegistries.CONFIGURED_FEATURE.keySet().contains(resourceLocation)) {
+        if (BuiltInRegistries.CONFIGURED_FEATURE.keySet().contains(resourceLocation)) {
             throw new IllegalStateException("Configured Feature ID: \"" + resourceLocation + "\" already exists in the Configured Features registry!");
         }
 
-        return BuiltinRegistries.register(BuiltinRegistries.CONFIGURED_FEATURE, resourceLocation, configuredFeature);
+        return BuiltInRegistries.register(BuiltInRegistries.CONFIGURED_FEATURE, resourceLocation, configuredFeature);
     }
 
     public static Holder<PlacedFeature> createPlacedFeature(String id, Holder<ConfiguredFeature<?, ?>> feature, PlacementModifier... modifiers) {
@@ -115,12 +115,12 @@ public class CubicFeatures {
     private static Holder<PlacedFeature> createPlacedFeature(String id, Holder<ConfiguredFeature<?, ?>> feature, List<PlacementModifier> modifiers) {
         ResourceLocation loc = new ResourceLocation(CubicChunks.MODID, id);
 
-        if (BuiltinRegistries.PLACED_FEATURE.containsKey(loc)) {
+        if (BuiltInRegistries.PLACED_FEATURE.containsKey(loc)) {
             throw new IllegalStateException("Placed Feature ID: \"" + loc + "\" already exists in the Placed Features registry!");
         }
 
-        return BuiltinRegistries.register(
-            BuiltinRegistries.PLACED_FEATURE,
+        return BuiltInRegistries.register(
+            BuiltInRegistries.PLACED_FEATURE,
             loc,
             new PlacedFeature(Holder.hackyErase(feature), List.copyOf(modifiers))
         );

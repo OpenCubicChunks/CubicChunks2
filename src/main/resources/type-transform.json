@@ -734,7 +734,7 @@
       ]
     },
     {
-      "class": "net/minecraft/world/level/lighting/LayerLightEngine",
+      "class": "net/minecraft/world/level/lighting/LightEngine",
       "type_hints": [
         {
           "method": "v net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint#isSource (J)Z",
@@ -779,7 +779,7 @@
         },
         {
           "mapped": "getDebugData",
-          "method": "v net/minecraft/world/level/lighting/LayerLightEngine#getDebugData (J)Ljava/lang/String;",
+          "method": "v net/minecraft/world/level/lighting/LightEngine#getDebugData (J)Ljava/lang/String;",
           "types": [
             null,
             "blockpos"
@@ -839,7 +839,7 @@
 
   "suffixed_methods": [
     "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint",
-    "net/minecraft/world/level/lighting/LayerLightEngine",
+    "net/minecraft/world/level/lighting/LightEngine",
     "net/minecraft/world/level/lighting/LayerLightSectionStorage",
     "net/minecraft/world/level/lighting/BlockLightEngine",
     "net/minecraft/world/level/lighting/SkyLightEngine",
@@ -850,7 +850,7 @@
   "type_meta_info": {
     "inspect": [
       "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint",
-      "net/minecraft/world/level/lighting/LayerLightEngine",
+      "net/minecraft/world/level/lighting/LightEngine",
       "net/minecraft/world/level/lighting/LayerLightSectionStorage",
       "net/minecraft/world/level/lighting/BlockLightEngine",
       "net/minecraft/world/level/lighting/SkyLightEngine",

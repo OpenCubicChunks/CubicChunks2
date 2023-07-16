@@ -12,7 +12,7 @@ import net.minecraft.server.level.SectionTracker;
 import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.lighting.DataLayerStorageMap;
-import net.minecraft.world.level.lighting.LayerLightEngine;
+import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LayerLightSectionStorage;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -45,7 +45,7 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
         super(i, j, k);
     }
 
-    @Shadow protected abstract void clearQueuedSectionBlocks(LayerLightEngine<?, ?> engine, long sectionPosIn);
+    @Shadow protected abstract void clearQueuedSectionBlocks(LightEngine<?, ?> engine, long sectionPosIn);
 
     @Shadow protected abstract void onNodeRemoved(long pos);
 
@@ -53,7 +53,7 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
 
     @Shadow protected abstract boolean hasInconsistencies();
 
-    @Shadow protected abstract void checkEdgesForSection(LayerLightEngine<M, ?> layerLightEngine, long l);
+    @Shadow protected abstract void checkEdgesForSection(LightEngine<M, ?> layerLightEngine, long l);
 
     @Override
     public void retainCubeData(long cubeSectionPos, boolean retain) {
@@ -69,7 +69,7 @@ public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMa
      * @reason entire method was chunk based
      */
     @Inject(method = "markNewInconsistencies", at = @At("HEAD"), cancellable = true)
-    protected void markNewInconsistenciesForCube(LayerLightEngine<M, ?> engine, boolean updateSkyLight, boolean updateBlockLight, CallbackInfo ci) {
+    protected void markNewInconsistenciesForCube(LightEngine<M, ?> engine, boolean updateSkyLight, boolean updateBlockLight, CallbackInfo ci) {
         if (this.chunkSource.getLevel() == null || !((CubicLevelHeightAccessor) this.chunkSource.getLevel()).isCubic()) {
             return;
         }

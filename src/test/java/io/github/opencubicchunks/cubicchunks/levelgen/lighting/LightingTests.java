@@ -25,7 +25,7 @@ import io.github.opencubicchunks.cubicchunks.mock.TestBlockGetter;
 import io.github.opencubicchunks.cubicchunks.mock.TestWorld;
 import io.github.opencubicchunks.cubicchunks.mock.interfaces.LightCubeChunkGetter;
 import io.github.opencubicchunks.cubicchunks.testutils.LightError;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightEngine;
+import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEngine;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -68,7 +68,7 @@ public class LightingTests {
         when(lightCubeGetter.getCubeForLighting(0, 0, 0)).thenReturn(blockGetter);
 
         BlockLightEngine levelLightEngine = new BlockLightEngine(lightCubeGetter);
-        ((CubicLayerLightEngine) (Object) levelLightEngine).setCubic();
+        ((CubicLightEngine) (Object) levelLightEngine).setCubic();
         levelLightEngine.updateSectionStatus(SectionPos.of(0, 0, 0), false);
         levelLightEngine.enableLightSources(new ChunkPos(0, 0), true);
 

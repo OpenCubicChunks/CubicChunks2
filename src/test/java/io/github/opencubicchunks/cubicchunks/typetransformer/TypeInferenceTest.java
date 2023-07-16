@@ -13,7 +13,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.lighting.BlockLightEngine;
 import net.minecraft.world.level.lighting.BlockLightSectionStorage;
 import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
-import net.minecraft.world.level.lighting.LayerLightEngine;
+import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LayerLightSectionStorage;
 import net.minecraft.world.level.lighting.SkyLightEngine;
 import net.minecraft.world.level.lighting.SkyLightSectionStorage;
@@ -44,7 +44,7 @@ public class TypeInferenceTest {
         ),
 
         new ClassCheck(
-            LayerLightEngine.class,
+            LightEngine.class,
 
             MethodCheck.of("checkNode", "blockpos"),
             MethodCheck.of("getChunk"),

@@ -42,7 +42,7 @@ import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.FeatureAccess;
+import net.minecraft.world.level.chunk.StructureAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -52,7 +52,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 //TODO: Change most of the places where sections are accesses since they are done with the y coordinate and
 //now they must be done by all three
-public abstract class CubeAccess extends ChunkAccess implements BlockGetter, FeatureAccess, HeightmapSource, CubicLevelHeightAccessor {
+public abstract class CubeAccess extends ChunkAccess implements BlockGetter, StructureAccess, HeightmapSource, CubicLevelHeightAccessor {
     protected final CubePos cubePos;
 
     protected final boolean isCubic;

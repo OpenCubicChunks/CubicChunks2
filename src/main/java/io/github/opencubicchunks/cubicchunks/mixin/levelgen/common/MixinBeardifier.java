@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
-import net.minecraft.world.level.StructureFeatureManager;
+import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Beardifier;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
@@ -21,10 +21,10 @@ public class MixinBeardifier {
     @Nullable
     private ChunkAccess chunkAccess;
 
-    @Redirect(method = "<init>(Lnet/minecraft/world/level/StructureFeatureManager;Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
+    @Redirect(method = "<init>(Lnet/minecraft/world/level/StructureManager;Lnet/minecraft/world/level/chunk/ChunkAccess;)V",
         at = @At(value = "INVOKE", target = "Ljava/util/List;forEach(Ljava/util/function/Consumer;)V"))
     private void setupChunkAccess(List<StructureStart> list, Consumer<StructureStart> action,
-                                  StructureFeatureManager structureFeatureManager, ChunkAccess chunk) {
+                                  StructureManager structureFeatureManager, ChunkAccess chunk) {
         if (((CubicLevelHeightAccessor) chunk).generates2DChunks()) {
             list.forEach(action);
             return;

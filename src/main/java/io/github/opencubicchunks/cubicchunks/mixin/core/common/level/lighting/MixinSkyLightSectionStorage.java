@@ -15,7 +15,7 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.lighting.LayerLightEngine;
+import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LayerLightSectionStorage;
 import net.minecraft.world.level.lighting.SkyLightSectionStorage;
 import org.spongepowered.asm.mixin.Mixin;
@@ -126,7 +126,7 @@ public abstract class MixinSkyLightSectionStorage extends LayerLightSectionStora
     }
 
     @Inject(method = "markNewInconsistencies", cancellable = true, at = @At("HEAD"))
-    private void onMarkNewInconsistencies(LayerLightEngine<SkyLightSectionStorage.SkyDataLayerStorageMap, ?> lightProvider, boolean doSkylight, boolean skipEdgeLightPropagation,
+    private void onMarkNewInconsistencies(LightEngine<SkyLightSectionStorage.SkyDataLayerStorageMap, ?> lightProvider, boolean doSkylight, boolean skipEdgeLightPropagation,
                                           CallbackInfo ci) {
         if (!isCubic) return;
         ci.cancel();

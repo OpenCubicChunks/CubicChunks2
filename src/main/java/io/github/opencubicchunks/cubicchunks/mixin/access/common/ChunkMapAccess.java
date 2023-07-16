@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,7 +19,7 @@ public interface ChunkMapAccess {
 
     @Invoker @Nullable ChunkHolder invokeGetUpdatingChunkIfPresent(long chunkPosIn);
     @Invoker boolean invokePromoteChunkMap();
-    @Invoker void invokeOnFullChunkStatusChange(ChunkPos chunkPos, ChunkHolder.FullChunkStatus fullChunkStatus);
+    @Invoker void invokeOnFullChunkStatusChange(ChunkPos chunkPos, FullChunkStatus fullChunkStatus);
     @Accessor int getViewDistance();
 
     @Invoker void invokeReleaseLightTicket(ChunkPos pos);

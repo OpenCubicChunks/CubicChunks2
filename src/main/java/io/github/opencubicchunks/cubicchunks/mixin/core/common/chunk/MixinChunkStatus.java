@@ -27,7 +27,7 @@ import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ThreadedLevelLightEngine;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.StructureFeatureManager;
+import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -257,7 +257,7 @@ public class MixinChunkStatus {
 
     private static CompletableFuture<ChunkAccess> getNoiseSurfaceCarverFuture(Executor executor, ServerLevel level, ChunkGenerator generator, CubeWorldGenRegion cubeWorldGenRegion,
                                                                               int cubeY, ChunkPos pos, NoiseAndSurfaceBuilderHelper cubeAccessWrapper) {
-        StructureFeatureManager structureFeatureManager = level.structureFeatureManager().forWorldGenRegion(cubeWorldGenRegion);
+        StructureManager structureFeatureManager = level.structureFeatureManager().forWorldGenRegion(cubeWorldGenRegion);
         return generator.fillFromNoise(executor, Blender.empty(), structureFeatureManager, cubeAccessWrapper).thenApply(chunkAccess -> {
             cubeAccessWrapper.applySections();
             cubeAccessWrapper.setStatus(ChunkStatus.NOISE);
@@ -373,7 +373,7 @@ public class MixinChunkStatus {
             //        Heightmap.Type.WORLD_SURFACE));
 
             CubeWorldGenRegion cubeWorldGenRegion = new CubeWorldGenRegion(level, unsafeCast(chunks), status, chunk, 1);
-            StructureFeatureManager structureFeatureManager = level.structureFeatureManager().forWorldGenRegion(cubeWorldGenRegion);
+            StructureManager structureFeatureManager = level.structureFeatureManager().forWorldGenRegion(cubeWorldGenRegion);
             protoCube.applyFeatureStates();
             ((CubeGenerator) generator).decorate(cubeWorldGenRegion, structureFeatureManager, (ProtoCube) chunk);
             protoCube.updateCubeStatus(status);

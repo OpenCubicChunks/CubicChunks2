@@ -13,7 +13,7 @@ import net.minecraft.world.level.levelgen.Aquifer;
 import net.minecraft.world.level.lighting.BlockLightEngine;
 import net.minecraft.world.level.lighting.BlockLightSectionStorage;
 import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
-import net.minecraft.world.level.lighting.LayerLightEngine;
+import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LayerLightSectionStorage;
 import net.minecraft.world.level.lighting.SkyLightEngine;
 import net.minecraft.world.level.lighting.SkyLightSectionStorage;
@@ -36,7 +36,7 @@ import org.spongepowered.asm.mixin.Mixin;
     BlockLightEngine.class,
     BlockLightSectionStorage.class,
     SkyLightEngine.class,
-    LayerLightEngine.class,
+    LightEngine.class,
     SectionPos.class,
     LayerLightSectionStorage.class,
     SkyLightSectionStorage.class,

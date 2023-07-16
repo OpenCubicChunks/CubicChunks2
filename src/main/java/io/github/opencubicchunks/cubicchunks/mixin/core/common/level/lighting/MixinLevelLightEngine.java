@@ -5,7 +5,7 @@ import javax.annotation.Nullable;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightEngine;
+import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLevelLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicSkyLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
@@ -14,7 +14,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.chunk.DataLayer;
-import net.minecraft.world.level.lighting.LayerLightEngine;
+import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.lighting.LightEventListener;
 import org.spongepowered.asm.mixin.Final;
@@ -25,9 +25,9 @@ import org.spongepowered.asm.mixin.Shadow;
 public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, LightEventListener, SkyLightColumnChecker {
     @Shadow @Final protected LevelHeightAccessor levelHeightAccessor;
 
-    @Shadow @Final @Nullable private LayerLightEngine<?, ?> blockEngine;
+    @Shadow @Final @Nullable private LightEngine<?, ?> blockEngine;
 
-    @Shadow @Final @Nullable private LayerLightEngine<?, ?> skyEngine;
+    @Shadow @Final @Nullable private LightEngine<?, ?> skyEngine;
 
     // these can't be abstract because they need to be called as super.method()
     @Shadow public void checkBlock(BlockPos pos) {
@@ -49,22 +49,22 @@ public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, Li
     @Override
     public void retainData(CubePos cubePos, boolean retain) {
         if (this.blockEngine != null) {
-            ((CubicLayerLightEngine) this.blockEngine).retainCubeData(cubePos, retain);
+            ((CubicLightEngine) this.blockEngine).retainCubeData(cubePos, retain);
         }
 
         if (this.skyEngine != null) {
-            ((CubicLayerLightEngine) this.skyEngine).retainCubeData(cubePos, retain);
+            ((CubicLightEngine) this.skyEngine).retainCubeData(cubePos, retain);
         }
     }
 
     @Override
     public void enableLightSources(CubePos cubePos, boolean retain) {
         if (this.blockEngine != null) {
-            ((CubicLayerLightEngine) this.blockEngine).enableLightSources(cubePos, retain);
+            ((CubicLightEngine) this.blockEngine).enableLightSources(cubePos, retain);
         }
 
         if (this.skyEngine != null) {
-            ((CubicLayerLightEngine) this.skyEngine).enableLightSources(cubePos, retain);
+            ((CubicLightEngine) this.skyEngine).enableLightSources(cubePos, retain);
         }
     }
 

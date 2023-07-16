@@ -17,6 +17,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.entity.ChunkEntities;
 import net.minecraft.world.level.entity.EntityAccess;
@@ -70,8 +71,8 @@ public abstract class MixinPersistentEntitySectionManager<T extends EntityAccess
         }
     }
 
-    @Inject(method = "updateChunkStatus(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/server/level/ChunkHolder$FullChunkStatus;)V", at = @At("HEAD"), cancellable = true)
-    private void updateCubeStatus(ChunkPos pos, ChunkHolder.FullChunkStatus fullChunkStatus, CallbackInfo ci) {
+    @Inject(method = "updateChunkStatus(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/server/level/FullChunkStatus;)V", at = @At("HEAD"), cancellable = true)
+    private void updateCubeStatus(ChunkPos pos, FullChunkStatus fullChunkStatus, CallbackInfo ci) {
         if (isCubic) {
             ci.cancel();
             if (pos instanceof ImposterChunkPos) {

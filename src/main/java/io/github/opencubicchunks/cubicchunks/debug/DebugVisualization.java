@@ -109,6 +109,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.DistanceManager;
+import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.Ticket;
@@ -1010,17 +1011,17 @@ public class DebugVisualization {
                 int base = 128;
                 Either<LevelChunk, ChunkHolder.ChunkLoadingFailure> entityTicking = holder.getEntityTickingChunkFuture().getNow(null);
                 if (entityTicking != null && entityTicking.left().isPresent()) {
-                    return base + ChunkHolder.FullChunkStatus.ENTITY_TICKING.ordinal();
+                    return base + FullChunkStatus.ENTITY_TICKING.ordinal();
                 }
                 Either<LevelChunk, ChunkHolder.ChunkLoadingFailure> ticking = holder.getTickingChunkFuture().getNow(null);
                 if (ticking != null && ticking.left().isPresent()) {
-                    return base + ChunkHolder.FullChunkStatus.TICKING.ordinal();
+                    return base + FullChunkStatus.BLOCK_TICKING.ordinal();
                 }
                 Either<LevelChunk, ChunkHolder.ChunkLoadingFailure> border = holder.getFullChunkFuture().getNow(null);
                 if (border != null && border.left().isPresent()) {
-                    return base + ChunkHolder.FullChunkStatus.BORDER.ordinal();
+                    return base + FullChunkStatus.FULL.ordinal();
                 }
-                return base + ChunkHolder.FullChunkStatus.INACCESSIBLE.ordinal();
+                return base + FullChunkStatus.INACCESSIBLE.ordinal();
             });
 
             private final ToIntFunction<ChunkHolder> function;
