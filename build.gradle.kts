@@ -1,7 +1,6 @@
 @file:Suppress("INACCESSIBLE_TYPE", "UnstableApiUsage")
 
 import io.github.opencubicchunks.gradle.GeneratePackageInfo
-import io.github.opencubicchunks.gradle.TypeTransformConfigGen
 import org.gradle.internal.os.OperatingSystem
 import java.util.*
 
@@ -259,12 +258,12 @@ dependencies {
         officialMojangMappings {
             nameSyntheticMembers = true
         }
-        parchment("org.parchmentmc.data:parchment-1.18.2:2022.05.22@zip")
+        parchment("org.parchmentmc.data:parchment-1.20.1:2023.07.09@zip")
     })
     modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
 
     // Add each module as a dependency
-    listOf("fabric-api-base", "fabric-command-api-v1", "fabric-networking-v0", "fabric-lifecycle-events-v1", "fabric-resource-loader-v0").forEach {
+    listOf("fabric-api-base", "fabric-command-api-v2", "fabric-networking-api-v1", "fabric-lifecycle-events-v1", "fabric-resource-loader-v0").forEach {
         modImplementation(fabricApi.module(it, fabricVersion))
     }
 
