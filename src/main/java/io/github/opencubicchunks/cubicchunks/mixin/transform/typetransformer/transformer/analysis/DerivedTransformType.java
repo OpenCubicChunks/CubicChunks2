@@ -23,20 +23,20 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-public class TransformSubtype {
+public class DerivedTransformType {
     //A reference to a TransformType. This means when the transform type gets changed all referenced ones can get notified
-    private final TransformTypePtr transformType;
+    private final TransformTypeRef transformType;
     //Array dimensionality of type. So an array of longs (with type long -> (int, int, int)) would have dimensionality 1
     private int arrayDimensionality;
-    //The subtype. Either NONE, CONSUMER or PREDICATE
-    private SubType subtype;
+    //The kind. Either NONE, CONSUMER or PREDICATE
+    private Kind kind;
 
     private final Type originalType;
 
-    public TransformSubtype(TransformTypePtr transformType, int arrayDimensionality, SubType subtype, Type originalType) {
+    public DerivedTransformType(TransformTypeRef transformType, int arrayDimensionality, Kind kind, Type originalType) {
         this.transformType = transformType;
         this.arrayDimensionality = arrayDimensionality;
-        this.subtype = subtype;
+        this.kind = kind;
         this.originalType = originalType;
     }
 
@@ -53,7 +53,7 @@ public class TransformSubtype {
      * For internal use only
      * @return The reference to the transform type
      */
-    TransformTypePtr getTransformTypePtr() {
+    TransformTypeRef getTransformTypePtr() {
         return transformType;
     }
 
@@ -61,34 +61,34 @@ public class TransformSubtype {
         return arrayDimensionality;
     }
 
-    public SubType getSubtype() {
-        return subtype;
+    public Kind getKind() {
+        return kind;
     }
 
     public void setArrayDimensionality(int arrayDimensionality) {
         this.arrayDimensionality = arrayDimensionality;
     }
 
-    public void setSubType(SubType transformSubType) {
-        this.subtype = transformSubType;
+    public void setKind(Kind transformKind) {
+        this.kind = transformKind;
     }
 
     /**
-     * @return A transform subtype for which nothing is known yet. The transform type is null, array dimensionality is 0 and
-     * the subtype is NONE
+     * @return A derived transform type for which nothing is known yet. The transform type is null, array dimensionality is 0 and
+     * the kind is NONE
      */
-    public static TransformSubtype createDefault(Type type) {
-        return new TransformSubtype(new TransformTypePtr(null), 0, SubType.NONE, type);
+    public static DerivedTransformType createDefault(Type type) {
+        return new DerivedTransformType(new TransformTypeRef(null), 0, Kind.NONE, type);
     }
 
     /**
-     * Create a transform subtype from a string.
-     * <br>Example: "blockpos consumer[][]" would create a transform subtype of a 2D array of blockpos consumers
+     * Create a derived transform type from a string.
+     * <br>Example: "blockpos consumer[][]" would create a derived type of a 2D array of blockpos consumers
      * @param s The string to load it from
      * @param transformLookup The transform types
-     * @return The created transform subtype
+     * @return The parsed derived type
      */
-    public static TransformSubtype fromString(String s, Map<String, TransformType> transformLookup) {
+    public static DerivedTransformType fromString(String s, Map<String, TransformType> transformLookup) {
         int arrIndex = s.indexOf('[');
         int arrDimensionality = 0;
         if (arrIndex != -1) {
@@ -97,44 +97,44 @@ public class TransformSubtype {
         }
 
         String[] parts = s.split(" ");
-        SubType subType;
+        Kind kind;
         TransformType transformType = transformLookup.get(parts[0]);
         if (parts.length == 1) {
-            subType = SubType.NONE;
+            kind = Kind.NONE;
         } else {
-            subType = SubType.fromString(parts[1]);
+            kind = Kind.fromString(parts[1]);
         }
 
-        return new TransformSubtype(new TransformTypePtr(transformType), arrDimensionality, subType, getRawType(transformType, subType));
+        return new DerivedTransformType(new TransformTypeRef(transformType), arrDimensionality, kind, getRawType(transformType, kind));
     }
 
     /**
-     * Creates a TransformSubtype
-     * @param subType The transform type of the subtype
-     * @return A transform subtype with the given transform type and no array dimensionality
+     * Creates a DerivedTransformType
+     * @param transformType The transform type of the derived type
+     * @return A derived type with the given transform type and no array dimensionality
      */
-    public static TransformSubtype of(@Nullable TransformType subType) {
-        return new TransformSubtype(new TransformTypePtr(subType), 0, SubType.NONE, getRawType(subType, SubType.NONE));
+    public static DerivedTransformType of(@Nullable TransformType transformType) {
+        return new DerivedTransformType(new TransformTypeRef(transformType), 0, Kind.NONE, getRawType(transformType, Kind.NONE));
     }
 
     /**
-     * Creates a TransformSubtype
-     * @return A transform subtype with no array dimensionality
+     * Creates a DerivedTransformType
+     * @return A derived type with no array dimensionality
      */
-    public static TransformSubtype of(TransformType transformType, SubType subType) {
-        return new TransformSubtype(new TransformTypePtr(transformType), 0, subType, getRawType(transformType, subType));
+    public static DerivedTransformType of(TransformType transformType, Kind kind) {
+        return new DerivedTransformType(new TransformTypeRef(transformType), 0, kind, getRawType(transformType, kind));
     }
 
     /**
      * @param transform A transform type
-     * @return The original type of the transform type using the subtype of this object
+     * @return The original type of a value with the given transform type and the kind of this derived type
      */
     public Type getRawType(TransformType transform) {
-        return getRawType(transform, this.subtype);
+        return getRawType(transform, this.kind);
     }
 
-    private static Type getRawType(TransformType transform, SubType subtype) {
-        return switch (subtype) {
+    private static Type getRawType(TransformType transform, Kind kind) {
+        return switch (kind) {
             case NONE -> transform.getFrom();
             case PREDICATE -> transform.getOriginalPredicateType();
             case CONSUMER -> transform.getOriginalConsumerType();
@@ -143,27 +143,27 @@ public class TransformSubtype {
 
     /**
      * @param type A type
-     * @return The potential subtype of the type. If unknown, returns NONE
+     * @return The potential kind of the type. If unknown, returns NONE
      */
-    public static SubType getSubType(@Nullable Type type, Config config) {
+    public static Kind getKind(@Nullable Type type, Config config) {
         while (type != null) {
             if (type.getSort() == Type.OBJECT) {
                 for (var t: config.getTypeInfo().ancestry(type)) {
                     if (config.getRegularTypes().contains(t)) {
-                        return SubType.NONE;
+                        return Kind.NONE;
                     } else if (config.getConsumerTypes().contains(t)) {
-                        return SubType.CONSUMER;
+                        return Kind.CONSUMER;
                     } else if (config.getPredicateTypes().contains(t)) {
-                        return SubType.PREDICATE;
+                        return Kind.PREDICATE;
                     }
                 }
             } else {
                 if (config.getRegularTypes().contains(type)) {
-                    return SubType.NONE;
+                    return Kind.NONE;
                 } else if (config.getConsumerTypes().contains(type)) {
-                    return SubType.CONSUMER;
+                    return Kind.CONSUMER;
                 } else if (config.getPredicateTypes().contains(type)) {
-                    return SubType.PREDICATE;
+                    return Kind.PREDICATE;
                 }
             }
 
@@ -175,38 +175,26 @@ public class TransformSubtype {
         }
 
 
-        return SubType.NONE;
+        return Kind.NONE;
     }
 
     /**
-     * @return The single transformed type of this transform subtype.
-     * @throws IllegalStateException If this subtype is NONE and there are multiple transformed type. To get all the types
+     * @return Same as {@link #resultingTypes} but only returns the first element.
+     * @throws IllegalStateException If {@link #resultingTypes()} returns more than one element
      * use {@link #resultingTypes()}
      */
     public Type getSingleType() {
-        if (subtype == SubType.NONE && transformType.getValue().getTo().length != 1) {
-            throw new IllegalStateException("Cannot get single subType for " + this);
+        List<Type> allTypes = this.resultingTypes();
+
+        if (allTypes.size() != 1) {
+            throw new IllegalStateException("Cannot get single type of a transform type with multiple types");
         }
 
-        Type baseType;
-        if (subtype == SubType.NONE) {
-            baseType = transformType.getValue().getTo()[0];
-        } else if (subtype == SubType.CONSUMER) {
-            baseType = transformType.getValue().getTransformedConsumerType();
-        } else {
-            baseType = transformType.getValue().getTransformedPredicateType();
-        }
-
-        if (arrayDimensionality == 0) {
-            return baseType;
-        } else {
-            return Type.getType("[".repeat(arrayDimensionality) + baseType.getDescriptor());
-        }
+        return allTypes.get(0);
     }
 
-    //Does not work with array dimensionality
     /**
-     * @return The list of transformed types that should replace a value with this transform subtype.
+     * @return The list of types that should replace a value with this derived type.
      * If this represents a value that does not need to be transformed, it returns a singleton list with the original type.
      */
     public List<Type> resultingTypes() {
@@ -219,9 +207,9 @@ public class TransformSubtype {
         }
 
         List<Type> types = new ArrayList<>();
-        if (subtype == SubType.NONE) {
+        if (kind == Kind.NONE) {
             types.addAll(Arrays.asList(transformType.getValue().getTo()));
-        } else if (subtype == SubType.CONSUMER) {
+        } else if (kind == Kind.CONSUMER) {
             types.add(transformType.getValue().getTransformedConsumerType());
         } else {
             types.add(transformType.getValue().getTransformedPredicateType());
@@ -246,7 +234,7 @@ public class TransformSubtype {
     }
 
     /**
-     * Gets the transform size (in local var slots) of a transform value with this transform subtype.
+     * Gets the transform size (in local var slots) of a transform value with this derived type.
      * @return The size
      */
     public int getTransformedSize() {
@@ -254,7 +242,7 @@ public class TransformSubtype {
             return Objects.requireNonNull(this.originalType).getSize();
         }
 
-        if (subtype == SubType.NONE && this.arrayDimensionality == 0) {
+        if (kind == Kind.NONE && this.arrayDimensionality == 0) {
             return transformType.getValue().getTransformedSize();
         } else if (this.arrayDimensionality != 0) {
             return this.resultingTypes().size();
@@ -263,17 +251,17 @@ public class TransformSubtype {
         }
     }
 
-    public enum SubType {
+    public enum Kind {
         NONE,
         PREDICATE,
         CONSUMER;
 
-        public static SubType fromString(String part) {
+        public static Kind fromString(String part) {
             return switch (part.toLowerCase(Locale.ROOT)) {
                 case "predicate" -> PREDICATE;
                 case "consumer" -> CONSUMER;
                 default -> {
-                    System.err.println("Unknown subtype: " + part);
+                    System.err.println("Unknown kind: " + part);
                     yield NONE;
                 }
             };
@@ -284,13 +272,13 @@ public class TransformSubtype {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        TransformSubtype that = (TransformSubtype) o;
-        return arrayDimensionality == that.arrayDimensionality && transformType.getValue() == that.transformType.getValue() && subtype == that.subtype;
+        DerivedTransformType that = (DerivedTransformType) o;
+        return arrayDimensionality == that.arrayDimensionality && transformType.getValue() == that.transformType.getValue() && kind == that.kind;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(transformType, arrayDimensionality, subtype);
+        return Objects.hash(transformType, arrayDimensionality, kind);
     }
 
     @Override
@@ -298,10 +286,10 @@ public class TransformSubtype {
         StringBuilder sb = new StringBuilder();
 
         if (transformType.getValue() == null) {
-            if (subtype == SubType.NONE) {
+            if (kind == Kind.NONE) {
                 return "No transform";
             } else {
-                sb.append(subtype.name().toLowerCase(Locale.ROOT));
+                sb.append(kind.name().toLowerCase(Locale.ROOT));
                 sb.append(" candidate");
                 return sb.toString();
             }
@@ -309,9 +297,9 @@ public class TransformSubtype {
 
         sb.append(transformType.getValue());
 
-        if (subtype != SubType.NONE) {
+        if (kind != Kind.NONE) {
             sb.append(" ");
-            sb.append(subtype.name().toLowerCase(Locale.ROOT));
+            sb.append(kind.name().toLowerCase(Locale.ROOT));
         }
 
         if (arrayDimensionality > 0) {
@@ -342,9 +330,9 @@ public class TransformSubtype {
             throw new IllegalStateException("Not supported yet");
         }
 
-        if (subtype == SubType.NONE) {
+        if (kind == Kind.NONE) {
             return transformType.getValue().convertToTransformed(originalSupplier);
-        } else if (subtype == SubType.CONSUMER || subtype == SubType.PREDICATE) {
+        } else if (kind == Kind.CONSUMER || kind == Kind.PREDICATE) {
             /*
              * Example:
              *   LongConsumer c = ...;
@@ -363,7 +351,7 @@ public class TransformSubtype {
             Type originalLambdaType;
             Type transformedLambdaType;
 
-            if (subtype == SubType.CONSUMER) {
+            if (kind == Kind.CONSUMER) {
                 returnType = Type.VOID_TYPE;
                 transformerType = "consumer";
                 methodName = "accept";
@@ -459,6 +447,6 @@ public class TransformSubtype {
             return list;
         }
 
-        throw new IllegalArgumentException("Unsupported subtype: " + subtype);
+        throw new IllegalArgumentException("Unsupported kind: " + kind);
     }
 }

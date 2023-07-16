@@ -8,7 +8,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.BytecodeFactory;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.DerivedTransformType;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import org.objectweb.asm.Opcodes;
@@ -82,11 +82,11 @@ public class TransformType {
         }
 
         if (originalPredicateType != null) {
-            addSpecialInfo(parameterInfo, originalPredicateType, "test", Type.BOOLEAN_TYPE, TransformSubtype.SubType.PREDICATE, transformedPredicateType);
+            addSpecialInfo(parameterInfo, originalPredicateType, "test", Type.BOOLEAN_TYPE, DerivedTransformType.Kind.PREDICATE, transformedPredicateType);
         }
 
         if (originalConsumerType != null) {
-            addSpecialInfo(parameterInfo, originalConsumerType, "accept", Type.VOID_TYPE, TransformSubtype.SubType.CONSUMER, transformedConsumerType);
+            addSpecialInfo(parameterInfo, originalConsumerType, "accept", Type.VOID_TYPE, DerivedTransformType.Kind.CONSUMER, transformedConsumerType);
         }
     }
 
@@ -105,8 +105,8 @@ public class TransformType {
             );
             MethodParameterInfo info = new MethodParameterInfo(
                 methodID,
-                TransformSubtype.createDefault(methodID.getDescriptor().getReturnType()),
-                new TransformSubtype[] { TransformSubtype.of(this) },
+                DerivedTransformType.createDefault(methodID.getDescriptor().getReturnType()),
+                new DerivedTransformType[] { DerivedTransformType.of(this) },
                 null,
                 methodReplacement
             );
@@ -121,9 +121,9 @@ public class TransformType {
             expansions[i] = (Function<Type, Integer> variableAllocator) -> new InsnList();
         }
 
-        TransformSubtype[] parameterTypes = new TransformSubtype[this.to.length];
+        DerivedTransformType[] parameterTypes = new DerivedTransformType[this.to.length];
         for (int i = 0; i < parameterTypes.length; i++) {
-            parameterTypes[i] = TransformSubtype.createDefault(this.to[i]);
+            parameterTypes[i] = DerivedTransformType.createDefault(this.to[i]);
         }
 
         List<Integer>[][] indices = new List[parameterTypes.length][parameterTypes.length];
@@ -137,15 +137,15 @@ public class TransformType {
             }
         }
 
-        MethodParameterInfo info = new MethodParameterInfo(toOriginal, TransformSubtype.of(this), parameterTypes, null, new MethodReplacement(expansions, indices));
+        MethodParameterInfo info = new MethodParameterInfo(toOriginal, DerivedTransformType.of(this), parameterTypes, null, new MethodReplacement(expansions, indices));
         parameterInfo.computeIfAbsent(toOriginal, k -> new ArrayList<>()).add(info);
     }
 
-    private void addSpecialInfo(Map<MethodID, List<MethodParameterInfo>> parameterInfo, Type type, String methodName, Type returnType, TransformSubtype.SubType subType,
+    private void addSpecialInfo(Map<MethodID, List<MethodParameterInfo>> parameterInfo, Type type, String methodName, Type returnType, DerivedTransformType.Kind kind,
                                 Type transformedType) {
         MethodID consumerID = new MethodID(type, methodName, Type.getMethodType(returnType, from), MethodID.CallType.INTERFACE);
 
-        TransformSubtype[] argTypes = new TransformSubtype[] { TransformSubtype.of(this, subType), TransformSubtype.of(this) };
+        DerivedTransformType[] argTypes = new DerivedTransformType[] { DerivedTransformType.of(this, kind), DerivedTransformType.of(this) };
 
         MethodReplacement methodReplacement = new MethodReplacement(
             (Function<Type, Integer> variableAllocator) -> {
@@ -159,20 +159,20 @@ public class TransformType {
 
         MethodTransformChecker.MinimumConditions[] minimumConditions = new MethodTransformChecker.MinimumConditions[] {
             new MethodTransformChecker.MinimumConditions(
-                TransformSubtype.createDefault(returnType),
-                TransformSubtype.of(this, subType),
-                TransformSubtype.createDefault(this.from)
+                DerivedTransformType.createDefault(returnType),
+                DerivedTransformType.of(this, kind),
+                DerivedTransformType.createDefault(this.from)
             ),
             new MethodTransformChecker.MinimumConditions(
-                TransformSubtype.createDefault(returnType),
-                TransformSubtype.createDefault(type),
-                TransformSubtype.of(this)
+                DerivedTransformType.createDefault(returnType),
+                DerivedTransformType.createDefault(type),
+                DerivedTransformType.of(this)
             )
         };
 
         MethodParameterInfo info = new MethodParameterInfo(
             consumerID,
-            TransformSubtype.createDefault(consumerID.getDescriptor().getReturnType()),
+            DerivedTransformType.createDefault(consumerID.getDescriptor().getReturnType()),
             argTypes,
             minimumConditions,
             methodReplacement

@@ -31,8 +31,8 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
     @Override
     public boolean containsKey(Object key) {
         if (key instanceof Ancestralizable method) {
-            for (Type subType : hierarchy.ancestry(method.getAssociatedType())) {
-                Ancestralizable id = method.withType(subType);
+            for (Type superType : hierarchy.ancestry(method.getAssociatedType())) {
+                Ancestralizable id = method.withType(superType);
                 if (map.containsKey(id)) {
                     return true;
                 }
@@ -54,8 +54,8 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
                 return map.get(method);
             }
 
-            for (Type subType : hierarchy.ancestry(method.getAssociatedType())) {
-                Ancestralizable id = method.withType(subType);
+            for (Type superType : hierarchy.ancestry(method.getAssociatedType())) {
+                Ancestralizable id = method.withType(superType);
                 T value = map.get(id);
                 if (value != null) {
                     return value;
@@ -76,8 +76,8 @@ public class AncestorHashMap<U extends Ancestralizable<U>, T> implements Map<U, 
     @Nullable
     public T remove(Object key) {
         if (key instanceof Ancestralizable method) {
-            for (Type subType : hierarchy.ancestry(method.getAssociatedType())) {
-                Ancestralizable<?> id = method.withType(subType);
+            for (Type superType : hierarchy.ancestry(method.getAssociatedType())) {
+                Ancestralizable<?> id = method.withType(superType);
                 T value = map.remove(key);
                 if (value != null) {
                     return value;

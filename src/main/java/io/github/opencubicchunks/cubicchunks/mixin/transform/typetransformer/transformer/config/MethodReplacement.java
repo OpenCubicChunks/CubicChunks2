@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.BytecodeFactory;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.DerivedTransformType;
 import org.jetbrains.annotations.Nullable;
 
 public class MethodReplacement {
@@ -14,7 +14,7 @@ public class MethodReplacement {
     private final BytecodeFactory finalizer;
     private final List<Integer>[] finalizerIndices;
 
-    public MethodReplacement(BytecodeFactory factory, TransformSubtype[] argTypes) {
+    public MethodReplacement(BytecodeFactory factory, DerivedTransformType[] argTypes) {
         this.bytecodeFactories = new BytecodeFactory[] { factory };
         this.changeParameters = false;
         this.finalizer = null;

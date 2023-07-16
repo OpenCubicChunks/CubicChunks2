@@ -5,7 +5,7 @@ import java.util.List;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.BytecodeFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.VariableAllocator;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.DerivedTransformType;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodParameterInfo;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.MethodReplacement;
@@ -122,8 +122,8 @@ public class ConfigTest {
         List<Type> types = new ArrayList<>();
 
         for (int j = 0; j < indices.length; j++) {
-            TransformSubtype subtype = methodInfo.getParameterTypes()[j];
-            List<Type> transformedTypes = subtype.resultingTypes();
+            DerivedTransformType derivedType = methodInfo.getParameterTypes()[j];
+            List<Type> transformedTypes = derivedType.resultingTypes();
 
             for (int index : indices[j]) {
                 if (transformedTypes.get(index).getSort() == Type.VOID) {

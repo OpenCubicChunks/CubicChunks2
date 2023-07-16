@@ -16,8 +16,8 @@ import java.util.function.Function;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.BytecodeFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.AnalysisResults;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.DerivedTransformType;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.FutureMethodBinding;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingInterpreter;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingValue;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.ClassTransformInfo;
@@ -251,13 +251,13 @@ public class TypeTransformer {
 
         var typeHints = transformInfo.getTypeHints().get(methodID);
 
-        TransformSubtype[] argTransformKinds = new TransformSubtype[args.length];
+        DerivedTransformType[] argTransformKinds = new DerivedTransformType[args.length];
         int index = 1; //Abstract methods can't be static, so they have the 'this' argument
         for (int i = 0; i < args.length; i++) {
-            argTransformKinds[i] = TransformSubtype.createDefault(args[i]);
+            argTransformKinds[i] = DerivedTransformType.createDefault(args[i]);
 
             if (typeHints != null && typeHints.size() > index && typeHints.get(index) != null) {
-                argTransformKinds[i] = TransformSubtype.of(typeHints.get(index));
+                argTransformKinds[i] = DerivedTransformType.of(typeHints.get(index));
             }
 
             index += args[i].getSize();
@@ -278,10 +278,10 @@ public class TypeTransformer {
         for (int i = 0; i < args.length; i++) {
             Type argType = args[i];
 
-            TransformSubtype copyFrom = argTransformKinds[i];
+            DerivedTransformType copyFrom = argTransformKinds[i];
             TransformTrackingValue value = new TransformTrackingValue(argType, fieldPseudoValues, config);
             value.getTransform().setArrayDimensionality(copyFrom.getArrayDimensionality());
-            value.getTransform().setSubType(copyFrom.getSubtype());
+            value.getTransform().setKind(copyFrom.getKind());
             value.setTransformType(copyFrom.getTransformType());
             frames[0].setLocal(varIndex, value);
             varIndex += argType.getSize();
@@ -363,7 +363,7 @@ public class TypeTransformer {
         long start = System.currentTimeMillis();
 
         //Look up the analysis results for this method
-        MethodID methodID = new MethodID(classNode.name, methodNode.name, methodNode.desc, MethodID.CallType.VIRTUAL); //Call subType doesn't matter much
+        MethodID methodID = new MethodID(classNode.name, methodNode.name, methodNode.desc, MethodID.CallType.VIRTUAL); //Call type doesn't matter much
         AnalysisResults results = analysisResults.get(methodID);
 
         if (results == null) {
@@ -381,7 +381,7 @@ public class TypeTransformer {
         //See TransformContext
         AbstractInsnNode[] insns = newMethod.instructions.toArray();
         int[] vars = new int[newMethod.maxLocals];
-        TransformSubtype[][] varTypes = new TransformSubtype[insns.length][newMethod.maxLocals];
+        DerivedTransformType[][] varTypes = new DerivedTransformType[insns.length][newMethod.maxLocals];
 
         //Generate var table
         int[] maxVarWidth = new int[newMethod.maxLocals];
@@ -470,7 +470,7 @@ public class TypeTransformer {
                 dispatch.add(new VarInsnNode(Opcodes.ALOAD, 0));
                 int index = 1;
                 for (Type arg : Type.getArgumentTypes(oldMethod.desc)) {
-                    TransformSubtype argType = context.varTypes[0][index];
+                    DerivedTransformType argType = context.varTypes[0][index];
                     int finalIndex = index;
                     dispatch.add(argType.convertToTransformed(() -> {
                         InsnList load = new InsnList();
@@ -601,7 +601,7 @@ public class TypeTransformer {
         int[][] offsets = new int[args.length][];
 
         for (int i = 0; i < args.length; i++) {
-            TransformSubtype transform = args[i].getTransform();
+            DerivedTransformType transform = args[i].getTransform();
             offsets[i] = transform.getIndices();
 
             for (int j = 0; j < offsets[i].length; j++) {
@@ -659,8 +659,8 @@ public class TypeTransformer {
         boolean isStatic = (methodCall.getOpcode() == Opcodes.INVOKESTATIC);
         int staticOffset = isStatic ? 0 : 1;
 
-        TransformSubtype returnType = TransformSubtype.createDefault(Type.getReturnType(methodCall.desc));
-        TransformSubtype[] argTypes = new TransformSubtype[args.length - staticOffset];
+        DerivedTransformType returnType = DerivedTransformType.createDefault(Type.getReturnType(methodCall.desc));
+        DerivedTransformType[] argTypes = new DerivedTransformType[args.length - staticOffset];
 
         if (returnValue != null) {
             returnType = returnValue.getTransform();
@@ -700,16 +700,16 @@ public class TypeTransformer {
         List<Type> types = args[0].transformedTypes();
         if (types.size() != 1) {
             throw new IllegalStateException(
-                "Expected 1 subType but got " + types.size() + ". Define a custom replacement for this method (" + methodCall.owner + "#" + methodCall.name + methodCall.desc + ")");
+                "Expected 1 type but got " + types.size() + ". Define a custom replacement for this method (" + methodCall.owner + "#" + methodCall.name + methodCall.desc + ")");
         }
 
         TypeInfo hierarchy = config.getTypeInfo();
 
-        Type potentioalOwner = types.get(0);
+        Type potentialOwner = types.get(0);
         if (methodCall.getOpcode() != Opcodes.INVOKESPECIAL) {
-            findOwnerNormal(methodCall, hierarchy, potentioalOwner);
+            findOwnerNormal(methodCall, hierarchy, potentialOwner);
         } else {
-            findOwnerInvokeSpecial(methodCall, args, hierarchy, potentioalOwner);
+            findOwnerInvokeSpecial(methodCall, args, hierarchy, potentialOwner);
         }
     }
 
@@ -753,40 +753,40 @@ public class TypeTransformer {
         context.target.instructions.remove(methodCall);
     }
 
-    private void findOwnerNormal(MethodInsnNode methodCall, TypeInfo hierarchy, Type potentioalOwner) {
+    private void findOwnerNormal(MethodInsnNode methodCall, TypeInfo hierarchy, Type potentialOwner) {
         int opcode = methodCall.getOpcode();
 
         if (opcode == Opcodes.INVOKEVIRTUAL || opcode == Opcodes.INVOKEINTERFACE) {
-            if (!potentioalOwner.equals(Type.getObjectType(methodCall.owner))) {
-                boolean isNewTypeInterface = hierarchy.recognisesInterface(potentioalOwner);
+            if (!potentialOwner.equals(Type.getObjectType(methodCall.owner))) {
+                boolean isNewTypeInterface = hierarchy.recognisesInterface(potentialOwner);
                 opcode = isNewTypeInterface ? Opcodes.INVOKEINTERFACE : Opcodes.INVOKEVIRTUAL;
 
                 methodCall.itf = isNewTypeInterface;
             }
         }
 
-        methodCall.owner = potentioalOwner.getInternalName();
+        methodCall.owner = potentialOwner.getInternalName();
         methodCall.setOpcode(opcode);
     }
 
-    private void findOwnerInvokeSpecial(MethodInsnNode methodCall, TransformTrackingValue[] args, TypeInfo hierarchy, Type potentioalOwner) {
+    private void findOwnerInvokeSpecial(MethodInsnNode methodCall, TransformTrackingValue[] args, TypeInfo hierarchy, Type potentialOwner) {
         String currentOwner = methodCall.owner;
         TypeInfo.Node current = hierarchy.getNode(Type.getObjectType(currentOwner));
-        TypeInfo.Node potential = hierarchy.getNode(potentioalOwner);
+        TypeInfo.Node potential = hierarchy.getNode(potentialOwner);
         TypeInfo.Node given = hierarchy.getNode(args[0].getType());
 
         if (given == null || current == null) {
             System.err.println("Don't have hierarchy for " + args[0].getType() + " or " + methodCall.owner);
-            methodCall.owner = potentioalOwner.getInternalName();
+            methodCall.owner = potentialOwner.getInternalName();
         } else if (given.isDirectDescendantOf(current)) {
             if (potential == null || potential.getSuperclass() == null) {
-                throw new IllegalStateException("Cannot change owner of super call if hierarchy for " + potentioalOwner + " is not defined");
+                throw new IllegalStateException("Cannot change owner of super call if hierarchy for " + potentialOwner + " is not defined");
             }
 
             Type newOwner = potential.getSuperclass().getValue();
             methodCall.owner = newOwner.getInternalName();
         } else {
-            methodCall.owner = potentioalOwner.getInternalName();
+            methodCall.owner = potentialOwner.getInternalName();
         }
     }
 
@@ -809,15 +809,15 @@ public class TypeTransformer {
         };
 
         //If the variable is being loaded, it is in the current frame, if it is being stored, it will be in the next frame
-        TransformSubtype varType = context.varTypes()[insnIdx + (baseOpcode == Opcodes.ISTORE ? 1 : 0)][originalVarIndex];
+        DerivedTransformType varType = context.varTypes()[insnIdx + (baseOpcode == Opcodes.ISTORE ? 1 : 0)][originalVarIndex];
         //Get the actual types that need to be stored or loaded
         List<Type> types = varType.resultingTypes();
 
         //Get the indices for each of these types
         List<Integer> vars = new ArrayList<>();
-        for (Type subType : types) {
+        for (Type type : types) {
             vars.add(newVarIndex);
-            newVarIndex += subType.getSize();
+            newVarIndex += type.getSize();
         }
 
         /*
@@ -871,8 +871,8 @@ public class TypeTransformer {
         //Check if value is transformed
         TransformTrackingValue value = ASMUtil.getTop(nextFrame);
         if (value.getTransformType() != null) {
-            if (value.getTransform().getSubtype() != TransformSubtype.SubType.NONE) {
-                throw new IllegalStateException("Cannot expand constant value of subType " + value.getTransform().getSubtype());
+            if (value.getTransform().getKind() != DerivedTransformType.Kind.NONE) {
+                throw new IllegalStateException("Cannot expand constant value of kind " + value.getTransform().getKind());
             }
 
             Object constant = ASMUtil.getConstant(instruction);
@@ -883,7 +883,7 @@ public class TypeTransformer {
              */
             BytecodeFactory[] replacement = value.getTransformType().getConstantReplacements().get(constant);
             if (replacement == null) {
-                throw new IllegalStateException("Cannot expand constant value of subType " + value.getTransformType());
+                throw new IllegalStateException("Cannot expand constant value of kind " + value.getTransformType());
             }
 
             InsnList newInstructions = new InsnList();
@@ -909,7 +909,7 @@ public class TypeTransformer {
             throw new IllegalStateException("Expected same transform, found " + left.getTransform() + " and " + right.getTransform());
         }
 
-        TransformSubtype transformType = left.getTransform();
+        DerivedTransformType transformType = left.getTransform();
         List<Type> types = transformType.resultingTypes();
         int[] varOffsets = transformType.getIndices();
         int size = transformType.getTransformedSize();
@@ -1005,7 +1005,7 @@ public class TypeTransformer {
 
             //Get analysis results of the actual method
             //For lookups we do need to use the old owner
-            MethodID methodID = new MethodID(classNode.name, methodName, methodDesc, MethodID.CallType.VIRTUAL); // call subType doesn't matter
+            MethodID methodID = new MethodID(classNode.name, methodName, methodDesc, MethodID.CallType.VIRTUAL); // call type doesn't matter
             AnalysisResults results = analysisResults.get(methodID);
             if (results == null) {
                 throw new IllegalStateException("Method not analyzed '" + methodID + "'");
@@ -1321,7 +1321,7 @@ public class TypeTransformer {
         }
         for (ParameterNode param : original) {
             TransformTrackingValue value = context.analysisResults.frames()[0].getLocal(index);
-            if (value.getTransformType() == null || value.getTransform().getSubtype() != TransformSubtype.SubType.NONE) {
+            if (value.getTransformType() == null || value.getTransform().getKind() != DerivedTransformType.Kind.NONE) {
                 newParameters.add(new ParameterNode(param.name, param.access));
             } else {
                 String[] postfixes = value.getTransformType().getPostfix();
@@ -1344,7 +1344,7 @@ public class TypeTransformer {
             int newIndex = context.varLookup[local.index];
 
             TransformTrackingValue value = context.analysisResults().frames()[codeIndex].getLocal(local.index); //Get the value of that variable, so we can get its transform
-            if (value.getTransformType() == null || value.getTransform().getSubtype() != TransformSubtype.SubType.NONE) {
+            if (value.getTransformType() == null || value.getTransform().getKind() != DerivedTransformType.Kind.NONE) {
                 String desc;
                 if (value.getTransformType() == null) {
                     Type type = value.getType();
@@ -1633,7 +1633,7 @@ public class TypeTransformer {
                 continue;
             }
 
-            TransformSubtype transformType = entry.getValue().getTransform();
+            DerivedTransformType transformType = entry.getValue().getTransform();
             FieldID fieldID = entry.getKey();
 
             String originalType = entry.getValue().getType().getInternalName();
@@ -1666,10 +1666,10 @@ public class TypeTransformer {
      * Adds the {@link CCSynthetic} annotation to the provided method
      *
      * @param methodNode The method to mark
-     * @param subType The type of synthetic method this is
+     * @param type The type of synthetic method this is
      * @param original The original method this is a synthetic version of
      */
-    private static void markSynthetic(MethodNode methodNode, String subType, String original, String ownerName) {
+    private static void markSynthetic(MethodNode methodNode, String type, String original, String ownerName) {
         List<AnnotationNode> annotations = methodNode.visibleAnnotations;
         if (annotations == null) {
             annotations = new ArrayList<>();
@@ -1679,8 +1679,8 @@ public class TypeTransformer {
         AnnotationNode synthetic = new AnnotationNode(Type.getDescriptor(CCSynthetic.class));
 
         synthetic.values = new ArrayList<>();
-        synthetic.values.add("subType");
-        synthetic.values.add(subType);
+        synthetic.values.add("type");
+        synthetic.values.add(type);
         synthetic.values.add("original");
         synthetic.values.add(original);
 
@@ -1836,7 +1836,7 @@ public class TypeTransformer {
         }
     }
 
-    private void storeStackInLocals(TransformSubtype transform, InsnList insnList, int baseIdx) {
+    private void storeStackInLocals(DerivedTransformType transform, InsnList insnList, int baseIdx) {
         List<Type> types = transform.resultingTypes();
         int[] offsets = transform.getIndices();
 
@@ -1914,16 +1914,16 @@ public class TypeTransformer {
     }
 
     private void transformDesc(MethodNode methodNode, TransformContext context) {
-        TransformSubtype[] actualParameters;
+        DerivedTransformType[] actualParameters;
         if ((methodNode.access & Opcodes.ACC_STATIC) == 0) {
-            actualParameters = new TransformSubtype[context.analysisResults().getArgTypes().length - 1];
+            actualParameters = new DerivedTransformType[context.analysisResults().getArgTypes().length - 1];
             System.arraycopy(context.analysisResults().getArgTypes(), 1, actualParameters, 0, actualParameters.length);
         } else {
             actualParameters = context.analysisResults().getArgTypes();
         }
 
         //Change descriptor
-        String newDescriptor = MethodParameterInfo.getNewDesc(TransformSubtype.createDefault(Type.getReturnType(methodNode.desc)), actualParameters, methodNode.desc);
+        String newDescriptor = MethodParameterInfo.getNewDesc(DerivedTransformType.createDefault(Type.getReturnType(methodNode.desc)), actualParameters, methodNode.desc);
         methodNode.desc = newDescriptor;
     }
 
@@ -1980,7 +1980,7 @@ public class TypeTransformer {
      * @param analysisResults The analysis results for this method that were generated by the analysis phase.
      * @param instructions The instructions of {@code target} before any transformations.
      * @param varLookup Stores the new index of a variable. varLookup[insnIndex][oldVarIndex] gives the new var index.
-     * @param variableAllocator The variable manager allows for the creation of new variables.
+     * @param variableAllocator The variable allocator allows for the creation of new variables.
      * @param indexLookup A map from instruction object to index in the instructions array. This map contains keys for the instructions of both the old and new methods. This is useful
      *     mainly because TransformTrackingValue.getSource() will return instructions from the old method and to manipulate the InsnList of the new method (which is a linked list) we need an
      *     element which is in that InsnList.
@@ -1991,7 +1991,7 @@ public class TypeTransformer {
         AnalysisResults analysisResults,
         AbstractInsnNode[] instructions,
         int[] varLookup,
-        TransformSubtype[][] varTypes,
+        DerivedTransformType[][] varTypes,
         VariableAllocator variableAllocator,
         Map<AbstractInsnNode, Integer> indexLookup,
         MethodParameterInfo[] methodInfos

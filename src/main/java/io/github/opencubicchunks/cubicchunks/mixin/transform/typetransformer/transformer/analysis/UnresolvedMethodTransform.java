@@ -35,7 +35,7 @@ public record UnresolvedMethodTransform(MethodParameterInfo transform, Transform
         }
 
         int i = 0;
-        for (TransformSubtype type : transform.getParameterTypes()) {
+        for (DerivedTransformType type : transform.getParameterTypes()) {
             if (type != null) {
                 parameters[i].getTransformTypeRef().setValue(type.getTransformType());
             }

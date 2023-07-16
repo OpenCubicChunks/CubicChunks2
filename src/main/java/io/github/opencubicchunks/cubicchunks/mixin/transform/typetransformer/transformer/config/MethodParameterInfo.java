@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config;
 
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.DerivedTransformType;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingValue;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import org.jetbrains.annotations.NotNull;
@@ -9,13 +9,13 @@ import org.objectweb.asm.Type;
 
 public class MethodParameterInfo {
     private final MethodID method;
-    private final TransformSubtype returnType;
-    private final TransformSubtype[] parameterTypes;
+    private final DerivedTransformType returnType;
+    private final DerivedTransformType[] parameterTypes;
     private final MethodTransformChecker transformCondition;
     private final @Nullable MethodReplacement replacement;
 
     public MethodParameterInfo(
-        MethodID method, @NotNull TransformSubtype returnType, @NotNull TransformSubtype[] parameterTypes,
+        MethodID method, @NotNull DerivedTransformType returnType, @NotNull DerivedTransformType[] parameterTypes,
         MethodTransformChecker.MinimumConditions[] minimumConditions, @Nullable MethodReplacement replacement
     ) {
         this.method = method;
@@ -71,11 +71,11 @@ public class MethodParameterInfo {
         return method;
     }
 
-    public @Nullable TransformSubtype getReturnType() {
+    public @Nullable DerivedTransformType getReturnType() {
         return returnType;
     }
 
-    public TransformSubtype[] getParameterTypes() {
+    public DerivedTransformType[] getParameterTypes() {
         return parameterTypes;
     }
 
@@ -87,7 +87,7 @@ public class MethodParameterInfo {
         return replacement;
     }
 
-    public static String getNewDesc(TransformSubtype returnType, TransformSubtype[] parameterTypes, String originalDesc) {
+    public static String getNewDesc(DerivedTransformType returnType, DerivedTransformType[] parameterTypes, String originalDesc) {
         Type[] types = Type.getArgumentTypes(originalDesc);
         StringBuilder sb = new StringBuilder("(");
         for (int i = 0; i < parameterTypes.length; i++) {
@@ -112,8 +112,8 @@ public class MethodParameterInfo {
     }
 
     public static String getNewDesc(TransformTrackingValue returnValue, TransformTrackingValue[] parameters, String originalDesc) {
-        TransformSubtype returnType = returnValue.getTransform();
-        TransformSubtype[] parameterTypes = new TransformSubtype[parameters.length];
+        DerivedTransformType returnType = returnValue.getTransform();
+        DerivedTransformType[] parameterTypes = new DerivedTransformType[parameters.length];
         for (int i = 0; i < parameters.length; i++) {
             parameterTypes[i] = parameters[i].getTransform();
         }

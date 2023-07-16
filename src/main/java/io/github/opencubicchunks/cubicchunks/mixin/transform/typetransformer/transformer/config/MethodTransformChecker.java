@@ -1,6 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config;
 
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.DerivedTransformType;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformTrackingValue;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +50,7 @@ public class MethodTransformChecker {
         return 1;
     }
 
-    private static boolean isApplicable(TransformSubtype current, @Nullable TransformSubtype target) {
+    private static boolean isApplicable(DerivedTransformType current, @Nullable DerivedTransformType target) {
         if (target == null) {
             return true;
         }
@@ -68,7 +68,7 @@ public class MethodTransformChecker {
         return current.equals(target);
     }
 
-    public static record MinimumConditions(TransformSubtype returnType, TransformSubtype... parameterTypes) {
+    public static record MinimumConditions(DerivedTransformType returnType, DerivedTransformType... parameterTypes) {
         public boolean isMet(TransformTrackingValue returnValue, TransformTrackingValue[] parameters) {
             if (returnType.getTransformType() != null) {
                 if (!returnValue.getTransform().equals(returnType)) {

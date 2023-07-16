@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.BytecodeFactory;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.DerivedTransformType;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import org.objectweb.asm.Opcodes;
@@ -35,7 +35,7 @@ public class InvokerInfo {
         return methods;
     }
 
-    public record InvokerMethodInfo(TransformSubtype[] argTypes, String mixinMethodName, String targetMethodName, String desc) {
+    public record InvokerMethodInfo(DerivedTransformType[] argTypes, String mixinMethodName, String targetMethodName, String desc) {
         public void addReplacementTo(AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo, InvokerInfo invokerInfo) {
             List<Type> transformedTypes = new ArrayList<>();
 
@@ -58,8 +58,8 @@ public class InvokerInfo {
             MethodID methodID = new MethodID(invokerInfo.mixinClass.getInternalName(), mixinMethodName, desc, MethodID.CallType.INTERFACE);
 
             //Generate the actual argTypes array who's first element is `this`
-            TransformSubtype[] newArgTypes = new TransformSubtype[argTypes.length + 1];
-            newArgTypes[0] = TransformSubtype.createDefault(methodID.getOwner());
+            DerivedTransformType[] newArgTypes = new DerivedTransformType[argTypes.length + 1];
+            newArgTypes[0] = DerivedTransformType.createDefault(methodID.getOwner());
             System.arraycopy(argTypes, 0, newArgTypes, 1, argTypes.length);
 
             //Generate minimums
@@ -68,23 +68,23 @@ public class InvokerInfo {
 
             for (int j = 0; j < argTypes.length; j++) {
                 if (argTypes[j].getTransformType() != null) {
-                    TransformSubtype[] min = new TransformSubtype[newArgTypes.length];
+                    DerivedTransformType[] min = new DerivedTransformType[newArgTypes.length];
 
                     for (int k = 0; k < min.length; k++) {
                         if (k != j + 1) {
-                            min[k] = TransformSubtype.createDefault(args[j]);
+                            min[k] = DerivedTransformType.createDefault(args[j]);
                         } else {
                             min[k] = argTypes[j];
                         }
                     }
 
-                    minimumConditions.add(new MethodTransformChecker.MinimumConditions(TransformSubtype.createDefault(args[j]), min));
+                    minimumConditions.add(new MethodTransformChecker.MinimumConditions(DerivedTransformType.createDefault(args[j]), min));
                 }
             }
 
             MethodParameterInfo info = new MethodParameterInfo(
                 methodID,
-                TransformSubtype.createDefault(methodID.getDescriptor().getReturnType()),
+                DerivedTransformType.createDefault(methodID.getDescriptor().getReturnType()),
                 newArgTypes,
                 minimumConditions.toArray(new MethodTransformChecker.MinimumConditions[0]),
                 new MethodReplacement(replacement, newArgTypes)

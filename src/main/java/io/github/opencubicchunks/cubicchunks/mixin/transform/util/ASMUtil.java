@@ -33,21 +33,6 @@ import org.objectweb.asm.tree.analysis.Frame;
 import org.objectweb.asm.tree.analysis.Value;
 
 public class ASMUtil {
-    public static int argumentSize(String desc, boolean isStatic) {
-        Type[] argTypes = Type.getArgumentTypes(desc);
-
-        int size = 0;
-        if (!isStatic) {
-            size++;
-        }
-
-        for (Type subType : argTypes) {
-            size += subType.getSize();
-        }
-
-        return size;
-    }
-
     public static boolean isStatic(MethodNode methodNode) {
         return (methodNode.access & ACC_STATIC) != 0;
     }
@@ -61,29 +46,6 @@ public class ASMUtil {
         }
 
         return size;
-    }
-
-    public static <T> void varIndicesToArgIndices(T[] varArr, T[] argArr, String desc, boolean isStatic) {
-        Type[] argTypes = Type.getArgumentTypes(desc);
-        int staticOffset = isStatic ? 0 : 1;
-        if (argArr.length != argTypes.length + staticOffset) {
-            throw new IllegalArgumentException("argArr.length != argTypes.length");
-        }
-
-        int varIndex = 0;
-        int argIndex = 0;
-
-        if (!isStatic) {
-            argArr[0] = varArr[0];
-            varIndex++;
-            argIndex++;
-        }
-
-        for (Type subType : argTypes) {
-            argArr[argIndex] = varArr[varIndex];
-            varIndex += subType.getSize();
-            argIndex++;
-        }
     }
 
     public static void jumpIfCmp(InsnList list, Type type, boolean equal, LabelNode label) {

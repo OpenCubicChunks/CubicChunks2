@@ -23,22 +23,22 @@ public class TransformTrackingValue implements Value {
 
     private final @Nullable Type type;
     private final AncestorHashMap<FieldID, TransformTrackingValue> pseudoValues;
-    private final TransformSubtype transform;
+    private final DerivedTransformType transform;
     private final Set<TransformTrackingValue> valuesWithSameType = new HashSet<>();
     private final Config config;
 
     public TransformTrackingValue(@Nullable Type type, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues, Config config) {
-        this(type, TransformSubtype.createDefault(type), fieldPseudoValues, config);
+        this(type, DerivedTransformType.createDefault(type), fieldPseudoValues, config);
     }
 
-    public TransformTrackingValue(@Nullable Type type, TransformSubtype transform, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues, Config config) {
+    public TransformTrackingValue(@Nullable Type type, DerivedTransformType transform, AncestorHashMap<FieldID, TransformTrackingValue> fieldPseudoValues, Config config) {
         this.type = type;
         this.transform = transform;
         this.pseudoValues = fieldPseudoValues;
         this.config = config;
 
         this.transform.getTransformTypePtr().addTrackingValue(this);
-        this.transform.setSubType(TransformSubtype.getSubType(type, config));
+        this.transform.setKind(DerivedTransformType.getKind(type, config));
     }
 
     public TransformTrackingValue merge(TransformTrackingValue other) {
@@ -62,7 +62,7 @@ public class TransformTrackingValue implements Value {
 
     public void setTransformType(TransformType transformType) {
         if (this.transform.getTransformType() != null && transformType != this.transform.getTransformType()) {
-            throw new RuntimeException("Transform subType already set");
+            throw new RuntimeException("Transform type already set");
         }
 
         if (this.transform.getTransformType() == transformType) {
@@ -142,7 +142,7 @@ public class TransformTrackingValue implements Value {
         }
     }
 
-    public TransformTypePtr getTransformTypeRef() {
+    public TransformTypeRef getTransformTypeRef() {
         return transform.getTransformTypePtr();
     }
 
@@ -160,7 +160,7 @@ public class TransformTrackingValue implements Value {
         return sb.toString();
     }
 
-    public TransformSubtype getTransform() {
+    public DerivedTransformType getTransform() {
         return transform;
     }
 

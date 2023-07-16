@@ -16,7 +16,7 @@ import com.google.gson.JsonPrimitive;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.BytecodeFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.ConstantFactory;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.bytecodegen.JSONBytecodeFactory;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.DerivedTransformType;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.AncestorHashMap;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
 import io.github.opencubicchunks.cubicchunks.utils.TestMappingUtils;
@@ -89,18 +89,18 @@ public class ConfigLoader {
                 targetMethod = map.mapMethodName("intermediary", targetName.replace('/', '.'), targetMethod, method.getDescriptor());
 
                 Type[] args = Type.getArgumentTypes(method.getDescriptor());
-                TransformSubtype[] transformTypes = new TransformSubtype[args.length];
+                DerivedTransformType[] transformTypes = new DerivedTransformType[args.length];
 
                 JsonArray types = obj2.get("types").getAsJsonArray();
 
                 int i;
                 for (i = 0; i < types.size(); i++) {
                     String type = types.get(i).getAsString();
-                    transformTypes[i] = TransformSubtype.fromString(type, transformTypeMap);
+                    transformTypes[i] = DerivedTransformType.fromString(type, transformTypeMap);
                 }
 
                 for (; i < transformTypes.length; i++) {
-                    transformTypes[i] = TransformSubtype.createDefault(args[i]);
+                    transformTypes[i] = DerivedTransformType.createDefault(args[i]);
                 }
 
                 methodInfos.add(new InvokerInfo.InvokerMethodInfo(transformTypes, method.getName(), targetMethod, method.getDescriptor()));
@@ -199,14 +199,14 @@ public class ConfigLoader {
             for (JsonElement possibilityElement : possibilites) {
                 JsonObject possibility = possibilityElement.getAsJsonObject();
                 JsonArray paramsJson = possibility.get("parameters").getAsJsonArray();
-                TransformSubtype[] params = loadParameterTypes(methodID, transformTypes, paramsJson);
+                DerivedTransformType[] params = loadParameterTypes(methodID, transformTypes, paramsJson);
 
-                TransformSubtype returnType = TransformSubtype.createDefault(methodID.getDescriptor().getReturnType());
+                DerivedTransformType returnType = DerivedTransformType.createDefault(methodID.getDescriptor().getReturnType());
                 JsonElement returnTypeJson = possibility.get("return");
 
                 if (returnTypeJson != null) {
                     if (returnTypeJson.isJsonPrimitive()) {
-                        returnType = TransformSubtype.fromString(returnTypeJson.getAsString(), transformTypes);
+                        returnType = DerivedTransformType.fromString(returnTypeJson.getAsString(), transformTypes);
                     }
                 }
 
@@ -243,21 +243,21 @@ public class ConfigLoader {
         return parameterInfo;
     }
 
-    @NotNull private static TransformSubtype[] loadParameterTypes(MethodID method, Map<String, TransformType> transformTypes, JsonArray paramsJson) {
-        TransformSubtype[] params = new TransformSubtype[paramsJson.size()];
+    @NotNull private static DerivedTransformType[] loadParameterTypes(MethodID method, Map<String, TransformType> transformTypes, JsonArray paramsJson) {
+        DerivedTransformType[] params = new DerivedTransformType[paramsJson.size()];
         Type[] args = method.getDescriptor().getArgumentTypes();
 
         for (int i = 0; i < paramsJson.size(); i++) {
             JsonElement param = paramsJson.get(i);
             if (param.isJsonPrimitive()) {
-                params[i] = TransformSubtype.fromString(param.getAsString(), transformTypes);
+                params[i] = DerivedTransformType.fromString(param.getAsString(), transformTypes);
             } else if (param.isJsonNull()) {
                 if (method.isStatic()) {
-                    params[i] = TransformSubtype.createDefault(args[i]);
+                    params[i] = DerivedTransformType.createDefault(args[i]);
                 } else if (i == 0) {
-                    params[i] = TransformSubtype.createDefault(method.getOwner());
+                    params[i] = DerivedTransformType.createDefault(method.getOwner());
                 } else {
-                    params[i] = TransformSubtype.createDefault(args[i - 1]);
+                    params[i] = DerivedTransformType.createDefault(args[i - 1]);
                 }
             }
         }
@@ -289,9 +289,9 @@ public class ConfigLoader {
         }
     }
 
-    private static void generateDefaultIndices(TransformSubtype[] params, int expansionsNeeded, List<Integer>[][] indices) {
+    private static void generateDefaultIndices(DerivedTransformType[] params, int expansionsNeeded, List<Integer>[][] indices) {
         for (int i = 0; i < params.length; i++) {
-            TransformSubtype param = params[i];
+            DerivedTransformType param = params[i];
 
             if (param == null) {
                 for (int j = 0; j < expansionsNeeded; j++) {
@@ -332,23 +332,23 @@ public class ConfigLoader {
             for (int i = 0; i < minimumsJson.getAsJsonArray().size(); i++) {
                 JsonObject minimum = minimumsJson.getAsJsonArray().get(i).getAsJsonObject();
 
-                TransformSubtype minimumReturnType;
+                DerivedTransformType minimumReturnType;
                 if (minimum.has("return")) {
-                    minimumReturnType = TransformSubtype.fromString(minimum.get("return").getAsString(), transformTypes);
+                    minimumReturnType = DerivedTransformType.fromString(minimum.get("return").getAsString(), transformTypes);
                 } else {
-                    minimumReturnType = TransformSubtype.createDefault(method.getDescriptor().getReturnType());
+                    minimumReturnType = DerivedTransformType.createDefault(method.getDescriptor().getReturnType());
                 }
 
-                TransformSubtype[] argTypes = new TransformSubtype[minimum.get("parameters").getAsJsonArray().size()];
+                DerivedTransformType[] argTypes = new DerivedTransformType[minimum.get("parameters").getAsJsonArray().size()];
                 Type[] args = method.getDescriptor().getArgumentTypes();
                 for (int j = 0; j < argTypes.length; j++) {
                     JsonElement argType = minimum.get("parameters").getAsJsonArray().get(j);
                     if (!argType.isJsonNull()) {
-                        argTypes[j] = TransformSubtype.fromString(argType.getAsString(), transformTypes);
+                        argTypes[j] = DerivedTransformType.fromString(argType.getAsString(), transformTypes);
                     } else if (j == 0 && !method.isStatic()) {
-                        argTypes[j] = TransformSubtype.createDefault(method.getOwner());
+                        argTypes[j] = DerivedTransformType.createDefault(method.getOwner());
                     } else {
-                        argTypes[j] = TransformSubtype.createDefault(args[j - method.getCallType().getOffset()]);
+                        argTypes[j] = DerivedTransformType.createDefault(args[j - method.getCallType().getOffset()]);
                     }
                 }
 
@@ -359,7 +359,7 @@ public class ConfigLoader {
     }
 
     @Nullable
-    private static MethodReplacement getMethodReplacement(MappingResolver map, JsonObject possibility, TransformSubtype[] params, int expansionsNeeded,
+    private static MethodReplacement getMethodReplacement(MappingResolver map, JsonObject possibility, DerivedTransformType[] params, int expansionsNeeded,
                                                           List<Integer>[][] indices, JsonArray replacementJsonArray) {
         MethodReplacement mr;
         if (replacementJsonArray == null) {

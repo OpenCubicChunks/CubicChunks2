@@ -71,9 +71,9 @@ public class TypeInfo {
         return node;
     }
 
-    public Iterable<Type> ancestry(Type subType) {
-        if (!this.lookup.containsKey(subType)) {
-            return List.of(subType);
+    public Iterable<Type> ancestry(Type type) {
+        if (!this.lookup.containsKey(type)) {
+            return List.of(type);
         }
 
         //Breadth first traversal
@@ -81,7 +81,7 @@ public class TypeInfo {
         Set<Type> visited = new HashSet<>();
 
         Queue<Node> queue = new ArrayDeque<>();
-        queue.add(this.lookup.get(subType));
+        queue.add(this.lookup.get(type));
 
         while (!queue.isEmpty()) {
             Node node = queue.remove();

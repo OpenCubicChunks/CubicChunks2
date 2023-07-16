@@ -7,7 +7,7 @@ import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import org.jetbrains.annotations.Nullable;
 
-public class TransformTypePtr {
+public class TransformTypeRef {
     private @Nullable TransformType value;
     private final Set<TransformTrackingValue> trackingValues = new ObjectOpenCustomHashSet<>(new Hash.Strategy<>() {
         @Override public int hashCode(TransformTrackingValue transformTrackingValue) {
@@ -19,7 +19,7 @@ public class TransformTypePtr {
         }
     });
 
-    public TransformTypePtr(@Nullable TransformType value) {
+    public TransformTypeRef(@Nullable TransformType value) {
         this.value = value;
     }
 

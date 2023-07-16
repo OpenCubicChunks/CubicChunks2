@@ -5,7 +5,7 @@ import java.util.Map;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.MainTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.TypeTransformer;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.AnalysisResults;
-import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.TransformSubtype;
+import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.analysis.DerivedTransformType;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.typetransformer.transformer.config.Config;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.ASMUtil;
 import io.github.opencubicchunks.cubicchunks.mixin.transform.util.MethodID;
@@ -182,7 +182,7 @@ public class TypeInferenceTest {
                             error.append(", ");
                         }
 
-                        error.append(TransformSubtype.createDefault(null));
+                        error.append(DerivedTransformType.createDefault(null));
                     }
 
                     error.append(" ]\n\nActual: \n\t[ ");
@@ -218,7 +218,7 @@ public class TypeInferenceTest {
 
     }
 
-    private static record MethodCheck(ASMUtil.MethodCondition finder, TransformSubtype... expected) {
+    private static record MethodCheck(ASMUtil.MethodCondition finder, DerivedTransformType... expected) {
         public AnalysisResults findWanted(Map<MethodID, AnalysisResults> results) {
             for (Map.Entry<MethodID, AnalysisResults> entry : results.entrySet()) {
                 if (finder.testMethodID(entry.getKey())) {
@@ -230,7 +230,7 @@ public class TypeInferenceTest {
         }
 
         public boolean check(AnalysisResults results) {
-            TransformSubtype[] args = results.getArgTypes();
+            DerivedTransformType[] args = results.getArgTypes();
 
             int argsIndex = ASMUtil.isStatic(results.methodNode()) ? 0 : 1;
 
@@ -253,15 +253,15 @@ public class TypeInferenceTest {
         public static MethodCheck of(String methodName, String... types) {
             ASMUtil.MethodCondition finder = new ASMUtil.MethodCondition(methodName, null);
 
-            TransformSubtype[] expected = new TransformSubtype[types.length];
+            DerivedTransformType[] expected = new DerivedTransformType[types.length];
 
             for (int i = 0; i < types.length; i++) {
                 if (types[i] == null) {
-                    expected[i] = TransformSubtype.createDefault(Type.VOID_TYPE);
+                    expected[i] = DerivedTransformType.createDefault(Type.VOID_TYPE);
                     continue;
                 }
 
-                expected[i] = TransformSubtype.fromString(types[i], CONFIG.getTypes());
+                expected[i] = DerivedTransformType.fromString(types[i], CONFIG.getTypes());
             }
 
             return new MethodCheck(finder, expected);
@@ -270,15 +270,15 @@ public class TypeInferenceTest {
         public static MethodCheck ofWithDesc(String methodName, String desc, String... types) {
             ASMUtil.MethodCondition finder = new ASMUtil.MethodCondition(methodName, desc);
 
-            TransformSubtype[] expected = new TransformSubtype[types.length];
+            DerivedTransformType[] expected = new DerivedTransformType[types.length];
 
             for (int i = 0; i < types.length; i++) {
                 if (types[i] == null) {
-                    expected[i] = TransformSubtype.createDefault(Type.VOID_TYPE);
+                    expected[i] = DerivedTransformType.createDefault(Type.VOID_TYPE);
                     continue;
                 }
 
-                expected[i] = TransformSubtype.fromString(types[i], CONFIG.getTypes());
+                expected[i] = DerivedTransformType.fromString(types[i], CONFIG.getTypes());
             }
 
             return new MethodCheck(finder, expected);

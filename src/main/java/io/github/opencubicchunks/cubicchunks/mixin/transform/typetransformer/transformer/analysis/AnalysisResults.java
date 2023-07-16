@@ -22,7 +22,7 @@ public record AnalysisResults(MethodNode methodNode, Frame<TransformTrackingValu
     public void print(PrintStream out, boolean printFrames) {
         out.println("Analysis Results for " + methodNode.name);
         out.println("  Arg Types:");
-        for (TransformSubtype argType : this.getArgTypes()) {
+        for (DerivedTransformType argType : this.getArgTypes()) {
             out.println("    " + argType);
         }
 
@@ -45,10 +45,10 @@ public record AnalysisResults(MethodNode methodNode, Frame<TransformTrackingValu
         }
     }
 
-    public TransformSubtype[] getArgTypes() {
+    public DerivedTransformType[] getArgTypes() {
         int offset = ASMUtil.isStatic(methodNode) ? 0 : 1;
         Type[] args = Type.getArgumentTypes(methodNode.desc);
-        TransformSubtype[] argTypes = new TransformSubtype[args.length + offset];
+        DerivedTransformType[] argTypes = new DerivedTransformType[args.length + offset];
 
         int idx = 0;
         for (int i = 0; idx < argTypes.length; idx++) {
@@ -64,15 +64,15 @@ public record AnalysisResults(MethodNode methodNode, Frame<TransformTrackingValu
      * @return A descriptor as a string
      */
     public String getNewDesc() {
-        TransformSubtype[] argTypes = getArgTypes();
-        TransformSubtype[] types = argTypes;
+        DerivedTransformType[] argTypes = getArgTypes();
+        DerivedTransformType[] types = argTypes;
         if (!ASMUtil.isStatic(methodNode)) {
             //If the method is not static then the first element of this.types is the 'this' argument.
             //This argument is not shown in method descriptors, so we must exclude it
-            types = new TransformSubtype[types.length - 1];
+            types = new DerivedTransformType[types.length - 1];
             System.arraycopy(argTypes, 1, types, 0, types.length);
         }
 
-        return MethodParameterInfo.getNewDesc(TransformSubtype.createDefault(Type.getReturnType(methodNode.desc)), types, methodNode.desc);
+        return MethodParameterInfo.getNewDesc(DerivedTransformType.createDefault(Type.getReturnType(methodNode.desc)), types, methodNode.desc);
     }
 }

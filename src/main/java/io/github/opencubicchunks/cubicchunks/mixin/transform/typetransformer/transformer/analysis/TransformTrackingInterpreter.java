@@ -62,20 +62,20 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     }
 
     @Override
-    public @Nullable TransformTrackingValue newValue(@Nullable Type subType) {
-        if (subType == null) {
+    public @Nullable TransformTrackingValue newValue(@Nullable Type type) {
+        if (type == null) {
             return new TransformTrackingValue(null, fieldBindings, config);
         }
-        if (subType.getSort() == Type.VOID) return null;
-        if (subType.getSort() == Type.METHOD) throw new RuntimeException("Method subType not supported");
-        return new TransformTrackingValue(subType, fieldBindings, config);
+        if (type.getSort() == Type.VOID) return null;
+        if (type.getSort() == Type.METHOD) throw new RuntimeException("Method type not supported");
+        return new TransformTrackingValue(type, fieldBindings, config);
     }
 
     @Override
-    public @Nullable TransformTrackingValue newParameterValue(boolean isInstanceMethod, int local, Type subType) {
+    public @Nullable TransformTrackingValue newParameterValue(boolean isInstanceMethod, int local, Type type) {
         //Use parameter overrides to try to get the types
-        if (subType == Type.VOID_TYPE) return null;
-        TransformTrackingValue value = new TransformTrackingValue(subType, fieldBindings, config);
+        if (type == Type.VOID_TYPE) return null;
+        TransformTrackingValue value = new TransformTrackingValue(type, fieldBindings, config);
         if (localVarOverrides.containsKey(local)) {
             value.setTransformType(localVarOverrides.get(local));
         }
@@ -224,7 +224,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
                     default:
                         break;
                 }
-                throw new AnalyzerException(insn, "Invalid array subType");
+                throw new AnalyzerException(insn, "Invalid array type");
             case ANEWARRAY:
                 return new TransformTrackingValue(Type.getType("[" + Type.getObjectType(((TypeInsnNode) insn).desc)), fieldBindings, config);
             case ATHROW:
@@ -363,7 +363,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     private TransformTrackingValue methodCallOperation(AbstractInsnNode insn, List<? extends TransformTrackingValue> values, int opcode) {
         //Create bindings to the method parameters
         MethodInsnNode methodCall = (MethodInsnNode) insn;
-        Type subType = Type.getReturnType(methodCall.desc);
+        Type type = Type.getReturnType(methodCall.desc);
 
         MethodID methodID = new MethodID(methodCall.owner, methodCall.name, methodCall.desc, MethodID.CallType.fromOpcode(opcode));
 
@@ -374,8 +374,8 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         if (possibilities != null) {
             TransformTrackingValue returnValue = null;
 
-            if (subType != null) {
-                returnValue = new TransformTrackingValue(subType, fieldBindings, config);
+            if (type != null) {
+                returnValue = new TransformTrackingValue(type, fieldBindings, config);
             }
 
             for (MethodParameterInfo info : possibilities) {
@@ -412,17 +412,17 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             TransformTrackingValue.setSameType(array, value);
         }
 
-        if (subType.getSort() == Type.VOID) return null;
+        if (type.getSort() == Type.VOID) return null;
 
-        return new TransformTrackingValue(subType, fieldBindings, config);
+        return new TransformTrackingValue(type, fieldBindings, config);
     }
 
     @Nullable private TransformTrackingValue invokeDynamicOperation(AbstractInsnNode insn, List<? extends TransformTrackingValue> values) {
         //Bind the lambda captured parameters and lambda types
         InvokeDynamicInsnNode node = (InvokeDynamicInsnNode) insn;
-        Type subType = Type.getReturnType(node.desc);
+        Type type = Type.getReturnType(node.desc);
 
-        TransformTrackingValue ret = new TransformTrackingValue(subType, fieldBindings, config);
+        TransformTrackingValue ret = new TransformTrackingValue(type, fieldBindings, config);
 
         //Make sure this is LambdaMetafactory.metafactory
         if (node.bsm.getOwner().equals("java/lang/invoke/LambdaMetafactory") && node.bsm.getName().equals("metafactory")) {
@@ -433,8 +433,8 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
 
             bindValues(methodID, 0, values.toArray(new TransformTrackingValue[0]));
 
-            boolean isTransformPredicate = ret.getTransform().getSubtype() == TransformSubtype.SubType.PREDICATE;
-            boolean isTransformConsumer = ret.getTransform().getSubtype() == TransformSubtype.SubType.CONSUMER;
+            boolean isTransformPredicate = ret.getTransform().getKind() == DerivedTransformType.Kind.PREDICATE;
+            boolean isTransformConsumer = ret.getTransform().getKind() == DerivedTransformType.Kind.CONSUMER;
 
             if (isTransformConsumer || isTransformPredicate) {
                 int offset = values.size() + callType.getOffset();
@@ -442,7 +442,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
             }
         }
 
-        if (subType.getSort() == Type.VOID) return null;
+        if (type.getSort() == Type.VOID) return null;
 
         return ret;
     }
@@ -474,7 +474,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         if (value.getTransformType() != null) {
             if (expected.transformedTypes().size() != 1) {
                 //A method cannot return multiple values.
-                throw new AnalyzerException(insn, "Return subType is not single");
+                throw new AnalyzerException(insn, "A method cannot return a value that would be transformed into multiple values");
             }
         }
     }
@@ -482,8 +482,15 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
     @Override
     public TransformTrackingValue merge(TransformTrackingValue value1, TransformTrackingValue value2) {
         if (!Objects.equals(value1.getType(), value2.getType())) {
-            //System.err.println("WARNING: Merge types are not equal");
-            return value1;
+            //There are a few cases where this can be reached and is fine.
+            //Mainly when two branches of code use the same var slot for different kinds of values
+            if (value1 == null) {
+                return value2;
+            } else if (value2 == null) {
+                return value1;
+            } else {
+                return value1;
+            }
         }
 
         return value1.merge(value2);
@@ -519,7 +526,7 @@ public class TransformTrackingInterpreter extends Interpreter<TransformTrackingV
         if (!ASMUtil.isStatic(methodResults.methodNode())) {
             //Remove the first element because it represents 'this'
             allTypes = new Type[argumentTypes.length + 1];
-            allTypes[0] = Type.getObjectType("java/lang/Object"); //The actual subType doesn't matter
+            allTypes[0] = Type.getObjectType("java/lang/Object"); //The actual type doesn't matter
             System.arraycopy(argumentTypes, 0, allTypes, 1, argumentTypes.length);
         } else {
             allTypes = argumentTypes;
