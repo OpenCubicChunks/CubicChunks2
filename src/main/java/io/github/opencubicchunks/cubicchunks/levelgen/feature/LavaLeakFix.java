@@ -10,6 +10,7 @@ import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -37,7 +38,7 @@ public class LavaLeakFix extends Feature<NoneFeatureConfiguration> {
         }
         CubeAccess cube = level.getCube(level.getMainCubeX(), level.getMainCubeY(), level.getMainCubeZ());
         CubePos cubePos = cube.getCubePos();
-        Random random = context.random();
+        RandomSource random = context.random();
 
         ChunkGenerator generator = context.chunkGenerator();
 
@@ -60,7 +61,7 @@ public class LavaLeakFix extends Feature<NoneFeatureConfiguration> {
         return false;
     }
 
-    private void checkDirectionsAndPreventLeaking(CubeWorldGenRegion level, BlockState topState, BlockState underState, CubePos cubePos, Random random, ChunkGenerator generator,
+    private void checkDirectionsAndPreventLeaking(CubeWorldGenRegion level, BlockState topState, BlockState underState, CubePos cubePos, RandomSource random, ChunkGenerator generator,
                                                   BlockPos.MutableBlockPos mutable, int localX, int localY, int localZ) {
 
         for (Direction direction : DIRECTIONS) {

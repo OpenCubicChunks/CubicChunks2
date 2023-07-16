@@ -1,10 +1,10 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.placement;
 
 import java.util.OptionalInt;
-import java.util.Random;
 
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicHeightProvider;
 import io.github.opencubicchunks.cubicchunks.levelgen.placement.PeriodicUserFunction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.VerticalAnchor;
 import net.minecraft.world.level.levelgen.WorldGenerationContext;
 import net.minecraft.world.level.levelgen.heightproviders.TrapezoidHeight;
@@ -23,7 +23,7 @@ public abstract class MixinTrapezoidHeightProvider implements CubicHeightProvide
 
     private PeriodicUserFunction userFunction;
 
-    @Override public OptionalInt sampleCubic(Random rand, WorldGenerationContext context, int cubeMinY, int cubeMaxY) {
+    @Override public OptionalInt sampleCubic(RandomSource rand, WorldGenerationContext context, int cubeMinY, int cubeMaxY) {
         int minHeight = this.minInclusive.resolveY(context) - 1;
         int maxHeight = this.maxInclusive.resolveY(context) + 1;
 

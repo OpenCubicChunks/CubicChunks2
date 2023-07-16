@@ -6,7 +6,6 @@ import static io.github.opencubicchunks.cc_core.utils.Coords.blockToCube;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -30,6 +29,7 @@ import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -81,7 +81,7 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
     private final long seed;
     private final int seaLevel;
     private final LevelData worldInfo;
-    private final Random random;
+    private final RandomSource random;
     private final DimensionType dimension;
     private final ChunkAccess access;
 
@@ -252,7 +252,7 @@ public class CubeWorldGenRegion extends WorldGenRegion implements CubicLevelAcce
         return getLevel().getChunkSource();
     }
 
-    @Override public Random getRandom() {
+    @Override public RandomSource getRandom() {
         return this.random;
     }
 
