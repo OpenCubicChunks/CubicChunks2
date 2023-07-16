@@ -145,7 +145,7 @@ public class DerivedTransformType {
      * @param type A type
      * @return The potential kind of the type. If unknown, returns NONE
      */
-    public static Kind getKind(@Nullable Type type, Config config) {
+    public static Kind getKindFor(@Nullable Type type, Config config) {
         while (type != null) {
             if (type.getSort() == Type.OBJECT) {
                 for (var t: config.getTypeInfo().ancestry(type)) {

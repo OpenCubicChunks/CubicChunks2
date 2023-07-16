@@ -38,7 +38,7 @@ public class TransformTrackingValue implements Value {
         this.config = config;
 
         this.transform.getTransformTypePtr().addTrackingValue(this);
-        this.transform.setKind(DerivedTransformType.getKind(type, config));
+        this.transform.setKind(DerivedTransformType.getKindFor(type, config));
     }
 
     public TransformTrackingValue merge(TransformTrackingValue other) {
