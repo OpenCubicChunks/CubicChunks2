@@ -44,7 +44,7 @@ public abstract class MixinWorldRenderer_Vanilla {
      */
     @Inject(method = "setupRender", at = @At("HEAD"))
     private void setupVerticalViewDistance(Camera camera, Frustum frustrum, boolean hasCapturedFrustrum, boolean isSpectator, CallbackInfo ci) {
-        if (this.minecraft.options.renderDistance != this.lastViewDistance) return;
+        if (this.minecraft.options.renderDistance().get() != this.lastViewDistance) return;
         if (this.lastVerticalViewDistance != CubicChunks.config().getVerticalViewDistance()) {
             this.allChanged();
         }

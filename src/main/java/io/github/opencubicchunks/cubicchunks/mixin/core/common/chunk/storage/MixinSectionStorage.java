@@ -147,7 +147,7 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
         } else {
             Dynamic<T> dynamic = new Dynamic<>(dynamicOps, data);
             int j = getVersion(dynamic);
-            int k = SharedConstants.getCurrentVersion().getWorldVersion();
+            int k = SharedConstants.getCurrentVersion().getDataVersion().getVersion();
             boolean bl = j != k;
             Dynamic<T> dynamic2 = this.fixerUpper.update(this.type.getType(), dynamic, j, k);
             OptionalDynamic<T> optionalDynamic = dynamic2.get("Sections");
@@ -202,7 +202,7 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
 
         return new Dynamic<>(dynamicOps, dynamicOps.createMap(
             ImmutableMap.of(dynamicOps.createString("Sections"), dynamicOps.createMap(map), dynamicOps.createString("DataVersion"),
-                dynamicOps.createInt(SharedConstants.getCurrentVersion().getWorldVersion()))));
+                dynamicOps.createInt(SharedConstants.getCurrentVersion().getDataVersion().getVersion()))));
     }
 
     public void flush(CubePos cubePos) {

@@ -100,7 +100,7 @@ public abstract class MixinChunkSerializer {
 
         ChunkPos chunkpos = column.getPos();
         CompoundTag compound = new CompoundTag();
-        compound.putInt("DataVersion", SharedConstants.getCurrentVersion().getWorldVersion());
+        compound.putInt("DataVersion", SharedConstants.getCurrentVersion().getDataVersion().getVersion());
         compound.putInt("xPos", chunkpos.x);
         compound.putInt("zPos", chunkpos.z);
         compound.putLong("InhabitedTime", column.getInhabitedTime());

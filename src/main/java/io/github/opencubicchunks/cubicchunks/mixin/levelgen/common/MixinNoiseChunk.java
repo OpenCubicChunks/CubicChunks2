@@ -51,7 +51,7 @@ public abstract class MixinNoiseChunk {
         }
     }
 
-    @Redirect(method = "forChunk", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;intFloorDiv(II)I", ordinal = 1))
+    @Redirect(method = "forChunk", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Mth;floorDiv(II)I", ordinal = 1))
     private static int useCubeCellSize(int a, int b, ChunkAccess chunkAccess, NoiseRouter noiseRouter, Supplier<DensityFunctions.BeardifierOrMarker> supplier,
                                           NoiseGeneratorSettings noiseGeneratorSettings, Aquifer.FluidPicker fluidPicker, Blender blender) {
         if (chunkAccess instanceof ProtoCube || chunkAccess instanceof NoiseAndSurfaceBuilderHelper) {

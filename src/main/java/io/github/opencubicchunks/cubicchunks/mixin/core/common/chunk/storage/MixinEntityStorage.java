@@ -109,7 +109,7 @@ public abstract class MixinEntityStorage implements CubicEntityStorage {
 
             });
             CompoundTag compoundTag = new CompoundTag();
-            compoundTag.putInt("DataVersion", SharedConstants.getCurrentVersion().getWorldVersion());
+            compoundTag.putInt("DataVersion", SharedConstants.getCurrentVersion().getDataVersion().getVersion());
             compoundTag.put("Entities", listTag);
             writeCubePos(compoundTag, cubePos);
             this.cubeWorker.saveCubeNBT(cubePos, compoundTag).exceptionally((throwable) -> {

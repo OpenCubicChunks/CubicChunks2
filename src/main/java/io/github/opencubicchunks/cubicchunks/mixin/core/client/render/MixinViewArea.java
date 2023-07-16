@@ -95,9 +95,9 @@ public abstract class MixinViewArea {
                 return;
             }
         }
-        int x = Mth.intFloorDiv(pos.getX(), 16);
-        int y = Mth.intFloorDiv(pos.getY(), 16);
-        int z = Mth.intFloorDiv(pos.getZ(), 16);
+        int x = Mth.floorDiv(pos.getX(), 16);
+        int y = Mth.floorDiv(pos.getY(), 16);
+        int z = Mth.floorDiv(pos.getZ(), 16);
         x = Mth.positiveModulo(x, this.chunkGridSizeX);
         y = Mth.positiveModulo(y, this.chunkGridSizeY);
         z = Mth.positiveModulo(z, this.chunkGridSizeZ);

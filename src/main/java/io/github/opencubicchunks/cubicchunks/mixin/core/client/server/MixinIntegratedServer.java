@@ -20,7 +20,7 @@ public class MixinIntegratedServer {
 
     @Inject(method = "tickServer", at = @At(value = "INVOKE", target = "Ljava/lang/Math;max(II)I"))
     private void updateVerticalViewDistance(BooleanSupplier shouldKeepTicking, CallbackInfo ci) {
-        int horizontalViewDistance = Math.max(2, this.minecraft.options.renderDistance + -1);
+        int horizontalViewDistance = Math.max(2, this.minecraft.options.renderDistance().get() + -1);
 
         int verticalViewDistance = Math.max(2, CubicChunks.config().getVerticalViewDistance() + -1);
         int currentVerticalViewDistance1 = ((VerticalViewDistanceListener) ((IntegratedServer) (Object) this).getPlayerList()).getVerticalViewDistance();

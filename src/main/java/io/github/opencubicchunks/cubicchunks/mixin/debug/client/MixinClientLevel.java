@@ -8,6 +8,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.Level;
@@ -21,10 +22,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientLevel.class)
 public abstract class MixinClientLevel extends Level {
 
-    protected MixinClientLevel(WritableLevelData writableLevelData,
-                               ResourceKey<Level> resourceKey, Holder<DimensionType> dimensionType,
-                               Supplier<ProfilerFiller> supplier, boolean bl, boolean bl2, long l) {
-        super(writableLevelData, resourceKey, dimensionType, supplier, bl, bl2, l);
+        protected MixinClientLevel(WritableLevelData writableLevelData, ResourceKey<Level> resourceKey, RegistryAccess registryAccess, Holder<DimensionType> dimensionType,
+                                   Supplier<ProfilerFiller> supplier, boolean bl, boolean bl2, long l, int i) {
+                super(writableLevelData, resourceKey, registryAccess, dimensionType, supplier, bl, bl2, l, i);
         throw new Error("Mixin failed to apply!");
     }
 

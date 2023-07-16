@@ -65,7 +65,8 @@ public class PacketCubeBlockChanges {
         public static void handle(PacketCubeBlockChanges packet, Level level) {
             ClientLevel clientLevel = (ClientLevel) level;
             for (int i = 0; i < packet.localAddresses.length; i++) {
-                clientLevel.setKnownState(packet.getPos(i), packet.blockStates[i]);
+                // 19 is used in ClientPacketListener.handleBlockUpdate
+                clientLevel.setServerVerifiedBlockState(packet.getPos(i), packet.blockStates[i], 19);
             }
         }
     }
