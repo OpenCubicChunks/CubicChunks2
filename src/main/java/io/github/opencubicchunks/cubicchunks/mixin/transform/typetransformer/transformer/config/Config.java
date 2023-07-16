@@ -18,7 +18,6 @@ public class Config {
     private final Map<String, TransformType> types;
     private final AncestorHashMap<MethodID, List<MethodParameterInfo>> methodParameterInfo;
     private final Map<Type, ClassTransformInfo> classes;
-    private final Map<Type, InvokerInfo> invokers;
     private final List<Type> typesWithSuffixedTransforms;
 
     private final Set<Type> regularTypes = new HashSet<>();
@@ -30,12 +29,11 @@ public class Config {
 
     public Config(TypeInfo typeInfo, Map<String, TransformType> transformTypeMap, AncestorHashMap<MethodID, List<MethodParameterInfo>> parameterInfo,
                   Map<Type, ClassTransformInfo> classes,
-                  Map<Type, InvokerInfo> invokers, List<Type> typesWithSuffixedTransforms) {
+                  List<Type> typesWithSuffixedTransforms) {
         this.types = transformTypeMap;
         this.methodParameterInfo = parameterInfo;
         this.typeInfo = typeInfo;
         this.classes = classes;
-        this.invokers = invokers;
         this.typesWithSuffixedTransforms = typesWithSuffixedTransforms;
 
         for (TransformType type : this.types.values()) {

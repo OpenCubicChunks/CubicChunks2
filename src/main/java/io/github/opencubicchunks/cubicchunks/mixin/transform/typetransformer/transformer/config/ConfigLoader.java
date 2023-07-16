@@ -60,7 +60,6 @@ public class ConfigLoader {
             transformTypeMap,
             parameterInfo,
             classes,
-            invokers,
             typesWithSuffixedMethods
         );
 
