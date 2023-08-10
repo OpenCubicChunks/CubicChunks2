@@ -233,7 +233,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             skyLightEngine
         );
 
-        if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
+        /*if (targetClassName.equals(dynamicGraphMinFixedPoint)) {
             MainTransformer.transformDynamicGraphMinFixedPoint(targetClass);
         } else if (targetClassName.equals(layerLightEngine)) {
             MainTransformer.transformLightEngine(targetClass);
@@ -261,7 +261,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             System.out.println("Saved " + targetClassName + " to " + savePath);
         } catch (IOException e) {
             throw new IllegalStateException(e);
-        }
+        }*/
     }
 
     private JsonElement parseFileAsJson(String fileName) {
