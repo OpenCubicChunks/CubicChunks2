@@ -1,14 +1,8 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.feature;
 
 
-import java.util.List;
-import java.util.Random;
-import java.util.function.BiConsumer;
-
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.LevelSimulatedReader;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.treedecorators.CocoaDecorator;
+import net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecorator;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,9 +12,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinCocoaDecorator {
 
     @Inject(method = "place", at = @At("HEAD"), cancellable = true)
-    private void exitIfListIsEmpty(LevelSimulatedReader level, BiConsumer<BlockPos, BlockState> replacer, Random random, List<BlockPos> logPositions, List<BlockPos> leavesPositions,
-                                   CallbackInfo ci) {
-        if (leavesPositions.isEmpty() || logPositions.isEmpty()) {
+    private void exitIfListIsEmpty(TreeDecorator.Context context, CallbackInfo ci) {
+        if (context.leaves().isEmpty() || context.logs().isEmpty()) {
             ci.cancel();
         }
     }

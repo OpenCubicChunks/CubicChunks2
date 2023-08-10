@@ -18,25 +18,26 @@ import org.spongepowered.asm.mixin.injection.Slice;
 
 @Mixin(SurfaceSystem.class)
 public abstract class MixinSurfaceSystem {
-    @Redirect(method = "buildSurface",
-        slice = @Slice(
-            from = @At(value = "FIELD", target = "Lnet/minecraft/world/level/dimension/DimensionType;WAY_BELOW_MIN_Y:I")
-        ),
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/world/level/chunk/BlockColumn;getBlock(I)Lnet/minecraft/world/level/block/state/BlockState;"
-        ))
-    private BlockState modifyLoop(BlockColumn instance, int yPos,
-                                  BiomeManager biomeManager,
-                                  Registry<Biome> registry,
-                                  boolean bl,
-                                  WorldGenerationContext worldGenerationContext,
-                                  ChunkAccess chunkAccess) {
-        if (((CubicLevelHeightAccessor) chunkAccess).isCubic() && yPos < chunkAccess.getMinBuildHeight()) {
-            return Blocks.STONE.defaultBlockState();
-        }
-        return instance.getBlock(yPos);
-    }
+    // TODO (1.20) reenable
+//    @Redirect(method = "buildSurface",
+//        slice = @Slice(
+//            from = @At(value = "FIELD", target = "Lnet/minecraft/world/level/dimension/DimensionType;WAY_BELOW_MIN_Y:I")
+//        ),
+//        at = @At(
+//            value = "INVOKE",
+//            target = "Lnet/minecraft/world/level/chunk/BlockColumn;getBlock(I)Lnet/minecraft/world/level/block/state/BlockState;"
+//        ))
+//    private BlockState modifyLoop(BlockColumn instance, int yPos,
+//                                  BiomeManager biomeManager,
+//                                  Registry<Biome> registry,
+//                                  boolean bl,
+//                                  WorldGenerationContext worldGenerationContext,
+//                                  ChunkAccess chunkAccess) {
+//        if (((CubicLevelHeightAccessor) chunkAccess).isCubic() && yPos < chunkAccess.getMinBuildHeight()) {
+//            return Blocks.STONE.defaultBlockState();
+//        }
+//        return instance.getBlock(yPos);
+//    }
 
     //TODO: fix frozenOceanExtension instead of cancelling it
     @Redirect(method = "buildSurface", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/levelgen/SurfaceSystem;frozenOceanExtension(ILnet/minecraft/world/level/biome/Biome;"

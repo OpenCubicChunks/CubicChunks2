@@ -1,7 +1,6 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.placement;
 
-import java.util.Random;
-
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.VerticalAnchor;
 import net.minecraft.world.level.levelgen.WorldGenerationContext;
 import net.minecraft.world.level.levelgen.heightproviders.BiasedToBottomHeight;
@@ -22,7 +21,7 @@ public abstract class MixinBiasedToBottomHeight {
 
     // TODO: why is this necessary?
     @Inject(method = "sample", at = @At("HEAD"), cancellable = true)
-    private void shutupLogger(Random random, WorldGenerationContext worldGenerationContext, CallbackInfoReturnable<Integer> cir) {
+    private void shutupLogger(RandomSource  random, WorldGenerationContext worldGenerationContext, CallbackInfoReturnable<Integer> cir) {
         int min = this.minInclusive.resolveY(worldGenerationContext);
         int max = this.maxInclusive.resolveY(worldGenerationContext);
         if (min >= max) {

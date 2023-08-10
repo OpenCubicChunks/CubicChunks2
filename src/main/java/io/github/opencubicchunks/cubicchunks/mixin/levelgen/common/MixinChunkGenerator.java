@@ -36,7 +36,8 @@ public abstract class MixinChunkGenerator implements CubeGenerator {
         at = @At("RETURN")
     )
     private void switchBiomeSource(BiomeSource biomeSource, Function function, CallbackInfo ci) {
-        if (true) {//(System.getProperty("cubicchunks.debug.biomes", "false").equalsIgnoreCase("true")) {
+        if (System.getProperty("cubicchunks.debug.biomes", "false").equalsIgnoreCase("true")) {
+            // TODO (1.20) StripedBiomeSource currently seems to be broken
             this.biomeSource = new StripedBiomeSource(this.biomeSource.possibleBiomes());
         }
     }

@@ -42,34 +42,4 @@ public class MixinNoiseBasedChunkGenerator implements CubicNoiseBasedChunkGenera
             return instance.getWorldPosition();
         }
     }
-
-    @Redirect(
-        method = "fillFromNoise",
-        at = @At(
-            value = "INVOKE",
-            target = "Ljava/lang/Math;min(II)I"
-        )
-    )
-    private int returnLevelValueMin(int a, int b) {
-        if (this.isCubic) {
-            return b;
-        } else {
-            return Math.min(a, b);
-        }
-    }
-
-    @Redirect(
-        method = "fillFromNoise",
-        at = @At(
-            value = "INVOKE",
-            target = "Ljava/lang/Math;max(II)I"
-        )
-    )
-    private int returnLevelValueMax(int a, int b) {
-        if (this.isCubic) {
-            return b;
-        } else {
-            return Math.max(a, b);
-        }
-    }
 }

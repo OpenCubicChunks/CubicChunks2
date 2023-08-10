@@ -1,12 +1,11 @@
 package io.github.opencubicchunks.cubicchunks.mixin.levelgen.common.feature.nether;
 
-import java.util.Random;
-
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.levelgen.CubeWorldGenRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -35,7 +34,7 @@ public class MixinHugeFungusFeature {
     @Inject(method = "place", at = @At(value = "FIELD", target = "Lnet/minecraft/world/level/levelgen/feature/HugeFungusConfiguration;planted:Z"), locals = LocalCapture.CAPTURE_FAILHARD,
         cancellable = true)
     private void cancelInLava(FeaturePlaceContext<HugeFungusConfiguration> context, CallbackInfoReturnable<Boolean> cir, WorldGenLevel worldGenLevel, BlockPos blockPos,
-                              Random random, ChunkGenerator chunkGenerator, HugeFungusConfiguration hugeFungusConfiguration, Block block, BlockPos blockPos2,
+                              RandomSource random, ChunkGenerator chunkGenerator, HugeFungusConfiguration hugeFungusConfiguration, Block block, BlockPos blockPos2,
                               int i) {
         if (worldGenLevel.getFluidState(blockPos2).is(FluidTags.LAVA)) {
             cir.setReturnValue(false);
