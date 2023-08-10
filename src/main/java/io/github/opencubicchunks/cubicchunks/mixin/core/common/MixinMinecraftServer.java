@@ -30,6 +30,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.Services;
 import net.minecraft.server.TickTask;
 import net.minecraft.server.WorldStem;
 import net.minecraft.server.level.ServerChunkCache;
@@ -78,6 +79,12 @@ public abstract class MixinMinecraftServer extends ReentrantBlockableEventLoop<T
     @Shadow public abstract RegistryAccess.Frozen registryAccess();
 
     @Shadow protected abstract boolean haveTime();
+
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void onInit(Thread thread, LevelStorageSource.LevelStorageAccess levelStorageAccess, PackRepository packRepository, WorldStem worldStem, Proxy proxy, DataFixer dataFixer,
+                        Services services, ChunkProgressListenerFactory chunkProgressListenerFactory, CallbackInfo ci) {
+        cubicChunksServerConfig = ServerConfig.getConfig(levelStorageAccess);
+    }
 
     /**
      * @author NotStirred

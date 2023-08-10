@@ -16,14 +16,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class MixinMinecraft {
     private static final boolean DEBUG_WINDOW_ENABLED = System.getProperty("cubicchunks.debug.window", "false").equals("true");
 
-    // Target inside the lambda so we can use the levelStorageAccess
-    @SuppressWarnings("target")
-    @Inject(method = "lambda$createLevel$31(Lnet/minecraft/world/level/LevelSettings;Lnet/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess;)" +
-            "Lnet/minecraft/server/WorldStem$DataPackConfigSupplier;", at = @At("HEAD"))
-    private static void onCreateLevel(LevelSettings levelSettings, LevelStorageSource.LevelStorageAccess levelStorageAccess, CallbackInfoReturnable<DataPackConfig> cir) {
-        ServerConfig.generateConfigIfNecessary(levelStorageAccess);
-    }
-
     @Inject(method = "runTick", at = @At("HEAD"))
     private void onRun(CallbackInfo ci) {
         if (!DEBUG_WINDOW_ENABLED) {
