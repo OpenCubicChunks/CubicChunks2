@@ -34,10 +34,11 @@
         "common.entity.MixinServerPlayer",
         "common.entity.storage.MixinEntitySectionStorage",
         "common.level.lighting.MixinBlockLightEngine",
+        "common.level.lighting.MixinChunkSkyLightSources",
         "common.level.lighting.MixinDynamicGraphMinFixedPoint",
-      "common.level.lighting.MixinLightEngine",
         "common.level.lighting.MixinLayerLightSectionStorage",
         "common.level.lighting.MixinLevelLightEngine",
+        "common.level.lighting.MixinLightEngine",
         "common.level.lighting.MixinSkyLightEngine",
         "common.level.lighting.MixinSkyLightSectionStorage",
         "common.level.lighting.MixinThreadedLevelLightEngine",
@@ -53,13 +54,13 @@
         "common.level.MixinServerLevel",
         "common.level.MixinWorldGenRegion",
         "common.MixinBlockPos",
+        "common.MixinCrashReport",
         "common.MixinMinecraftServer",
         "common.MixinServerChunkCache",
         "common.network.MixinFriendlyByteBuf",
         "common.progress.MixinLoggerChunkProgressListener",
         "common.server.MixinPlayerList",
-        "common.ticket.MixinDistanceManager",
-        "common.MixinCrashReport"
+        "common.ticket.MixinDistanceManager"
     ],
     "client": [
         "client.chunk.MixinLevelChunk",

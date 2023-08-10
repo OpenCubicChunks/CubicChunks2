@@ -23,7 +23,7 @@ public abstract class MixinServerPlayer extends Player {
         super(level, blockPos, f, gameProfile);
     }
 
-    @Shadow public abstract ServerLevel getLevel();
+    @Shadow public abstract ServerLevel serverLevel();
 
     /*@Redirect(method = "trackChunk",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;send(Lnet/minecraft/network/protocol/Packet;)V", ordinal = 0))
@@ -33,14 +33,15 @@ public abstract class MixinServerPlayer extends Player {
         }
     }*/
 
-    // ClientboundRespawnPacket instantiates the ClientLevel on the client, so we send our packet just before that
-    @Inject(method = "changeDimension", at = @At(value = "NEW", target = "net/minecraft/network/protocol/game/ClientboundRespawnPacket"))
-    private void onChangeDimension(ServerLevel serverLevel, CallbackInfoReturnable<Entity> cir) {
-        PacketDispatcher.sendTo(new PacketCCLevelInfo(((CubicLevelHeightAccessor) serverLevel).worldStyle()), (ServerPlayer) (Object) this);
-    }
-
-    @Inject(method = "teleportTo(Lnet/minecraft/server/level/ServerLevel;DDDFF)V", at = @At(value = "NEW", target = "net/minecraft/network/protocol/game/ClientboundRespawnPacket"))
-    private void onTeleportTo(ServerLevel serverLevel, double d, double e, double f, float g, float h, CallbackInfo ci) {
-        PacketDispatcher.sendTo(new PacketCCLevelInfo(((CubicLevelHeightAccessor) serverLevel).worldStyle()), (ServerPlayer) (Object) this);
-    }
+    // FIXME (1.20)
+//    // ClientboundRespawnPacket instantiates the ClientLevel on the client, so we send our packet just before that
+//    @Inject(method = "changeDimension", at = @At(value = "NEW", target = "net/minecraft/network/protocol/game/ClientboundRespawnPacket"))
+//    private void onChangeDimension(ServerLevel serverLevel, CallbackInfoReturnable<Entity> cir) {
+//        PacketDispatcher.sendTo(new PacketCCLevelInfo(((CubicLevelHeightAccessor) serverLevel).worldStyle()), (ServerPlayer) (Object) this);
+//    }
+//
+//    @Inject(method = "teleportTo(Lnet/minecraft/server/level/ServerLevel;DDDFF)V", at = @At(value = "NEW", target = "net/minecraft/network/protocol/game/ClientboundRespawnPacket"))
+//    private void onTeleportTo(ServerLevel serverLevel, double d, double e, double f, float g, float h, CallbackInfo ci) {
+//        PacketDispatcher.sendTo(new PacketCCLevelInfo(((CubicLevelHeightAccessor) serverLevel).worldStyle()), (ServerPlayer) (Object) this);
+//    }
 }

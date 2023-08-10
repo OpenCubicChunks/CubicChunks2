@@ -12,8 +12,6 @@ import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecke
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.LevelHeightAccessor;
-import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.lighting.LightEventListener;
@@ -34,15 +32,7 @@ public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, Li
         throw new Error("Mixin failed to apply correctly");
     }
 
-    @Shadow public void queueSectionData(LightLayer type, SectionPos pos, @Nullable DataLayer array, boolean flag) {
-        throw new Error("Mixin failed to apply correctly");
-    }
-
     @Shadow public void updateSectionStatus(SectionPos pos, boolean isEmpty) {
-        throw new Error("Mixin failed to apply correctly");
-    }
-
-    @Shadow public void onBlockEmissionIncrease(BlockPos blockPos, int lightValue) {
         throw new Error("Mixin failed to apply correctly");
     }
 

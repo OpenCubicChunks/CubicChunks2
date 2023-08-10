@@ -24,7 +24,6 @@
         "common.LevelChunkSectionAccess",
         "common.LevelStorageAccessAccess",
         "common.LevelTicksAccess",
-        "common.Matrix4fAccess",
         "common.NaturalSpawnerAccess",
         "common.NoiseChunkAccess",
         "common.NoiseGeneratorSettingsAccess",

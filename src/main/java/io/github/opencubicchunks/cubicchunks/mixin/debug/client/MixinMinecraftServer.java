@@ -27,21 +27,22 @@ public class MixinMinecraftServer {
 
     @Shadow @Final private Map<ResourceKey<Level>, ServerLevel> levels;
 
-    @Inject(method = "createLevels", at = @At("RETURN"))
-    private void onLoadWorlds(ChunkProgressListener chunkProgressListener, CallbackInfo ci) {
-        for (Map.Entry<ResourceKey<LevelStem>, LevelStem> lvl : this.worldData.worldGenSettings().dimensions().entrySet()) {
-            ServerLevel serverLevel = levels.get(lvl.getKey());
-            if (((CubicLevelHeightAccessor) serverLevel).isCubic()) {
-                DebugVisualization.onWorldLoad(serverLevel);
-            }
-        }
-    }
-
-    @Redirect(method = "stopServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerLevel;close()V"))
-    private void onUnloadWorld(ServerLevel serverLevel) throws IOException {
-        if (((CubicLevelHeightAccessor) serverLevel).isCubic()) {
-            DebugVisualization.onWorldUnload(serverLevel);
-        }
-        serverLevel.close();
-    }
+    // TODO (1.20)
+//    @Inject(method = "createLevels", at = @At("RETURN"))
+//    private void onLoadWorlds(ChunkProgressListener chunkProgressListener, CallbackInfo ci) {
+//        for (Map.Entry<ResourceKey<LevelStem>, LevelStem> lvl : this.worldData.worldGenSettings().dimensions().entrySet()) {
+//            ServerLevel serverLevel = levels.get(lvl.getKey());
+//            if (((CubicLevelHeightAccessor) serverLevel).isCubic()) {
+//                DebugVisualization.onWorldLoad(serverLevel);
+//            }
+//        }
+//    }
+//
+//    @Redirect(method = "stopServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerLevel;close()V"))
+//    private void onUnloadWorld(ServerLevel serverLevel) throws IOException {
+//        if (((CubicLevelHeightAccessor) serverLevel).isCubic()) {
+//            DebugVisualization.onWorldUnload(serverLevel);
+//        }
+//        serverLevel.close();
+//    }
 }

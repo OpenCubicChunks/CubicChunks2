@@ -109,15 +109,16 @@ public abstract class MixinSkyLightSectionStorage extends LayerLightSectionStora
         ci.cancel();
     }
 
-    @Inject(method = "enableLightSources", cancellable = true,
-        at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/world/level/lighting/SkyLightSectionStorage;runAllUpdates()V"))
-    private void onEnableLightSources(long columnPos, boolean enabled, CallbackInfo ci) {
-        if (!isCubic) return;
-        if (enabled) {
-            // We handle skylight emission differently anyway, so we don't need vanilla's sky light source system
-            ci.cancel();
-        }
-    }
+    // FIXME (1.20) lighting
+//    @Inject(method = "enableLightSources", cancellable = true,
+//        at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/world/level/lighting/SkyLightSectionStorage;runAllUpdates()V"))
+//    private void onEnableLightSources(long columnPos, boolean enabled, CallbackInfo ci) {
+//        if (!isCubic) return;
+//        if (enabled) {
+//            // We handle skylight emission differently anyway, so we don't need vanilla's sky light source system
+//            ci.cancel();
+//        }
+//    }
 
     @Inject(method = "createDataLayer", cancellable = true, at = @At("HEAD"))
     private void onCreateDataLayer(long sectionPos, CallbackInfoReturnable<DataLayer> cir) {
@@ -125,19 +126,19 @@ public abstract class MixinSkyLightSectionStorage extends LayerLightSectionStora
         cir.setReturnValue(super.createDataLayer(sectionPos));
     }
 
-    @Inject(method = "markNewInconsistencies", cancellable = true, at = @At("HEAD"))
-    private void onMarkNewInconsistencies(LightEngine<SkyLightSectionStorage.SkyDataLayerStorageMap, ?> lightProvider, boolean doSkylight, boolean skipEdgeLightPropagation,
-                                          CallbackInfo ci) {
-        if (!isCubic) return;
-        ci.cancel();
-        super.markNewInconsistencies(lightProvider, doSkylight, skipEdgeLightPropagation);
-    }
-
-    @Inject(method = "hasSectionsBelow", cancellable = true, at = @At("HEAD"))
-    private void onHasSectionsBelow(int sectionY, CallbackInfoReturnable<Boolean> cir) {
-        if (!isCubic) return;
-        cir.setReturnValue(true);
-    }
+//    @Inject(method = "markNewInconsistencies", cancellable = true, at = @At("HEAD"))
+//    private void onMarkNewInconsistencies(LightEngine<SkyLightSectionStorage.SkyDataLayerStorageMap, ?> lightProvider, boolean doSkylight, boolean skipEdgeLightPropagation,
+//                                          CallbackInfo ci) {
+//        if (!isCubic) return;
+//        ci.cancel();
+//        super.markNewInconsistencies(lightProvider, doSkylight, skipEdgeLightPropagation);
+//    }
+//
+//    @Inject(method = "hasSectionsBelow", cancellable = true, at = @At("HEAD"))
+//    private void onHasSectionsBelow(int sectionY, CallbackInfoReturnable<Boolean> cir) {
+//        if (!isCubic) return;
+//        cir.setReturnValue(true);
+//    }
 
     @Inject(method = "isAboveData", cancellable = true, at = @At("HEAD"))
     private void onIsAboveData(long sectionPos, CallbackInfoReturnable<Boolean> cir) {

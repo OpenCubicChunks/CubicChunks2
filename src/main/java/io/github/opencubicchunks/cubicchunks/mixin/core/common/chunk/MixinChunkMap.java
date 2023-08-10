@@ -113,20 +113,17 @@ import net.minecraft.util.thread.ProcessorMailbox;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LightChunk;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
-import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -145,26 +142,6 @@ import oshi.util.tuples.Pair;
 
 @Mixin(ChunkMap.class)
 public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, VerticalViewDistanceListener, CubeHolderPlayerProvider {
-    private static final LightChunkGetter DUMMY_LIGHT_GETTER = new LightChunkGetter() {
-        @Nullable @Override
-        public BlockGetter getChunkForLighting(int i, int j) {
-            return null;
-        }
-
-        @Override public BlockGetter getLevel() {
-            return null;
-        }
-    };
-    //Light engine with no sections
-    private static final LevelLightEngine DUMMY = new LevelLightEngine(
-        DUMMY_LIGHT_GETTER,
-        true,
-        true
-    ) {
-        @Override public int getLightSectionCount() {
-            return 0;
-        }
-    };
     private static final double TICK_UPDATE_DISTANCE = 128.0;
     private static final boolean USE_ASYNC_SERIALIZATION = true;
 
@@ -1337,16 +1314,17 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         }
     }
 
-    @SuppressWarnings({ "UnresolvedMixinReference", "MixinAnnotationTarget", "InvalidInjectorMethodSignature" })
-    @Redirect(method = "playerLoadedChunk", at = @At(value = "NEW", target = "(Lnet/minecraft/world/level/chunk/LevelChunk;Lnet/minecraft/world/level/lighting/LevelLightEngine;"
-        + "Ljava/util/BitSet;Ljava/util/BitSet;Z)Lnet/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket;"))
-    private ClientboundLevelChunkWithLightPacket onVanillaLightPacketConstruct(LevelChunk levelChunk, LevelLightEngine levelLightEngine, BitSet bitSet, BitSet bitSet2, boolean bl) {
-        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
-            return new ClientboundLevelChunkWithLightPacket(levelChunk, levelLightEngine, bitSet, bitSet2, bl);
-        }
-
-        return new ClientboundLevelChunkWithLightPacket(levelChunk, DUMMY, bitSet, bitSet2, bl);
-    }
+    // FIXME (1.20)
+//    @SuppressWarnings({ "UnresolvedMixinReference", "MixinAnnotationTarget", "InvalidInjectorMethodSignature" })
+//    @Redirect(method = "playerLoadedChunk", at = @At(value = "NEW", target = "(Lnet/minecraft/world/level/chunk/LevelChunk;Lnet/minecraft/world/level/lighting/LevelLightEngine;"
+//        + "Ljava/util/BitSet;Ljava/util/BitSet;Z)Lnet/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket;"))
+//    private ClientboundLevelChunkWithLightPacket onVanillaLightPacketConstruct(LevelChunk levelChunk, LevelLightEngine levelLightEngine, BitSet bitSet, BitSet bitSet2) {
+//        if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
+//            return new ClientboundLevelChunkWithLightPacket(levelChunk, levelLightEngine, bitSet, bitSet2);
+//        }
+//
+//        return new ClientboundLevelChunkWithLightPacket(levelChunk, DUMMY, bitSet, bitSet2);
+//    }
 
     // playerLoadedChunk
     private void playerLoadedCube(ServerPlayer player, Object[] packetCache, LevelCube cubeIn) {

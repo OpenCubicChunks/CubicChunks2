@@ -102,8 +102,9 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
             super.enableLightSources(cubePos, false);
 
             for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
-                super.queueSectionData(LightLayer.BLOCK, Coords.sectionPosByIndex(cubePos, i), (DataLayer) null, true);
-                super.queueSectionData(LightLayer.SKY, Coords.sectionPosByIndex(cubePos, i), (DataLayer) null, true);
+                // FIXME (1.20)
+//                super.queueSectionData(LightLayer.BLOCK, Coords.sectionPosByIndex(cubePos, i), (DataLayer) null, true);
+//                super.queueSectionData(LightLayer.SKY, Coords.sectionPosByIndex(cubePos, i), (DataLayer) null, true);
             }
             for (int j = 0; j < CubicConstants.SECTION_COUNT; ++j) {
                 super.updateSectionStatus(Coords.sectionPosByIndex(cubePos, j), true);
@@ -125,14 +126,15 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
             }
 
             super.enableLightSources(cubePos, true);
-            if (!flagIn) {
-                cube.getLights().forEach((blockPos) -> {
-                    assert blockPos != null;
-                    super.onBlockEmissionIncrease(blockPos, cube.getLightEmission(blockPos));
-                });
-                // FIXME we probably want another flag for controlling skylight
-                super.doSkyLightForCube(cube);
-            }
+            // TODO (1.20) how are block lights handled now?
+//            if (!flagIn) {
+//                cube.getLights().forEach((blockPos) -> {
+//                    assert blockPos != null;
+//                    super.onBlockEmissionIncrease(blockPos, cube.getLightEmission(blockPos));
+//                });
+//                // FIXME we probably want another flag for controlling skylight
+//                super.doSkyLightForCube(cube);
+//            }
 
         }, () -> "lightCube " + cubePos + " " + flagIn));
         return CompletableFuture.supplyAsync(() -> {
@@ -183,22 +185,23 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
         }, () -> "enableLight " + cubePos + " " + flag));
     }
 
-    /**
-     * @author NotStirred
-     * @reason Vanilla lighting is gone
-     */
-    @Inject(method = "queueSectionData", at = @At("HEAD"), cancellable = true)
-    public void queueSectionData(LightLayer type, SectionPos pos, @Nullable DataLayer array, boolean flag, CallbackInfo ci) {
-        if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
-            return;
-        }
-        ci.cancel();
-
-        CubePos cubePos = CubePos.from(pos);
-        this.addTask(cubePos.getX(), cubePos.getY(), cubePos.getZ(), () -> 0, ThreadedLevelLightEngine.TaskType.PRE_UPDATE, Util.name(() -> {
-            super.queueSectionData(type, pos, array, flag);
-        }, () -> "queueData " + pos));
-    }
+    // FIXME (1.20)
+//    /**
+//     * @author NotStirred
+//     * @reason Vanilla lighting is gone
+//     */
+//    @Inject(method = "queueSectionData", at = @At("HEAD"), cancellable = true)
+//    public void queueSectionData(LightLayer type, SectionPos pos, @Nullable DataLayer array, boolean flag, CallbackInfo ci) {
+//        if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
+//            return;
+//        }
+//        ci.cancel();
+//
+//        CubePos cubePos = CubePos.from(pos);
+//        this.addTask(cubePos.getX(), cubePos.getY(), cubePos.getZ(), () -> 0, ThreadedLevelLightEngine.TaskType.PRE_UPDATE, Util.name(() -> {
+//            super.queueSectionData(type, pos, array, flag);
+//        }, () -> "queueData " + pos));
+//    }
 
     //retainData(ChunkPos, bool)
     @Override
