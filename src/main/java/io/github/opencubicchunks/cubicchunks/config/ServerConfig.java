@@ -3,7 +3,6 @@ package io.github.opencubicchunks.cubicchunks.config;
 import static io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor.WorldStyle;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,11 +73,11 @@ public class ServerConfig extends BaseConfig {
         return config;
     }
 
-    private static File getConfigPath(Path worldFolder) {
-        return new File(worldFolder.toFile(), FILE_PATH);
+    private static File getConfigPath(LevelStorageSource.LevelDirectory worldFolder) {
+        return new File(worldFolder.path().toFile(), FILE_PATH);
     }
 
-    private static void createConfig(Path worldFolder) {
+    private static void createConfig(LevelStorageSource.LevelDirectory worldFolder) {
         File configPath = getConfigPath(worldFolder);
         if (configPath.exists()) return;
         configPath.getParentFile().mkdirs();
@@ -86,7 +85,7 @@ public class ServerConfig extends BaseConfig {
     }
 
     @Nullable public static ServerConfig getConfig(LevelStorageSource.LevelStorageAccess levelStorageAccess) {
-        File configPath = getConfigPath(((LevelStorageAccessAccess) levelStorageAccess).getLevelPath());
+        File configPath = getConfigPath(((LevelStorageAccessAccess) levelStorageAccess).getLevelDirectory());
         if (configPath.exists()) {
             var config = createDefaultConfig();
             read(configPath, config);
@@ -101,7 +100,7 @@ public class ServerConfig extends BaseConfig {
     public static void generateConfigIfNecessary(LevelStorageSource.LevelStorageAccess levelStorageAccess) {
         if (CubicChunks.config().shouldGenerateNewWorldsAsCC()) {
             CubicChunks.LOGGER.info("New worlds are configured to generate as CC; creating CC config file");
-            var rootFolderPath = ((LevelStorageAccessAccess) levelStorageAccess).getLevelPath();
+            var rootFolderPath = ((LevelStorageAccessAccess) levelStorageAccess).getLevelDirectory();
             ServerConfig.createConfig(rootFolderPath);
         } else {
             CubicChunks.LOGGER.info("New worlds are configured to NOT generate as CC; no Cubic Chunks data will be created");

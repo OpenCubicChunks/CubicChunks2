@@ -106,7 +106,7 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
             }
             LevelChunkSection section = getSections()[idx];
             if (section == null) {
-                getSections()[idx] = new LevelChunkSection(sectionY, biomeRegistry);
+                getSections()[idx] = new LevelChunkSection(biomeRegistry);
             }
         }
     }
@@ -162,13 +162,6 @@ public class NoiseAndSurfaceBuilderHelper extends ProtoChunk implements CubicLev
 
     @Override public boolean generates2DChunks() {
         return generates2DChunks;
-    }
-
-    @Override public void addLight(BlockPos pos) {
-        ChunkAccess delegate = getDelegateFromBlockY(pos.getY());
-        if (delegate != null) {
-            ((ProtoCube) delegate).addLight(pos);
-        }
     }
 
     @Nullable @Override public BlockState setBlockState(BlockPos pos, BlockState state, boolean moved) {

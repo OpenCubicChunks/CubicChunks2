@@ -1,7 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.server.level;
 
 import net.minecraft.server.level.ChunkHolder;
-import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ChunkLevel;
 import net.minecraft.server.level.Ticket;
 import net.minecraft.util.SortedArraySet;
 
@@ -32,12 +32,12 @@ public class CubeTicketTracker extends CubeTracker {
             }
         }
 
-        return ChunkMap.MAX_CHUNK_DISTANCE + 1;
+        return ChunkLevel.MAX_LEVEL + 1;
     }
 
     protected void setLevel(long sectionPos, int level) {
         ChunkHolder chunkHolder = cubicDistanceManager.getCube(sectionPos);
-        int i = chunkHolder == null ? ChunkMap.MAX_CHUNK_DISTANCE + 1 : chunkHolder.getTicketLevel();
+        int i = chunkHolder == null ? ChunkLevel.MAX_LEVEL + 1 : chunkHolder.getTicketLevel();
         if (i != level) {
             chunkHolder = cubicDistanceManager.updateCubeScheduling(sectionPos, level, chunkHolder, i);
             if (chunkHolder != null) {

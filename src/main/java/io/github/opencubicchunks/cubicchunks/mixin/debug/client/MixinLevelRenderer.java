@@ -48,13 +48,12 @@ public class MixinLevelRenderer {
 
         ServerLevel overworld = Minecraft.getInstance().getSingleplayerServer().getLevel(Level.OVERWORLD);
         RenderSystem.disableBlend();
-        RenderSystem.disableTexture();
         RenderSystem.enableDepthTest();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         double cameraX = camera.getPosition().x;
         double cameraY = camera.getPosition().y;
         double cameraZ = camera.getPosition().z;
-        BlockPos blockPos = new BlockPos(cameraX, cameraY, cameraZ);
+        BlockPos blockPos = BlockPos.containing(cameraX, cameraY, cameraZ);
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder bufferBuilder = tesselator.getBuilder();
         bufferBuilder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
@@ -92,8 +91,8 @@ public class MixinLevelRenderer {
 
             int xPos = SectionPos.sectionToBlockCoord(chunkPos.x, 0);
             int zPos = SectionPos.sectionToBlockCoord(chunkPos.z, 0);
-            LevelRenderer.addChainedFilledBoxVertices(bufferBuilder, xPos + 4.25F - cameraX, 108 - cameraY, zPos + 4.25F - cameraZ, xPos + 11.75F - cameraX, 108 - cameraY + 0.09375F,
-                zPos + 11.75F - cameraZ, vector3f.x(), vector3f.y(), vector3f.z(), 1.0F);
+            LevelRenderer.addChainedFilledBoxVertices(matrices, bufferBuilder, xPos + 4.25F - cameraX, 108 - cameraY, zPos + 4.25F - cameraZ, xPos + 11.75F - cameraX,
+                108 - cameraY + 0.09375F, zPos + 11.75F - cameraZ, vector3f.x(), vector3f.y(), vector3f.z(), 1.0F);
         }
 
         Long2ObjectLinkedOpenHashMap<ChunkHolder> loadedCubes = getField(ChunkMap.class, overworld.getChunkSource().chunkMap, "updatingCubeMap");
@@ -130,15 +129,14 @@ public class MixinLevelRenderer {
             int xPos = Coords.cubeToMinBlock(cubeX);
             int yPos = Coords.cubeToMinBlock(cubeY);
             int zPos = Coords.cubeToMinBlock(cubeZ);
-            drawBox(bufferBuilder, cameraX, cameraY, cameraZ, xPos + 16, yPos + 16, zPos + 16, 4, vector3f);
+            drawBox(matrices, bufferBuilder, cameraX, cameraY, cameraZ, xPos + 16, yPos + 16, zPos + 16, 4, vector3f);
         }
 
         tesselator.end();
-        RenderSystem.enableTexture();
     }
 
-    private void drawBox(BufferBuilder bufferBuilder, double cameraX, double cameraY, double cameraZ, float x, float y, float z, float radius, Vector3f color) {
-        LevelRenderer.addChainedFilledBoxVertices(bufferBuilder, x - radius - cameraX, y - radius - cameraY, z - radius - cameraZ,
+    private void drawBox(PoseStack matrices, BufferBuilder bufferBuilder, double cameraX, double cameraY, double cameraZ, float x, float y, float z, float radius, Vector3f color) {
+        LevelRenderer.addChainedFilledBoxVertices(matrices, bufferBuilder, x - radius - cameraX, y - radius - cameraY, z - radius - cameraZ,
             x + radius - cameraX, y + radius - cameraY, z + radius - cameraZ, color.x(), color.y(), color.z(), 1.0F);
     }
 

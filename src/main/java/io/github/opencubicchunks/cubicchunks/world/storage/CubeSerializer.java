@@ -37,6 +37,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
@@ -59,6 +60,7 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
+import net.minecraft.world.level.chunk.PalettedContainerRO;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.chunk.storage.ChunkSerializer;
 import net.minecraft.world.level.levelgen.GenerationStep;
@@ -99,7 +101,7 @@ public class CubeSerializer {
         }
 
         Registry<Biome> biomeRegistry = serverLevel.registryAccess().registryOrThrow(Registries.BIOME);
-        Codec<PalettedContainer<Holder<Biome>>> biomePaletteCodec = makeBiomePaletteCodec(biomeRegistry);
+        Codec<PalettedContainerRO<Holder<Biome>>> biomePaletteCodec = makeBiomePaletteCodec(biomeRegistry);
 
         for (int i = 0; i < sectionsData.size(); ++i) {
             CompoundTag sectionData = sectionsData.getCompound(i);
@@ -122,7 +124,7 @@ public class CubeSerializer {
                     );
                 }
 
-                PalettedContainer<Holder<Biome>> biomes;
+                PalettedContainerRO<Holder<Biome>> biomes;
                 if (sectionData.contains("biomes")) {
                     biomes = biomePaletteCodec.parse(NbtOps.INSTANCE, sectionData.getCompound("biomes"))
                         .promotePartial((error) -> logErrors(cubePos, sectionIndex, error))
@@ -136,7 +138,6 @@ public class CubeSerializer {
                 }
 
                 LevelChunkSection section = new LevelChunkSection(
-                    sectionPos.getY(),
                     blocks,
                     biomes
                 );
@@ -152,8 +153,7 @@ public class CubeSerializer {
                     lightEngine.queueSectionData(
                         LightLayer.BLOCK,
                         sectionPos,
-                        new DataLayer(sectionData.getByteArray("BlockLight")),
-                        true
+                        new DataLayer(sectionData.getByteArray("BlockLight"))
                     );
                 }
 
@@ -161,8 +161,7 @@ public class CubeSerializer {
                     lightEngine.queueSectionData(
                         LightLayer.SKY,
                         sectionPos,
-                        new DataLayer(sectionData.getByteArray("SkyLight")),
-                        true
+                        new DataLayer(sectionData.getByteArray("SkyLight"))
                     );
                 }
             }
@@ -318,8 +317,8 @@ public class CubeSerializer {
         }
     }
 
-    private static Codec<PalettedContainer<Holder<Biome>>> makeBiomePaletteCodec(Registry<Biome> registry) {
-        return PalettedContainer.codec(registry.asHolderIdMap(), registry.holderByNameCodec(), PalettedContainer.Strategy.SECTION_BIOMES, registry.getHolderOrThrow(Biomes.PLAINS));
+    private static Codec<PalettedContainerRO<Holder<Biome>>> makeBiomePaletteCodec(Registry<Biome> registry) {
+        return PalettedContainer.codecRO(registry.asHolderIdMap(), registry.holderByNameCodec(), PalettedContainer.Strategy.SECTION_BIOMES, registry.getHolderOrThrow(Biomes.PLAINS));
     }
 
     private static void logErrors(CubePos cubePos, int i, String string) {
@@ -342,13 +341,13 @@ public class CubeSerializer {
 
         root.putLong("LastUpdate", serverLevel.getGameTime());
         root.putLong("InhabitedTime", cube.getInhabitedTime());
-        root.putString("Status", cube.getStatus().getName());
+        root.putString("Status", BuiltInRegistries.CHUNK_STATUS.getKey(cube.getStatus()).toString());
 
         LevelChunkSection[] sections = cube.getSections();
         ListTag sectionsNBTList = new ListTag();
         LevelLightEngine lightEngine = serverLevel.getChunkSource().getLightEngine();
         Registry<Biome> biomeRegistry = serverLevel.registryAccess().registryOrThrow(Registries.BIOME);
-        Codec<PalettedContainer<Holder<Biome>>> palettedBiomeContainerCodec = makeBiomePaletteCodec(biomeRegistry);
+        Codec<PalettedContainerRO<Holder<Biome>>> palettedBiomeContainerCodec = makeBiomePaletteCodec(biomeRegistry);
         boolean cubeHasLight = cube.isLightCorrect();
 
         for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
@@ -527,7 +526,7 @@ public class CubeSerializer {
     private static Map<Structure, LongSet> unpackCubeStructureReferences(RegistryAccess registryAccess, ChunkPos pos, CompoundTag nbt) {
         Map<Structure, LongSet> map = Maps.newHashMap();
         CompoundTag compoundTag = nbt.getCompound("References");
-        Registry<Structure> registry = registryAccess.registryOrThrow(Registry.CONFIGURED_STRUCTURE_FEATURE_REGISTRY);
+        Registry<Structure> registry = registryAccess.registryOrThrow(Registries.STRUCTURE);
 
         for (String nbtKey : compoundTag.getAllKeys()) {
             ResourceLocation key = ResourceLocation.tryParse(nbtKey);

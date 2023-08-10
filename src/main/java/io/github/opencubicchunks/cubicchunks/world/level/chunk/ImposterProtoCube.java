@@ -197,11 +197,6 @@ public class ImposterProtoCube extends ProtoCube {
     }
 
     @Override
-    public Stream<BlockPos> getLights() {
-        return this.wrapped.getLights();
-    }
-
-    @Override
     public TickContainerAccess<Block> getBlockTicks() {
         if (this.allowWrites) {
             return this.wrapped.getBlockTicks();

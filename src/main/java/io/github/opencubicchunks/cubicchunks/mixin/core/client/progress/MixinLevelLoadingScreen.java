@@ -1,10 +1,10 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.client.progress;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.client.gui.screens.CubicLevelLoadingScreen;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -28,8 +28,7 @@ public class MixinLevelLoadingScreen extends Screen {
     }
 
     @Inject(method = "renderChunks", at = @At("HEAD"), cancellable = true)
-    private static void renderCubes(PoseStack mStack, StoringChunkProgressListener trackerParam,
-                                    int xBase, int yBase, int scale, int spacing, CallbackInfo ci) {
+    private static void renderCubes(GuiGraphics guiGraphics, StoringChunkProgressListener trackerParam, int xBase, int yBase, int scale, int spacing, CallbackInfo ci) {
 
         Level level = Minecraft.getInstance().getSingleplayerServer().overworld();
         if (level == null || !((CubicLevelHeightAccessor) level).isCubic()) {
@@ -37,6 +36,6 @@ public class MixinLevelLoadingScreen extends Screen {
         }
 
         ci.cancel();
-        CubicLevelLoadingScreen.doRender(mStack, trackerParam, xBase, yBase, scale, spacing, COLORS);
+        CubicLevelLoadingScreen.doRender(guiGraphics.pose(), trackerParam, xBase, yBase, scale, spacing, COLORS);
     }
 }

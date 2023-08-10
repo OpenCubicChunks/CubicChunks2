@@ -18,8 +18,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import javax.annotation.Nullable;
 
@@ -498,15 +496,6 @@ public class LevelCube extends CubeAccess {
 
         this.pendingBlockEntities.clear();
 //        this.upgradeData.upgrade(this); //TODO: DFU
-    }
-
-    @Override public Stream<BlockPos> getLights() {
-        return StreamSupport.stream(
-                BlockPos.betweenClosed(
-                    this.cubePos.minCubeX(), this.cubePos.minCubeY(), this.cubePos.minCubeZ(),
-                    this.cubePos.maxCubeX(), this.cubePos.maxCubeY(), this.cubePos.maxCubeZ()
-                ).spliterator(), false)
-            .filter((blockPos) -> this.getBlockState(blockPos).getLightEmission() != 0);
     }
 
     //MISC

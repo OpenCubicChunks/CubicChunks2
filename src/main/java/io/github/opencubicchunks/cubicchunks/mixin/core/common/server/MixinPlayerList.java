@@ -16,7 +16,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.players.GameProfileCache;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.world.level.storage.LevelData;
 import org.spongepowered.asm.mixin.Final;
@@ -61,7 +60,7 @@ public abstract class MixinPlayerList implements VerticalViewDistanceListener {
 
     // ClientboundLoginPacket instantiates the ClientLevel on the client, so we send our packet just before that
     @Inject(method = "placeNewPlayer", locals = LocalCapture.CAPTURE_FAILHARD, at = @At(value = "NEW", target = "net/minecraft/network/protocol/game/ClientboundLoginPacket"))
-    private void onPlaceNewPlayer(Connection connection, ServerPlayer player, CallbackInfo ci, GameProfile gameProfile, GameProfileCache gameProfileCache, Optional optional,
+    private void onPlaceNewPlayer(Connection connection, ServerPlayer player, CallbackInfo ci, GameProfile gameProfile,
                                   String string, CompoundTag compoundTag, ResourceKey resourceKey, ServerLevel possiblyNullLevel, ServerLevel level) {
         PacketDispatcher.sendTo(new PacketCCLevelInfo(((CubicLevelHeightAccessor) level).worldStyle()), player);
     }
@@ -69,7 +68,7 @@ public abstract class MixinPlayerList implements VerticalViewDistanceListener {
     // ClientboundRespawnPacket instantiates the ClientLevel on the client, so we send our packet just before that
     @Inject(method = "respawn", locals = LocalCapture.CAPTURE_FAILHARD, at = @At(value = "NEW", target = "net/minecraft/network/protocol/game/ClientboundRespawnPacket"))
     private void onRespawn(ServerPlayer oldPlayer, boolean bl, CallbackInfoReturnable<ServerPlayer> cir, BlockPos blockPos, float f, boolean bl2, ServerLevel possiblyNullLevel,
-                           Optional optional2, ServerLevel level, ServerPlayer newPlayer, boolean bl3, LevelData levelData) {
+                           Optional optional2, ServerLevel level, ServerPlayer newPlayer, boolean bl3, byte b, LevelData levelData) {
         PacketDispatcher.sendTo(new PacketCCLevelInfo(((CubicLevelHeightAccessor) level).worldStyle()), newPlayer);
     }
 }

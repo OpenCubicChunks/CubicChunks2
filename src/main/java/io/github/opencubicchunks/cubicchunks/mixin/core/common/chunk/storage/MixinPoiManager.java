@@ -20,6 +20,7 @@ import io.github.opencubicchunks.cubicchunks.world.level.chunk.storage.PoiDeseri
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.datafix.DataFixTypes;
@@ -55,12 +56,12 @@ public abstract class MixinPoiManager extends SectionStorage<PoiSection> impleme
     }
 
     @Shadow protected abstract void updateFromSection(LevelChunkSection levelChunkSection, SectionPos sectionPos,
-                                                      BiConsumer<BlockPos, PoiType> biConsumer);
+                                                      BiConsumer<BlockPos, Holder<PoiType>> biConsumer);
 
 
 
     @Inject(method = "getInSquare", at = @At("HEAD"), cancellable = true)
-    private void getInSquare(Predicate<PoiType> typePredicate, BlockPos pos, int radius, PoiManager.Occupancy occupancy, CallbackInfoReturnable<Stream<PoiRecord>> cir) {
+    private void getInSquare(Predicate<Holder<PoiType>> typePredicate, BlockPos pos, int radius, PoiManager.Occupancy occupancy, CallbackInfoReturnable<Stream<PoiRecord>> cir) {
         if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
             return;
         }
@@ -74,7 +75,7 @@ public abstract class MixinPoiManager extends SectionStorage<PoiSection> impleme
         }));
     }
 
-    public Stream<PoiRecord> getInSections(Predicate<PoiType> predicate, SectionPos sectionPos, PoiManager.Occupancy occupationStatus) {
+    public Stream<PoiRecord> getInSections(Predicate<Holder<PoiType>> predicate, SectionPos sectionPos, PoiManager.Occupancy occupationStatus) {
         return Stream.of(this.getOrLoad(sectionPos.asLong())).filter(Optional::isPresent).flatMap((optional -> optional.get().getRecords(predicate, occupationStatus)));
     }
 

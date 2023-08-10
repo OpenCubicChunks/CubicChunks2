@@ -25,6 +25,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import net.minecraft.SharedConstants;
 import net.minecraft.Util;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
@@ -77,8 +78,8 @@ public abstract class MixinSectionStorage<R> implements CubicSectionStorage {
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void getServerLevel(Path path, Function function, Function function2, DataFixer dataFixer, DataFixTypes dataFixTypes, boolean bl, LevelHeightAccessor levelAccessor,
-                                CallbackInfo ci) throws IOException {
+    private void getServerLevel(Path path, Function function, Function function2, DataFixer dataFixer, DataFixTypes dataFixTypes, boolean bl, RegistryAccess registryAccess,
+                                LevelHeightAccessor levelAccessor, CallbackInfo ci) throws IOException {
 
         if (((CubicLevelHeightAccessor) levelAccessor).isCubic()) {
             cubeWorker = new RegionCubeIO(path.toFile(), path.toFile().getName() + "-chunk", path.toFile().getName());

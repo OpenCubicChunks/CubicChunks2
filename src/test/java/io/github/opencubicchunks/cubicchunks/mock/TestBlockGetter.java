@@ -168,10 +168,6 @@ public class TestBlockGetter implements BlockGetter {
             throw new NotImplementedException();
         }
 
-        @Override public Stream<BlockPos> getLights() {
-            throw new NotImplementedException();
-        }
-
         @Override public TickContainerAccess<Block> getBlockTicks() {
             throw new NotImplementedException();
         }

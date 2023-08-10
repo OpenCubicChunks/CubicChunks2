@@ -60,7 +60,7 @@ public class MixinHeightMapRenderer {
 
                 double height = ((float) heightmap.getFirstAvailable(k, l) + 6 * 0.09375F);
                 float g = (float) (height - e);
-                LevelRenderer.addChainedFilledBoxVertices(bufferBuilder, (double) ((float) m + 0.25F) - d, g, (double) ((float) n + 0.25F) - f, (double) ((float) m + 0.75F) - d,
+                LevelRenderer.addChainedFilledBoxVertices(arg0, bufferBuilder, (double) ((float) m + 0.25F) - d, g, (double) ((float) n + 0.25F) - f, (double) ((float) m + 0.75F) - d,
                     (g + 0.09375F), (double) ((float) n + 0.75F) - f, color.x(), color.y(), color.z(), 1.0F);
             }
         }

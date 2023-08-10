@@ -116,11 +116,11 @@ public class PacketUpdateLight {
                 SectionPos sectionPos = Coords.sectionPosByIndex(packet.cubePos, i);
 
                 if (packet.dataExists.get(i * 2)) {
-                    lightEngine.queueSectionData(LightLayer.SKY, sectionPos, new DataLayer(skyIterator.next()), packet.lightFlag);
+                    lightEngine.queueSectionData(LightLayer.SKY, sectionPos, new DataLayer(skyIterator.next()));
                     clientLevel.setSectionDirtyWithNeighbors(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ());
                 }
                 if (packet.dataExists.get(i * 2 + 1)) {
-                    lightEngine.queueSectionData(LightLayer.BLOCK, sectionPos, new DataLayer(blockIterator.next()), packet.lightFlag);
+                    lightEngine.queueSectionData(LightLayer.BLOCK, sectionPos, new DataLayer(blockIterator.next()));
                     clientLevel.setSectionDirtyWithNeighbors(sectionPos.getX(), sectionPos.getY(), sectionPos.getZ());
                 }
             }

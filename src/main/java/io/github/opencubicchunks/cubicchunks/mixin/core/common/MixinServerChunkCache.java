@@ -45,7 +45,6 @@ import net.minecraft.server.level.TicketType;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.LightLayer;
@@ -54,6 +53,7 @@ import net.minecraft.world.level.NaturalSpawner;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.LightChunk;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import net.minecraft.world.level.storage.LevelData;
@@ -284,7 +284,7 @@ public abstract class MixinServerChunkCache implements ServerCubeCache, LightCub
 
     @Override
     @Nullable
-    public BlockGetter getCubeForLighting(int cubeX, int cubeY, int cubeZ) {
+    public LightChunk getCubeForLighting(int cubeX, int cubeY, int cubeZ) {
         long cubePosAsLong = CubePos.of(cubeX, cubeY, cubeZ).asLong();
         ChunkHolder chunkholder = ((CubeMap) this.chunkMap).getVisibleCubeIfPresent(cubePosAsLong);
         if (chunkholder == null) {

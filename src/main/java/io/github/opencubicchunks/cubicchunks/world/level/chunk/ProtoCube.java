@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntPredicate;
-import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
@@ -409,10 +408,6 @@ public class ProtoCube extends CubeAccess {
     @Nullable @Override public CompoundTag getBlockEntityNbtForSaving(BlockPos pos) {
         BlockEntity tileEntity = this.getBlockEntity(pos);
         return tileEntity != null ? tileEntity.saveWithFullMetadata() : this.pendingBlockEntities.get(pos);
-    }
-
-    @Override public Stream<BlockPos> getLights() {
-        return this.lightPositions.stream();
     }
 
     @Override
