@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -89,14 +88,16 @@ import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.ReportedException;
 import net.minecraft.Util;
-import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.network.protocol.game.ClientboundSetChunkCacheCenterPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityLinkPacket;
 import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
 import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ChunkLevel;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.PlayerMap;
 import net.minecraft.server.level.ServerChunkCache;
@@ -118,6 +119,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LightChunk;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
@@ -230,7 +232,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     @Shadow protected abstract boolean skipPlayer(ServerPlayer player);
 
-    @Shadow @Nullable protected abstract CompoundTag readChunk(ChunkPos pos) throws IOException;
+    @Shadow @Nullable protected abstract CompletableFuture<Optional<CompoundTag>> readChunk(ChunkPos pos) throws IOException;
 
     @Shadow private static void postLoadProtoChunk(ServerLevel serverLevel, List<CompoundTag> list) {
         throw new Error("Mixin didn't apply");
@@ -264,7 +266,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     private void onConstruct(ServerLevel serverLevel, LevelStorageSource.LevelStorageAccess levelStorageAccess, DataFixer dataFixer, StructureTemplateManager StructureTemplateManager_, Executor executor,
                              BlockableEventLoop<Runnable> blockableEventLoop, LightChunkGetter lightChunkGetter, ChunkGenerator chunkGenerator, ChunkProgressListener chunkProgressListener,
                              ChunkStatusUpdateListener chunkStatusUpdateListener, Supplier<DimensionDataStorage> supplier, int i, boolean bl,
-                             CallbackInfo ci, Path path, ProcessorMailbox<Runnable> worldgenMailbox, ProcessorHandle<Runnable> mainThreadProcessorHandle,
+                             CallbackInfo ci, Path path, RegistryAccess registryAccess, long l, ProcessorMailbox<Runnable> worldgenMailbox,
+                             ProcessorHandle<Runnable> mainThreadProcessorHandle,
                              ProcessorMailbox<Runnable> lightMailbox) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return;
@@ -621,7 +624,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     @SuppressWarnings("target")
     @Inject(
-        method = "lambda$scheduleChunkGeneration$22(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/server/level/ChunkHolder;Lnet/minecraft/world/level/chunk/ChunkStatus;"
+        method = "lambda$scheduleChunkGeneration$27(Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/server/level/ChunkHolder;Lnet/minecraft/world/level/chunk/ChunkStatus;"
             + "Ljava/util/concurrent/Executor;Ljava/util/List;)Ljava/util/concurrent/CompletableFuture;",
         at = @At(
             value = "INVOKE",
@@ -726,7 +729,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         CubePos cubePos = ((CubeHolder) cubeHolder).getCubePos();
         CompletableFuture<Either<List<CubeAccess>, ChunkHolder.ChunkLoadingFailure>> future =
             this.getCubeRangeFuture(cubePos, CubeStatus.getCubeTaskRange(chunkStatusIn), (count) -> this.getCubeDependencyStatus(chunkStatusIn, count));
-        this.level.getProfiler().incrementCounter(() -> "cubeGenerate " + chunkStatusIn.getName());
+        this.level.getProfiler().incrementCounter(() -> "cubeGenerate " + chunkStatusIn);
 
         Executor executor = (runnable) -> this.cubeWorldgenMailbox.tell(CubeTaskPriorityQueueSorter.message(cubeHolder, runnable));
 
@@ -740,8 +743,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                         this.structureTemplateManager,
                         this.lightEngine,
                         (chunk) -> unsafeCast(this.protoCubeToFullCube(cubeHolder, columns)),
-                        unsafeCast(neighborSections),
-                        false
+                        unsafeCast(neighborSections)
                     ));
                     ((CubeProgressListener) this.progressListener).onCubeStatusChange(cubePos, chunkStatusIn);
                     return finalFuture;
@@ -886,7 +888,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                     ((CubeHolder) holder).replaceProtoCube(new ImposterProtoCube(cube, false));
                 }
 
-                cube.setFullStatus(() -> ChunkHolder.getFullChunkStatus(holder.getTicketLevel()));
+                cube.setFullStatus(() -> ChunkLevel.fullStatus(holder.getTicketLevel()));
                 cube.postLoad();
                 if (this.cubeEntitiesInLevel.add(cubePos.asLong())) {
                     cube.setLoaded(true);
@@ -960,13 +962,14 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     @SuppressWarnings({ "ConstantConditions", "target" })
-    @Redirect(method = "lambda$scheduleChunkLoad$16(Lnet/minecraft/world/level/ChunkPos;)Lcom/mojang/datafixers/util/Either;",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;readChunk(Lnet/minecraft/world/level/ChunkPos;)Lnet/minecraft/nbt/CompoundTag;"))
-    private CompoundTag readColumn(ChunkMap chunkManager, ChunkPos chunkPos) throws IOException {
+    @Redirect(method = "scheduleChunkLoad",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;readChunk(Lnet/minecraft/world/level/ChunkPos;)Ljava/util/concurrent/CompletableFuture;"))
+    private CompletableFuture<Optional<CompoundTag>> readColumn(ChunkMap chunkManager, ChunkPos chunkPos) throws IOException {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
             return this.readChunk(chunkPos);
         }
-        return regionCubeIO.loadChunkNBT(chunkPos);
+        // TODO (1.20) is this correct?
+        return regionCubeIO.getChunkFuture(chunkPos).thenApply(Optional::of);
     }
 
     // readChunk

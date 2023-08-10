@@ -466,7 +466,8 @@ public class DebugVulkan {
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
         window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan Test", NULL, NULL);
-        glfwSetFramebufferSizeCallback(window, (win, width, height) -> this.framebufferResized = true);
+        // TODO (1.20) lambda arg doesn't work in this method call for some reason
+//        glfwSetFramebufferSizeCallback(window, (win, width, height) -> this.framebufferResized = true);
     }
 
     void initVulkan() {
@@ -1449,25 +1450,24 @@ public class DebugVulkan {
     void updateUniformBuffer(int currentImage) {
 
         Matrix4f mvp = new Matrix4f();
-        mvp.setIdentity();
 
         //proj
-        mvp.multiply(Matrix4f.perspective(60, swapChainExtent.width() / (float) swapChainExtent.height(), 0.1f, 10));
+        mvp.setPerspective(60, swapChainExtent.width() / (float) swapChainExtent.height(), 0.1f, 10);
         Matrix4f modelView = inverseMatrix;
-        modelView.setIdentity();
         //view
-        modelView.multiply(Matrix4f.createTranslateMatrix(0, 0, -5));
+        modelView.setTranslation(0, 0, -5);
         //model
-        modelView.multiply(Vector3f.XP.rotationDegrees(50));
-        modelView.multiply(Vector3f.ZP.rotationDegrees((float) ((System.currentTimeMillis() * 0.04) % 360)));
+        // TODO (1.20) rotations about X and Y unit vectors?
+//        modelView.multiply(Vector3f.XP.rotationDegrees(50));
+//        modelView.multiply(Vector3f.ZP.rotationDegrees((float) ((System.currentTimeMillis() * 0.04) % 360)));
 
-        mvp.multiply(modelView);
+        mvp.mul(modelView);
         inverseMatrix.invert();
 
         int bufferSize = Float.BYTES * 16;
         vkMapMemory(device, uniformBuffersMemory[currentImage], 0, bufferSize, 0, pp);
         FloatBuffer data = pp.getFloatBuffer(0, bufferSize >> 2);
-        mvp.store(data);
+        mvp.get(data);
         vkUnmapMemory(device, uniformBuffersMemory[currentImage]);
     }
 

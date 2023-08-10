@@ -78,8 +78,9 @@ public abstract class MixinWorldRenderer_Vanilla {
         }
     }
 
-    @ModifyArg(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/FogRenderer;setupFog(Lnet/minecraft/client/Camera;"
-        + "Lnet/minecraft/client/renderer/FogRenderer$FogMode;FZ)V"))
+    // TODO also inject into the FogRenderer.setupFog call in the lambda param of renderSky in renderLevel
+    @ModifyArg(method = "renderLevel", index = 2, at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/FogRenderer;setupFog(Lnet/minecraft/client/Camera;"
+        + "Lnet/minecraft/client/renderer/FogRenderer$FogMode;FZF)V"))
     private float modifyFogDistance(float hFogDistance) {
         int verticalViewDistance = CubicChunks.config().getVerticalViewDistance();
         float verticalFogDistance;

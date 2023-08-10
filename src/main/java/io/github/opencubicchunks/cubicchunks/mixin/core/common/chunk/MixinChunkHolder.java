@@ -11,6 +11,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -38,6 +39,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.FullChunkStatus;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelHeightAccessor;
@@ -93,17 +95,13 @@ public abstract class MixinChunkHolder implements CubeHolder {
     @Shadow protected abstract void updateChunkToSave(
         CompletableFuture<? extends Either<? extends ChunkAccess, ChunkHolder.ChunkLoadingFailure>> eitherChunk, String string);
 
-    @Shadow public static ChunkStatus getStatus(int level) {
-        throw new Error("Mixin failed to apply");
-    }
-
     @Shadow public abstract CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> getFutureIfPresentUnchecked(ChunkStatus status);
 
     @Shadow public abstract CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> getOrScheduleFuture(ChunkStatus chunkStatus, ChunkMap chunkManager);
 
     @Shadow @Nullable public abstract LevelChunk getTickingChunk();
 
-    @Shadow protected abstract void broadcastBlockEntityIfNeeded(Level world, BlockPos pos, BlockState state);
+    @Shadow protected abstract void broadcastBlockEntityIfNeeded(List<ServerPlayer> players, Level level, BlockPos pos, BlockState state);
 
     @Dynamic
     @SuppressWarnings("target")
@@ -320,22 +318,23 @@ public abstract class MixinChunkHolder implements CubeHolder {
             UNLOADED_CUBE_FUTURE;
     }
 
-    @Redirect(method = "*", at = @At(
-        value = "INVOKE",
-        target = "Lnet/minecraft/server/level/ChunkHolder;getStatus(I)Lnet/minecraft/world/level/chunk/ChunkStatus;"
-    ))
-    private ChunkStatus getChunkOrCubeStatus(int level) {
-
-        if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
-            return getStatus(level);
-        }
-
-        if (cubePos == null) {
-            return getStatus(level);
-        } else {
-            return CubeHolder.getCubeStatusFromLevel(level);
-        }
-    }
+    // FIXME (1.20) this will need a different approach (if it's still necessary) since ChunkHolder now uses CHUNK_STATUSES.get(i) instead
+//    @Redirect(method = "*", at = @At(
+//        value = "INVOKE",
+//        target = "Lnet/minecraft/server/level/ChunkHolder;getStatus(I)Lnet/minecraft/world/level/chunk/ChunkStatus;"
+//    ))
+//    private ChunkStatus getChunkOrCubeStatus(int level) {
+//
+//        if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
+//            return getStatus(level);
+//        }
+//
+//        if (cubePos == null) {
+//            return getStatus(level);
+//        } else {
+//            return CubeHolder.getCubeStatusFromLevel(level);
+//        }
+//    }
 
     @Redirect(method = "getOrScheduleFuture", at = @At(
         value = "INVOKE",
@@ -520,6 +519,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
         //     this.boundaryMask &= ~(this.skyLightChangeMask & this.blockLightChangeMask);
         // }
 
+        var players = ((CubeHolderPlayerProvider) this.playerProvider).getPlayers(cube.getCubePos(), false).collect(Collectors.toList());
         for (int idx = 0; idx < changedLocalBlocks.length; idx++) {
             ShortArraySet changedPositions = changedLocalBlocks[idx];
             if (changedPositions == null) {
@@ -533,7 +533,7 @@ public abstract class MixinChunkHolder implements CubeHolder {
                 this.sendToTracking(new PacketCubeBlockChanges(cube, sectionPos, new ShortArrayList(changedPositions)), false);
                 for (short changed : changedPositions) {
                     BlockPos changedPos = sectionPos.relativeToBlockPos(changed);
-                    broadcastBlockEntityIfNeeded(level, changedPos, level.getBlockState(changedPos));
+                    broadcastBlockEntityIfNeeded(players, level, changedPos, level.getBlockState(changedPos));
                 }
             }
             changedPositions.clear();
