@@ -369,6 +369,16 @@ public class MixinChunkStatus {
         ci.cancel();
     }
 
+    @Inject(method = "initializeLight", at = @At("HEAD"), cancellable = true)
+    private static void initializeLightCC(ThreadedLevelLightEngine lightEngine, ChunkAccess chunk,
+                                     CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
+        if (!((CubicLevelHeightAccessor) chunk).isCubic()) {
+            return;
+        }
+        // FIXME (1.20)
+        cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
+    }
+
     @Inject(method = "lightChunk", at = @At("HEAD"), cancellable = true)
     private static void lightChunkCC(ThreadedLevelLightEngine lightEngine, ChunkAccess chunk,
                                      CallbackInfoReturnable<CompletableFuture<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>>> cir) {
@@ -376,8 +386,9 @@ public class MixinChunkStatus {
         if (!((CubicLevelHeightAccessor) chunk).isCubic()) {
             return;
         }
-
         // FIXME (1.20)
+        cir.setReturnValue(CompletableFuture.completedFuture(Either.left(chunk)));
+
 //        if (!(chunk instanceof ProtoCube)) {
 //            ChunkPos pos = chunk.getPos();
 //            ((ThreadedLevelLightEngineAccess) lightEngine).invokeAddTask(pos.x, pos.z, ThreadedLevelLightEngine.TaskType.PRE_UPDATE, () -> {

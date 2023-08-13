@@ -119,6 +119,7 @@ public class CubicLevelLoadingScreen {
 
     public static void doRender(PoseStack stack, StoringChunkProgressListener trackerParam, int xBase, int yBase, int scale, int spacing,
                                 Object2IntMap<ChunkStatus> colors) {
+        // TODO (1.20) loading screen is quite broken
         renderColorKey(STATUS_COLORS, stack);
         render3d(trackerParam, xBase, yBase, scale, spacing, STATUS_COLORS);
         // TODO: config option
@@ -173,7 +174,6 @@ public class CubicLevelLoadingScreen {
         buffer.vertex(transform, x2, y1, 0.0F).color(red, green, blue, alpha).endVertex();
         buffer.vertex(transform, x1, y2, 0.0F).color(red, green, blue, alpha).endVertex();
         buffer.vertex(transform, x2, y2, 0.0F).color(red, green, blue, alpha).endVertex();
-        buffer.end();
 
         BufferUploader.draw(buffer.end());
 //        RenderSystem.enableTexture();

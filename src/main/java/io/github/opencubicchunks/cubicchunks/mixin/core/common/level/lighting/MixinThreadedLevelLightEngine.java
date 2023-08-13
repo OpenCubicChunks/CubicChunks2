@@ -23,8 +23,7 @@ import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ThreadedLevelLightEngine;
 import net.minecraft.util.thread.ProcessorHandle;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.chunk.DataLayer;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,6 +31,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ThreadedLevelLightEngine.class)
 public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngine implements CubicThreadedLevelLightEngine {
@@ -53,6 +53,17 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
         this.cubeSorterMailbox = taskExecutor;
     }
 
+    // 1.20: temporarily hack lighting out so we can load into worlds
+    @Inject(method = "initializeLight", at = @At("HEAD"), cancellable = true)
+    private void onInitializeLight(ChunkAccess chunk, boolean lightEnabled, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir) {
+        cir.setReturnValue(CompletableFuture.completedFuture(chunk));
+    }
+
+    @Inject(method = "lightChunk", at = @At("HEAD"), cancellable = true)
+    private void onLightChunk(ChunkAccess chunk, boolean lightEnabled, CallbackInfoReturnable<CompletableFuture<ChunkAccess>> cir) {
+        cir.setReturnValue(CompletableFuture.completedFuture(chunk));
+    }
+
     /**
      * @author NotStirred
      * @reason lambdas
@@ -69,7 +80,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
             Coords.blockToCube(blockPosIn.getX()),
             Coords.blockToCube(blockPosIn.getY()),
             Coords.blockToCube(blockPosIn.getZ()),
-            ThreadedLevelLightEngine.TaskType.POST_UPDATE,
+            ThreadedLevelLightEngine.TaskType.PRE_UPDATE,
             Util.name(() -> super.checkBlock(blockpos),
                 () -> "checkBlock " + blockpos)
         );
@@ -150,9 +161,10 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
     @Override
     public void checkSkyLightColumn(ColumnCubeMapGetter chunk, int x, int z, int oldHeight, int newHeight) {
         // FIXME figure out when this should actually be scheduled instead of just hoping for the best
-        this.addTask(SectionPos.blockToSectionCoord(x), SectionPos.blockToSectionCoord(z), ThreadedLevelLightEngine.TaskType.POST_UPDATE, Util.name(() -> {
-            super.checkSkyLightColumn(chunk, x, z, oldHeight, newHeight);
-        }, () -> "checkSkyLightColumn " + x + " " + z));
+        // FIXME (1.20)
+//        this.addTask(SectionPos.blockToSectionCoord(x), SectionPos.blockToSectionCoord(z), ThreadedLevelLightEngine.TaskType.POST_UPDATE, Util.name(() -> {
+//            super.checkSkyLightColumn(chunk, x, z, oldHeight, newHeight);
+//        }, () -> "checkSkyLightColumn " + x + " " + z));
     }
 
     @Inject(method = "updateChunkStatus", at = @At("HEAD"), cancellable = true)

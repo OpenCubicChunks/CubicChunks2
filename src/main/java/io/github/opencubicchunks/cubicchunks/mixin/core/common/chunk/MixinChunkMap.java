@@ -337,9 +337,9 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
             LOGGER.info("Cube Storage ({}): All cubes are saved", this.storageName);
         } else {
             this.visibleCubeMap.values().stream().filter(ChunkHolder::wasAccessibleSinceLastSave).forEach((cubeHolder) -> {
-                CubeAccess cube = ((CubeHolder) cubeHolder).getCubeToSave().getNow(null);
+                Object cube = ((CubeHolder) cubeHolder).getCubeToSave().getNow(null);
                 if (cube instanceof ImposterProtoCube || cube instanceof LevelCube) {
-                    this.cubeSave(cube);
+                    this.cubeSave((CubeAccess) cube);
                     cubeHolder.refreshAccessibility();
                 }
             });
@@ -963,14 +963,16 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         final CompletableFuture<Boolean> savingFuture = cubeSavingFutures.containsKey(cubePos) ? cubeSavingFutures.get(cubePos) : CompletableFuture.completedFuture(true);
         return savingFuture.thenComposeAsync(unused -> {
             final CompletableFuture<CompoundTag> cubeNBTFuture = regionCubeIO.getCubeNBTFuture(cubePos);
-            final CompletableFuture<CompoundTag> poiFuture = ((IOWorkerAccess) ((CubicSectionStorage) this.poiManager).getIOWorker()).invokeLoadAsync(cubePos.asChunkPos());
+            // TODO (1.20) this returns CompletableFuture<Optional<CompoundTag>> instead of CompletableFuture<CompoundTag>
+            final CompletableFuture<Optional<CompoundTag>> poiFuture =
+                (CompletableFuture) ((IOWorkerAccess) ((CubicSectionStorage) this.poiManager).getIOWorker()).invokeLoadAsync(cubePos.asChunkPos());
             return cubeNBTFuture.thenCombineAsync(poiFuture, (cubeNBT, poiNBT) -> {
                 if (cubeNBT != null) {
                     boolean flag = cubeNBT.contains("Status", 8);
                     if (flag) {
                         ChunkIoMainThreadTaskUtils.executeMain(() -> {
-                            if (poiNBT != null) {
-                                ((CubicSectionStorage) this.poiManager).updateCube(cubePos, poiNBT);
+                            if (poiNBT != null && poiNBT.isPresent()) {
+                                ((CubicSectionStorage) this.poiManager).updateCube(cubePos, poiNBT.get());
                             }
                         });
                         return CubeSerializer.read(this.level, this.structureTemplateManager, poiManager, cubePos, cubeNBT);

@@ -67,7 +67,8 @@ public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, Li
     @Override
     public void checkSkyLightColumn(ColumnCubeMapGetter chunk, int x, int z, int oldHeight, int newHeight) {
         if (this.skyEngine != null) {
-            ((SkyLightColumnChecker) skyEngine).checkSkyLightColumn(chunk, x, z, oldHeight, newHeight);
+            // TODO (1.20)
+//            ((SkyLightColumnChecker) skyEngine).checkSkyLightColumn(chunk, x, z, oldHeight, newHeight);
         }
     }
 }

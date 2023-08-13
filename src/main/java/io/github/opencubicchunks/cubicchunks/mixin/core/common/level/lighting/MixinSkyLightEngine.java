@@ -13,16 +13,5 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(SkyLightEngine.class)
 public abstract class MixinSkyLightEngine extends MixinLightEngine<SkyLightSectionStorage.SkyDataLayerStorageMap, SkyLightSectionStorage> implements SkyLightColumnChecker,
     CubicSkyLightEngine {
-    /**
-     * @author CursedFlames
-     * @reason disable vanilla sky light logic
-     */
-    @Inject(method = "checkNode", at = @At("HEAD"), cancellable = true)
-    protected void checkNode(long id, CallbackInfo ci) {
-        if (!this.isCubic) {
-            return;
-        }
-        ci.cancel();
-        super.checkNode(id);
-    }
+
 }
