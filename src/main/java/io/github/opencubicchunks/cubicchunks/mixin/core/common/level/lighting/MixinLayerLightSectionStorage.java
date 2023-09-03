@@ -3,51 +3,21 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level.lighting;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightSectionStorage;
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.SectionTracker;
-import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.lighting.DataLayerStorageMap;
-import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LayerLightSectionStorage;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LayerLightSectionStorage.class)
 public abstract class MixinLayerLightSectionStorage<M extends DataLayerStorageMap<M>> implements CubicLayerLightSectionStorage {
-    @Shadow @Final protected Long2ObjectMap<DataLayer> queuedSections;
-
-    @Shadow @Final protected M updatingSectionData;
-
-    @Shadow @Final protected LongSet changedSections;
-
-//    @Shadow protected volatile boolean hasToRemove;
-
-    @Shadow @Final private LongSet toRemove;
-
     @Shadow @Final private LightChunkGetter chunkSource;
 
-//    @Shadow @Final private LongSet untrustedSections;
-
     private final LongSet cubesToRetain = new LongOpenHashSet();
-
-//    @Shadow protected abstract void clearQueuedSectionBlocks(LightEngine<?, ?> engine, long sectionPosIn);
-
-    @Shadow protected abstract void onNodeRemoved(long pos);
-
-    @Shadow protected abstract boolean storingLightForSection(long sectionPosIn);
-
-    @Shadow protected abstract boolean hasInconsistencies();
-
-//    @Shadow protected abstract void checkEdgesForSection(LightEngine<M, ?> layerLightEngine, long l);
 
     @Override
     public void retainCubeData(long cubeSectionPos, boolean retain) {

@@ -35,7 +35,7 @@
         "common.entity.storage.MixinEntitySectionStorage",
         "common.level.lighting.MixinBlockLightEngine",
         "common.level.lighting.MixinChunkSkyLightSources",
-        "common.level.lighting.MixinDynamicGraphMinFixedPoint",
+        "common.level.lighting.MixinDummyLightLayerEventListener",
         "common.level.lighting.MixinLayerLightSectionStorage",
         "common.level.lighting.MixinLevelLightEngine",
         "common.level.lighting.MixinLightEngine",

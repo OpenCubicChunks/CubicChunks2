@@ -42,9 +42,6 @@ public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S exten
 
     @Shadow @Final private LightChunk[] lastChunk;
 
-    @Shadow protected void checkNode(long id) {
-    }
-
     @Shadow @Nullable protected abstract LightChunk getChunk(int chunkX, int chunkZ);
 
     @Override
@@ -73,8 +70,6 @@ public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S exten
         }
 
         this.isCubic = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).isCubic();
-//        this.generates2DChunks = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).generates2DChunks();
-//        this.worldStyle = ((CubicLevelHeightAccessor) this.chunkSource.getLevel()).worldStyle();
     }
 
     @Redirect(method = "getState",
