@@ -4,19 +4,17 @@ import javax.annotation.Nullable;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLevelLightEngine;
+import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEventListener;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicSkyLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.chunk.DataLayer;
-import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LevelLightEngine;
+import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LightEventListener;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -41,8 +39,7 @@ public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, Cu
     @Shadow public void queueSectionData(LightLayer lightLayer, SectionPos sectionPos, @Nullable DataLayer dataLayer) {
         throw new Error("Mixin failed to apply correctly");
     }
-
-        // TODO use dasm for these
+    // TODO use dasm for these
     @Override
     public void retainData(CubePos cubePos, boolean retain) {
         if (this.blockEngine != null) {
@@ -65,11 +62,17 @@ public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, Cu
         }
     }
 
-    protected void doSkyLightForCube(CubeAccess cube) {
+    @Override
+    public void propagateLightSources(CubePos cubePos) {
+        if (this.blockEngine != null) {
+            ((CubicLightEventListener) this.blockEngine).propagateLightSources(cubePos);
+        }
         if (this.skyEngine != null) {
-            ((CubicSkyLightEngine) this.skyEngine).doSkyLightForCube(cube);
+            ((CubicLightEventListener) this.skyEngine).propagateLightSources(cubePos);
         }
     }
+
+    // TODO (1.20) skylight
 
     @Override
     public void checkSkyLightColumn(ColumnCubeMapGetter chunk, int x, int z, int oldHeight, int newHeight) {

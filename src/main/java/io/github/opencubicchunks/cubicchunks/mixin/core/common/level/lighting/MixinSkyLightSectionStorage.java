@@ -1,21 +1,9 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.level.lighting;
 
-import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.LayerLightSectionStorageAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;
-import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightHeightmapGetter;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.SectionPos;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
-import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LightChunkGetter;
-import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LayerLightSectionStorage;
 import net.minecraft.world.level.lighting.SkyLightSectionStorage;
 import org.spongepowered.asm.mixin.Mixin;
@@ -33,6 +21,8 @@ public abstract class MixinSkyLightSectionStorage extends LayerLightSectionStora
         super(lightLayer, lightChunkGetter, dataLayerStorageMap);
     }
 
+    // TODO (1.20) which of these do we actually need anymore?
+
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onInit(LightChunkGetter lightChunkGetter, CallbackInfo ci) {
         if (lightChunkGetter.getLevel() == null) {
@@ -49,52 +39,8 @@ public abstract class MixinSkyLightSectionStorage extends LayerLightSectionStora
             return;
         }
 
-        // Replace this method with an equivalent of BlockLightSectionStorage.getLightValue,
-        // since we don't need sky light logic
-        long sectionPosLong = SectionPos.blockToSection(blockPosLong);
-        DataLayer dataLayer = this.getDataLayer(sectionPosLong, cached);
-        int blockX = BlockPos.getX(blockPosLong);
-        int blockY = BlockPos.getY(blockPosLong);
-        int blockZ = BlockPos.getZ(blockPosLong);
-
-        if (dataLayer == null) {
-
-            int chunkX = Coords.blockToSection(blockX);
-            int chunkZ = Coords.blockToSection(blockZ);
-            BlockGetter chunk = ((LayerLightSectionStorageAccess) this).getChunkSource().getChunkForLighting(chunkX, chunkZ);
-
-
-            if (chunk == null) {
-                // clients can have null chunks when trying to render an entity in a chunk that hasn't arrived yet
-                // if a chunk were null on the server, it would cause errors during world gen
-                Level level = (Level) ((LayerLightSectionStorageAccess) this).getChunkSource().getLevel();
-                //assert level.isClientSide; // can be true because of mushroom generation
-
-                // used as a default light value, eg for rendering entities that are not within an existing chunk
-                cir.setReturnValue(15);
-                return;
-            }
-
-            //TODO: Optimize
-            BlockGetter cube = ((LightCubeGetter) ((LayerLightSectionStorageAccess) this).getChunkSource()).getCubeForLighting(
-                Coords.blockToCube(blockX),
-                Coords.blockToCube(blockY),
-                Coords.blockToCube(blockZ)
-            );
-            if (cube == null || !((CubeAccess) cube).getStatus().isOrAfter(ChunkStatus.LIGHT)) {
-                cir.setReturnValue(0);
-                return;
-            }
-
-            Heightmap lightHeightmap = ((LightHeightmapGetter) chunk).getLightHeightmap();
-            int height = lightHeightmap.getFirstAvailable(SectionPos.sectionRelative(blockX), SectionPos.sectionRelative(blockZ));
-            cir.setReturnValue(height <= blockY ? 15 : 0);
-        } else {
-            cir.setReturnValue(dataLayer.get(
-                SectionPos.sectionRelative(blockX),
-                SectionPos.sectionRelative(blockY),
-                SectionPos.sectionRelative(blockZ)));
-        }
+        // TODO (1.20)
+        cir.setReturnValue(15);
     }
 
     @Inject(method = "onNodeAdded", cancellable = true, at = @At("HEAD"))

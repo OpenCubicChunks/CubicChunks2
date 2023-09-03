@@ -4,22 +4,20 @@ import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.github.opencubicchunks.cc_core.api.CubePos;
-import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cc_core.world.CubicLevelHeightAccessor;
 import io.github.opencubicchunks.cubicchunks.mixin.access.common.LayerLightSectionStorageAccess;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.LightCubeGetter;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEngine;
-import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLayerLightSectionStorage;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEventListener;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
-import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LightChunk;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.lighting.DataLayerStorageMap;
-import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.lighting.LayerLightSectionStorage;
+import net.minecraft.world.level.lighting.LightEngine;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -31,7 +29,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LightEngine.class)
 public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S extends LayerLightSectionStorage<M>> implements CubicLightEngine, CubicLightEventListener {
-
     @Shadow @Final protected S storage;
 
     @Shadow @Final protected LightChunkGetter chunkSource;
@@ -43,6 +40,12 @@ public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S exten
     @Shadow @Final private LightChunk[] lastChunk;
 
     @Shadow @Nullable protected abstract LightChunk getChunk(int chunkX, int chunkZ);
+
+    @Shadow protected abstract void enqueueIncrease(long aLong, long l);
+
+    @Shadow protected static boolean isEmptyShape(BlockState state) {
+        throw new IllegalStateException("Mixin failed to apply");
+    }
 
     @Override
     public void retainCubeData(CubePos cubePos, boolean retain) {
@@ -76,8 +79,6 @@ public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S exten
         int sectionZ = SectionPos.blockToSectionCoord(blockPos.getZ());
         return this.getCubeReader(sectionX, sectionY, sectionZ);
     }
-
-    // TODO might need to modify getOpacity
 
     @Nullable
     private LightChunk getCubeReader(int sectionX, int sectionY, int sectionZ) {
