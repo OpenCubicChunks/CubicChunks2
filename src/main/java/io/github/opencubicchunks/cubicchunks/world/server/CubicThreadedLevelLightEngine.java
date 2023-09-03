@@ -11,7 +11,7 @@ public interface CubicThreadedLevelLightEngine {
     void postConstructorSetup(CubeTaskPriorityQueueSorter sorter,
                               ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> taskExecutor);
 
-    void setCubeStatusEmpty(CubePos cubePos);
+    void updateCubeStatus(CubePos cubePos);
 
     CompletableFuture<CubeAccess> lightCube(CubeAccess cube, boolean b);
 }

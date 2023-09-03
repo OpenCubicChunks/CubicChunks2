@@ -7,6 +7,7 @@ import io.github.opencubicchunks.cc_core.world.ColumnCubeMapGetter;
 import io.github.opencubicchunks.cubicchunks.world.level.chunk.CubeAccess;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLevelLightEngine;
+import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEventListener;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicSkyLightEngine;
 import io.github.opencubicchunks.cubicchunks.world.lighting.SkyLightColumnChecker;
 import net.minecraft.core.BlockPos;
@@ -20,7 +21,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(LevelLightEngine.class)
-public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, LightEventListener, SkyLightColumnChecker {
+public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, CubicLightEventListener, LightEventListener, SkyLightColumnChecker {
     @Shadow @Final protected LevelHeightAccessor levelHeightAccessor;
 
     @Shadow @Final @Nullable private LightEngine<?, ?> blockEngine;
@@ -48,13 +49,13 @@ public abstract class MixinLevelLightEngine implements CubicLevelLightEngine, Li
     }
 
     @Override
-    public void enableLightSources(CubePos cubePos, boolean retain) {
+    public void setLightEnabled(CubePos cubePos, boolean enable) {
         if (this.blockEngine != null) {
-            ((CubicLightEngine) this.blockEngine).enableLightSources(cubePos, retain);
+            ((CubicLightEventListener) this.blockEngine).setLightEnabled(cubePos, enable);
         }
 
         if (this.skyEngine != null) {
-            ((CubicLightEngine) this.skyEngine).enableLightSources(cubePos, retain);
+            ((CubicLightEventListener) this.skyEngine).setLightEnabled(cubePos, enable);
         }
     }
 

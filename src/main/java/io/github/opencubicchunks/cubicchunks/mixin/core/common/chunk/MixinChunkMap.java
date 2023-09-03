@@ -507,7 +507,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
                         ((CubicServerLevel) this.level).onCubeUnloading(levelCube);
                     }
 
-                    ((CubicThreadedLevelLightEngine) this.lightEngine).setCubeStatusEmpty(cube.getCubePos());
+                    ((CubicThreadedLevelLightEngine) this.lightEngine).updateCubeStatus(cube.getCubePos());
                     this.lightEngine.tryScheduleUpdate();
                     CubePos pos = CubePos.from(cubePos);
 

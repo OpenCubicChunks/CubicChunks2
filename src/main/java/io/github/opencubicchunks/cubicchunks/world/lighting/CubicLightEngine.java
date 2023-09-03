@@ -6,8 +6,6 @@ import io.github.opencubicchunks.cc_core.api.CubePos;
 public interface CubicLightEngine {
     void retainCubeData(CubePos pos, boolean retain);
 
-    void enableLightSources(CubePos cubePos, boolean enable);
-
     @VisibleForTesting
     void setCubic();
 }

@@ -3,8 +3,6 @@ package io.github.opencubicchunks.cubicchunks.mixin.core.common.level.lighting;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.IntSupplier;
 
-import javax.annotation.Nullable;
-
 import com.mojang.datafixers.util.Pair;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
@@ -105,12 +103,12 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
     }
 
     // updateChunkStatus
-    public void setCubeStatusEmpty(CubePos cubePos) {
+    public void updateCubeStatus(CubePos cubePos) {
         this.addTask(cubePos.getX(), cubePos.getY(), cubePos.getZ(), () -> {
             return 0;
         }, ThreadedLevelLightEngine.TaskType.PRE_UPDATE, Util.name(() -> {
             super.retainData(cubePos, false);
-            super.enableLightSources(cubePos, false);
+            super.setLightEnabled(cubePos, false);
 
             for (int i = 0; i < CubicConstants.SECTION_COUNT; ++i) {
                 // FIXME (1.20)
@@ -120,7 +118,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
             for (int j = 0; j < CubicConstants.SECTION_COUNT; ++j) {
                 super.updateSectionStatus(Coords.sectionPosByIndex(cubePos, j), true);
             }
-        }, () -> "setCubeStatusEmpty " + cubePos + " " + true));
+        }, () -> "updateCubeStatus " + cubePos + " " + true));
     }
 
     // lightChunk
@@ -136,7 +134,7 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
                 }
             }
 
-            super.enableLightSources(cubePos, true);
+            super.setLightEnabled(cubePos, true);
             // TODO (1.20) how are block lights handled now?
 //            if (!flagIn) {
 //                cube.getLights().forEach((blockPos) -> {
@@ -191,10 +189,10 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
     }
 
     @Override
-    public void enableLightSources(CubePos cubePos, boolean flag) {
+    public void setLightEnabled(CubePos cubePos, boolean enable) {
         this.addTask(cubePos.getX(), cubePos.getY(), cubePos.getZ(), ThreadedLevelLightEngine.TaskType.PRE_UPDATE, Util.name(() -> {
-            super.enableLightSources(cubePos, flag);
-        }, () -> "enableLight " + cubePos + " " + flag));
+            super.setLightEnabled(cubePos, enable);
+        }, () -> "enableLight " + cubePos + " " + enable));
     }
 
     // FIXME (1.20)

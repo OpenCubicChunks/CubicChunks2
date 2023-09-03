@@ -5,6 +5,7 @@ import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.client.multiplayer.ClientCubeCache;
 import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLevelLightEngine;
+import io.github.opencubicchunks.cubicchunks.world.lighting.CubicLightEventListener;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.SectionPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -40,7 +41,7 @@ public class PacketUnloadCube {
                 ((ClientLevel) level).setSectionDirtyWithNeighbors(pos.x(), pos.y(), pos.z());
                 lightEngine.updateSectionStatus(pos, true);
             }
-            ((CubicLevelLightEngine) lightEngine).enableLightSources(packet.pos, false);
+            ((CubicLightEventListener) lightEngine).setLightEnabled(packet.pos, false);
 
         }
     }

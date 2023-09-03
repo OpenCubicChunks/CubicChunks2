@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 @Mixin(LayerLightSectionStorage.class)
 public interface LayerLightSectionStorageAccess {
 
-    @Invoker("setLightEnabled") void invokeSetColumnEnabled(long seed, boolean enable);
+    @Invoker("setLightEnabled") void invokeSetLightEnabled(long sectionPos, boolean enable);
 
     @Invoker boolean invokeStoringLightForSection(long sectionPos);
 
