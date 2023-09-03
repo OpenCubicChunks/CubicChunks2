@@ -21,7 +21,9 @@ import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ThreadedLevelLightEngine;
 import net.minecraft.util.thread.ProcessorHandle;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -196,22 +198,22 @@ public abstract class MixinThreadedLevelLightEngine extends MixinLevelLightEngin
     }
 
     // FIXME (1.20)
-//    /**
-//     * @author NotStirred
-//     * @reason Vanilla lighting is gone
-//     */
-//    @Inject(method = "queueSectionData", at = @At("HEAD"), cancellable = true)
-//    public void queueSectionData(LightLayer type, SectionPos pos, @Nullable DataLayer array, boolean flag, CallbackInfo ci) {
-//        if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
-//            return;
-//        }
-//        ci.cancel();
-//
-//        CubePos cubePos = CubePos.from(pos);
-//        this.addTask(cubePos.getX(), cubePos.getY(), cubePos.getZ(), () -> 0, ThreadedLevelLightEngine.TaskType.PRE_UPDATE, Util.name(() -> {
-//            super.queueSectionData(type, pos, array, flag);
-//        }, () -> "queueData " + pos));
-//    }
+    /**
+     * @author NotStirred
+     * @reason Vanilla lighting is gone
+     */
+    @Inject(method = "queueSectionData", at = @At("HEAD"), cancellable = true)
+    public void queueSectionData(LightLayer lightLayer, SectionPos pos, DataLayer dataLayer, CallbackInfo ci) {
+        if (!((CubicLevelHeightAccessor) this.levelHeightAccessor).isCubic()) {
+            return;
+        }
+        ci.cancel();
+
+        CubePos cubePos = CubePos.from(pos);
+        this.addTask(cubePos.getX(), cubePos.getY(), cubePos.getZ(), () -> 0, ThreadedLevelLightEngine.TaskType.PRE_UPDATE, Util.name(() -> {
+            super.queueSectionData(lightLayer, pos, dataLayer);
+        }, () -> "queueData " + pos));
+    }
 
     //retainData(ChunkPos, bool)
     @Override

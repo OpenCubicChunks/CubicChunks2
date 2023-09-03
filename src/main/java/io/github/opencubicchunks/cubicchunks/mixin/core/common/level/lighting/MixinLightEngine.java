@@ -45,20 +45,13 @@ public abstract class MixinLightEngine<M extends DataLayerStorageMap<M>, S exten
     @Shadow @Nullable protected abstract LightChunk getChunk(int chunkX, int chunkZ);
 
     @Override
-    public void retainCubeData(CubePos posIn, boolean retain) {
-        long i = posIn.asSectionPos().asLong();
-        ((CubicLayerLightSectionStorage) this.storage).retainCubeData(i, retain);
+    public void retainCubeData(CubePos cubePos, boolean retain) {
+        this.storage.retainData(cubePos.asSectionPos().asLong(), retain);
     }
 
     @Override
     public void setLightEnabled(CubePos cubePos, boolean enable) {
-        ChunkPos chunkPos = cubePos.asChunkPos();
-        //TODO: implement invokeEnableLightSources for CubePos in SkyLightStorage
-        for (int x = 0; x < CubicConstants.DIAMETER_IN_SECTIONS; x++) {
-            for (int z = 0; z < CubicConstants.DIAMETER_IN_SECTIONS; z++) {
-                ((LayerLightSectionStorageAccess) this.storage).invokeSetLightEnabled(ChunkPos.asLong(chunkPos.x + x, chunkPos.z + z), enable);
-            }
-        }
+        ((LayerLightSectionStorageAccess) this.storage).invokeSetLightEnabled(cubePos.asSectionPos().asLong(), enable);
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
