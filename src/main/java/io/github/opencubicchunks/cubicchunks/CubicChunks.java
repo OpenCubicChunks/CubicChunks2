@@ -8,6 +8,7 @@ import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.config.CommonConfig;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ChunkMap;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -20,6 +21,7 @@ public class CubicChunks extends CubicChunksBase {
     protected static CommonConfig config = null;
 
     public CubicChunks(IEventBus modEventBus) {
+        ChunkMap.class.getName();
         // if (!(CubeMap.class.isAssignableFrom(ChunkMap.class))) {
         //     throw new IllegalStateException("Mixin not applied!");
         // }

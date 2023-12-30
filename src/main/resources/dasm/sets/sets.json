@@ -1,0 +1,17 @@
+{
+    "imports": [
+        "io.github.opencubicchunks.cc_core.api.CubePos",
+        "net.minecraft.world.level.ChunkPos"
+    ],
+    "sets": {
+        "general": {
+            "typeRedirects": {
+                "ChunkPos": "CubePos"
+            },
+            "fieldRedirects": {
+            },
+            "methodRedirects": {
+            }
+        }
+    }
+}

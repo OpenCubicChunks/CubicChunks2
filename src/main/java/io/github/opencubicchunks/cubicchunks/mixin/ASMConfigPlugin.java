@@ -8,6 +8,7 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,8 +25,9 @@ import io.github.opencubicchunks.dasm.RedirectsParseException;
 import io.github.opencubicchunks.dasm.RedirectsParser;
 import io.github.opencubicchunks.dasm.Transformer;
 import io.github.opencubicchunks.dasm.TypeRedirect;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.MappingResolver;
+import net.neoforged.fml.loading.FMLEnvironment;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -37,30 +39,29 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
     private final Map<RedirectsParser.ClassTarget, List<RedirectsParser.RedirectSet>> redirectSetsByClassTarget = new HashMap<>();
     private final ConcurrentHashMap<String, ClassNode> classesToDuplicateSrc = new ConcurrentHashMap<>();
     private final Map<String, String> classDuplicationDummyTargets = new HashMap<>();
-
+    private final Map<String, RedirectsParser.RedirectSet> redirectSetByName = new HashMap<>();
     private final Throwable constructException;
 
     private final Transformer transformer;
 
     public ASMConfigPlugin() {
-        boolean developmentEnvironment = true;
+        boolean developmentEnvironment = false;
         try {
-            developmentEnvironment = FabricLoader.getInstance().isDevelopmentEnvironment();
-        } catch (NullPointerException ignored) { // isDevelopmentEnvironment can throw from a test environment as it has no launcher instance
+            developmentEnvironment = !FMLEnvironment.production;
+        } catch (Throwable ignored) {
         }
         MappingsProvider mappings = new MappingsProvider() {
-            final MappingResolver mappingsResolver = FabricLoader.getInstance().getMappingResolver();
 
             @Override public String mapFieldName(String owner, String fieldName, String descriptor) {
-                return mappingsResolver.mapFieldName("intermediary", owner, fieldName, descriptor);
+                return fieldName;
             }
 
             @Override public String mapMethodName(String owner, String methodName, String descriptor) {
-                return mappingsResolver.mapMethodName("intermediary", owner, methodName, descriptor);
+                return methodName;
             }
 
             @Override public String mapClassName(String className) {
-                return mappingsResolver.mapClassName("intermediary", className);
+                return className;
             }
         };
 
@@ -72,8 +73,6 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             //TODO: add easy use of multiple set and target json files
             redirectSets = loadSetsFile("dasm/sets/sets.json");
             targetClasses = loadTargetsFile("dasm/targets.json");
-
-            Map<String, RedirectsParser.RedirectSet> redirectSetByName = new HashMap<>();
 
             for (RedirectsParser.RedirectSet redirectSet : redirectSets) {
                 redirectSetByName.put(redirectSet.getName(), redirectSet);
@@ -147,11 +146,12 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
             //Ideally the input json would all have the same, and we'd just figure it out here
             RedirectsParser.ClassTarget target = classTargetByName.get(targetClassName);
             if (target == null) {
-                throw new RuntimeException(new ClassNotFoundException(String.format("Couldn't find target class %s to remap", targetClassName)));
+                return;
             }
             if (target.isWholeClass()) {
                 ClassNode duplicate = new ClassNode();
                 targetClass.accept(duplicate);
+
                 this.transformer.transformClass(duplicate, target, redirectSetsByClassTarget.get(target));
                 classesToDuplicateSrc.put(duplicate.name.replace('/', '.'), duplicate);
                 return;
@@ -181,6 +181,125 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         }
     }
 
+    @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        RedirectsParser.ClassTarget classTarget = new RedirectsParser.ClassTarget(targetClassName);
+        List<RedirectsParser.RedirectSet> redirectSets = new ArrayList<>();
+
+        findRedirectSets(targetClassName, targetClass, redirectSets);
+        buildClassTarget(targetClass, classTarget);
+
+        this.transformer.transformClass(targetClass, classTarget, redirectSets);
+    }
+
+    private void findRedirectSets(String targetClassName, ClassNode targetClass, List<RedirectsParser.RedirectSet> redirectSets) {
+        if (targetClass.invisibleAnnotations == null) {
+            return;
+        }
+        for (AnnotationNode ann : targetClass.invisibleAnnotations) {
+            if (!ann.desc.equals("Lio/github/opencubicchunks/cubicchunks/mixin/DasmRedirect;")) {
+                continue;
+            }
+            // The name value pairs of this annotation. Each name value pair is stored as two consecutive
+            // elements in the list. The name is a String, and the value may be a
+            // Byte, Boolean, Character, Short, Integer, Long, Float, Double, String or org.objectweb.asm.Type,
+            // or a two elements String array (for enumeration values), an AnnotationNode,
+            // or a List of values of one of the preceding types. The list may be null if there is no name value pair.
+            List<Object> values = ann.values;
+            if (values == null) {
+                redirectSets.add(redirectSetByName.get("general"));
+                continue;
+            }
+            List<String> useSets = null;
+            for (int i = 0, valuesSize = values.size(); i < valuesSize; i += 2) {
+                String name = (String) values.get(i);
+                Object value = values.get(i + 1);
+                if (name.equals("value")) {
+                    useSets = (List<String>) value;
+                }
+            }
+            for (String useSet : useSets) {
+                RedirectsParser.RedirectSet redirectSet = redirectSetByName.get(useSet);
+                if (redirectSet == null) {
+                    throw new IllegalArgumentException("No redirect set " + useSet + ", targetClass=" + targetClassName);
+                }
+                redirectSets.add(redirectSet);
+            }
+        }
+    }
+
+    private static void buildClassTarget(ClassNode targetClass, RedirectsParser.ClassTarget classTarget) {
+        for (Iterator<MethodNode> iterator = targetClass.methods.iterator(); iterator.hasNext(); ) {
+            MethodNode method = iterator.next();
+            if (method.invisibleAnnotations == null) {
+                continue;
+            }
+            for (AnnotationNode ann : method.invisibleAnnotations) {
+                if (!ann.desc.equals("Lio/github/opencubicchunks/cubicchunks/mixin/TransformFrom;")) {
+                    continue;
+                }
+                iterator.remove();
+
+                // The name value pairs of this annotation. Each name value pair is stored as two consecutive
+                // elements in the list. The name is a String, and the value may be a
+                // Byte, Boolean, Character, Short, Integer, Long, Float, Double, String or org.objectweb.asm.Type,
+                // or a two elements String array (for enumeration values), an AnnotationNode,
+                // or a List of values of one of the preceding types. The list may be null if there is no name value pair.
+                List<Object> values = ann.values;
+                String targetName = null;
+                boolean makeSyntheticAccessor = false;
+                String desc = null;
+                for (int i = 0, valuesSize = values.size(); i < valuesSize; i += 2) {
+                    String name = (String) values.get(i);
+                    Object value = values.get(i + 1);
+                    if (name.equals("value")) {
+                        targetName = (String) value;
+                    } else if (name.equals("makeSyntheticAccessor")) {
+                        makeSyntheticAccessor = (Boolean) value;
+                    } else if (name.equals("signature")) {
+                        desc = parseMethodDescriptor((AnnotationNode) value);
+                    }
+                }
+                if (desc == null) {
+                    int split = targetName.indexOf('(');
+                    desc = targetName.substring(split);
+                    targetName = targetName.substring(0, split);
+                }
+                RedirectsParser.ClassTarget.TargetMethod targetMethod = new RedirectsParser.ClassTarget.TargetMethod(
+                    new Transformer.ClassMethod(Type.getObjectType(targetClass.name), new org.objectweb.asm.commons.Method(targetName, desc)),
+                    method.name,
+                    true, makeSyntheticAccessor
+                );
+                classTarget.addTarget(targetMethod);
+            }
+        }
+    }
+
+    private static String parseMethodDescriptor(AnnotationNode ann) {
+        if (ann == null) {
+            return null;
+        }
+        List<Object> values = ann.values;
+
+        Type ret = null;
+        List<Type> args = null;
+        boolean useFromString = false;
+        for (int i = 0, valuesSize = values.size(); i < valuesSize; i += 2) {
+            String name = (String) values.get(i);
+            Object value = values.get(i + 1);
+            if (name.equals("ret")) {
+                ret = (Type) value;
+            } else if (name.equals("args")) {
+                args = (List<Type>) value;
+            } else if (name.equals("useFromString")) {
+                useFromString = (Boolean) value;
+            }
+        }
+        if (useFromString) {
+            return null;
+        }
+        return Type.getMethodDescriptor(ret, args.toArray(new Type[0]));
+    }
+
     private void replaceClassContent(ClassNode node, ClassNode replaceWith) {
         node.access = 0;
         node.name = null;
@@ -207,10 +326,6 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
         node.methods.clear();
 
         replaceWith.accept(node);
-    }
-
-    @Override public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-
     }
 
     private JsonElement parseFileAsJson(String fileName) {
