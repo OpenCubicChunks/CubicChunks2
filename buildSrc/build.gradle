@@ -5,22 +5,16 @@ apply plugin: 'java'
 
 repositories {
     mavenCentral()
-    maven {
-        name = 'Fabric'
-        url = 'https://maven.fabricmc.net/'
-    }
-    jcenter()
-    maven {
-        name = "JitPack"
-        url = "https://jitpack.io"
-    }
+    gradlePluginPortal()
+    maven { url = 'https://maven.neoforged.net/releases' }
+    maven { url = "https://jitpack.io" }
+    jcenter() // grgit, TODO: use egit directly
 }
 
 dependencies {
     implementation "com.github.OpenCubicChunks:dasm:83a8175258"
+    implementation "net.neoforged.gradle:userdev:7.0.72"
 
-    implementation 'net.fabricmc:fabric-loom:1.1-SNAPSHOT'
-    implementation 'net.fabricmc:mapping-io:0.2.1'
     implementation 'org.ow2.asm:asm:9.3'
     implementation 'org.ow2.asm:asm-tree:9.1'
     implementation 'org.ow2.asm:asm-util:9.1'

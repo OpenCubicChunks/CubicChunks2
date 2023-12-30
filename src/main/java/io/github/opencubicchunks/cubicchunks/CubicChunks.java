@@ -4,32 +4,29 @@ import java.lang.reflect.InvocationTargetException;
 
 import io.github.opencubicchunks.cc_core.CubicChunksBase;
 import io.github.opencubicchunks.cc_core.config.EarlyConfig;
+import io.github.opencubicchunks.cc_core.utils.Coords;
 import io.github.opencubicchunks.cubicchunks.config.CommonConfig;
-import io.github.opencubicchunks.cubicchunks.levelgen.biome.StripedBiomeSource;
-import io.github.opencubicchunks.cubicchunks.levelgen.feature.CubicFeatures;
-import io.github.opencubicchunks.cubicchunks.levelgen.placement.CubicLakePlacementModifier;
-import io.github.opencubicchunks.cubicchunks.mixin.ClassDuplicator;
-import io.github.opencubicchunks.cubicchunks.network.PacketDispatcher;
-import io.github.opencubicchunks.cubicchunks.server.level.CubeMap;
-import net.fabricmc.api.ModInitializer;
 import net.minecraft.SharedConstants;
-import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ChunkMap;
+import net.minecraft.core.BlockPos;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 /**
  * Requires Mixin BootStrap in order to use in forge.
  */
-// The value here should match an entry in the META-INF/mods.toml file
-public class CubicChunks extends CubicChunksBase implements ModInitializer {
+@Mod("cubicchunks")
+public class CubicChunks extends CubicChunksBase {
     protected static CommonConfig config = null;
 
-    public CubicChunks() {
-        if (!(CubeMap.class.isAssignableFrom(ChunkMap.class))) {
-            throw new IllegalStateException("Mixin not applied!");
-        }
+    public CubicChunks(IEventBus modEventBus) {
+        // if (!(CubeMap.class.isAssignableFrom(ChunkMap.class))) {
+        //     throw new IllegalStateException("Mixin not applied!");
+        // }
         EarlyConfig.getDiameterInSections();
-        ClassDuplicator.init();
+
+        Coords.blockToIndex(new BlockPos(0, 0, 0));
+        // ClassDuplicator.init();
         if (System.getProperty("cubicchunks.debug", "false").equalsIgnoreCase("true")) {
             try {
                 Class.forName("io.github.opencubicchunks.cubicchunks.debug.DebugVisualization").getMethod("enable").invoke(null);
@@ -38,24 +35,12 @@ public class CubicChunks extends CubicChunksBase implements ModInitializer {
                 LOGGER.catching(e);
             }
         }
+
+        modEventBus.addListener(this::commonSetup);
     }
 
-    @Override
-    public void onInitialize() {
-        PacketDispatcher.register();
-
-//        Registry.register(Registry.CHUNK_GENERATOR, new ResourceLocation(MODID, "generator"), CCNoiseBasedChunkGenerator.CODEC);
-
-        //Custom CC Features
-        CubicFeatures.init();
-    }
-
-    public static void registerBiomeSources() {
-        Registry.register(Registry.BIOME_SOURCE, new ResourceLocation(MODID, "stripes"), StripedBiomeSource.CODEC);
-    }
-
-    public static void registerPlacementModifiers() {
-        CubicLakePlacementModifier.init();
+    private void commonSetup(final FMLCommonSetupEvent event) {
+        // PacketDispatcher.register();
     }
 
     public static CommonConfig config() {

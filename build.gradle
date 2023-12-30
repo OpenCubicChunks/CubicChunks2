@@ -1,0 +1,270 @@
+buildscript {
+    dependencies {
+        classpath("com.google.code.gson:gson:2.8.5")
+    }
+}
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.neoforged.gradle.userdev' // version in buildSrc build.gradle
+    id("io.github.opencubicchunks.javaheaders").version("1.2.7")
+    id("io.github.opencubicchunks.gradle.mcGitVersion")
+    id("io.github.opencubicchunks.gradle.mixingen")
+    id("io.github.opencubicchunks.gradle.dasm")
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName.set(mod_name)
+}
+
+javaHeaders {
+    setAcceptedJars(".*CubicChunksCore.*")
+    setConfig(file("javaHeaders.json"))
+    // setDebug(debugArtifactTransforms.toBoolean())
+}
+
+mcGitVersion {
+    snapshot = true
+    mcVersion = minecraft_version
+    setCommitVersion("570c0cbf0cdc15b8348a862a519d3399a943af9", "0.0")
+}
+
+tasks.register("generatePackageInfo") {
+    group = "filegen"
+    doFirst {
+        // GeneratePackageInfo.generateFiles(project.sourceSets["main"])
+        // GeneratePackageInfo.generateFiles(project.sourceSets["test"])
+    }
+}
+
+tasks.register("genAll") {
+    group = "filegen"
+    dependsOn(generatePackageInfo, "generateMixinConfigs")
+}
+
+
+mixinGen {
+    filePattern = "cubicchunks.mixins.%s.json"
+    defaultRefmap = "CubicChunks-refmap.json"
+    defaultPackagePrefix = "io.github.opencubicchunks.cubicchunks.mixin"
+    defaultCompatibilityLevel = "JAVA_17"
+    defaultMinVersion = "0.8"
+
+    config("core") {
+        it.required = true
+        it.conformVisibility = true
+        it.injectorsDefaultRequire = 1
+        // configurationPlugin = "io.github.opencubicchunks.cubicchunks.mixin.AnnotationConfigPlugin"
+    }
+/*
+    config("levelgen") {
+        required = true
+        conformVisibility = true
+        injectorsDefaultRequire = 1
+    }
+
+    config("access") {
+        required = true
+        conformVisibility = true
+    }
+
+    config("asm") {
+        required = true
+        configurationPlugin = "io.github.opencubicchunks.cubicchunks.mixin.ASMConfigPlugin"
+    }
+
+    config("asmfixes") {
+        required = true
+        injectorsDefaultRequire = 1
+    }
+
+    config("optifine") {
+        required = true
+        configurationPlugin = "io.github.opencubicchunks.cubicchunks.mixin.OptiFineMixinConfig"
+        injectorsDefaultRequire = 1
+    }
+
+    config("debug") {
+        required = false
+        conformVisibility = true
+        injectorsDefaultRequire = 0
+        configurationPlugin = "io.github.opencubicchunks.cubicchunks.mixin.DebugMixinConfig"
+    }
+
+    config("test") {
+        required = true
+        conformVisibility = true
+        injectorsDefaultRequire = 1
+        configurationPlugin = "io.github.opencubicchunks.cubicchunks.mixin.TestMixinConfig"
+    }*/
+}
+
+repositories {
+    mavenLocal()
+}
+
+base {
+    archivesName = mod_id
+}
+
+// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft.accessTransformers.file rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
+//minecraft.accessTransformers.entry public net.minecraft.client.Minecraft textureManager # textureManager
+
+// Default run configurations.
+// These can be tweaked, removed, or duplicated as needed.
+runs {
+    def args = [
+            "-XX:+IgnoreUnrecognizedVMOptions",
+            "-XX:+UnlockExperimentalVMOptions",
+            "-XX:+AllowEnhancedClassRedefinition",
+            "-XX:-OmitStackTraceInFastThrow",
+            "-XX:+UseG1GC",
+            "-XX:G1NewSizePercent=20",
+            "-XX:G1ReservePercent=20",
+            "-XX:MaxGCPauseMillis=50",
+            "-XX:G1HeapRegionSize=32M",
+            "-Dmixin.debug.verbose=true",
+            "-Dmixin.debug.export=true",
+            "-Dmixin.checks.interfaces=true",
+            "-Dcubicchunks.debug=false",
+            "-Dcubicchunks.debug.loadorder=false",
+            "-Dcubicchunks.debug.window=false",
+            "-Dcubicchunks.debug.statusrenderer=false",
+            "-Dcubicchunks.debug.heightmaprenderer=false",
+            "-Dcubicchunks.debug.heightmaprenderer.server=false",
+            "-Dcubicchunks.debug.heightmaprenderer.render_lightmap=false",
+            "-Dcubicchunks.debug.heightmaprenderer.radius=2",
+            "-Dcubicchunks.debug.heightmapverification=false",
+            "-Dcubicchunks.debug.heightmapverification.frequency=1",
+            "-Dcubicchunks.debug.biomes=false",
+            "-ea"
+    ]
+    // applies to all the run configs below
+    configureEach {
+        jvmArguments args
+        // systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'debug'
+        modSource project.sourceSets.main
+        modSource project(":CubicChunksCore").sourceSets.main
+    }
+
+    client {
+        // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
+        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+    }
+
+    server {
+        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+        programArgument '--nogui'
+    }
+
+    // This run config launches GameTestServer and runs all registered gametests, then exits.
+    // By default, the server will crash when no gametests are provided.
+    // The gametest system is also enabled by default for other run configs under the /test command.
+    gameTestServer {
+        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
+    }
+
+    data {
+        // example of overriding the workingDirectory set in configureEach above, uncomment if you want to use it
+        // workingDirectory project.file('run-data')
+
+        // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
+        programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+    }
+}
+
+// Include resources generated by data generators.
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    maven {
+        name = "JitPack"
+        setUrl("https://jitpack.io")
+    }
+    //maven {
+    //    name = "Gegy"
+    //    setUrl("https://maven.gegy.dev")
+    //}
+}
+
+dependencies {
+    // Specify the version of Minecraft to use.
+    // Depending on the plugin applied there are several options. We will assume you applied the userdev plugin as shown above.
+    // The group for userdev is net.neoforged, the module name is neoforge, and the version is the same as the neoforge version.
+    // You can however also use the vanilla plugin (net.neoforged.gradle.vanilla) to use a version of Minecraft without the neoforge loader.
+    // And its provides the option to then use net.minecraft as the group, and one of; client, server or joined as the module name, plus the game version as version.
+    // For all intends and purposes: You can treat this dependency as if it is a normal library you would use.
+    implementation "net.neoforged:neoforge:${neo_version}"
+
+    // Example mod dependency with JEI
+    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
+    // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
+    // compileOnly "mezz.jei:jei-${mc_version}-forge-api:${jei_version}"
+    // runtimeOnly "mezz.jei:jei-${mc_version}-forge:${jei_version}"
+
+    // Example mod dependency using a mod jar from ./libs with a flat dir repository
+    // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
+    // The group id is ignored when searching -- in this case, it is "blank"
+    // implementation "blank:coolmod-${mc_version}:${coolmod_version}"
+
+    // Example mod dependency using a file as dependency
+    // implementation files("libs/coolmod-${mc_version}-${coolmod_version}.jar")
+
+    // Example project dependency using a sister or child project:
+    implementation(project(":CubicChunksCore")) {
+        attributes {
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.class, LibraryElements.JAR))
+        }
+        transitive = false
+    }
+
+    // For more info:
+    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
+    // http://www.gradle.org/docs/current/userguide/dependency_management.html
+}
+
+// This block of code expands all declared replace properties in the specified resource targets.
+// A missing property will result in an error. Properties are expanded using ${} Groovy notation.
+// When "copyIdeResources" is enabled, this will also run before the game launches in IDE environments.
+// See https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
+tasks.withType(ProcessResources).configureEach {
+    var replaceProperties = [
+            minecraft_version   : minecraft_version, minecraft_version_range: minecraft_version_range,
+            neo_version         : neo_version, neo_version_range: neo_version_range,
+            loader_version_range: loader_version_range,
+            mod_id              : mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
+            mod_authors         : mod_authors, mod_description: mod_description,
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/mods.toml']) {
+        expand replaceProperties + [project: project]
+    }
+}
+
+// Example configuration to allow publishing using the maven-publish plugin
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/repo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}

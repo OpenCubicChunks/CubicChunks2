@@ -8,10 +8,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.Config;
+import io.github.opencubicchunks.cubicchunks.CubicChunks;
+import io.github.opencubicchunks.cubicchunks.mixin.access.common.LevelStorageAccessAccess;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.LevelStorageSource;
 
 public class ServerConfig extends BaseConfig {
     private static final String FILE_PATH = "serverconfig/cubicchunks.toml";
@@ -79,7 +84,7 @@ public class ServerConfig extends BaseConfig {
         configPath.getParentFile().mkdirs();
         write(configPath, createDefaultConfig());
     }
-/*
+
     @Nullable public static ServerConfig getConfig(LevelStorageSource.LevelStorageAccess levelStorageAccess) {
         File configPath = getConfigPath(((LevelStorageAccessAccess) levelStorageAccess).getLevelPath());
         if (configPath.exists()) {
@@ -101,5 +106,5 @@ public class ServerConfig extends BaseConfig {
         } else {
             CubicChunks.LOGGER.info("New worlds are configured to NOT generate as CC; no Cubic Chunks data will be created");
         }
-    }*/
+    }
 }

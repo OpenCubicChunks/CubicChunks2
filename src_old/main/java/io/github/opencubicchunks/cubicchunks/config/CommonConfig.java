@@ -4,12 +4,12 @@ import java.io.File;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
 import com.electronwill.nightconfig.core.Config;
-import net.neoforged.fml.loading.FMLPaths;
+import net.fabricmc.loader.api.FabricLoader;
 
 public class CommonConfig extends BaseConfig {
     private static final String FILE_NAME = "cubicchunks_common.toml";
     // TODO forge/fabric-agnostic method for getting config directory
-    private static final File FILE_PATH = new File(FMLPaths.CONFIGDIR.get().toFile(), FILE_NAME);
+    private static final File FILE_PATH = new File(FabricLoader.getInstance().getConfigDir().toFile(), FILE_NAME);
 
     private static final String KEY_GENERAL = "general";
     private static final String KEY_VERTICAL_VIEW_DISTANCE = KEY_GENERAL + ".verticalViewDistance";
