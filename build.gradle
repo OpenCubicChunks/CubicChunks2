@@ -34,6 +34,17 @@ mcGitVersion {
     setCommitVersion("570c0cbf0cdc15b8348a862a519d3399a943af9", "0.0")
 }
 
+//sourceSets {
+//    create("gametest") {
+//        compileClasspath += configurations.compileClasspath
+//        compileClasspath += configurations.testCompileClasspath
+//        compileClasspath += sourceSets.main.output
+//        runtimeClasspath += configurations.runtimeClasspath
+//        runtimeClasspath += configurations.testRuntimeClasspath
+//        runtimeClasspath += sourceSets.main.output
+//    }
+//}
+
 tasks.register("generatePackageInfo") {
     group = "filegen"
     doFirst {
@@ -48,6 +59,7 @@ tasks.register("genAll") {
 }
 
 
+// TODO mixin auto-gen for mixins in the test sourceset
 mixinGen {
     filePattern = "cubicchunks.mixins.%s.json"
     defaultRefmap = "CubicChunks-refmap.json"
@@ -184,6 +196,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 repositories {
     maven { setUrl("https://oss.sonatype.org/content/repositories/snapshots/") }
     maven { setUrl("https://jitpack.io") }
+    maven { setUrl("https://maven.fabricmc.net/") }
     //maven {
     //    name = "Gegy"
     //    setUrl("https://maven.gegy.dev")
@@ -205,6 +218,20 @@ dependencies {
     }
     libraries("io.github.opencubicchunks:regionlib:0.63.0-SNAPSHOT")
     libraries("org.spongepowered:noise:2.0.0-SNAPSHOT")
+
+    // NeoForge does not yet support JUnit tests, so we use fabric loader for this instead.
+    testImplementation("net.fabricmc:fabric-loader-junit:0.15.3") // required for bootstrapping in unit tests
+    testImplementation("org.assertj:assertj-core:3.25.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
 }
 
 tasks.withType(ProcessResources).configureEach {

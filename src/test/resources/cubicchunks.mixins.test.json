@@ -1,6 +1,6 @@
 {
     "required": true,
-    "package": "io.github.opencubicchunks.cubicchunks.mixin.core",
+    "package": "io.github.opencubicchunks.cubicchunks.mixin.test",
     "refmap": "CubicChunks-refmap.json",
     "plugin": "io.github.opencubicchunks.cubicchunks.mixin.ASMConfigPlugin",
     "compatibilityLevel": "JAVA_17",
@@ -12,8 +12,7 @@
         "conformVisibility": true
     },
     "mixins": [
-        "common.server.level.MixinChunkTracker",
-        "common.TestMixin"
+        "common.server.level.ChunkTrackerTestAccess"
     ],
     "client": [],
     "server": []
