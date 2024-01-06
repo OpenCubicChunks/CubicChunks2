@@ -1,7 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.test.server.level;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Random;
 

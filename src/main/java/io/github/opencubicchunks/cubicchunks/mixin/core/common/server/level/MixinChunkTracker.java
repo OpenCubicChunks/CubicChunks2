@@ -21,13 +21,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkTracker.class)
 public abstract class MixinChunkTracker extends DynamicGraphMinFixedPoint implements MarkableAsCubic {
-    private boolean cc_isCubic;
+    protected boolean cc_isCubic;
     private int cc_noChunkLevel;
 
     private Long2ObjectMap<IntSet> cc_existingCubesForCubeColumns;
 
-    protected MixinChunkTracker(int pFirstQueuedLevel, int pWidth, int pHeight) {
-        super(pFirstQueuedLevel, pWidth, pHeight);
+    protected MixinChunkTracker() {
+        super(0, 0, 0);
     }
 
     // TODO decide upon a standard way of marking objects as cubic
@@ -72,7 +72,7 @@ public abstract class MixinChunkTracker extends DynamicGraphMinFixedPoint implem
                 for (int z2 = -1; z2 <= 1; ++z2) {
                     long neighbor = CloPos.asLong(x + x2, z + z2);
                     if (neighbor == pos) {
-                        neighbor = Long.MAX_VALUE;
+                        neighbor = CloPos.INVALID_CLO_POS;
                     }
 
                     if (neighbor != excludedSourcePos) {
@@ -118,7 +118,7 @@ public abstract class MixinChunkTracker extends DynamicGraphMinFixedPoint implem
                     for (int dy = -1; dy <= 1; dy++) {
                         long neighbor = CloPos.asLong(x + dx, y + dy, z + dz);
                         if (neighbor == pos) {
-                            neighbor = Long.MAX_VALUE;
+                            neighbor = CloPos.INVALID_CLO_POS;
                         }
 
                         if (neighbor != excludedSourcePos) {

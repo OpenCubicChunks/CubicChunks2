@@ -15,6 +15,8 @@ public class CloPos {
     private static final int CLO_Y_COLUMN_INDICATOR = Integer.MAX_VALUE;
     // 22 bits including sign; 2^21-1 is the highest 22-bit signed integer
     private static final int CLO_PACKED_Y_COLUMN_INDICATOR = (1 << 21) - 1;
+    // TODO might want to change this to asLong(Integer.MAX_VALUE, Integer.MAX_VALUE),
+    //  but it requires overrides in some places - DynamicGraphMinFixedPoint defaults to Long.MAX_VALUE as source
     public static final long INVALID_CLO_POS = Long.MAX_VALUE;
     private final int x, y, z;
 
