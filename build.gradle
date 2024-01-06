@@ -132,6 +132,7 @@ minecraft.accessTransformers.file rootProject.file('src/main/resources/META-INF/
 configurations {
     libraries {}
     implementation.extendsFrom libraries
+    extraTests
 }
 
 runs {
@@ -212,6 +213,9 @@ dependencies {
         }
         transitive = false
     }
+    extraTests(project(":CubicChunksCore")) {
+        targetConfiguration = "testArchivesOutput"
+    }
 
     libraries("com.github.OpenCubicChunks:dasm:9709b98") {
         transitive = false
@@ -225,6 +229,9 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.2")
+
+    testImplementation("org.hamcrest:hamcrest-junit:2.0.0.0")
+    testImplementation("org.hamcrest:hamcrest:2.2")
 }
 
 test {
@@ -254,6 +261,38 @@ project.tasks.matching {
     it.name == "prepareKotlinBuildScriptModel"
 }.forEach {
     it.dependsOn("CubicChunksCore:assemble")
+}
+
+// unzipping subproject (CubicChunksCore) tests
+tasks.register('unzipTests', Copy) {
+    outputs.upToDateWhen {
+        false
+    }
+    dependsOn(configurations.named("extraTests"))
+    from(configurations.named("extraTests"))
+    doFirst {
+        //noinspection ConfigurationAvoidance, we actually do want to resolve here
+        var testsFile = configurations["extraTests"].resolve().iterator().next()
+        from(zipTree(testsFile))
+        exclude(testsFile.name)
+    }
+    into(sourceSets.test.output.classesDirs.asPath)
+}
+
+test {
+    minHeapSize = "512M"
+    maxHeapSize = "2048M"
+
+    dependsOn(project.tasks.named("unzipTests"))
+    useJUnitPlatform()
+
+    // Always run tests, even when nothing changed.
+    dependsOn("cleanTest")
+
+    // Show test results.
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
 }
 
 publishing {
