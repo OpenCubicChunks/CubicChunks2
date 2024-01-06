@@ -249,6 +249,13 @@ tasks.withType(ProcessResources).configureEach {
     }
 }
 
+project.tasks.matching {
+    // Using prepareKotlinBuildScriptModel instead of ideaSyncTask as it was removed
+    it.name == "prepareKotlinBuildScriptModel"
+}.forEach {
+    it.dependsOn("CubicChunksCore:assemble")
+}
+
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
