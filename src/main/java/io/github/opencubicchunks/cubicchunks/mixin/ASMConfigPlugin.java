@@ -5,6 +5,7 @@ import javax.annotation.Nullable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.github.opencubicchunks.cubicchunks.CubicChunks;
 import io.github.opencubicchunks.dasm.MappingsProvider;
 import io.github.opencubicchunks.dasm.RedirectsParseException;
 import io.github.opencubicchunks.dasm.RedirectsParser;
@@ -212,15 +213,21 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
                     .filter(m -> m.name.equals(methodNameWithoutPrefix) && m.desc.equals(methodNode.desc))
                     .findFirst();
 
-                assert mixinAddedMethod.isPresent() : "Found DASM added method without a corresponding MixinMerged method";
+                if (mixinAddedMethod.isEmpty()) {
+                    CubicChunks.LOGGER.warn("Found DASM added method `%s` without a corresponding MixinMerged method", methodNameWithoutPrefix);
+                }
                 methodPairs.add(new PrefixMethodPair(methodNode, mixinAddedMethod.orElse(null)));
             }
         }
 
         // Remove the mixin-added methods and set the dasm-added names
         methodPairs.forEach(prefixMethodPair -> {
-            targetClass.methods.remove(prefixMethodPair.mixinAddedMethod);
-            prefixMethodPair.dasmAddedMethod.name = prefixMethodPair.mixinAddedMethod.name;
+            if (prefixMethodPair.mixinAddedMethod != null) {
+                targetClass.methods.remove(prefixMethodPair.mixinAddedMethod);
+            }
+            prefixMethodPair.dasmAddedMethod.name = prefixMethodPair.dasmAddedMethod.name.substring(
+                prefixMethodPair.dasmAddedMethod.name.indexOf("$") + 1
+            );
         });
     }
 
