@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.minecraft.server.level.ChunkTracker;
+import net.minecraft.server.level.DistanceManager;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,23 +20,32 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * {@link ChunkTracker} is a class that determines the edges and as well as the values to be propagated to the edges in {@link DynamicGraphMinFixedPoint}.
+ * It marks all chunks in a 1 chunk radius around the center as edges. Edge chunks have 1 level higher than the center chunk.
+ * <br><br>
+ * {@link DistanceManager.ChunkTicketTracker} would be the equivalent to {@link net.minecraft.server.level.TickingTracker}. Since that
+ * implementation does not use {@link ChunkPos} directly, we do not need to mixin it unlike {@link net.minecraft.server.level.TickingTracker}.
+ * <br><br>
+ * This mixin replaces {@link ChunkPos} with {@link CloPos} and adds in logic to handle propagation for cubes.
+ */
 @Mixin(ChunkTracker.class)
 public abstract class MixinChunkTracker extends DynamicGraphMinFixedPoint implements MarkableAsCubic {
     protected boolean cc_isCubic;
     private int cc_noChunkLevel;
 
+    /** This is a list of all loaded cubes grouped by "big" column positions (32x32 columns) since cubes are 32x32x32.
+     * It is needed for quick lookups to determine which cubes are next to a column when propagating level. */
     private Long2ObjectMap<IntSet> cc_existingCubesForCubeColumns;
 
     protected MixinChunkTracker() {
         super(0, 0, 0);
     }
 
-    // TODO decide upon a standard way of marking objects as cubic
     @Override
     public void cc_setCubic() {
         cc_isCubic = true;
         cc_existingCubesForCubeColumns = new Long2ObjectLinkedOpenHashMap<>();
-        // TODO do we ever need this to be anything else? in the original CloTracker impl there was a constructor that allowed setting noChunkLevel separately
         cc_noChunkLevel = levelCount-1;
     }
 
@@ -60,6 +70,15 @@ public abstract class MixinChunkTracker extends DynamicGraphMinFixedPoint implem
         }
     }
 
+    /**
+     * This computes the propagation of the level from neighbor to neighbor.
+     * <br><br>
+     * We have to handle two cases: whether we are propagating to a column or a cube.
+     * <br><br>
+     * However, it is important to note that you cannot propagate from a column to a cube. This is because
+     * if we did do that, then a single column could potentially load an infinite amount of cubes. So only
+     * cubes can propagate to a column, or cubes propagating to cubes.
+     */
     @Inject(method = "getComputedLevel", at=@At("HEAD"), cancellable = true)
     private void cc_onGetComputedLevel(long pos, long excludedSourcePos, int level, CallbackInfoReturnable<Integer> cir) {
         if (!cc_isCubic) return;
@@ -88,6 +107,7 @@ public abstract class MixinChunkTracker extends DynamicGraphMinFixedPoint implem
                     }
                 }
             }
+            // This is propagating the level from neighboring cubes to this column.
             IntSet neighborCubeYSet = this.cc_existingCubesForCubeColumns.get(CloPos.setRawY(pos, 0));
             if (neighborCubeYSet != null) {
                 for (Integer cubeY : neighborCubeYSet) {
@@ -139,7 +159,12 @@ public abstract class MixinChunkTracker extends DynamicGraphMinFixedPoint implem
         }
     }
 
-    // Should be called from each onSetLevel implementation (ChunkTracker is abstract and does not implement it)
+    /**
+     * This function adds in new cubes and sorts them into the cube column map.
+     * <br><br>
+     * It should be called from each onSetLevel implementation.
+     * For CC, this should only be {@link MixinTickingTracker#cc_onSetLevel(long, int)} and {@link MixinChunkTracker#cc_onSetLevel(long, int)}.
+     */
     protected void cc_onSetLevel(long pos, int level) {
         if (cc_isCubic && CloPos.isCube(pos)) {
             long key = CloPos.setRawY(pos, 0);
