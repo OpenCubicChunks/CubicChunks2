@@ -1,6 +1,7 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.server.level;
 
 import com.llamalad7.mixinextras.injector.WrapWithCondition;
+import io.github.opencubicchunks.cubicchunks.mixin.DasmRedirect;
 import io.github.opencubicchunks.cubicchunks.mixin.TransformFrom;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTickingTracker;
 import io.github.opencubicchunks.cubicchunks.world.level.chunklike.CloPos;
@@ -13,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+@DasmRedirect
 @Mixin(TickingTracker.class)
 public abstract class MixinTickingTracker extends MixinChunkTracker implements CubicTickingTracker {
     @Inject(method = "setLevel", at = @At("HEAD"))
