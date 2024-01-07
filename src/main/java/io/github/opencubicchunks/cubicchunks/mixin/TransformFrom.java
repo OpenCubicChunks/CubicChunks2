@@ -13,11 +13,18 @@ public @interface TransformFrom {
 
     Signature signature() default @Signature(fromString = true);
 
+    ApplicationStage stage() default ApplicationStage.PRE_APPLY;
+
     boolean makeSyntheticAccessor() default false;
 
     @interface Signature {
         Class<?>[] args() default {};
         Class<?> ret() default void.class;
         boolean fromString() default false;
+    }
+
+    enum ApplicationStage {
+        PRE_APPLY,
+        POST_APPLY
     }
 }
