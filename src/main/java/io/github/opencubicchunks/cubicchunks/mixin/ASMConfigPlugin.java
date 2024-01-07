@@ -289,7 +289,7 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
                 String targetName = null;
                 boolean makeSyntheticAccessor = false;
                 String desc = null;
-                TransformFrom.ApplicationStage applicationStage = TransformFrom.ApplicationStage.PRE_APPLY;
+                TransformFrom.ApplicationStage requestedStage = TransformFrom.ApplicationStage.PRE_APPLY;
                 for (int i = 0, valuesSize = values.size(); i < valuesSize; i += 2) {
                     String name = (String) values.get(i);
                     Object value = values.get(i + 1);
@@ -301,11 +301,13 @@ public class ASMConfigPlugin implements IMixinConfigPlugin {
                         desc = parseMethodDescriptor((AnnotationNode) value);
                     } else if (name.equals("stage")) {
                         var parts = ((String[]) value);
-                        if (!stage.toString().equals(parts[1])) {
-                            continue differentStage;
-                        }
+                        requestedStage = TransformFrom.ApplicationStage.valueOf(parts[1]);
                     }
                 }
+                if (stage != requestedStage) {
+                    continue;
+                }
+
                 if (desc == null) {
                     int split = targetName.indexOf('(');
                     desc = targetName.substring(split);
