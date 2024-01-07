@@ -1,12 +1,12 @@
 package io.github.opencubicchunks.cubicchunks.world.level.chunklike;
 
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.LongConsumer;
-
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.ChunkPos;
@@ -129,6 +129,14 @@ public class CloPos {
             i |= ((long) Coords.sectionToCube(this.z) & (1 << 21) - 1) << 22;
         }
         return i;
+    }
+
+    /**
+     * Exists for DASM transforms for ChunkPos->CloPos
+     */
+    @UsedFromASM
+    public long toLong() {
+        return asLong();
     }
 
     public static long asLong(int x, int y, int z) {

@@ -10,6 +10,10 @@
             "environment": "*"
         },
         {
+            "config": "cubicchunks.mixins.access.json",
+            "environment": "*"
+        },
+        {
             "config": "cubicchunks.mixins.test.json",
             "environment": "*"
         }
