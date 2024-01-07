@@ -1,8 +1,11 @@
 package io.github.opencubicchunks.cubicchunks.mixin.core.common.server.level;
 
 import com.llamalad7.mixinextras.injector.WrapWithCondition;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.opencubicchunks.cubicchunks.mixin.DasmRedirect;
 import io.github.opencubicchunks.cubicchunks.mixin.TransformFrom;
+import io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTickingTracker;
 import io.github.opencubicchunks.cubicchunks.world.level.chunklike.CloPos;
 import net.minecraft.server.level.FullChunkStatus;
@@ -54,6 +57,15 @@ public abstract class MixinTickingTracker extends MixinChunkTracker implements C
         var cloPos = CloPos.fromLong(pos.toLong());
         this.addTicket((TicketType<CloPos>) ticketType, cloPos, a, cloPos);
         return false;
+    }
+
+    /**
+     * We need to replace the reference to {@link TicketType#PLAYER} with {@link CubicTicketType#PLAYER} in {@link TickingTracker#replacePlayerTicketsLevel(int)}.
+     */
+    @WrapOperation(method = "replacePlayerTicketsLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/server/level/TicketType;PLAYER:Lnet/minecraft/server/level/TicketType;"))
+    private TicketType<?> cc_replaceTicketType(Operation<TicketType<ChunkPos>> original) {
+        if(!cc_isCubic) return original.call();
+        return CubicTicketType.PLAYER;
     }
 
     @TransformFrom("addTicket(Lnet/minecraft/server/level/TicketType;Lnet/minecraft/world/level/ChunkPos;ILjava/lang/Object;)V")

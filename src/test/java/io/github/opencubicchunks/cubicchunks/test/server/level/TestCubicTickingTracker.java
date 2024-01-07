@@ -3,13 +3,11 @@ package io.github.opencubicchunks.cubicchunks.test.server.level;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.opencubicchunks.cubicchunks.MarkableAsCubic;
-import io.github.opencubicchunks.cubicchunks.mixin.access.common.TicketTypeAccess;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTicketType;
 import io.github.opencubicchunks.cubicchunks.server.level.CubicTickingTracker;
 import io.github.opencubicchunks.cubicchunks.world.level.chunklike.CloPos;
 import net.minecraft.SharedConstants;
 import net.minecraft.server.Bootstrap;
-import net.minecraft.server.level.TicketType;
 import net.minecraft.server.level.TickingTracker;
 import net.minecraft.world.level.ChunkPos;
 import org.junit.jupiter.api.BeforeAll;
@@ -40,8 +38,10 @@ public class TestCubicTickingTracker {
         var tracker = setupTracker();
         var clopos = CloPos.cube(0, 0, 0);
         ((CubicTickingTracker)tracker).addTicket(CubicTicketType.PLAYER, clopos, 0, clopos);
+        tracker.runAllUpdates();
         assertEquals(0, ((CubicTickingTracker)tracker).getLevel(clopos), "Adding ticket failed.");
         tracker.replacePlayerTicketsLevel(2);
+        tracker.runAllUpdates();
         assertEquals(2, ((CubicTickingTracker)tracker).getLevel(clopos), "Replacing ticket failed.");
     }
 
@@ -49,10 +49,13 @@ public class TestCubicTickingTracker {
         var tracker = setupTracker();
         var clopos = CloPos.cube(0, 0, 0);
         ((CubicTickingTracker)tracker).addTicket(CubicTicketType.PLAYER, clopos, 0, clopos);
+        tracker.runAllUpdates();
         assertEquals(0, ((CubicTickingTracker)tracker).getLevel(clopos), "Adding ticket failed.");
         ((CubicTickingTracker)tracker).addTicket(CubicTicketType.PLAYER, clopos, 0, clopos);
+        tracker.runAllUpdates();
         assertEquals(0, ((CubicTickingTracker)tracker).getLevel(clopos), "Adding ticket failed.");
         tracker.replacePlayerTicketsLevel(2);
+        tracker.runAllUpdates();
         assertEquals(2, ((CubicTickingTracker)tracker).getLevel(clopos), "Replacing ticket failed.");
     }
 
@@ -60,8 +63,10 @@ public class TestCubicTickingTracker {
         var tracker = setupTracker();
         var clopos = CloPos.cube(0, 0, 0);
         ((CubicTickingTracker)tracker).addTicket(CubicTicketType.UNKNOWN, clopos, 0, clopos);
+        tracker.runAllUpdates();
         assertEquals(0, ((CubicTickingTracker)tracker).getLevel(clopos), "Adding ticket failed.");
         tracker.replacePlayerTicketsLevel(2);
+        tracker.runAllUpdates();
         assertEquals(0, ((CubicTickingTracker)tracker).getLevel(clopos), "Replacing ticket failed.");
     }
 
@@ -69,10 +74,13 @@ public class TestCubicTickingTracker {
         var tracker = setupTracker();
         var clopos = CloPos.cube(0, 0, 0);
         ((CubicTickingTracker)tracker).addTicket(CubicTicketType.PLAYER, clopos, 4, clopos);
+        tracker.runAllUpdates();
         assertEquals(4, ((CubicTickingTracker)tracker).getLevel(clopos), "Adding ticket failed.");
         ((CubicTickingTracker)tracker).addTicket(CubicTicketType.UNKNOWN, clopos, 3, clopos);
+        tracker.runAllUpdates();
         assertEquals(3, ((CubicTickingTracker)tracker).getLevel(clopos), "Adding ticket failed.");
         tracker.replacePlayerTicketsLevel(2);
-        assertEquals(0, ((CubicTickingTracker)tracker).getLevel(clopos), "Replacing ticket failed.");
+        tracker.runAllUpdates();
+        assertEquals(2, ((CubicTickingTracker)tracker).getLevel(clopos), "Replacing ticket failed.");
     }
 }
