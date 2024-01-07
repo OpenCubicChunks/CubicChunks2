@@ -3,6 +3,8 @@ package io.github.opencubicchunks.cubicchunks.test.server.level;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import io.github.opencubicchunks.cc_core.api.CubePos;
@@ -16,10 +18,15 @@ import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
 import net.minecraft.SharedConstants;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.server.level.ChunkTracker;
+import net.minecraft.server.level.TickingTracker;
+import net.minecraft.world.level.ChunkPos;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+/**
+ * This test class is for testing {@link io.github.opencubicchunks.cubicchunks.mixin.core.common.server.level.MixinChunkTracker}.
+ */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestCubicChunkTracker {
     @BeforeAll
@@ -69,42 +76,124 @@ public class TestCubicChunkTracker {
         }
     }
 
-    @Test public void testSingleCubeSource() {
-        var tracker = new TestCubicTracker(8, 16, 256);
-        ((MarkableAsCubic) tracker).cc_setCubic();
-        var srcPos = CloPos.cube(5, 5, -5);
-        tracker.addSource(srcPos.asLong(), 0);
-        tracker.runAllUpdates();
-        var rand = new Random(727);
-        assertEquals(0, tracker.getLevel(srcPos.asLong()), "level should be zero at source cube");
-        for (int i = 0; i < 1000; i++) {
-            var testPos1 = srcPos.cubePos().offset(rand.nextInt(0, 20)-10, rand.nextInt(0, 20)-10, rand.nextInt(0, 20)-10);
-            var testPos = CubePos.of(testPos1.getX(), testPos1.getY(), testPos1.getZ());
-            var dist = Misc.chebyshevDistance(srcPos.cubePos(), testPos);
-            assertEquals(Math.min(7, dist), tracker.getLevel(CloPos.cube(testPos).asLong()),
-                String.format("level at cube %d %d %d", testPos.getX(), testPos.getY(), testPos.getZ()));
-        }
-        for (int dx = 0; dx < CubicConstants.DIAMETER_IN_SECTIONS; dx++) {
-            for (int dz = 0; dz < CubicConstants.DIAMETER_IN_SECTIONS; dz++) {
-                var srcChunk = srcPos.correspondingColumnCloPos(dx, dz);
-                assertEquals(0, tracker.getLevel(srcChunk.asLong()), "level should be zero at chunks intersecting source cube");
+    private void addAndTestCubeSources(List<CloPos> srcPosClo, TestCubicTracker tracker, Random rand, int numSourcesAdded) {
+        if (numSourcesAdded == 0) {
+            for (int i = 0; i < numSourcesAdded; i++) {
+                srcPosClo.add(CloPos.cube(rand.nextInt(0, 20)-10, rand.nextInt(0, 20)-10, rand.nextInt(0, 20)-10));
+                tracker.addSource(srcPosClo.get(srcPosClo.size() - 1).asLong(), 0);
             }
+            tracker.runAllUpdates();
         }
-        var srcPosY0 = CubePos.of(srcPos.getX(), 0, srcPos.getZ());
-        for (int i = 0; i < 1000; i++) {
-            var testPos = CloPos.cube(srcPos.getX() + rand.nextInt(0, 20) - 10, 0, srcPos.getZ() + rand.nextInt(0, 20) - 10);
-            var testCol = testPos.correspondingColumnCloPos(rand.nextInt(0, CubicConstants.DIAMETER_IN_SECTIONS), rand.nextInt(0, CubicConstants.DIAMETER_IN_SECTIONS));
-            var dist = Misc.chebyshevDistance(srcPosY0, testPos.cubePos());
-            assertEquals(Math.min(7, dist), tracker.getLevel(testCol.asLong()), String.format("level at chunk %d %d", testCol.getX(), testCol.getZ()));
+        for (int i = 0; i < srcPosClo.size(); i++) {
+            assertEquals(0, tracker.getLevel(srcPosClo.get(i).asLong()), "Level should be zero at source cube.");
         }
-
-        tracker.removeSource(srcPos.asLong());
-        tracker.runAllUpdates();
-
-        assertThat(tracker.chunks).withFailMessage("tracker should be empty after removing all sources").isEmpty();
     }
 
-    // this kinda violates the principle of not testing implementation details, but important to make sure this doesn't leak memory so :shrug:
+    private void removeAndTestCubeSources(List<CloPos> srcPosClo, TestCubicTracker tracker, Random rand, float chanceToRemove) {
+        if (chanceToRemove != 0.0f) {
+            List<Integer> srcPosCloToRemove = new ArrayList<Integer>();
+            for (int i = 0; i < srcPosClo.size(); i++) {
+                if (rand.nextFloat() < chanceToRemove) {
+                    srcPosCloToRemove.add(i);
+                    tracker.removeSource(srcPosClo.get(i).asLong());
+                }
+            }
+            for (int i = 0; i < srcPosCloToRemove.size(); i++) {
+                srcPosClo.remove((int)srcPosCloToRemove.get(i));
+            }
+            tracker.runAllUpdates();
+        }
+        for (int i = 0; i < srcPosClo.size(); i++) {
+            assertEquals(0, tracker.getLevel(srcPosClo.get(i).asLong()), "Level should be zero at source cube.");
+        }
+    }
+
+    private void testSourceCubePropagation(List<CloPos> srcPosClo, TestCubicTracker tracker, Random rand) {
+        for (int i = 0; i < 100; i++) {
+            var testPos = CubePos.of(rand.nextInt(0, 20)-10, rand.nextInt(0, 20)-10, rand.nextInt(0, 20)-10);
+            // Minimum distance from all sources should be the level
+            var dist = Integer.MAX_VALUE;
+            for (int j = 0; j < srcPosClo.size(); j++) {
+                dist = Math.min(dist, Misc.chebyshevDistance(srcPosClo.get(j).cubePos(), testPos));
+            }
+            assertEquals(Math.min(7, dist), tracker.getLevel(CloPos.cube(testPos).asLong()),
+                String.format("Level at cube %d %d %d", testPos.getX(), testPos.getY(), testPos.getZ()));
+        }
+    }
+
+    private void testSourceColumnPropagation(List<CloPos> srcPosClo, TestCubicTracker tracker, Random rand) {
+        var srcPosY0 = new CubePos[srcPosClo.size()];
+        for (int i = 0; i < srcPosClo.size(); i++) {
+            srcPosY0[i] = CubePos.of(srcPosClo.get(i).getX(), 0, srcPosClo.get(i).getZ());
+        }
+        for (int i = 0; i < 100; i++) {
+            var testPos = CloPos.cube(rand.nextInt(0, 20) - 10, 0, rand.nextInt(0, 20) - 10);
+            var testCol = testPos.correspondingColumnCloPos(rand.nextInt(0, CubicConstants.DIAMETER_IN_SECTIONS), rand.nextInt(0, CubicConstants.DIAMETER_IN_SECTIONS));
+            // Minimum distance from all sources should be the level
+            var dist = Integer.MAX_VALUE;
+            for (int j = 0; j < srcPosClo.size(); j++) {
+                dist = Math.min(dist, Misc.chebyshevDistance(srcPosY0[j], testPos.cubePos()));
+            }
+            assertEquals(Math.min(7, dist), tracker.getLevel(testCol.asLong()), String.format("Level at chunk %d %d.", testCol.getX(), testCol.getZ()));
+        }
+    }
+
+    private void testSourceCubeIntersection(List<CloPos> srcPosClo, TestCubicTracker tracker) {
+        for (int i = 0; i < srcPosClo.size(); i++) {
+            for (int dx = 0; dx < CubicConstants.DIAMETER_IN_SECTIONS; dx++) {
+                for (int dz = 0; dz < CubicConstants.DIAMETER_IN_SECTIONS; dz++) {
+                    var srcChunk = srcPosClo.get(i).correspondingColumnCloPos(dx, dz);
+                    assertEquals(0, tracker.getLevel(srcChunk.asLong()), "Level should be zero at chunks intersecting source cube.");
+                }
+            }
+        }
+    }
+
+    public void testIntersectionAndPropagation(List<CloPos> srcPosClo, TestCubicTracker tracker, Random rand) {
+        testSourceCubeIntersection(srcPosClo, tracker);
+        testSourceCubePropagation(srcPosClo, tracker, rand);
+        testSourceColumnPropagation(srcPosClo, tracker, rand);
+    }
+
+    public void testCubeSources(int initialSourceCount, int numPhases, int seed, float chanceToRemovePerPhase, int numSourcesToAddPerPhase) {
+        var tracker = new TestCubicTracker(8, 16, 256);
+        ((MarkableAsCubic) tracker).cc_setCubic();
+        var rand = new Random(seed);
+        var srcPosClo = new ArrayList<CloPos>();
+        addAndTestCubeSources(srcPosClo, tracker, rand, initialSourceCount);
+
+        for(int i = 0; i < numPhases; i++) {
+            testIntersectionAndPropagation(srcPosClo, tracker, rand);
+            if(numPhases % 2 == 0) {
+                removeAndTestCubeSources(srcPosClo, tracker, rand, chanceToRemovePerPhase);
+            } else {
+                addAndTestCubeSources(srcPosClo, tracker, rand, numSourcesToAddPerPhase);
+            }
+        }
+
+        for (int i = 0; i < srcPosClo.size(); i++) {
+            tracker.removeSource(srcPosClo.get(i).asLong());
+        }
+        tracker.runAllUpdates();
+
+        assertThat(tracker.chunks).withFailMessage("Tracker should be empty after removing all sources.").isEmpty();
+    }
+
+    @Test public void testSingleCubeSource() {
+        testCubeSources(1, 1, 333, 0, 0);
+    }
+
+    @Test public void testMultipleCubeSources() {
+        testCubeSources(10, 4, 666, 0.5f, 5);
+    }
+
+    /**
+     * This scenario tests an implementation detail, but it is important
+     * that {@link io.github.opencubicchunks.cubicchunks.mixin.core.common.server.level.MixinChunkTracker#cc_existingCubesForCubeColumns} is updated correctly
+     * to prevent memory leaks.
+     * <br><br>
+     * May have to be updated if the implementation of MixinChunkTracker changes.
+     */
     @Test public void testExistingCubesForCubeColumns() {
         var tracker = new TestCubicTracker(8, 16, 256);
         ((MarkableAsCubic) tracker).cc_setCubic();
@@ -130,9 +219,14 @@ public class TestCubicChunkTracker {
         assertThat(existingCubesForCubeColumns.size()).isEqualTo(13*13);
         tracker.removeSource(srcPos4.asLong());
         tracker.runAllUpdates();
-        assertThat(existingCubesForCubeColumns).withFailMessage("tracker should be empty after removing all sources").isEmpty();
+        assertThat(existingCubesForCubeColumns).withFailMessage("Tracker should be empty after removing all sources.").isEmpty();
     }
 
+    /**
+     * This scenario tests a single chunk source. Chunk sources won't be allowed in future implementations, but it is good to make sure they don't break everything.
+     * <br><br>
+     * // TODO: A chunk should never be allowed to be a source. It should be an assert in the future.
+     */
     @Test public void testSingleChunkSource() {
         var tracker = new TestCubicTracker(8, 16, 256);
         ((MarkableAsCubic) tracker).cc_setCubic();
@@ -140,33 +234,86 @@ public class TestCubicChunkTracker {
         tracker.addSource(srcPos.asLong(), 0);
         tracker.runAllUpdates();
         var rand = new Random(333);
-        assertEquals(0, tracker.getLevel(srcPos.asLong()), "level should be zero at source chunk");
-        assertThat(tracker.chunks.keySet()).withFailMessage("no cubes should be loaded by columns").allSatisfy(CloPos::isColumn);
+        assertEquals(0, tracker.getLevel(srcPos.asLong()), "Level should be zero at source chunk.");
+        assertThat(tracker.chunks.keySet()).withFailMessage("No cubes should be loaded by columns.").allSatisfy(CloPos::isColumn);
         for (int i = 0; i < 1000; i++) {
             var testPos = CloPos.column(srcPos.getX() + rand.nextInt(0, 20) - 10, srcPos.getZ() + rand.nextInt(0, 20) - 10);
             var dist = Misc.chebyshevDistance(srcPos.chunkPos(), testPos.chunkPos());
-            assertEquals(Math.min(7, dist), tracker.getLevel(testPos.asLong()), String.format("level at chunk %d %d", testPos.getX(), testPos.getZ()));
+            assertEquals(Math.min(7, dist), tracker.getLevel(testPos.asLong()), String.format("Level at chunk %d %d.", testPos.getX(), testPos.getZ()));
         }
         tracker.removeSource(srcPos.asLong());
         tracker.runAllUpdates();
-        assertThat(tracker.chunks.keySet()).withFailMessage("tracker should be empty after removing all sources").isEmpty();
+        assertThat(tracker.chunks.keySet()).withFailMessage("Tracker should be empty after removing all sources.").isEmpty();
     }
 
-    // done to ensure that we don't break vanilla functionality. would probably be best to test more rigorously, but this is a start.
-    @Test public void testSingleChunkSourceVanilla() {
-        var tracker = new TestCubicTracker(8, 16, 256);
-        var srcPos = CloPos.column(3, 0).chunkPos();
-        tracker.addSource(srcPos.toLong(), 0);
-        tracker.runAllUpdates();
-        var rand = new Random(333);
-        assertEquals(0, tracker.getLevel(srcPos.toLong()), "level should be zero at source chunk");
-        for (int i = 0; i < 1000; i++) {
-            var testPos = CloPos.column(srcPos.x + rand.nextInt(0, 20) - 10, srcPos.z + rand.nextInt(0, 20) - 10).chunkPos();
-            var dist = Misc.chebyshevDistance(srcPos, testPos);
-            assertEquals(Math.min(7, dist), tracker.getLevel(testPos.toLong()), String.format("level at chunk %d %d", testPos.x, testPos.z));
+    private void addAndTestVanillaChunkSources(List<CloPos> srcPosClo, TestCubicTracker tracker, Random rand, int numSourcesAdded) {
+        if (numSourcesAdded == 0) {
+            for (int i = 0; i < numSourcesAdded; i++) {
+                srcPosClo.add(CloPos.column(rand.nextInt(0, 20)-10, rand.nextInt(0, 20)-10));
+                tracker.addSource(srcPosClo.get(srcPosClo.size() - 1).toLong(), 0);
+            }
+            tracker.runAllUpdates();
         }
-        tracker.removeSource(srcPos.toLong());
-        tracker.runAllUpdates();
-        assertThat(tracker.chunks.keySet()).withFailMessage("tracker should be empty after removing all sources").isEmpty();
+        for (int i = 0; i < srcPosClo.size(); i++) {
+            assertEquals(0, tracker.getLevel(srcPosClo.get(i).toLong()), "Level should be zero at source chunk.");
+        }
+    }
+
+    private void removeAndTestVanillaChunkSources(List<CloPos> srcPosClo, TestCubicTracker tracker, Random rand, float chanceToRemove) {
+        if (chanceToRemove == 0.0f) {
+            List<Integer> srcPosToRemove = new ArrayList<Integer>();
+            for (int i = 0; i < srcPosClo.size(); i++) {
+                if (rand.nextFloat() < chanceToRemove) {
+                    srcPosToRemove.add(i);
+                    tracker.removeSource(srcPosClo.get(i).toLong());
+                }
+            }
+            for (int i = 0; i < srcPosToRemove.size(); i++) {
+                srcPosClo.remove((int)srcPosToRemove.get(i));
+            }
+            tracker.runAllUpdates();
+        }
+        for (int i = 0; i < srcPosClo.size(); i++) {
+            assertEquals(0, tracker.getLevel(srcPosClo.get(i).toLong()), "Level should be zero at source chunk.");
+        }
+    }
+
+    private void testVanillaChunkSourcePropagation(List<CloPos> srcPosClo, TestCubicTracker tracker, Random rand) {
+        for (int i = 0; i < 1000; i++) {
+            var testPos = CloPos.column(rand.nextInt(0, 20) - 10, rand.nextInt(0, 20) - 10).chunkPos();
+            var dist = Integer.MAX_VALUE;
+            for (int j = 0; j < srcPosClo.size(); j++) {
+                dist = Math.min(dist, Misc.chebyshevDistance(srcPosClo.get(j).chunkPos(), testPos));
+            }
+            assertEquals(Math.min(7, dist), tracker.getLevel(testPos.toLong()), String.format("Level at chunk %d %d.", testPos.x, testPos.z));
+        }
+    }
+
+    /**
+     * We need this test to ensure we don't break vanilla functionality.
+     */
+    private void testChunkSourcesVanilla(int initialSourceCount, int numPhases, int seed, float chanceToRemovePerPhase, int numSourcesToAddPerPhase) {
+        var tracker = new TestCubicTracker(8, 16, 256);
+        var rand = new Random(seed);
+        var srcPosClo = new ArrayList<CloPos>(initialSourceCount);
+
+        for(int i = 0; i < numPhases; i++) {
+            testVanillaChunkSourcePropagation(srcPosClo, tracker, rand);
+            if(initialSourceCount == 1) {
+                if(numPhases % 2 == 0) {
+                    removeAndTestVanillaChunkSources(srcPosClo, tracker, rand, chanceToRemovePerPhase);
+                } else {
+                    addAndTestVanillaChunkSources(srcPosClo, tracker, rand, numSourcesToAddPerPhase);
+                }
+            }
+        }
+    }
+
+    @Test public void testSingleChunkSourceVanilla() {
+        testChunkSourcesVanilla(1, 1, 727, 0.5f, 5);
+    }
+
+    @Test public void testMultipleChunkSourcesVanilla() {
+        testChunkSourcesVanilla(10, 4, 999, 0.5f, 5);
     }
 }
