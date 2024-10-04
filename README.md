@@ -1,3 +1,5 @@
+# Archived, please see [CC3](https://github.com/OpenCubicChunks/CubicChunks2)
+
 # Cubic Chunks 2 
 
 * Completely recoded and rebuilt for Minecraft versions after 1.12.2
