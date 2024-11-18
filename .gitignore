@@ -21,6 +21,7 @@ build
 # other
 eclipse
 run
+runIntegrationTests
 classes
 
 # Files from Forge MDK

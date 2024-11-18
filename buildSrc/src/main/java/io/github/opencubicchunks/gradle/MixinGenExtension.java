@@ -96,6 +96,15 @@ import org.gradle.api.tasks.SourceSet;
 
         private Integer injectorsDefaultRequire;
         private Boolean conformVisibility;
+        private String sourceSet;
+
+        public String getSourceSet() {
+            return sourceSet;
+        }
+
+        public void setSourceSet(String sourceSet) {
+            this.sourceSet = sourceSet;
+        }
 
         public Boolean getRequired() {
             return required;
@@ -171,9 +180,6 @@ import org.gradle.api.tasks.SourceSet;
     }
 
     void generateFiles(JavaPluginConvention convention) throws IOException {
-        SourceSet main = convention.getSourceSets().getByName("main");
-        Set<File> resourcesSet = main.getResources().getSrcDirs();
-        Path resources = resourcesSet.iterator().next().getCanonicalFile().toPath();
         for (String name : configs.keySet()) {
             MixinConfig config = new MixinConfig();
             Action<MixinConfig> configure = configs.get(name);
@@ -190,6 +196,10 @@ import org.gradle.api.tasks.SourceSet;
                 config.minVersion = defaultMinVersion;
             }
             configure.execute(config);
+
+            SourceSet main = convention.getSourceSets().getByName(config.sourceSet == null ? "main" : config.sourceSet);
+            Set<File> resourcesSet = main.getResources().getSrcDirs();
+            Path resources = resourcesSet.iterator().next().getCanonicalFile().toPath();
 
             String fileName = String.format(filePattern, name);
 
@@ -236,7 +246,8 @@ import org.gradle.api.tasks.SourceSet;
     }
 
     private void writeMixins(JavaPluginConvention convention, String name, MixinConfig config, JsonWriter writer) throws IOException {
-        Set<Path> classes = getMixinClasses(config, convention.getSourceSets().getByName("main").getAllJava());
+        SourceSet main = convention.getSourceSets().getByName(config.sourceSet == null ? "main": config.sourceSet);
+        Set<Path> classes = getMixinClasses(config, main.getAllJava());
 
         Set<Path> commonSet = new HashSet<>();
         Set<Path> clientSet = new HashSet<>();
@@ -281,7 +292,7 @@ import org.gradle.api.tasks.SourceSet;
     }
 
     private Set<Path> getMixinClasses(MixinConfig config, SourceDirectorySet allJava) throws IOException {
-        System.out.println("GetMixin Classes");
+        System.out.println("GetMixin Classes for " + config.packageName + " in " + allJava.getSrcDirs());
         Set<Path> srcPaths = new HashSet<>();
         for (File file : allJava.getSrcDirs()) {
             Path toPath = file.getCanonicalFile().toPath();

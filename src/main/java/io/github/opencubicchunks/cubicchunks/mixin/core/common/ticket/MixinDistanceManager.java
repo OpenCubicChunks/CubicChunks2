@@ -6,6 +6,7 @@ import java.util.concurrent.Executor;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import io.github.opencubicchunks.cc_core.annotation.UsedFromASM;
 import io.github.opencubicchunks.cc_core.api.CubePos;
 import io.github.opencubicchunks.cc_core.api.CubicConstants;
 import io.github.opencubicchunks.cc_core.utils.Coords;
@@ -52,20 +53,20 @@ public abstract class MixinDistanceManager implements CubicDistanceManager, Vert
     private boolean isCubic;
 
     // fields below used from ASM
-    final Long2ObjectMap<ObjectSet<ServerPlayer>> playersPerCube = new Long2ObjectOpenHashMap<>();
-    final Long2ObjectOpenHashMap<SortedArraySet<Ticket<?>>> cubeTickets = new Long2ObjectOpenHashMap<>();
-    private final CubeTicketTracker cubeTicketTracker = new CubeTicketTracker(this);
+    @UsedFromASM final Long2ObjectMap<ObjectSet<ServerPlayer>> playersPerCube = new Long2ObjectOpenHashMap<>();
+    @UsedFromASM final Long2ObjectOpenHashMap<SortedArraySet<Ticket<?>>> cubeTickets = new Long2ObjectOpenHashMap<>();
+    @UsedFromASM private final CubeTicketTracker cubeTicketTracker = new CubeTicketTracker(this);
 
-    private final FixedPlayerDistanceCubeTracker naturalSpawnCubeCounter = new FixedPlayerDistanceCubeTracker(this, 8 / CubicConstants.DIAMETER_IN_SECTIONS);
-    private final CubeTickingTracker tickingCubeTicketsTracker = new CubeTickingTracker();
-    private final CubicPlayerTicketTracker cubicPlayerTicketManager = new CubicPlayerTicketTracker(this, MathUtil.ceilDiv(33, CubicConstants.DIAMETER_IN_SECTIONS));
-    final Set<ChunkHolder> cubesToUpdateFutures = Sets.newHashSet();
-    CubeTaskPriorityQueueSorter cubeTicketThrottler;
-    ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeTicketThrottlerInput;
-    ProcessorHandle<CubeTaskPriorityQueueSorter.Release> cubeTicketThrottlerReleaser;
-    final LongSet cubeTicketsToRelease = new LongOpenHashSet();
+    @UsedFromASM private final FixedPlayerDistanceCubeTracker naturalSpawnCubeCounter = new FixedPlayerDistanceCubeTracker(this, 8 / CubicConstants.DIAMETER_IN_SECTIONS);
+    @UsedFromASM private final CubeTickingTracker tickingCubeTicketsTracker = new CubeTickingTracker();
+    @UsedFromASM private final CubicPlayerTicketTracker cubicPlayerTicketManager = new CubicPlayerTicketTracker(this, MathUtil.ceilDiv(33, CubicConstants.DIAMETER_IN_SECTIONS));
+    @UsedFromASM final Set<ChunkHolder> cubesToUpdateFutures = Sets.newHashSet();
+    @UsedFromASM CubeTaskPriorityQueueSorter cubeTicketThrottler;
+    @UsedFromASM ProcessorHandle<CubeTaskPriorityQueueSorter.Message<Runnable>> cubeTicketThrottlerInput;
+    @UsedFromASM ProcessorHandle<CubeTaskPriorityQueueSorter.Release> cubeTicketThrottlerReleaser;
+    @UsedFromASM final LongSet cubeTicketsToRelease = new LongOpenHashSet();
 
-    private long cubeTicketTickCounter;
+    @UsedFromASM private long cubeTicketTickCounter;
 
     @Shadow abstract void addTicket(long position, Ticket<?> ticket);
 

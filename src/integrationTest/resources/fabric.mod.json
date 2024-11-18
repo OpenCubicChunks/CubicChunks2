@@ -1,0 +1,12 @@
+{
+    "schemaVersion": 1,
+    "id": "cubicchunks-integration-tests",
+    "name": "CubicChunks2 Integration Tests",
+    "version": "1.0.0",
+    "environment": "*",
+    "license": "MIT",
+    "entrypoints": { },
+    "mixins": [
+        "cubicchunks.mixins.integration_test.json"
+    ]
+}

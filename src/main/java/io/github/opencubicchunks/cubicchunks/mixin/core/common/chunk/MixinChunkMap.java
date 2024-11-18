@@ -176,6 +176,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     private CubeTaskPriorityQueueSorter cubeQueueSorter;
 
     private final Long2ObjectLinkedOpenHashMap<ChunkHolder> updatingCubeMap = new Long2ObjectLinkedOpenHashMap<>();
+    /** <b>MUST</b> match MixinChunkMap_SendPlayerAllChunks#visibleCubeMap in integration tests **/
     private volatile Long2ObjectLinkedOpenHashMap<ChunkHolder> visibleCubeMap = this.updatingCubeMap.clone();
 
     // NOTE: used from ASM, don't rename
@@ -1267,7 +1268,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     // updatePlayerPos
-    private SectionPos updatePlayerCubePos(ServerPlayer serverPlayerEntityIn) {
+    @Override
+    public SectionPos updatePlayerCubePos(ServerPlayer serverPlayerEntityIn) {
         SectionPos sectionpos = SectionPos.of(serverPlayerEntityIn);
         serverPlayerEntityIn.setLastSectionPos(sectionpos);
         PacketDispatcher.sendTo(new PacketUpdateCubePosition(sectionpos), serverPlayerEntityIn);
@@ -1276,7 +1278,8 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     }
 
     // updateChunkTracking
-    protected void updateCubeTracking(ServerPlayer player, CubePos cubePosIn, Object[] packetCache, boolean wasLoaded, boolean load) {
+    @Override
+    public void updateCubeTracking(ServerPlayer player, CubePos cubePosIn, Object[] packetCache, boolean wasLoaded, boolean load) {
         if (player.level == this.level) {
             //TODO: reimplement forge event
             //net.minecraftforge.event.ForgeEventFactory.fireChunkWatch(wasLoaded, load, player, cubePosIn, this.world);

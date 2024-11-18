@@ -1,0 +1,33 @@
+{
+    "required": true,
+    "package": "io.github.opencubicchunks.cubicchunks.test.mixin",
+    "refmap": "integrationTest-CubicChunks-refmap.json",
+    "compatibilityLevel": "JAVA_17",
+    "minVersion": "0.8",
+    "injectors": {
+        "defaultRequire": 1
+    },
+    "overwrites": {
+        "conformVisibility": true
+    },
+    "mixins": [],
+    "client": [],
+    "server": [
+        "server.MixinChunkMap_SendPlayerAllChunks",
+        "server.MixinDedicatedServer_DisableNetwork",
+        "server.MixinDistanceManager_PreventPlayerTickets",
+        "server.MixinLevelRenderer_NoLightUpdates",
+        "server.MixinMain",
+        "server.MixinMinecraftServer_TestRunner",
+        "server.MixinPlayerLists_SetSpectatorOnJoin",
+        "server.MixinPlayerLists_TestRenderDistance",
+        "server.MixinServerChunkCache_CubeLoadUnload",
+        "server.MixinServerChunkCache_NoSave",
+        "server.MixinServerGamePacketListenerImpl_NoChunkLoad",
+        "server.MixinServerLevel_NoSave",
+        "server.MixinServerLevel_TestRunner",
+        "server.MixinServerPlayer_NoChunkLoad",
+        "server.MixinServerPlayer_NoTick",
+        "server.MixinServerPlayer_SpawnLocationTest"
+    ]
+}
