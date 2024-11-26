@@ -325,6 +325,11 @@ public class CubeSerializer {
         LOGGER.error("Recoverable errors when loading section [" + cubePos.getX() + ", " + cubePos.getY() + ", " + cubePos.getZ() + ", " + i + "]: " + string);
     }
 
+    // used from ASM
+    public static CompoundTag write(ServerLevel serverLevel, CubeAccess cube) {
+        return write(serverLevel, cube, null);
+    }
+
     public static CompoundTag write(ServerLevel serverLevel, CubeAccess cube, AsyncSaveData data) {
         CubePos pos = cube.getCubePos();
 

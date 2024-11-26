@@ -172,7 +172,7 @@ public class DebugVisualization {
     private static float screenWidth = 854.0f;
     private static float screenHeight = 480f;
     private static GLCapabilities debugGlCapabilities;
-    private static boolean enabled;
+    private static boolean enabled = false;
 
     private static VisualizationMode mode = VisualizationMode.AVAILABLE_MODES[0];
 

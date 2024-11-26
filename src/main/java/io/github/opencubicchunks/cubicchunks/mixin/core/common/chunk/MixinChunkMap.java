@@ -180,6 +180,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     // NOTE: used from ASM, don't rename
     private final LongSet cubeEntitiesInLevel = new LongOpenHashSet();
+    // used from ASM
     private final Long2ObjectLinkedOpenHashMap<ChunkHolder> pendingCubeUnloads = new Long2ObjectLinkedOpenHashMap<>();
 
     // worldgenMailbox
@@ -190,6 +191,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
     private final AtomicInteger tickingGeneratedCubes = new AtomicInteger();
 
     private final Long2ByteMap cubeTypeCache = new Long2ByteOpenHashMap();
+    // used from ASM
     private final Queue<Runnable> cubeUnloadQueue = Queues.newConcurrentLinkedQueue();
 
     private ServerChunkCache serverChunkCache;
@@ -291,13 +293,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         this.processCubeUnloads(hasMoreTime);
     }
 
-    // Forge dimension stuff gone in 1.16, TODO when forge readds dimension code
-    // @Redirect(method = "tick", at = @At(value = "INVOKE", target = "Lit/unimi/dsi/fastutil/longs/Long2ObjectLinkedOpenHashMap;isEmpty()Z"))
-    // private boolean canUnload(Long2ObjectLinkedOpenHashMap<ChunkHolder> loadedChunks)
-    // {
-    //     return loadedChunks.isEmpty() && loadedCubes.isEmpty();
-    // }
-
     @Inject(method = "saveAllChunks", at = @At("HEAD"))
     protected void save(boolean flush, CallbackInfo ci) {
         if (!((CubicLevelHeightAccessor) this.level).isCubic()) {
@@ -372,12 +367,18 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
 
     }
 
+    // used from ASM
+    private void flushCubeWorker() {
+        regionCubeIO.flush();
+        LOGGER.info("Cube Storage ({}): All cubes are saved", this.storageName);
+    }
+
     @Override public void setServerChunkCache(ServerChunkCache cache) {
         serverChunkCache = cache;
     }
 
     // save()
-    private boolean cubeSave(CubeAccess cube) {
+    public boolean cubeSave(CubeAccess cube) {
         ((CubicSectionStorage) this.poiManager).flush(cube.getCubePos());
         if (!cube.isUnsaved()) {
             return false;
@@ -477,7 +478,6 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         return regionCubeIO.loadCubeNBT(cubePos);
     }
 
-    // processUnloads
     private void processCubeUnloads(BooleanSupplier hasMoreTime) {
         LongIterator longiterator = this.cubesToDrop.iterator();
 
@@ -496,6 +496,11 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         while ((hasMoreTime.getAsBoolean() || this.cubeUnloadQueue.size() > 2000) && (runnable = this.cubeUnloadQueue.poll()) != null) {
             runnable.run();
         }
+    }
+
+    // used from ASM
+    private void writeCube(CubePos pos, CompoundTag tag) {
+        regionCubeIO.saveCubeNBT(pos, tag);
     }
 
     // scheduleUnload
@@ -554,6 +559,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         });
     }
 
+    // used from ASM
     // markPositionReplaceable
     @Override public void markCubePositionReplaceable(CubePos cubePos) {
         this.cubeTypeCache.put(cubePos.asLong(), (byte) -1);
@@ -651,6 +657,7 @@ public abstract class MixinChunkMap implements CubeMap, CubeMapInternal, Vertica
         return Iterables.unmodifiableIterable(this.visibleCubeMap.values());
     }
 
+    // This can't be ASM, the changes for column load order are too invasive
     @Override
     public CompletableFuture<Either<CubeAccess, ChunkHolder.ChunkLoadingFailure>> scheduleCube(ChunkHolder cubeHolder, ChunkStatus chunkStatus) {
         CubePos cubePos = ((CubeHolder) cubeHolder).getCubePos();

@@ -1,0 +1,862 @@
+{
+  "types": [
+    {
+      "id": "blockpos",
+      "original": "J",
+      "transformed": [
+        "I",
+        "I",
+        "I"
+      ],
+      "from_original": [
+        {
+          "owner": "net/minecraft/core/BlockPos",
+          "name": "getX",
+          "desc": "(J)I",
+          "call_type": "static"
+        },
+        {
+          "owner": "net/minecraft/core/BlockPos",
+          "name": "getY",
+          "desc": "(J)I",
+          "call_type": "static"
+        },
+        {
+          "owner": "net/minecraft/core/BlockPos",
+          "name": "getZ",
+          "desc": "(J)I",
+          "call_type": "static"
+        }
+      ],
+      "to_original": {
+        "owner": "net/minecraft/core/BlockPos",
+        "name": "asLong",
+        "desc": "(III)J",
+        "call_type": "static"
+      },
+      "constant_replacements": [
+        {
+          "from": 9223372036854775807,
+          "to": [
+            2147483647,
+            2147483647,
+            2147483647
+          ]
+        },
+        {
+          "from": 0,
+          "to": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "original_predicate": "java/util/function/LongPredicate",
+      "transformed_predicate": "io/github/opencubicchunks/cubicchunks/utils/XYZPredicate",
+      "original_consumer": "java/util/function/LongConsumer",
+      "transformed_consumer": "io/github/opencubicchunks/cubicchunks/utils/XYZConsumer",
+      "postfix": [
+        "_x",
+        "_y",
+        "_z"
+      ]
+    },
+    {
+      "id": "blockpos_set",
+      "original": "Lit/unimi/dsi/fastutil/longs/LongSet;",
+      "transformed": [
+        "Lio/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet;"
+      ]
+    },
+    {
+      "id": "blockpos_byte_map",
+      "original": "Lit/unimi/dsi/fastutil/longs/Long2ByteMap;",
+      "transformed": [
+        "Lio/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap;"
+      ]
+    },
+    {
+      "id": "blockpos_list",
+      "original": "Lit/unimi/dsi/fastutil/longs/LongList;",
+      "transformed": [
+        "Lio/github/opencubicchunks/cubicchunks/utils/Int3List;"
+      ],
+      "postfix": [
+        "_blockpos"
+      ]
+    }
+  ],
+  "methods": [
+    {
+      "method": "v net/minecraft/core/BlockPos#asLong ()J",
+      "possibilities": [
+        {
+          "parameters": [
+            null
+          ],
+          "return": "blockpos",
+          "replacement": [
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": {
+                  "owner": "net/minecraft/core/Vec3i",
+                  "name": "getX",
+                  "desc": "()I",
+                  "call_type": "virtual"
+                }
+              }
+            ],
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": {
+                  "owner": "net/minecraft/core/Vec3i",
+                  "name": "getY",
+                  "desc": "()I",
+                  "call_type": "virtual"
+                }
+              }
+            ],
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": {
+                  "owner": "net/minecraft/core/Vec3i",
+                  "name": "getZ",
+                  "desc": "()I",
+                  "call_type": "virtual"
+                }
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "method": "s net/minecraft/core/BlockPos#offset (JLnet/minecraft/core/Direction;)J",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos",
+            null
+          ],
+          "return": "blockpos",
+          "replacement": [
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": {
+                  "owner": "net/minecraft/core/Direction",
+                  "name": "getStepX",
+                  "desc": "()I",
+                  "call_type": "virtual"
+                }
+              },
+              "IADD"
+            ],
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": {
+                  "owner": "net/minecraft/core/Direction",
+                  "name": "getStepY",
+                  "desc": "()I",
+                  "call_type": "virtual"
+                }
+              },
+              "IADD"
+            ],
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": {
+                  "owner": "net/minecraft/core/Direction",
+                  "name": "getStepZ",
+                  "desc": "()I",
+                  "call_type": "virtual"
+                }
+              },
+              "IADD"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "method": "i it/unimi/dsi/fastutil/longs/LongSet#remove (J)Z",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_set",
+            "blockpos"
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_set",
+                null
+              ]
+            },
+            {
+              "parameters": [
+                null,
+                "blockpos"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "i it/unimi/dsi/fastutil/longs/Long2ByteFunction#remove (J)B",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_byte_map",
+            "blockpos"
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_byte_map",
+                null
+              ]
+            },
+            {
+              "parameters": [
+                null,
+                "blockpos"
+              ]
+            }
+          ],
+          "replacement": [
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": "v io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap#remove (III)I"
+              },
+              "I2B"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "method": "i it/unimi/dsi/fastutil/longs/Long2ByteMap#keySet ()Lit/unimi/dsi/fastutil/longs/LongSet;",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_byte_map"
+          ],
+          "return": "blockpos_set",
+          "replacement": [
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": "v io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap#keySet ()Lio/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet;"
+              }
+            ]
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_byte_map"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "i it/unimi/dsi/fastutil/longs/LongSet#forEach (Ljava/util/function/LongConsumer;)V",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_set",
+            "blockpos consumer"
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_set",
+                null
+              ]
+            },
+            {
+              "parameters": [
+                null,
+                "blockpos consumer"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "i it/unimi/dsi/fastutil/longs/LongSet#forEach (Lit/unimi/dsi/fastutil/longs/LongConsumer;)V",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_set",
+            "blockpos consumer"
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_set",
+                null
+              ]
+            },
+            {
+              "parameters": [
+                null,
+                "blockpos consumer"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "i it/unimi/dsi/fastutil/longs/LongList#forEach (Ljava/util/function/LongConsumer;)V",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_set",
+            "blockpos consumer"
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_set",
+                null
+              ]
+            },
+            {
+              "parameters": [
+                null,
+                "blockpos consumer"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "i it/unimi/dsi/fastutil/longs/LongList#forEach (Lit/unimi/dsi/fastutil/longs/LongConsumer;)V",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_set",
+            "blockpos consumer"
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_set",
+                null
+              ]
+            },
+            {
+              "parameters": [
+                null,
+                "blockpos consumer"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "i it/unimi/dsi/fastutil/longs/Long2ByteMap#get (J)B",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_byte_map",
+            "blockpos"
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_byte_map",
+                null
+              ]
+            },
+            {
+              "parameters": [
+                null,
+                "blockpos"
+              ]
+            }
+          ],
+          "replacement": [
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": "v io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap#get (III)I"
+              },
+              "I2B"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "method": "i it/unimi/dsi/fastutil/longs/Long2ByteMap#put (JB)B",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_byte_map",
+            "blockpos",
+            null
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_byte_map",
+                null
+              ]
+            },
+            {
+              "parameters": [
+                null,
+                "blockpos"
+              ]
+            }
+          ],
+          "replacement": [
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": "v io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap#put (IIII)I"
+              },
+              "I2B"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "method": "i it/unimi/dsi/fastutil/longs/Long2ByteMap#putIfAbsent (JB)B",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_byte_map",
+            "blockpos",
+            null
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_byte_map",
+                null
+              ]
+            },
+            {
+              "parameters": [
+                null,
+                "blockpos"
+              ]
+            }
+          ],
+          "replacement": [
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": "v io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap#putIfAbsent (IIII)I"
+              },
+              "I2B"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "method": "v it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet#removeFirstLong ()J",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_set"
+          ],
+          "return": "blockpos",
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_set"
+              ]
+            },
+            {
+              "parameters": [
+                null
+              ],
+              "return": "blockpos"
+            }
+          ],
+          "replacement": [
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": "v io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet#getFirstX ()I"
+              }
+            ],
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": "v io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet#getFirstY ()I"
+              }
+            ],
+            [
+              {
+                "type": "INVOKEVIRTUAL",
+                "method": "v io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet#getFirstZ ()I"
+              }
+            ]
+          ],
+          "finalizer": [
+            {
+              "type": "INVOKEVIRTUAL",
+              "method": "v io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet#removeFirstValue ()V"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "i it/unimi/dsi/fastutil/longs/LongList#add (J)Z",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos_list",
+            "blockpos"
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                "blockpos_list",
+                null
+              ]
+            },
+            {
+              "parameters": [
+                null,
+                "blockpos"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "v net/minecraft/core/BlockPos$MutableBlockPos#set (J)Lnet/minecraft/core/BlockPos$MutableBlockPos;",
+      "possibilities": [
+        {
+          "parameters": [
+            null,
+            "blockpos"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "s net/minecraft/core/BlockPos#getFlatIndex (J)J",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos"
+          ],
+          "return": "blockpos",
+          "replacement": [
+            [],
+            [
+              {
+                "type": "LDC",
+                "constant_type": "int",
+                "value": -16
+              },
+              "IAND"
+            ],
+            []
+          ]
+        }
+      ]
+    },
+    {
+      "method": "s net/minecraft/core/BlockPos#offset (JIII)J",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos",
+            null,
+            null,
+            null
+          ],
+          "return": "blockpos",
+          "replacement": {
+            "expansion": [
+              [
+                "IADD"
+              ],
+              [
+                "IADD"
+              ],
+              [
+                "IADD"
+              ]
+            ],
+            "indices": [
+              [
+                0,
+                0,
+                [],
+                []
+              ],
+              [
+                1,
+                [],
+                0,
+                []
+              ],
+              [
+                2,
+                [],
+                [],
+                0
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "method": "s net/minecraft/core/BlockPos#of (J)Lnet/minecraft/core/BlockPos;",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos"
+          ],
+          "replacement": [
+            [
+              "ISTORE {z}",
+              "ISTORE {y}",
+              "ISTORE {x}",
+              {
+                "type": "NEW",
+                "class": "net/minecraft/core/BlockPos"
+              },
+              "DUP",
+              "ILOAD {x}",
+              "ILOAD {y}",
+              "ILOAD {z}",
+              {
+                "type": "INVOKESPECIAL",
+                "method": "S net/minecraft/core/BlockPos#\u003cinit\u003e (III)V"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "method": "s net/minecraft/core/SectionPos#blockToSection (J)J",
+      "possibilities": [
+        {
+          "parameters": [
+            "blockpos"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "v net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint#checkEdge (JJIZ)V",
+      "possibilities": [
+        {
+          "parameters": [
+            null,
+            "blockpos",
+            "blockpos",
+            null,
+            null
+          ],
+          "minimums": [
+            {
+              "parameters": [
+                null,
+                "blockpos",
+                null,
+                null,
+                null
+              ]
+            },
+            {
+              "parameters": [
+                null,
+                null,
+                "blockpos",
+                null,
+                null
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "classes": [
+    {
+      "class": "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint",
+      "type_hints": [
+        {
+          "method": {
+            "owner": "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint",
+            "name": "removeFromQueue",
+            "desc": "(J)V",
+            "call_type": "virtual"
+          },
+          "types": [
+            null,
+            "blockpos"
+          ]
+        }
+      ],
+      "constructor_replacers": [
+        {
+          "original": "III",
+          "type_replacements": {
+            "it/unimi/dsi/fastutil/longs/LongLinkedOpenHashSet": "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet",
+            "it/unimi/dsi/fastutil/longs/Long2ByteOpenHashMap": "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap",
+            "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint$1": "io/github/opencubicchunks/cubicchunks/utils/LinkedInt3HashSet",
+            "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint$2": "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap",
+            "it/unimi/dsi/fastutil/longs/Long2ByteMap": "io/github/opencubicchunks/cubicchunks/utils/Int3UByteLinkedHashMap"
+          }
+        }
+      ]
+    },
+    {
+      "class": "net/minecraft/world/level/lighting/LayerLightEngine",
+      "type_hints": [
+        {
+          "method": "v net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint#isSource (J)Z",
+          "types": [
+            null,
+            "blockpos"
+          ]
+        },
+        {
+          "mapped": "getComputedLevel",
+          "method": "v net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint#getComputedLevel (JJI)I",
+          "types": [
+            null,
+            "blockpos",
+            "blockpos"
+          ]
+        },
+        {
+          "mapped": "getLevel",
+          "method": "v net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint#getLevel (J)I",
+          "types": [
+            null,
+            "blockpos"
+          ]
+        },
+        {
+          "mapped": "setLevel",
+          "method": "v net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint#setLevel (JI)V",
+          "types": [
+            null,
+            "blockpos"
+          ]
+        },
+        {
+          "mapped": "computeLevelFromNeighbor",
+          "method": "v net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint#computeLevelFromNeighbor (JJI)I",
+          "types": [
+            null,
+            "blockpos",
+            "blockpos"
+          ]
+        },
+        {
+          "mapped": "getDebugData",
+          "method": "v net/minecraft/world/level/lighting/LayerLightEngine#getDebugData (J)Ljava/lang/String;",
+          "types": [
+            null,
+            "blockpos"
+          ]
+        }
+      ]
+    },
+    {
+      "class": "net/minecraft/world/level/lighting/LayerLightSectionStorage",
+      "type_hints": [
+        {
+          "method": "v net/minecraft/world/level/lighting/LayerLightSectionStorage#getLightValue (J)I",
+          "mappedName": "getLightValue",
+          "types": [
+            null,
+            "blockpos"
+          ]
+        }
+      ]
+    },
+    {
+      "class": "net/minecraft/world/level/levelgen/Aquifer$NoiseBasedAquifer",
+      "in_place": true
+    }
+  ],
+  "invokers": [
+    {
+      "name": "io/github/opencubicchunks/cubicchunks/mixin/access/common/DynamicGraphMinFixedPointAccess",
+      "target": "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint",
+      "methods": [
+        {
+          "name": "invokeCheckEdge (JJIZ)V",
+          "calls": "checkEdge",
+          "types": [
+            "blockpos",
+            "blockpos"
+          ]
+        },
+        {
+          "name": "invokeComputeLevelFromNeighbor (JJI)I",
+          "calls": "computeLevelFromNeighbor",
+          "types": [
+            "blockpos",
+            "blockpos"
+          ]
+        },
+        {
+          "name": "invokeGetLevel (J)I",
+          "calls": "getLevel",
+          "types": [
+            "blockpos"
+          ]
+        }
+      ]
+    }
+  ],
+
+  "suffixed_methods": [
+    "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint",
+    "net/minecraft/world/level/lighting/LayerLightEngine",
+    "net/minecraft/world/level/lighting/LayerLightSectionStorage",
+    "net/minecraft/world/level/lighting/BlockLightEngine",
+    "net/minecraft/world/level/lighting/SkyLightEngine",
+    "net/minecraft/world/level/lighting/BlockLightSectionStorage",
+    "net/minecraft/world/level/lighting/SkyLightSectionStorage"
+  ],
+
+  "type_meta_info": {
+    "inspect": [
+      "net/minecraft/world/level/lighting/DynamicGraphMinFixedPoint",
+      "net/minecraft/world/level/lighting/LayerLightEngine",
+      "net/minecraft/world/level/lighting/LayerLightSectionStorage",
+      "net/minecraft/world/level/lighting/BlockLightEngine",
+      "net/minecraft/world/level/lighting/SkyLightEngine",
+      "net/minecraft/world/level/lighting/BlockLightSectionStorage",
+      "net/minecraft/world/level/lighting/SkyLightSectionStorage",
+      "net/minecraft/world/level/levelgen/Aquifer$NoiseBasedAquifer"
+    ]
+  }
+}
